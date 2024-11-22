@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Addresses, Balance, SendBsv, SendBsvResponse, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
 import { useMutation } from "@tanstack/react-query";
 import { Transaction } from "@bsv/sdk";
-import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
+// import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { toBitcoin, toSatoshi, toToken, toTokenSat } from "satoshi-token";
 import { toast } from "react-hot-toast";
 
@@ -163,7 +163,7 @@ export default function Dashboard() {
     }
 
     transferMNEE({ recipient, amount });
-  }, [amount, recipient]);
+  }, [mneeBalance, transferMNEE, amount, recipient]);
 
   return (
     <div className="min-w-screen min-h-screen px-2 flex flex-col py-12">
