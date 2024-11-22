@@ -4,10 +4,31 @@
 import { useState, useCallback } from "react";
 import { Addresses, Balance, Ordinal, useYoursWallet } from "yours-wallet-provider";
 import { useMutation } from "@tanstack/react-query";
-import { Transaction } from "@bsv/sdk";
+import { PublicKey, Transaction } from "@bsv/sdk";
 // import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { toBitcoin, toToken } from "satoshi-token";
 import { toast } from "react-hot-toast";
+import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
+
+type MNEEUtxo = {
+  height: number;
+  idx: number;
+  script: string;
+  outpoint: string;
+  txid: string;
+  vout: number;
+  satoshis: number;
+  data: {
+    bsv21: {
+      amt: string;
+      dec: number;
+      icon: string;
+      id: string;
+      op: string;
+      sym: string;
+    };
+  }
+};
 
 const MNEE_API = process.env.REACT_APP_MNEE_API;
 
@@ -18,6 +39,7 @@ export default function Dashboard() {
   const [balance, setBalance] = useState<Balance | undefined>();
   const [recipient, setRecipient] = useState<string>('');
   const [amount, setAmount] = useState<number>(0);
+  const [mneeUtxos, setMneeUtxos] = useState<MNEEUtxo[]>([]);
 
   const connectWallet = async () => {
     if (!wallet.isReady) {
@@ -36,6 +58,41 @@ export default function Dashboard() {
     }
   };
 
+  // {
+  //   "approver": "032a51b458edf08c6126705614a11921c10989fdad0be30badb0bae5bba74e7c36",
+  //   "fee_address": "1AUhxBh7bftDj9FEDBFSKLoAShTQBKaQ7b",
+  //   "fees": [
+  //     {
+  //       "minAmt": 0,
+  //       "maxAmt": 10000,
+  //       "fee": 50
+  //     },
+  //     {
+  //       "minAmt": 10001,
+  //       "maxAmt": 18446744073709552000,
+  //       "fee": 1000
+  //     }
+  //   ]
+  // }
+
+  type Config = {
+    approver: string;
+    fee_address: string;
+    fees: {
+      minAmt: number;
+      maxAmt: number;
+      fee: number;
+    }[];
+  };
+
+  const fetchConfig = async () => {
+    const response = await fetch(`${MNEE_API}/v1/config`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch config");
+    }
+    return await response.json() as Config;
+  }
+
   const fetchMneeUtxos = async (addresses: string[]) => {
     if (!MNEE_API) {
       throw new Error("MNEE_API not defined");
@@ -49,7 +106,7 @@ export default function Dashboard() {
     if (!response.ok) {
       throw new Error("Failed to fetch UTXOs");
     }
-    return response.json();
+    return await response.json() as MNEEUtxo[];
   };
 
   const fetchBalance = async (addresses: string[]) => {
@@ -57,7 +114,7 @@ export default function Dashboard() {
       // const utxos = await fetchUtxos(addresses);
       // const totalBalance = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
 
-      console.log({addresses});
+      console.log({ addresses });
       const balance = await wallet.getBalance();
       if (!balance) {
         throw new Error("Failed to fetch balance");
@@ -75,16 +132,16 @@ export default function Dashboard() {
       // const utxos = await fetchUtxos(addresses);
       // const totalBalance = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
 
-      console.log({addresses});
+      console.log({ addresses });
       const ordinals = await wallet.getOrdinals();
       if (!ordinals) {
         throw new Error("Failed to fetch balance");
       }
 
       const balance = (ordinals as Ordinal[]).reduce((amt, o) => {
-        return amt +  toToken(o.data?.bsv20?.amt || 0, o.data?.bsv20?.dec || 0);
+        return amt + toToken(o.data?.bsv20?.amt || 0, o.data?.bsv20?.dec || 0);
       }, 0)
-      
+
       setMneeBalance(balance);
     } catch (error) {
       console.error("Error fetching balance:", error);
@@ -105,23 +162,39 @@ export default function Dashboard() {
 
       const utxos = await fetchMneeUtxos(Object.values(addresses));
 
+      // Determine MNEE fee
+
+      const config = await fetchConfig()
+
+      // find which fee to use
+      const fee = config.fees.find(fee => amount >= fee.minAmt && amount <= fee.maxAmt)?.fee;
+      if (fee === undefined) {
+        throw new Error("Fee ranges inadequate");
+      }
+
       // Build the transaction using the UTXOs, recipient, and amount
       const tx = new Transaction();
 
-
-      // Add inputs from UTXOs
-      for (const utxo of utxos) {
+      let tokensIn = 0;
+      while (tokensIn < amount + fee) {
+        let utxo = utxos.shift();
+        if (!utxo) {
+          throw new Error("Insufficient MNEE balance");
+        }
         tx.addInput({
           sourceTXID: utxo.txid,
-          sourceOutputIndex: utxo.outputIndex,
+          sourceOutputIndex: utxo.vout,
           // unlockingScriptTemplate: P2PKHApprovedTemplate,
           // satoshis: utxo.satoshis,
         });
+
+        tokensIn += Number.parseInt(utxo.data.bsv21.amt);
       }
+
 
       // Add output to the recipient
       // tx.addOutput({
-      //   lockingScript: P2PKHApprovedTemplate.lockingScript(recipient),
+      //   lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(recipient, PublicKey.fromString(config.approver)),
       //   satoshis: amount,
       // })
 
