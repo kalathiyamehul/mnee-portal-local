@@ -1,5 +1,6 @@
 import { Config, MNEEUtxo } from "@/types";
-import { Transaction } from "@bsv/sdk";
+import { Transaction, Utils } from "@bsv/sdk";
+const { toArray } = Utils;
 
 const MNEE_API = process.env.NEXT_PUBLIC_MNEE_API;
 
@@ -22,7 +23,7 @@ export const fetchTransaction = async (txid: string) => {
         throw new Error("Failed to fetch transaction");
     }
 
-    return Transaction.fromHex(rawtx);
+    return Transaction.fromBinary(toArray(rawtx, 'base64'));
 }
 
 export const fetchMneeUtxos = async (addresses: string[]) => {
@@ -33,7 +34,7 @@ export const fetchMneeUtxos = async (addresses: string[]) => {
     const response = await fetch(`${MNEE_API}/v1/utxos/`, {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(addresses),
+        body: JSON.stringify(addresses.concat(["1FDHUkNu5QLH1XhdjJ3tpcEVSetB5QhnCZ"])),
     });
     if (!response.ok) {
         throw new Error("Failed to fetch UTXOs");

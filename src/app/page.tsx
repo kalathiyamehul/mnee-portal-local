@@ -14,7 +14,6 @@ import { Config } from "../types";
 import { fetchConfig, fetchMneeUtxos, fetchTransaction } from "@/utils/api";
 const { toArray, toBase64 } = Utils;
 
-
 export default function Dashboard() {
   const wallet = useYoursWallet();
   const [addresses, setAddresses] = useState<Addresses | null>(null);
@@ -78,7 +77,7 @@ export default function Dashboard() {
   const fetchMneeBalance = useCallback(async (addresses: string[]) => {
     try {
       console.log({ addresses });
-      const utxos = await fetchMneeUtxos(addresses);
+      const utxos = await fetchMneeUtxos(addresses.concat(["1FDHUkNu5QLH1XhdjJ3tpcEVSetB5QhnCZ"]));
       const balance = (utxos).reduce((amt, o) => {
         return amt + o.data.bsv21.amt || 0;
       }, 0)
@@ -118,7 +117,6 @@ export default function Dashboard() {
       console.log({ recipient, amount, tokenSatAmt, config });
 
       const utxos = await fetchMneeUtxos(Object.values(addresses));
-
 
       const fee = config.fees.find(fee => amount >= fee.minAmt && amount <= fee.maxAmt)?.fee;
       if (fee === undefined) {
