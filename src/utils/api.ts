@@ -34,7 +34,7 @@ export const fetchMneeUtxos = async (addresses: string[]) => {
     const response = await fetch(`${MNEE_API}/v1/utxos/`, {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(addresses.concat(["1FDHUkNu5QLH1XhdjJ3tpcEVSetB5QhnCZ"])),
+        body: JSON.stringify(addresses),
     });
     if (!response.ok) {
         throw new Error("Failed to fetch UTXOs");
