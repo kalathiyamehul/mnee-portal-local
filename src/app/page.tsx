@@ -2,15 +2,15 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Addresses, Balance, Ordinal, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
+import { Addresses, Balance, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
 import { useMutation } from "@tanstack/react-query";
 import { PublicKey, Script, Transaction } from "@bsv/sdk";
 // import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { toBitcoin, toToken, toTokenSat } from "satoshi-token";
-import { toast } from "react-hot-toast";
 import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { applyInscription, Inscription } from "js-1sat-ord";
 import { Utils } from "@bsv/sdk";
+import toast from "react-hot-toast";
 const { toArray, toBase64 } = Utils;
 
 type MNEEUtxo = {
@@ -42,7 +42,7 @@ export default function Dashboard() {
   const [balance, setBalance] = useState<Balance | undefined>();
   const [recipient, setRecipient] = useState<string>('');
   const [amount, setAmount] = useState<number>(0);
-  const [mneeUtxos, setMneeUtxos] = useState<MNEEUtxo[]>([]);
+  // const [mneeUtxos, setMneeUtxos] = useState<MNEEUtxo[]>([]);
 
   const connectWallet = async () => {
     if (!wallet.isReady) {
@@ -148,17 +148,7 @@ export default function Dashboard() {
 
   const fetchMneeBalance = async (addresses: string[]) => {
     try {
-      // const utxos = await fetchUtxos(addresses);
-      // const totalBalance = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
-
       console.log({ addresses });
-      // const ordinals = await wallet.getOrdinals();
-      // if (!ordinals) {
-      //   throw new Error("Failed to fetch balance");
-      // }
-
-
-
       const utxos = await fetchMneeUtxos(addresses);
       const balance = (utxos).reduce((amt, o) => {
         return amt + toToken(o.data.bsv21.amt || 0, o.data?.bsv21?.dec || 0);
@@ -202,7 +192,7 @@ export default function Dashboard() {
 
       let tokensIn = 0;
       while (tokensIn < tokenSatAmt + fee) {
-        let utxo = utxos.shift();
+        const utxo = utxos.shift();
         if (!utxo) {
           throw new Error("Insufficient MNEE balance");
         }
@@ -251,7 +241,7 @@ export default function Dashboard() {
       })
 
       // Sign the transaction
-      let sigRequests: SignatureRequest[] = [];
+      const sigRequests: SignatureRequest[] = [];
       for (const [index, input] of tx.inputs.entries()) {
         if (!input.sourceTransaction || !input.sourceTXID) {
           throw new Error("Source transaction not found");
@@ -286,19 +276,20 @@ export default function Dashboard() {
 
       console.log({ tx: tx.toHex() });
       // Submit the transaction
-      // const response = await fetch("/v1/transfer", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ rawtx: toBase64(tx.toBinary()) }),
+      debugger
+      const response = await fetch("/v1/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rawtx: toBase64(tx.toBinary()) }),
         
-      // });
-      // if (!response.ok) {
-      //   throw new Error("Transaction submission failed");
-      // }
-      // if (response) {
-      //   toast.success("Transaction submitted successfully");
-      // }
-      // return response.json() as Promise<{ txid: string }>;
+      });
+      if (!response.ok) {
+        throw new Error("Transaction submission failed");
+      }
+      if (response) {
+        toast.success("Transaction submitted successfully");
+      }
+      return response.json() as Promise<{ txid: string }>;
     }
   });
 
