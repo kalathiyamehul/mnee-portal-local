@@ -39,8 +39,8 @@ export default function Dashboard() {
     if (!MNEE_API) {
       throw new Error("MNEE_API not defined");
     }
-    
-    const response = await fetch(MNEE_API, {
+
+    const response = await fetch(`${MNEE_API}/v1/utxos/`, {
       method: 'POST',
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(addresses),
