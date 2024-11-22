@@ -145,13 +145,12 @@ export default function Dashboard() {
     }
   };
 
-
   const fetchMneeBalance = async (addresses: string[]) => {
     try {
       console.log({ addresses });
       const utxos = await fetchMneeUtxos(addresses);
       const balance = (utxos).reduce((amt, o) => {
-        return amt + toToken(o.data.bsv21.amt || 0, o.data?.bsv21?.dec || 0);
+        return amt + Number.parseInt(o.data.bsv21.amt) || 0;
       }, 0)
 
       setMneeBalance(balance);
