@@ -2,14 +2,16 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Addresses, Balance, Ordinal, useYoursWallet } from "yours-wallet-provider";
+import { Addresses, Balance, Ordinal, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
 import { useMutation } from "@tanstack/react-query";
-import { PublicKey, Transaction } from "@bsv/sdk";
+import { PublicKey, Script, Transaction } from "@bsv/sdk";
 // import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { toBitcoin, toToken, toTokenSat } from "satoshi-token";
 import { toast } from "react-hot-toast";
 import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { applyInscription, Inscription } from "js-1sat-ord";
+import { Utils } from "@bsv/sdk";
+const { toArray, toBase64 } = Utils;
 
 type MNEEUtxo = {
   height: number;
@@ -87,6 +89,20 @@ export default function Dashboard() {
       fee: number;
     }[];
   };
+
+  const fetchTransaction = async (txid: string) => {
+    const response = await fetch(`${MNEE_API}/v1/tx/${txid}`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch transaction");
+    }
+
+    const { rawtx } = await response.json() as { rawtx: string };
+    if (!rawtx) {
+      throw new Error("Failed to fetch transaction");
+    }
+
+    return Transaction.fromHex(rawtx);
+  }
 
   const fetchConfig = async () => {
     const response = await fetch(`${MNEE_API}/v1/config`);
@@ -187,20 +203,19 @@ export default function Dashboard() {
         if (!utxo) {
           throw new Error("Insufficient MNEE balance");
         }
+        const sourceTransaction = await fetchTransaction(utxo.txid);
         tx.addInput({
           sourceTXID: utxo.txid,
           sourceOutputIndex: utxo.vout,
-          // unlockingScriptTemplate: P2PKHApprovedTemplate,
-          // satoshis: utxo.satoshis,
+          sourceTransaction,
         });
 
         tokensIn += Number.parseInt(utxo.data.bsv21.amt);
       }
 
-
-
       // Add output to the recipient
-      const dataB64 = Buffer.from(JSON.stringify({ p: 'bsv-20', op: 'transfer', id: config.tokenId, amt: tokenSatAmt.toString() })).toString("base64");
+      const inscriptionData = { p: 'bsv-20', op: 'transfer', id: config.tokenId, amt: tokenSatAmt.toString() };
+      const dataB64 = Buffer.from(JSON.stringify(inscriptionData)).toString("base64");
       tx.addOutput({
         lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(recipient, PublicKey.fromString(config.approver)), {
           dataB64,
@@ -209,48 +224,78 @@ export default function Dashboard() {
         satoshis: amount,
       })
 
-      // Add change output back to sender if necessary
-      //  const totalInput = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
-      await tx.fee(); // You may need to define fee estimation
-      // const change = totalInput - amount - fee;
-      // if (change > 0) {
-      //   tx.change(address);
-      // }
+      // Add the token fee output
+      const feeInscriptionData = { p: 'bsv-20', op: 'transfer', id: config.tokenId, amt: fee.toString() };
+      const feeDataB64 = Buffer.from(JSON.stringify(feeInscriptionData)).toString("base64");
+      tx.addOutput({
+        lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(config.feeAddress, PublicKey.fromString(config.approver)), {
+          dataB64: feeDataB64,
+          contentType: "application/bsv-20"
+        } as Inscription),
+        satoshis: amount,
+      })
+
+      // Add the token change inscription
+      const changeTokenSatAmt = tokensIn - tokenSatAmt - fee;
+      const changeInscriptionData = { p: 'bsv-20', op: 'transfer', id: config.tokenId, amt: changeTokenSatAmt.toString() };
+      const changeDataB64 = Buffer.from(JSON.stringify(changeInscriptionData)).toString("base64");
+      tx.addOutput({
+        lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(addresses.ordAddress, PublicKey.fromString(config.approver)), {
+          dataB64: changeDataB64,
+          contentType: "application/bsv-20"
+        } as Inscription),
+        satoshis: amount,
+      })
 
       // Sign the transaction
-      // const sigRequests: SignatureRequest[] = tx.inputs.map((input, index) => ({
-      //   prevTxid: input.sourceTXID,
-      //   outputIndex: input.sourceOutputIndex,
-      //   inputIndex: index,
-      //   satoshis: input.output.satoshis,
-      //   address: address!,
-      //   script: input.output.script.toHex(),
-      // }));
+      let sigRequests: SignatureRequest[] = [];
+      for (const [index, input] of tx.inputs.entries()) {
+        if (!input.sourceTransaction || !input.sourceTXID) {
+          throw new Error("Source transaction not found");
+        }
+        sigRequests.push({
+          prevTxid: input.sourceTXID,
+          outputIndex: input.sourceOutputIndex,
+          inputIndex: index,
+          address: addresses.ordAddress,
+          script: input.sourceTransaction.outputs[input.sourceOutputIndex].lockingScript.toHex(),
+          satoshis: input.sourceTransaction.outputs[input.sourceOutputIndex].satoshis || 1,
+        });
+      }
 
-      // const sigResponses: SignatureResponse[] = await wallet.getSignatures({
-      //   rawtx: tx.toHex(),
-      //   format: 'tx',
-      //   sigRequests,
-      // });
+      const sigResponses: SignatureResponse[] | undefined = await wallet.getSignatures({
+        rawtx: tx.toHex(),
+        format: 'tx',
+        sigRequests,
+      });
+
+      if (!sigResponses) {
+        throw new Error("Failed to get signatures");
+      }
 
       // Apply signatures to the transaction
-      // sigResponses.forEach((sigResponse, index) => {
-      //   tx.inputs[index].unlockingScript = sigResponse.script;
-      // });
+      for (const sigResponse of sigResponses) {
+        const signedScript = new Script()
+          .writeBin(toArray(sigResponse.sig, 'hex'))
+          .writeBin(toArray(sigResponse.pubKey, 'hex'))
+        tx.inputs[sigResponse.inputIndex].unlockingScript = signedScript;
+      }
 
+      console.log({ tx: tx.toHex() });
       // Submit the transaction
-      const response = await fetch("/v1/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawTx: tx.toHex() }),
-      });
-      if (!response.ok) {
-        throw new Error("Transaction submission failed");
-      }
-      if (response) {
-        toast.success("Transaction submitted successfully");
-      }
-      return response.json() as Promise<{ txid: string }>;
+      // const response = await fetch("/v1/transfer", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ rawtx: toBase64(tx.toBinary()) }),
+        
+      // });
+      // if (!response.ok) {
+      //   throw new Error("Transaction submission failed");
+      // }
+      // if (response) {
+      //   toast.success("Transaction submitted successfully");
+      // }
+      // return response.json() as Promise<{ txid: string }>;
     }
   });
 
