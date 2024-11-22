@@ -6,9 +6,10 @@ import { Addresses, Balance, Ordinal, useYoursWallet } from "yours-wallet-provid
 import { useMutation } from "@tanstack/react-query";
 import { PublicKey, Transaction } from "@bsv/sdk";
 // import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
-import { toBitcoin, toToken } from "satoshi-token";
+import { toBitcoin, toToken, toTokenSat } from "satoshi-token";
 import { toast } from "react-hot-toast";
 import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
+import { applyInscription, Inscription } from "js-1sat-ord";
 
 type MNEEUtxo = {
   height: number;
@@ -76,8 +77,10 @@ export default function Dashboard() {
   // }
 
   type Config = {
+    tokenId: string;
+    decimals: number;
     approver: string;
-    fee_address: string;
+    feeAddress: string;
     fees: {
       minAmt: number;
       maxAmt: number;
@@ -151,22 +154,25 @@ export default function Dashboard() {
   const { mutate: transferMNEE, status: mneeStatus, error: mneeError } = useMutation<
     { txid: string },
     Error,
-    { recipient: string; amount: number }
+    { recipient: string; amount: number; }
   >({
     mutationFn: async ({ recipient, amount }): Promise<{ txid: string }> => {
       if (!addresses) {
         throw new Error("Wallet not connected");
       }
+      // Determine MNEE fee
+      const config = await fetchConfig()
 
-      console.log({ recipient, amount });
+      if (!config) {
+        throw new Error("Config not fetched");
+      }
+      const tokenSatAmt = toTokenSat(amount, config.decimals);
+
+      console.log({ recipient, amount, tokenSatAmt, config });
 
       const utxos = await fetchMneeUtxos(Object.values(addresses));
 
-      // Determine MNEE fee
 
-      const config = await fetchConfig()
-
-      // find which fee to use
       const fee = config.fees.find(fee => amount >= fee.minAmt && amount <= fee.maxAmt)?.fee;
       if (fee === undefined) {
         throw new Error("Fee ranges inadequate");
@@ -176,7 +182,7 @@ export default function Dashboard() {
       const tx = new Transaction();
 
       let tokensIn = 0;
-      while (tokensIn < amount + fee) {
+      while (tokensIn < tokenSatAmt + fee) {
         let utxo = utxos.shift();
         if (!utxo) {
           throw new Error("Insufficient MNEE balance");
@@ -192,11 +198,16 @@ export default function Dashboard() {
       }
 
 
+
       // Add output to the recipient
-      // tx.addOutput({
-      //   lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(recipient, PublicKey.fromString(config.approver)),
-      //   satoshis: amount,
-      // })
+      const dataB64 = Buffer.from(JSON.stringify({ p: 'bsv-20', op: 'transfer', id: config.tokenId, amt: tokenSatAmt.toString() })).toString("base64");
+      tx.addOutput({
+        lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(recipient, PublicKey.fromString(config.approver)), {
+          dataB64,
+          contentType: "application/bsv-20"
+        } as Inscription),
+        satoshis: amount,
+      })
 
       // Add change output back to sender if necessary
       //  const totalInput = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
