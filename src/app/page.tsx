@@ -10,7 +10,7 @@ import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { applyInscription, Inscription } from "js-1sat-ord";
 import { Utils } from "@bsv/sdk";
 import toast from "react-hot-toast";
-import { Config, MNEEUtxo } from "../types";
+import { Config } from "../types";
 import { fetchConfig, fetchMneeUtxos, fetchTransaction } from "@/utils/api";
 const { toArray, toBase64 } = Utils;
 
