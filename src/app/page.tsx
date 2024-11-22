@@ -4,7 +4,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Addresses, Balance, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
 import { useMutation } from "@tanstack/react-query";
-import { PublicKey, Script, Transaction } from "@bsv/sdk";
+import { P2PKH, PublicKey, Script, Transaction, UnlockingScript } from "@bsv/sdk";
 import { toBitcoin, toToken, toTokenSat } from "satoshi-token";
 import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { applyInscription, Inscription } from "js-1sat-ord";
@@ -77,7 +77,7 @@ export default function Dashboard() {
   const fetchMneeBalance = useCallback(async (addresses: string[]) => {
     try {
       console.log({ addresses });
-      const utxos = await fetchMneeUtxos(addresses.concat(["1FDHUkNu5QLH1XhdjJ3tpcEVSetB5QhnCZ"]));
+      const utxos = await fetchMneeUtxos(addresses);
       const balance = (utxos).reduce((amt, o) => {
         return amt + o.data.bsv21.amt || 0;
       }, 0)
@@ -124,7 +124,7 @@ export default function Dashboard() {
       }
 
       // Build the transaction using the UTXOs, recipient, and amount
-      const tx = new Transaction();
+      const tx = new Transaction(1, [], [], 0);
 
       let tokensIn = 0;
       while (tokensIn < tokenSatAmt + fee) {
@@ -133,10 +133,22 @@ export default function Dashboard() {
           throw new Error("Insufficient MNEE balance");
         }
         const sourceTransaction = await fetchTransaction(utxo.txid);
+        if (!sourceTransaction) {
+          throw new Error("Failed to fetch source transaction");
+        }
         tx.addInput({
           sourceTXID: utxo.txid,
           sourceOutputIndex: utxo.vout,
           sourceTransaction,
+          unlockingScript: new UnlockingScript(),
+          // unlockingScriptTemplate: {
+          //   sign: async () => {
+          //     return new UnlockingScript();
+          //   },
+          //   estimateLength: async () => {
+          //     return 0;
+          //   },
+          // },
         });
 
         tokensIn += utxo.data.bsv21.amt;
@@ -146,22 +158,24 @@ export default function Dashboard() {
       const inscriptionData = { p: 'bsv-20', op: 'transfer', id: config.tokenId, amt: tokenSatAmt.toString() };
       const dataB64 = Buffer.from(JSON.stringify(inscriptionData)).toString("base64");
       tx.addOutput({
-        lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(recipient, PublicKey.fromString(config.approver)), {
+        // lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(recipient, PublicKey.fromString(config.approver)), {
+        lockingScript: applyInscription(new P2PKH().lock(recipient), {
           dataB64,
           contentType: "application/bsv-20"
         } as Inscription),
-        satoshis: amount,
+        satoshis: 1,
       })
 
       // Add the token fee output
       const feeInscriptionData = { p: 'bsv-20', op: 'transfer', id: config.tokenId, amt: fee.toString() };
       const feeDataB64 = Buffer.from(JSON.stringify(feeInscriptionData)).toString("base64");
       tx.addOutput({
-        lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(config.feeAddress, PublicKey.fromString(config.approver)), {
+        // lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(config.feeAddress, PublicKey.fromString(config.approver)), {
+        lockingScript: applyInscription(new P2PKH().lock(config.feeAddress), {
           dataB64: feeDataB64,
           contentType: "application/bsv-20"
         } as Inscription),
-        satoshis: amount,
+        satoshis: 1,
       })
 
       // Add the token change inscription
@@ -169,13 +183,15 @@ export default function Dashboard() {
       const changeInscriptionData = { p: 'bsv-20', op: 'transfer', id: config.tokenId, amt: changeTokenSatAmt.toString() };
       const changeDataB64 = Buffer.from(JSON.stringify(changeInscriptionData)).toString("base64");
       tx.addOutput({
-        lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(addresses.ordAddress, PublicKey.fromString(config.approver)), {
+        // lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(addresses.ordAddress, PublicKey.fromString(config.approver)), {
+        lockingScript: applyInscription(new P2PKH().lock(addresses.ordAddress), {
           dataB64: changeDataB64,
           contentType: "application/bsv-20"
         } as Inscription),
-        satoshis: amount,
+        satoshis: 1,
       })
 
+      debugger
       // Sign the transaction
       const sigRequests: SignatureRequest[] = [];
       for (const [index, input] of tx.inputs.entries()) {
@@ -192,40 +208,48 @@ export default function Dashboard() {
         });
       }
 
-      const sigResponses: SignatureResponse[] | undefined = await wallet.getSignatures({
-        rawtx: tx.toHex(),
-        format: 'tx',
-        sigRequests,
-      });
+      try {
+        const rawtx = tx.toHex();
 
-      if (!sigResponses) {
-        throw new Error("Failed to get signatures");
+        const sigResponses: SignatureResponse[] | undefined = await wallet.getSignatures({
+          rawtx,
+          sigRequests,
+        });
+
+        if (!sigResponses) {
+          throw new Error("Failed to get signatures");
+        }
+
+        // Apply signatures to the transaction
+        for (const sigResponse of sigResponses) {
+          const signedScript = new Script()
+            .writeBin(toArray(sigResponse.sig, 'hex'))
+            .writeBin(toArray(sigResponse.pubKey, 'hex'))
+          tx.inputs[sigResponse.inputIndex].unlockingScript = signedScript;
+        }
+
+        console.log({ tx: tx.toHex() });
+        // Submit the transaction
+        debugger
+        const response = await fetch("/v1/transfer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rawtx: toBase64(tx.toBinary()) }),
+
+        });
+        if (!response.ok) {
+          throw new Error("Transaction submission failed");
+        }
+        if (response) {
+          toast.success("Transaction submitted successfully");
+        }
+        return response.json() as Promise<{ txid: string }>;
+
+      } catch (error) {
+        console.error("Error signing transaction:", error);
+        throw error;
       }
 
-      // Apply signatures to the transaction
-      for (const sigResponse of sigResponses) {
-        const signedScript = new Script()
-          .writeBin(toArray(sigResponse.sig, 'hex'))
-          .writeBin(toArray(sigResponse.pubKey, 'hex'))
-        tx.inputs[sigResponse.inputIndex].unlockingScript = signedScript;
-      }
-
-      console.log({ tx: tx.toHex() });
-      // Submit the transaction
-      debugger
-      const response = await fetch("/v1/transfer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawtx: toBase64(tx.toBinary()) }),
-
-      });
-      if (!response.ok) {
-        throw new Error("Transaction submission failed");
-      }
-      if (response) {
-        toast.success("Transaction submitted successfully");
-      }
-      return response.json() as Promise<{ txid: string }>;
     }
   });
 
@@ -303,7 +327,7 @@ export default function Dashboard() {
           </div>
         </>
       )}
-      {mneeError && <p>Error: {mneeError.message}</p>}
+      {mneeError && <p className="mx-auto w-md bg-neutral p-2">Error: {mneeError.message} {mneeError.stack}</p>}
     </div>
   );
 }
