@@ -4,7 +4,13 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+First, set the MNEE_API environment variable. You can use a .env file if working locally.
+
+```bash
+touch .env
+```
+
+run the development server:
 
 ```bash
 npm run dev
