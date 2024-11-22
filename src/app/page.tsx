@@ -1,12 +1,15 @@
 // app/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Addresses, Balance, SendBsv, SendBsvResponse, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
 import { useMutation } from "@tanstack/react-query";
 import { Transaction } from "@bsv/sdk";
 import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { toBitcoin, toSatoshi, toToken, toTokenSat } from "satoshi-token";
+import { toast } from "react-hot-toast";
+
+const MNEE_API = Bun.env.MNEE_API;
 
 export default function Dashboard() {
   const wallet = useYoursWallet();
@@ -15,7 +18,6 @@ export default function Dashboard() {
   const [balance, setBalance] = useState<Balance | undefined>();
   const [recipient, setRecipient] = useState<string>('');
   const [amount, setAmount] = useState<number>(0);
-  const [sendCurrency, setSendCurrency] = useState<'BSV' | 'MNEE'>('MNEE');
 
   const connectWallet = async () => {
     if (!wallet.isReady) {
@@ -28,16 +30,17 @@ export default function Dashboard() {
       if (!addresses) {
         throw new Error("Failed to fetch addresses");
       }
-
-      // const userAddress = addresses?.bsvAddress ?? '';
-      // const ordAddress = addresses?.ordAddress ?? '';
       setAddresses(addresses ?? []);
       await fetchBalance(Object.values(addresses));
     }
   };
 
   const fetchMneeUtxos = async (addresses: string[]) => {
-    const response = await fetch(`http://localhost:8082/v1/utxo/`, {
+    if (!MNEE_API) {
+      throw new Error("MNEE_API not defined");
+    }
+    
+    const response = await fetch(MNEE_API, {
       method: 'POST',
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(addresses),
@@ -79,17 +82,13 @@ export default function Dashboard() {
       // Build the transaction using the UTXOs, recipient, and amount
       const tx = new Transaction();
 
-      const userPrivateKey = wallet.getPrivateKey();
-      if (!userPrivateKey) {
-        throw new Error("Failed to get user private key");
-      }
 
       // Add inputs from UTXOs
       for (const utxo of utxos) {
         tx.addInput({
           sourceTXID: utxo.txid,
           sourceOutputIndex: utxo.outputIndex,
-          unlockingScriptTemplate: new P2PKHApprovedTemplate().userUnlock(userPrivateKey),
+          // unlockingScriptTemplate: P2PKHApprovedTemplate,
           // satoshis: utxo.satoshis,
         });
       }
@@ -138,30 +137,33 @@ export default function Dashboard() {
       if (!response.ok) {
         throw new Error("Transaction submission failed");
       }
+      if (response) {
+        toast.success("Transaction submitted successfully");
+      }
       return response.json() as Promise<{ txid: string }>;
     }
   });
 
   const isLoading = mneeStatus === "pending" || status === "pending";
 
-  const handleTransfer = () => {
+  const handleTransfer = useCallback(async () => {
     if (amount <= 0) {
       alert("Please enter a valid amount.");
       return;
     }
+
     if (!recipient) {
       alert("Please enter a recipient address.");
       return;
     }
 
-    if (sendCurrency === 'MNEE')
-      if (amount > mneeBalance) {
-        alert("Insufficient MNEE balance.");
-        return;
-      }
+    if (amount > mneeBalance) {
+      alert("Insufficient MNEE balance.");
+      return;
+    }
 
     transferMNEE({ recipient, amount });
-  }
+  }, [amount, recipient]);
 
   return (
     <div className="min-w-screen min-h-screen px-2 flex flex-col py-12">
@@ -195,13 +197,13 @@ export default function Dashboard() {
             />
             {/* Amount */}
             <label htmlFor="amount" className="text-sm font-semibold mb-2">
-              Amount ({sendCurrency})
+              Amount (MNEE)
             </label>
             <input
               name="amount"
               type="number"
               className="text-sm p-2 mb-2 rounded"
-              placeholder={`Amount in ${sendCurrency === 'BSV' ? 'Satoshis' : 'Tokens'}`}
+              placeholder={`Amount in Tokens`}
               value={amount || ""}
               onChange={(e) => setAmount(Number(e.target.value))}
             />
@@ -211,7 +213,7 @@ export default function Dashboard() {
               onClick={handleTransfer}
               disabled={isLoading}
             >
-              Send {sendCurrency}
+              Send MNEE
             </button>
           </div>
         </>
