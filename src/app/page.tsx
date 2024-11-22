@@ -1,15 +1,15 @@
 // app/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Addresses, Balance, SendBsv, SendBsvResponse, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
+import { useState, useCallback } from "react";
+import { Addresses, Balance, Ordinal, useYoursWallet } from "yours-wallet-provider";
 import { useMutation } from "@tanstack/react-query";
 import { Transaction } from "@bsv/sdk";
 // import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
-import { toBitcoin, toSatoshi, toToken, toTokenSat } from "satoshi-token";
+import { toBitcoin, toToken } from "satoshi-token";
 import { toast } from "react-hot-toast";
 
-const MNEE_API = Bun.env.MNEE_API;
+const MNEE_API = process.env.REACT_APP_MNEE_API;
 
 export default function Dashboard() {
   const wallet = useYoursWallet();
@@ -32,6 +32,7 @@ export default function Dashboard() {
       }
       setAddresses(addresses ?? []);
       await fetchBalance(Object.values(addresses));
+      await fetchMneeBalance(Object.values(addresses));
     }
   };
 
@@ -56,12 +57,35 @@ export default function Dashboard() {
       // const utxos = await fetchUtxos(addresses);
       // const totalBalance = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
 
+      console.log({addresses});
       const balance = await wallet.getBalance();
       if (!balance) {
         throw new Error("Failed to fetch balance");
       }
 
       setBalance(balance);
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+    }
+  };
+
+
+  const fetchMneeBalance = async (addresses: string[]) => {
+    try {
+      // const utxos = await fetchUtxos(addresses);
+      // const totalBalance = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
+
+      console.log({addresses});
+      const ordinals = await wallet.getOrdinals();
+      if (!ordinals) {
+        throw new Error("Failed to fetch balance");
+      }
+
+      const balance = (ordinals as Ordinal[]).reduce((amt, o) => {
+        return amt +  toToken(o.data?.bsv20?.amt || 0, o.data?.bsv20?.dec || 0);
+      }, 0)
+      
+      setMneeBalance(balance);
     } catch (error) {
       console.error("Error fetching balance:", error);
     }
@@ -76,6 +100,8 @@ export default function Dashboard() {
       if (!addresses) {
         throw new Error("Wallet not connected");
       }
+
+      console.log({ recipient, amount });
 
       const utxos = await fetchMneeUtxos(Object.values(addresses));
 
@@ -100,7 +126,7 @@ export default function Dashboard() {
       // })
 
       // Add change output back to sender if necessary
-      const totalInput = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
+      //  const totalInput = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
       await tx.fee(); // You may need to define fee estimation
       // const change = totalInput - amount - fee;
       // if (change > 0) {
@@ -144,7 +170,7 @@ export default function Dashboard() {
     }
   });
 
-  const isLoading = mneeStatus === "pending" || status === "pending";
+  const isLoading = mneeStatus === "pending";
 
   const handleTransfer = useCallback(async () => {
     if (amount <= 0) {
