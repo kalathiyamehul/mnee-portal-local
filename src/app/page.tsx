@@ -1,39 +1,19 @@
 // app/page.tsx
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Addresses, Balance, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
 import { useMutation } from "@tanstack/react-query";
 import { PublicKey, Script, Transaction } from "@bsv/sdk";
-// import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { toBitcoin, toToken, toTokenSat } from "satoshi-token";
 import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { applyInscription, Inscription } from "js-1sat-ord";
 import { Utils } from "@bsv/sdk";
 import toast from "react-hot-toast";
+import { Config, MNEEUtxo } from "../types";
+import { fetchConfig, fetchMneeUtxos, fetchTransaction } from "@/utils/api";
 const { toArray, toBase64 } = Utils;
 
-type MNEEUtxo = {
-  height: number;
-  idx: number;
-  script: string;
-  outpoint: string;
-  txid: string;
-  vout: number;
-  satoshis: number;
-  data: {
-    bsv21: {
-      amt: string;
-      dec: number;
-      icon: string;
-      id: string;
-      op: string;
-      sym: string;
-    };
-  }
-};
-
-const MNEE_API = process.env.NEXT_PUBLIC_MNEE_API;
 
 export default function Dashboard() {
   const wallet = useYoursWallet();
@@ -42,7 +22,7 @@ export default function Dashboard() {
   const [balance, setBalance] = useState<Balance | undefined>();
   const [recipient, setRecipient] = useState<string>('');
   const [amount, setAmount] = useState<number>(0);
-  // const [mneeUtxos, setMneeUtxos] = useState<MNEEUtxo[]>([]);
+  const [config, setConfig] = useState<Config | null>(null);
 
   const connectWallet = async () => {
     if (!wallet.isReady) {
@@ -78,56 +58,6 @@ export default function Dashboard() {
   //   ]
   // }
 
-  type Config = {
-    tokenId: string;
-    decimals: number;
-    approver: string;
-    feeAddress: string;
-    fees: {
-      minAmt: number;
-      maxAmt: number;
-      fee: number;
-    }[];
-  };
-
-  const fetchTransaction = async (txid: string) => {
-    const response = await fetch(`${MNEE_API}/v1/tx/${txid}`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch transaction");
-    }
-
-    const { rawtx } = await response.json() as { rawtx: string };
-    if (!rawtx) {
-      throw new Error("Failed to fetch transaction");
-    }
-
-    return Transaction.fromHex(rawtx);
-  }
-
-  const fetchConfig = async () => {
-    const response = await fetch(`${MNEE_API}/v1/config`);
-    if (!response.ok) {
-      throw new Error("Failed to fetch config");
-    }
-    return await response.json() as Config;
-  }
-
-  const fetchMneeUtxos = async (addresses: string[]) => {
-    if (!MNEE_API) {
-      throw new Error("MNEE_API not defined");
-    }
-
-    const response = await fetch(`${MNEE_API}/v1/utxos/`, {
-      method: 'POST',
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(addresses),
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch UTXOs");
-    }
-    return await response.json() as MNEEUtxo[];
-  };
-
   const fetchBalance = async (addresses: string[]) => {
     try {
       // const utxos = await fetchUtxos(addresses);
@@ -145,19 +75,30 @@ export default function Dashboard() {
     }
   };
 
-  const fetchMneeBalance = async (addresses: string[]) => {
+  const fetchMneeBalance = useCallback(async (addresses: string[]) => {
     try {
       console.log({ addresses });
       const utxos = await fetchMneeUtxos(addresses);
       const balance = (utxos).reduce((amt, o) => {
-        return amt + Number.parseInt(o.data.bsv21.amt) || 0;
+        return amt + o.data.bsv21.amt || 0;
       }, 0)
 
       setMneeBalance(balance);
     } catch (error) {
       console.error("Error fetching balance:", error);
     }
-  };
+  }, [setMneeBalance]);
+
+  useEffect(() => {
+    const init = async () => {
+      const config = await fetchConfig()
+      setConfig(config);
+    }
+    if (wallet.isReady) {
+      init();
+    }
+  }, [wallet, setConfig]);
+
 
   const { mutate: transferMNEE, status: mneeStatus, error: mneeError } = useMutation<
     { txid: string },
@@ -169,8 +110,6 @@ export default function Dashboard() {
         throw new Error("Wallet not connected");
       }
       // Determine MNEE fee
-      const config = await fetchConfig()
-
       if (!config) {
         throw new Error("Config not fetched");
       }
@@ -202,7 +141,7 @@ export default function Dashboard() {
           sourceTransaction,
         });
 
-        tokensIn += Number.parseInt(utxo.data.bsv21.amt);
+        tokensIn += utxo.data.bsv21.amt;
       }
 
       // Add output to the recipient
@@ -280,7 +219,7 @@ export default function Dashboard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rawtx: toBase64(tx.toBinary()) }),
-        
+
       });
       if (!response.ok) {
         throw new Error("Transaction submission failed");
@@ -324,12 +263,12 @@ export default function Dashboard() {
             <p>BSV Address: {addresses.bsvAddress}</p>
             <p>ORD Address: {addresses.ordAddress}</p>
           </div>
-          <div className="mx-auto mb-4 flex flex-col items-center justify-center py-12">
+          {config && <div className="mx-auto mb-4 flex flex-col items-center justify-center py-12">
             <>
-              <h2 className="text-4xl"><span className="font-mono">{toToken(mneeBalance, 5)}</span> MNEE</h2>
+              <h2 className="text-4xl"><span className="font-mono">{toToken(mneeBalance, config.decimals)}</span> MNEE</h2>
               <p className="text-neutral"><span className="font-mono">{balance ? toBitcoin(balance.satoshis) : '0'}</span> BSV</p>
             </>
-          </div>
+          </div>}
 
           <div className="flex flex-col w-full max-w-md mx-auto p-4 bg-neutral rounded-lg">
             {/* Recipient Address */}
