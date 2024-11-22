@@ -1,101 +1,222 @@
-import Image from "next/image";
+// app/page.tsx
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { Addresses, Balance, SendBsv, SendBsvResponse, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
+import { useMutation } from "@tanstack/react-query";
+import { Transaction } from "@bsv/sdk";
+import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
+import { toBitcoin, toSatoshi, toToken, toTokenSat } from "satoshi-token";
+
+export default function Dashboard() {
+  const wallet = useYoursWallet();
+  const [addresses, setAddresses] = useState<Addresses | null>(null);
+  const [mneeBalance, setMneeBalance] = useState<number>(0);
+  const [balance, setBalance] = useState<Balance | undefined>();
+  const [recipient, setRecipient] = useState<string>('');
+  const [amount, setAmount] = useState<number>(0);
+  const [sendCurrency, setSendCurrency] = useState<'BSV' | 'MNEE'>('MNEE');
+
+  const connectWallet = async () => {
+    if (!wallet.isReady) {
+      window.open("https://yours.org", "_blank");
+      return;
+    }
+    const pubKey = await wallet.connect();
+    if (pubKey) {
+      const addresses = await wallet.getAddresses();
+      if (!addresses) {
+        throw new Error("Failed to fetch addresses");
+      }
+
+      // const userAddress = addresses?.bsvAddress ?? '';
+      // const ordAddress = addresses?.ordAddress ?? '';
+      setAddresses(addresses ?? []);
+      await fetchBalance(Object.values(addresses));
+    }
+  };
+
+  const fetchMneeUtxos = async (addresses: string[]) => {
+    const response = await fetch(`http://localhost:8082/v1/utxo/`, {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(addresses),
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch UTXOs");
+    }
+    return response.json();
+  };
+
+  const fetchBalance = async (addresses: string[]) => {
+    try {
+      // const utxos = await fetchUtxos(addresses);
+      // const totalBalance = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
+
+      const balance = await wallet.getBalance();
+      if (!balance) {
+        throw new Error("Failed to fetch balance");
+      }
+
+      setBalance(balance);
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+    }
+  };
+
+  const { mutate: transferMNEE, status: mneeStatus, error: mneeError } = useMutation<
+    { txid: string },
+    Error,
+    { recipient: string; amount: number }
+  >({
+    mutationFn: async ({ recipient, amount }): Promise<{ txid: string }> => {
+      if (!addresses) {
+        throw new Error("Wallet not connected");
+      }
+
+      const utxos = await fetchMneeUtxos(Object.values(addresses));
+
+      // Build the transaction using the UTXOs, recipient, and amount
+      const tx = new Transaction();
+
+      const userPrivateKey = wallet.getPrivateKey();
+      if (!userPrivateKey) {
+        throw new Error("Failed to get user private key");
+      }
+
+      // Add inputs from UTXOs
+      for (const utxo of utxos) {
+        tx.addInput({
+          sourceTXID: utxo.txid,
+          sourceOutputIndex: utxo.outputIndex,
+          unlockingScriptTemplate: new P2PKHApprovedTemplate().userUnlock(userPrivateKey),
+          // satoshis: utxo.satoshis,
+        });
+      }
+
+      // Add output to the recipient
+      // tx.addOutput({
+      //   lockingScript: P2PKHApprovedTemplate.lockingScript(recipient),
+      //   satoshis: amount,
+      // })
+
+      // Add change output back to sender if necessary
+      const totalInput = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
+      await tx.fee(); // You may need to define fee estimation
+      // const change = totalInput - amount - fee;
+      // if (change > 0) {
+      //   tx.change(address);
+      // }
+
+      // Sign the transaction
+      // const sigRequests: SignatureRequest[] = tx.inputs.map((input, index) => ({
+      //   prevTxid: input.sourceTXID,
+      //   outputIndex: input.sourceOutputIndex,
+      //   inputIndex: index,
+      //   satoshis: input.output.satoshis,
+      //   address: address!,
+      //   script: input.output.script.toHex(),
+      // }));
+
+      // const sigResponses: SignatureResponse[] = await wallet.getSignatures({
+      //   rawtx: tx.toHex(),
+      //   format: 'tx',
+      //   sigRequests,
+      // });
+
+      // Apply signatures to the transaction
+      // sigResponses.forEach((sigResponse, index) => {
+      //   tx.inputs[index].unlockingScript = sigResponse.script;
+      // });
+
+      // Submit the transaction
+      const response = await fetch("/v1/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rawTx: tx.toHex() }),
+      });
+      if (!response.ok) {
+        throw new Error("Transaction submission failed");
+      }
+      return response.json() as Promise<{ txid: string }>;
+    }
+  });
+
+  const isLoading = mneeStatus === "pending" || status === "pending";
+
+  const handleTransfer = () => {
+    if (amount <= 0) {
+      alert("Please enter a valid amount.");
+      return;
+    }
+    if (!recipient) {
+      alert("Please enter a recipient address.");
+      return;
+    }
+
+    if (sendCurrency === 'MNEE')
+      if (amount > mneeBalance) {
+        alert("Insufficient MNEE balance.");
+        return;
+      }
+
+    transferMNEE({ recipient, amount });
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-w-screen min-h-screen px-2 flex flex-col py-12">
+      {!addresses && <div className="mx-auto">
+        <button onClick={connectWallet} className="btn btn-primary">Connect Wallet</button>
+      </div>}
+      {addresses && (
+        <>
+          <div className="mx-auto mb-4 text-xs text-neutral">
+            <p>BSV Address: {addresses.bsvAddress}</p>
+            <p>ORD Address: {addresses.ordAddress}</p>
+          </div>
+          <div className="mx-auto mb-4 flex flex-col items-center justify-center py-12">
+            <>
+              <h2 className="text-4xl"><span className="font-mono">{toToken(mneeBalance, 5)}</span> MNEE</h2>
+              <p className="text-neutral"><span className="font-mono">{balance ? toBitcoin(balance.satoshis) : '0'}</span> BSV</p>
+            </>
+          </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+          <div className="flex flex-col w-full max-w-md mx-auto p-4 bg-neutral rounded-lg">
+            {/* Recipient Address */}
+            <label htmlFor="recipient" className="text-sm font-semibold mb-2">
+              Recipient Address
+            </label>
+            <input
+              type="text"
+              className="text-sm p-2 mb-2 rounded"
+              placeholder="Recipient Address"
+              value={recipient}
+              onChange={(e) => setRecipient(e.target.value)}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            {/* Amount */}
+            <label htmlFor="amount" className="text-sm font-semibold mb-2">
+              Amount ({sendCurrency})
+            </label>
+            <input
+              name="amount"
+              type="number"
+              className="text-sm p-2 mb-2 rounded"
+              placeholder={`Amount in ${sendCurrency === 'BSV' ? 'Satoshis' : 'Tokens'}`}
+              value={amount || ""}
+              onChange={(e) => setAmount(Number(e.target.value))}
+            />
+            {/* Send Button */}
+            <button
+              className="btn btn-primary"
+              onClick={handleTransfer}
+              disabled={isLoading}
+            >
+              Send {sendCurrency}
+            </button>
+          </div>
+        </>
+      )}
+      {mneeError && <p>Error: {mneeError.message}</p>}
     </div>
   );
 }
