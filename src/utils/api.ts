@@ -2,7 +2,7 @@ import { Config, MNEEUtxo } from "@/types";
 import { Transaction, Utils } from "@bsv/sdk";
 const { toArray } = Utils;
 
-const MNEE_API = process.env.NEXT_PUBLIC_MNEE_API;
+export const MNEE_API = process.env.NEXT_PUBLIC_MNEE_API;
 
 export const fetchConfig = async () => {
     const response = await fetch(`${MNEE_API}/v1/config`);

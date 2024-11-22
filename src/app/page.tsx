@@ -11,7 +11,7 @@ import { applyInscription, Inscription } from "js-1sat-ord";
 import { Utils } from "@bsv/sdk";
 import toast from "react-hot-toast";
 import { Config } from "../types";
-import { fetchConfig, fetchMneeUtxos, fetchTransaction } from "@/utils/api";
+import { fetchConfig, fetchMneeUtxos, fetchTransaction, MNEE_API } from "@/utils/api";
 const { toArray, toBase64 } = Utils;
 
 export default function Dashboard() {
@@ -231,7 +231,7 @@ export default function Dashboard() {
         console.log({ tx: tx.toHex() });
         // Submit the transaction
         debugger
-        const response = await fetch("/v1/transfer", {
+        const response = await fetch(`${MNEE_API}/v1/transfer`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ rawtx: toBase64(tx.toBinary()) }),
