@@ -152,13 +152,16 @@ export default function Dashboard() {
       // const totalBalance = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
 
       console.log({ addresses });
-      const ordinals = await wallet.getOrdinals();
-      if (!ordinals) {
-        throw new Error("Failed to fetch balance");
-      }
+      // const ordinals = await wallet.getOrdinals();
+      // if (!ordinals) {
+      //   throw new Error("Failed to fetch balance");
+      // }
 
-      const balance = (ordinals as Ordinal[]).reduce((amt, o) => {
-        return amt + toToken(o.data?.bsv20?.amt || 0, o.data?.bsv20?.dec || 0);
+
+
+      const utxos = await fetchMneeUtxos(addresses);
+      const balance = (utxos).reduce((amt, o) => {
+        return amt + toToken(o.data.bsv21.amt || 0, o.data?.bsv21?.dec || 0);
       }, 0)
 
       setMneeBalance(balance);
