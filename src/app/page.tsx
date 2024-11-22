@@ -33,7 +33,7 @@ type MNEEUtxo = {
   }
 };
 
-const MNEE_API = process.env.REACT_APP_MNEE_API;
+const MNEE_API = process.env.NEXT_PUBLIC_MNEE_API;
 
 export default function Dashboard() {
   const wallet = useYoursWallet();
