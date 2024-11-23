@@ -11,11 +11,12 @@ import Link from "next/link";
 //   variable: "--font-geist-sans",
 //   weight: "100 900",
 // });
-// const geistMono = localFont({
-//   src: "./fonts/GeistMonoVF.woff",
-//   variable: "--font-geist-mono",
-//   weight: "100 900",
-// });
+
+const geistMono = localFont({
+  src: "./fonts/GeistMonoVF.woff",
+  variable: "--font-geist-mono",
+  weight: "100 900",
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body>
         <Providers>
-        <div className="drawer drawer-mobile lg:drawer-open min-h-screen h-full">
+        <div className={`drawer drawer-mobile lg:drawer-open min-h-screen h-full ${geistMono.className}`}>
           <input id="sidebar-toggle" type="checkbox" className="drawer-toggle" />
           <div className="drawer-content flex flex-col">
             {/* Navbar */}
