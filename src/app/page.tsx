@@ -155,7 +155,7 @@ export default function Dashboard() {
         // lockingScript: applyInscription(new P2PKH().lock(recipient), {
           dataB64,
           contentType: "application/bsv-20"
-        } as Inscription),
+        } as Inscription, undefined, true),
         satoshis: 1,
       })
 
@@ -167,7 +167,7 @@ export default function Dashboard() {
         // lockingScript: applyInscription(new P2PKH().lock(config.feeAddress), {
           dataB64: feeDataB64,
           contentType: "application/bsv-20"
-        } as Inscription),
+        } as Inscription, undefined, true),
         satoshis: 1,
       })
 
@@ -180,7 +180,7 @@ export default function Dashboard() {
         // lockingScript: applyInscription(new P2PKH().lock(addresses.ordAddress), {
           dataB64: changeDataB64,
           contentType: "application/bsv-20"
-        } as Inscription),
+        } as Inscription, undefined, true),
         satoshis: 1,
       })
 
