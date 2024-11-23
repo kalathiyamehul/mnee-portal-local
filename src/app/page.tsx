@@ -4,7 +4,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Addresses, Balance, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
 import { useMutation } from "@tanstack/react-query";
-import { P2PKH, Script, Transaction, UnlockingScript } from "@bsv/sdk";
+import { P2PKH, Script, Transaction, TransactionSignature, UnlockingScript } from "@bsv/sdk";
 import { toBitcoin, toToken, toTokenSat } from "satoshi-token";
 // import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { applyInscription, Inscription } from "js-1sat-ord";
@@ -118,7 +118,7 @@ export default function Dashboard() {
 
       const utxos = await fetchMneeUtxos(Object.values(addresses));
 
-      const fee = config.fees.find(fee => amount >= fee.minAmt && amount <= fee.maxAmt)?.fee;
+      const fee = config.fees.find(fee => tokenSatAmt >= fee.minAmt && tokenSatAmt <= fee.maxAmt)?.fee;
       if (fee === undefined) {
         throw new Error("Fee ranges inadequate");
       }
@@ -205,6 +205,9 @@ export default function Dashboard() {
           address: addresses.ordAddress,
           script: input.sourceTransaction.outputs[input.sourceOutputIndex].lockingScript.toHex(),
           satoshis: input.sourceTransaction.outputs[input.sourceOutputIndex].satoshis || 1,
+          sigHashType: TransactionSignature.SIGHASH_ALL | 
+            TransactionSignature.SIGHASH_ANYONECANPAY |
+            TransactionSignature.SIGHASH_FORKID
         });
       }
 
