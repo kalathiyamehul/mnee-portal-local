@@ -4,7 +4,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Addresses, Balance, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
 import { useMutation } from "@tanstack/react-query";
-import { P2PKH, PublicKey, Script, Transaction, TransactionSignature, UnlockingScript } from "@bsv/sdk";
+import { PublicKey, Script, Transaction, TransactionSignature, UnlockingScript } from "@bsv/sdk";
 import { toBitcoin, toToken, toTokenSat } from "satoshi-token";
 // import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { applyInscription, Inscription } from "js-1sat-ord";
@@ -12,7 +12,6 @@ import { Utils } from "@bsv/sdk";
 import toast from "react-hot-toast";
 import { Config } from "../types";
 import { fetchConfig, fetchMneeUtxos, fetchTransaction, MNEE_API } from "@/utils/api";
-import { raw } from "@prisma/client/runtime/library";
 import CosignTemplate from "@/templates/cosign";
 const { toArray, toBase64 } = Utils;
 
@@ -257,6 +256,7 @@ export default function Dashboard() {
     },
     onError: (error) => {
       // Actions to perform on mutation error
+      console.log({error})
     },
   });
 
