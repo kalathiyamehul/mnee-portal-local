@@ -235,7 +235,6 @@ export default function Dashboard() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ rawtx: toBase64(tx.toBinary()) }),
-
         });
         if (!response.ok) {
           throw new Error("Transaction submission failed");
@@ -275,7 +274,7 @@ export default function Dashboard() {
   }, [mneeBalance, transferMNEE, amount, recipient]);
 
   return (
-    <div className="min-w-screen min-h-screen px-2 flex flex-col py-12">
+    <div className="min-w-screen min-h-screen px-2 flex flex-col py-12 mb-4">
       {!addresses && <div className="mx-auto">
         <button onClick={connectWallet} className="btn btn-primary">Connect Wallet</button>
       </div>}
