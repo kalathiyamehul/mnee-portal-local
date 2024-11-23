@@ -17,7 +17,7 @@ import {
  *
  * This class provides methods to create Pay To Public Key Hash locking and unlocking scripts, including the unlocking of P2PKH UTXOs with the private key.
  */
-export default class P2PKHApprovedTemplate implements ScriptTemplate {
+export default class CosignTemplate implements ScriptTemplate {
     /**
      * Creates a P2PKH locking script for a given public key hash or address string
      *

@@ -4,7 +4,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Addresses, Balance, SignatureRequest, SignatureResponse, useYoursWallet } from "yours-wallet-provider";
 import { useMutation } from "@tanstack/react-query";
-import { P2PKH, Script, Transaction, UnlockingScript } from "@bsv/sdk";
+import { P2PKH, PublicKey, Script, Transaction, TransactionSignature, UnlockingScript } from "@bsv/sdk";
 import { toBitcoin, toToken, toTokenSat } from "satoshi-token";
 // import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { applyInscription, Inscription } from "js-1sat-ord";
@@ -12,6 +12,8 @@ import { Utils } from "@bsv/sdk";
 import toast from "react-hot-toast";
 import { Config } from "../types";
 import { fetchConfig, fetchMneeUtxos, fetchTransaction, MNEE_API } from "@/utils/api";
+import { raw } from "@prisma/client/runtime/library";
+import CosignTemplate from "@/templates/cosign";
 const { toArray, toBase64 } = Utils;
 
 export default function Dashboard() {
@@ -100,11 +102,11 @@ export default function Dashboard() {
 
 
   const { mutate: transferMNEE, status: mneeStatus, error: mneeError } = useMutation<
-    { txid: string },
+    { rawtx: string },
     Error,
     { recipient: string; amount: number; }
   >({
-    mutationFn: async ({ recipient, amount }): Promise<{ txid: string }> => {
+    mutationFn: async ({ recipient, amount }): Promise<{ rawtx: string }> => {
       if (!addresses) {
         throw new Error("Wallet not connected");
       }
@@ -118,7 +120,7 @@ export default function Dashboard() {
 
       const utxos = await fetchMneeUtxos(Object.values(addresses));
 
-      const fee = config.fees.find(fee => amount >= fee.minAmt && amount <= fee.maxAmt)?.fee;
+      const fee = config.fees.find(fee => tokenSatAmt >= fee.minAmt && tokenSatAmt <= fee.maxAmt)?.fee;
       if (fee === undefined) {
         throw new Error("Fee ranges inadequate");
       }
@@ -141,14 +143,6 @@ export default function Dashboard() {
           sourceOutputIndex: utxo.vout,
           sourceTransaction,
           unlockingScript: new UnlockingScript(),
-          // unlockingScriptTemplate: {
-          //   sign: async () => {
-          //     return new UnlockingScript();
-          //   },
-          //   estimateLength: async () => {
-          //     return 0;
-          //   },
-          // },
         });
 
         tokensIn += utxo.data.bsv21.amt;
@@ -158,8 +152,8 @@ export default function Dashboard() {
       const inscriptionData = { p: 'bsv-20', op: 'transfer', id: config.tokenId, amt: tokenSatAmt.toString() };
       const dataB64 = Buffer.from(JSON.stringify(inscriptionData)).toString("base64");
       tx.addOutput({
-        // lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(recipient, PublicKey.fromString(config.approver)), {
-        lockingScript: applyInscription(new P2PKH().lock(recipient), {
+        lockingScript: applyInscription(new CosignTemplate().lock(recipient, PublicKey.fromString(config.approver)), {
+        // lockingScript: applyInscription(new P2PKH().lock(recipient), {
           dataB64,
           contentType: "application/bsv-20"
         } as Inscription),
@@ -170,8 +164,8 @@ export default function Dashboard() {
       const feeInscriptionData = { p: 'bsv-20', op: 'transfer', id: config.tokenId, amt: fee.toString() };
       const feeDataB64 = Buffer.from(JSON.stringify(feeInscriptionData)).toString("base64");
       tx.addOutput({
-        // lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(config.feeAddress, PublicKey.fromString(config.approver)), {
-        lockingScript: applyInscription(new P2PKH().lock(config.feeAddress), {
+        lockingScript: applyInscription(new CosignTemplate().lock(config.feeAddress, PublicKey.fromString(config.approver)), {
+        // lockingScript: applyInscription(new P2PKH().lock(config.feeAddress), {
           dataB64: feeDataB64,
           contentType: "application/bsv-20"
         } as Inscription),
@@ -183,8 +177,8 @@ export default function Dashboard() {
       const changeInscriptionData = { p: 'bsv-20', op: 'transfer', id: config.tokenId, amt: changeTokenSatAmt.toString() };
       const changeDataB64 = Buffer.from(JSON.stringify(changeInscriptionData)).toString("base64");
       tx.addOutput({
-        // lockingScript: applyInscription(new P2PKHApprovedTemplate().lock(addresses.ordAddress, PublicKey.fromString(config.approver)), {
-        lockingScript: applyInscription(new P2PKH().lock(addresses.ordAddress), {
+        lockingScript: applyInscription(new CosignTemplate().lock(addresses.ordAddress, PublicKey.fromString(config.approver)), {
+        // lockingScript: applyInscription(new P2PKH().lock(addresses.ordAddress), {
           dataB64: changeDataB64,
           contentType: "application/bsv-20"
         } as Inscription),
@@ -205,6 +199,9 @@ export default function Dashboard() {
           address: addresses.ordAddress,
           script: input.sourceTransaction.outputs[input.sourceOutputIndex].lockingScript.toHex(),
           satoshis: input.sourceTransaction.outputs[input.sourceOutputIndex].satoshis || 1,
+          sigHashType: TransactionSignature.SIGHASH_ALL | 
+            TransactionSignature.SIGHASH_ANYONECANPAY |
+            TransactionSignature.SIGHASH_FORKID
         });
       }
 
@@ -239,17 +236,28 @@ export default function Dashboard() {
         if (!response.ok) {
           throw new Error("Transaction submission failed");
         }
-        if (response) {
-          toast.success("Transaction submitted successfully");
-        }
-        return response.json() as Promise<{ txid: string }>;
+
+        // rawtx is base64 encoded
+        return response.json() as Promise<{ rawtx: string }>;
 
       } catch (error) {
         console.error("Error signing transaction:", error);
         throw error;
       }
 
-    }
+    },
+    onSuccess: (data) => {
+      // Actions to perform on successful mutation
+      const { rawtx } = data;
+
+      setRecipient("");
+      setAmount(0);
+      toast.success("Transaction submitted successfully");
+      console.log({rawtx});
+    },
+    onError: (error) => {
+      // Actions to perform on mutation error
+    },
   });
 
   const isLoading = mneeStatus === "pending";
@@ -270,7 +278,9 @@ export default function Dashboard() {
       return;
     }
 
-    transferMNEE({ recipient, amount });
+    transferMNEE({ recipient, amount })
+
+    
   }, [mneeBalance, transferMNEE, amount, recipient]);
 
   return (
