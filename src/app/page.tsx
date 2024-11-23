@@ -183,7 +183,7 @@ export default function Dashboard() {
         satoshis: 1,
       })
 
-      debugger
+      // debugger
       // Sign the transaction
       const sigRequests: SignatureRequest[] = [];
       for (const [index, input] of tx.inputs.entries()) {
@@ -225,7 +225,7 @@ export default function Dashboard() {
 
         console.log({ tx: tx.toHex() });
         // Submit the transaction
-        debugger
+        // debugger
         const response = await fetch(`${MNEE_API}/v1/transfer`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
