@@ -6,7 +6,6 @@ import { Addresses, Balance, SignatureRequest, SignatureResponse, useYoursWallet
 import { useMutation } from "@tanstack/react-query";
 import { PublicKey, Script, Transaction, TransactionSignature, UnlockingScript } from "@bsv/sdk";
 import { toBitcoin, toToken, toTokenSat } from "satoshi-token";
-// import P2PKHApprovedTemplate from "@/templates/p2pkhApproved";
 import { applyInscription, Inscription } from "js-1sat-ord";
 import { Utils } from "@bsv/sdk";
 import toast from "react-hot-toast";
