@@ -2,13 +2,11 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "../globals.css";
 
-import React from "react";
+import type React from "react";
 import Sidebar from '@/components/pages/dash/Sidebar';
-import Navbar from "@/components/pages/dash/navbar";
 import { authOptions } from "@/lib/authOptions";
 import { getServerSession } from "next-auth";
 import { redirect } from 'next/navigation';
-import { DashPage } from '@/components/pages/dash';
 
 // const geistSans = localFont({
 //   src: "./fonts/GeistVF.woff",
@@ -29,9 +27,9 @@ export const metadata: Metadata = {
 
 export default async function AuthenticatedLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   // Fetch the session on the server side
   const session = await getServerSession(authOptions);
 

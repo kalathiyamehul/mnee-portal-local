@@ -5,10 +5,8 @@ import type React from 'react';
 import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { MdOutlineOpenInNew } from 'react-icons/md';
-import { DashPage } from '@/components/pages/dash';
 import { usePathname } from "next/navigation";
-import { FaGear } from "react-icons/fa6";
-import { FaWallet } from "react-icons/fa6";
+import { FaGear, FaWallet } from "react-icons/fa6";
 import { RiDashboardFill } from "react-icons/ri";
 import { FaSignOutAlt } from "react-icons/fa";
 
@@ -21,6 +19,7 @@ const Sidebar: React.FC = () => {
   const getActivePage = () => {
     if (pathname.endsWith('/dash')) return 'dash';
     if (pathname.startsWith('/dash/wallet')) return 'wallet';
+    if (pathname.startsWith('/dash/admin')) return 'admin';
     return '';
   };
 
