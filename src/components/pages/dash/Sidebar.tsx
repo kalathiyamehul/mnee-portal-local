@@ -1,16 +1,15 @@
 // src/components/pages/dash/sidebar.tsx
 'use client';
 
-import React from 'react';
+import type React from 'react';
 import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { MdOutlineOpenInNew } from 'react-icons/md';
 import { DashPage } from '@/components/pages/dash';
 import { usePathname } from "next/navigation";
+import { FaGear } from "react-icons/fa6";
 
-type SidebarProps = {};
-
-const Sidebar: React.FC<SidebarProps> = () => {
+const Sidebar: React.FC = () => {
   const { data: session } = useSession();
   const pathname = usePathname();
 
@@ -68,6 +67,16 @@ const Sidebar: React.FC<SidebarProps> = () => {
             Wallet
           </Link>
           <Link
+            href="/dash/admin"
+            className={`flex items-center px-6 py-2 mt-2 text-sm font-medium rounded-lg ${
+              activePage === 'admin'
+                ? 'bg-secondary text-secondary-content'
+                : 'hover:bg-secondary hover:text-secondary-content'
+            }`}
+          >
+            <FaGear className="mr-2" /> Admin
+          </Link>
+          <Link
             className="flex items-center px-6 py-2 mt-2 text-sm font-medium hover:bg-secondary hover:text-secondary-content rounded-lg"
             href={`${process.env.NEXT_PUBLIC_MNEE_API}/v1/docs`}
             target="_blank"
@@ -78,6 +87,7 @@ const Sidebar: React.FC<SidebarProps> = () => {
           {/* Sign Out */}
           {session && (
             <button
+              type="button"
               onClick={() => signOut({ callbackUrl: '/login' })}
               className="w-full flex items-center px-6 py-2 mt-2 text-sm font-medium hover:bg-secondary hover:text-secondary-content rounded-lg"
             >

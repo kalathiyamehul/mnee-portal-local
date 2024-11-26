@@ -1,8 +1,10 @@
 import { useMemo } from "react"
 import DashboardHomeContent from "./content/home"
 import DashboardWalletContent from "./content/wallet"
+import DashboardAdminContent from "./content/admin"
 
-export const enum DashPage {
+export enum DashPage {
+    ADMIN = "admin",
     HOME = "home",
     WALLET = "wallet",
 }
@@ -16,6 +18,8 @@ const Dashboard: React.FC<DashbpardProps> = ({ page }) => {
         switch (page) {
             case DashPage.HOME:
                 return <DashboardHomeContent />
+            case DashPage.ADMIN:
+                return <DashboardAdminContent />
             case DashPage.WALLET:
                 return <DashboardWalletContent />
             default:
