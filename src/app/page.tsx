@@ -154,7 +154,7 @@ export default function Dashboard() {
         // lockingScript: applyInscription(new P2PKH().lock(recipient), {
           dataB64,
           contentType: "application/bsv-20"
-        } as Inscription, undefined, true),
+        } as Inscription),
         satoshis: 1,
       })
 
@@ -166,7 +166,7 @@ export default function Dashboard() {
         // lockingScript: applyInscription(new P2PKH().lock(config.feeAddress), {
           dataB64: feeDataB64,
           contentType: "application/bsv-20"
-        } as Inscription, undefined, true),
+        } as Inscription),
         satoshis: 1,
       })
 
@@ -179,7 +179,7 @@ export default function Dashboard() {
         // lockingScript: applyInscription(new P2PKH().lock(addresses.ordAddress), {
           dataB64: changeDataB64,
           contentType: "application/bsv-20"
-        } as Inscription, undefined, true),
+        } as Inscription),
         satoshis: 1,
       })
 
@@ -199,7 +199,7 @@ export default function Dashboard() {
           satoshis: input.sourceTransaction.outputs[input.sourceOutputIndex].satoshis || 1,
           sigHashType: TransactionSignature.SIGHASH_ALL | 
             TransactionSignature.SIGHASH_ANYONECANPAY |
-            TransactionSignature.SIGHASH_FORKID
+            TransactionSignature.SIGHASH_FORKID,
         });
       }
 
