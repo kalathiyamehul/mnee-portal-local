@@ -20,11 +20,8 @@ type HistoryRecord = {
 	createdAt: string;
 };
 
-type Freeze = {
-	id: string;
+interface Freeze extends HistoryRecord {
 	address: string;
-	requester: { name: string; email: string };
-	createdAt: string;
 };
 
 const DashboardAdminContent: React.FC = () => {
@@ -232,7 +229,7 @@ const DashboardAdminContent: React.FC = () => {
 			</div>
 
 			{/* Pending Freeze Requests */}
-			{pendingFreezeRequests.length > 0 && (
+			{pendingFreezeRequests?.length > 0 && (
 				<div className="my-8">
 					<h2 className="text-2xl mb-4">Pending Freeze/Unfreeze Requests</h2>
 					{pendingFreezeRequests.map((request) => (
@@ -278,7 +275,7 @@ const DashboardAdminContent: React.FC = () => {
 					<tbody>
 						{history.map((record) => (
 							<tr key={record.id}>
-								<td>{record.action || record.actionType}</td>
+								<td>{record.action}</td>
 								<td>{record.requester.name || record.requester.email}</td>
 								<td>{record.status}</td>
 								<td>{new Date(record.createdAt).toLocaleString()}</td>
