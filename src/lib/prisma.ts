@@ -1,7 +1,7 @@
 // lib/prisma.ts
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+export const prisma = new PrismaClient();
 
 // model User {
 //     id             String   @id @default(cuid())
@@ -21,7 +21,7 @@ type User = {
     email: string;
     image: string | null;
     emailVerified: Date | null;
-    idAddress: string;
+    idAddress: string | null;
     password: string;
     createdAt: Date;
     updatedAt: Date;
