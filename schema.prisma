@@ -8,13 +8,70 @@ generator client {
 }
 
 model User {
-  id             String   @id @default(cuid())
+  id             String          @id @default(cuid())
   name           String?
-  email          String   @unique
+  email          String          @unique
   image          String?
   emailVerified  DateTime?
   idAddress      String?
   password       String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  // Relations
+  actionRequests  ActionRequest[]    @relation("UserActionRequests")
+  actionApprovals ActionApproval[]   @relation("UserActionApprovals")
+  freezeRequests  FreezeRequest[]    @relation("UserFreezeRequests")
+}
+
+model ActionRequest {
+  id          String         @id @default(cuid())
+  action      String
+  status      ActionStatus   @default(PENDING)
+  requestedBy String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  requester   User           @relation("UserActionRequests", fields: [requestedBy], references: [id])
+  approvals   ActionApproval[]
+}
+
+model FreezeRequest {
+  id        String           @id @default(uuid())
+  address     String
+  status      ActionStatus   @default(PENDING)
+  action      FreezeAction
+  requestedBy String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  requester   User           @relation("UserFreezeRequests", fields: [requestedBy], references: [id])
+  approvals   ActionApproval[] @relation("FreezeRequestApprovals")
+}
+
+enum FreezeAction {
+  FREEZE
+  UNFREEZE
+}
+
+model ActionApproval {
+  id             String         @id @default(uuid())
+  actionRequestId String?
+  freezeRequestId String?
+  approvedBy     String
+  createdAt      DateTime        @default(now())
+
+  // Relations
+  actionRequest  ActionRequest?  @relation(fields: [actionRequestId], references: [id])
+  freezeRequest  FreezeRequest?  @relation("FreezeRequestApprovals", fields: [freezeRequestId], references: [id])
+  approver       User            @relation("UserActionApprovals", fields: [approvedBy], references: [id])
+}
+
+enum ActionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }

@@ -1,5 +1,5 @@
 // src/app/layout.tsx
-import React from 'react';
+import type React from 'react';
 import { Providers } from './providers';
 import './globals.css';
 

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     }
 
     // Hash the password
-    let hashedPassword;
+    let hashedPassword: string;
     try {
       hashedPassword = await bcrypt.hash(password, 10);
     } catch (error) {

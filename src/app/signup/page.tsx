@@ -1,8 +1,10 @@
 // src/app/signup/page.tsx
 'use client';
-import React, { useEffect, useState } from 'react';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Addresses, useYoursWallet } from 'yours-wallet-provider';
+import { type Addresses, useYoursWallet } from 'yours-wallet-provider';
+
 export default function SignUpPage() {
     const { connect, isReady, isConnected, getAddresses } = useYoursWallet();
     const [email, setEmail] = useState('');
