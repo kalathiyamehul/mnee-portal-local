@@ -79,7 +79,7 @@ enum ActionStatus {
 model config {
   id          Int    @id @default(1)
   fees        Json
-  fee_address String
-  token_id    String
+  feeAddress  String @map("fee_address")
+  tokenId     String @map("token_id")
   decimals    Int
 }

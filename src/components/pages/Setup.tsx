@@ -25,24 +25,26 @@ const Setup = () => {
 	// Fetch existing configuration on component mount
 	useEffect(() => {
 		const fetchConfig = async () => {
-			const res = await fetch("/api/config");
-			if (res.ok) {
-				const config = await res.json();
-				setTokenId(config.tokenId || "");
-				setFeeAddress(config.feeAddress || "");
-				setFees(
-					config.fees || [
-						{ min: 0, max: 10000, fee: 50 },
-						{ min: 10001, max: Number.MAX_SAFE_INTEGER, fee: 1000 },
-					],
-				);
-				setDecimals(config.decimals || null);
-			} else {
-				// Set default fees if no config exists
-				setFees([
-					{ min: 0, max: 10000, fee: 50 },
-					{ min: 10001, max: Number.MAX_SAFE_INTEGER, fee: 1000 },
-				]);
+			try {
+				const res = await fetch("/api/config");
+
+				if (res.ok) {
+					const config = await res.json();
+          if (config) {
+            setTokenId(config.tokenId || "");
+            setFeeAddress(config.feeAddress || "");
+            setFees(config.fees || defaultFees);
+            setDecimals(config.decimals || null);
+					} else {
+						setFees(defaultFees);
+					}
+				} else {
+					// Set default fees if no config exists
+					setFees(defaultFees);
+				}
+			} catch (error) {
+				console.error("Error fetching configuration:", error);
+				setFees(defaultFees);
 			}
 		};
 		fetchConfig();
@@ -50,7 +52,7 @@ const Setup = () => {
 
 	// Function to validate tokenId
 	const validateTokenId = useCallback((tokenId: string) => {
-		const pattern = /^[a-fA-F0-9]{64}_[0-9]+$/;
+		const pattern = /^[a-fA-F0-9]{64}_\d+$/;
 		return pattern.test(tokenId);
 	}, []);
 
@@ -137,7 +139,7 @@ const Setup = () => {
 		}
 		await saveConfig();
 		alert("Configuration saved!");
-		router.refresh();
+		router.push("/dash");
 	};
 
 	return (
@@ -244,10 +246,14 @@ const Setup = () => {
 				<button type="submit" className="btn btn-primary w-full mb-2">
 					Save Configuration
 				</button>
-				
 			</form>
 		</div>
 	);
 };
 
 export default Setup;
+
+const defaultFees: FeeConfig[] = [
+	{ min: 0, max: 10000, fee: 50 },
+	{ min: 10001, max: Number.MAX_SAFE_INTEGER, fee: 1000 },
+];
