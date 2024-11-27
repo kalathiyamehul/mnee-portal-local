@@ -1,7 +1,7 @@
 // src/lib/config.ts
 import { prisma } from "@/lib/prisma";
 
-export async function getConfig() {
+export const getConfig = async () => {
   const config = await prisma.config.findFirst();
   return config;
-}
+};
