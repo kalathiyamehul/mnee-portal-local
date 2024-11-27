@@ -188,9 +188,6 @@ const DashboardAdminContent: React.FC = () => {
 	console.log('Pending freezes:', freezes.filter(f => f.status === 'PENDING'));
 	console.log('Approved freezes:', freezes.filter(f => f.status === 'APPROVED'));
 
-	const approvedFreezes = freezes.filter(freeze => freeze.status === 'APPROVED');
-	const pendingFreezes = freezes.filter(freeze => freeze.status === 'PENDING');
-
 	const canApprove = (freeze: Freeze) => {
 		if (freeze.status !== 'PENDING') return false;
 		if (freeze.requestedBy === session?.user?.id) return false;
