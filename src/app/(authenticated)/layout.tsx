@@ -8,12 +8,7 @@ import { authOptions } from "@/lib/authOptions";
 import { getServerSession } from "next-auth";
 import { redirect } from 'next/navigation';
 import Navbar from '@/components/pages/dash/navbar';
-
-// const geistSans = localFont({
-//   src: "./fonts/GeistVF.woff",
-//   variable: "--font-geist-sans",
-//   weight: "100 900",
-// });
+import { getConfig } from "@/lib/config";
 
 const geistMono = localFont({
   src: "../fonts/GeistMonoVF.woff",
@@ -37,6 +32,12 @@ export default async function AuthenticatedLayout({
   if (!session) {
     // Redirect unauthenticated users to the login page
     redirect('/login');
+  }
+
+  // Check if config exists
+  const config = await getConfig();
+  if (!config?.tokenId) {
+    redirect('/setup');
   }
 
   return (
