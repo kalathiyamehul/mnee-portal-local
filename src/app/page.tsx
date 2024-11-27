@@ -7,13 +7,11 @@ import { getConfig } from "@/lib/config";
 
 export default async function HomePage() {
 	const config = await getConfig();
-
 	if (!config?.tokenId) {
 		redirect("/setup");
 	}
 
 	const session = await getServerSession(authOptions);
-
 	if (session) {
 		redirect("/dash");
 	}
