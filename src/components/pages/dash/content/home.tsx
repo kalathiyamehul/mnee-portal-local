@@ -39,7 +39,7 @@ const DashboardHomeContent = () => {
 			<div>
 				<div className="flex flex-wrap -mx-6">
 					<div className="w-full px-6 sm:w-1/2 xl:w-1/3">
-						<div className="flex items-center px-5 py-6 bg-base-100 rounded-md shadow-sm">
+						<div className="flex items-center px-5 py-6 bg-base-100 rounded-md shadow-xs">
 							<div className="p-3 bg-indigo-600 bg-opacity-75 rounded-full">
 								<FaUsers className="w-6 h-6" />
 							</div>
@@ -53,7 +53,7 @@ const DashboardHomeContent = () => {
 					</div>
 
 					<div className="w-full px-6 mt-6 sm:w-1/2 xl:w-1/3 sm:mt-0">
-						<div className="flex items-center px-5 py-6 bg-base-100 rounded-md shadow-sm">
+						<div className="flex items-center px-5 py-6 bg-base-100 rounded-md shadow-xs">
 							<div className="p-3 bg-orange-600 bg-opacity-75 rounded-full">
 								<FaBitcoinSign className="w-6 h-6" />
 							</div>
@@ -67,7 +67,7 @@ const DashboardHomeContent = () => {
 					</div>
 
 					<div className="w-full px-6 mt-6 sm:w-1/2 xl:w-1/3 xl:mt-0">
-						<div className="flex items-center px-5 py-6 bg-base-100 rounded-md shadow-sm">
+						<div className="flex items-center px-5 py-6 bg-base-100 rounded-md shadow-xs">
 							<div className="p-3 bg-pink-600 bg-opacity-75 rounded-full text-sm w-16 h-16 flex items-center justify-center">
 								MNEE
 							</div>
@@ -85,7 +85,7 @@ const DashboardHomeContent = () => {
 			<div className="flex flex-col mt-8">
 				<div className="flex flex-col mt-8">
 					<div className="py-2 -my-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-						<div className="inline-block min-w-full overflow-hidden align-middle border-b border-gray-200 shadow sm:rounded-lg">
+						<div className="inline-block min-w-full overflow-hidden align-middle border-b border-gray-200 shadow-sm sm:rounded-lg">
 							<table className="min-w-full">
 								<thead>
 									<tr>
@@ -110,7 +110,7 @@ const DashboardHomeContent = () => {
 											<tr key={user.outpoint}>
 												<td className="px-6 py-4 whitespace-no-wrap border-b border-gray-200">
 													<div className="flex items-center">
-														<div className="flex-shrink-0 w-10 h-10">
+														<div className="shrink-0 w-10 h-10">
 															{/* <img
 																className="w-10 h-10 rounded-full"
 																src={user.avatarUrl}

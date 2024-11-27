@@ -390,7 +390,7 @@ const DashboardWalletContent: React.FC = () => {
 						</label>
 						<input
 							type="text"
-							className="text-sm p-2 mb-2 rounded"
+							className="text-sm p-2 mb-2 rounded-sm"
 							placeholder="Recipient Address"
 							value={recipient}
 							onChange={(e) => setRecipient(e.target.value)}
@@ -402,7 +402,7 @@ const DashboardWalletContent: React.FC = () => {
 						<input
 							name="amount"
 							type="number"
-							className="text-sm p-2 mb-2 rounded"
+							className="text-sm p-2 mb-2 rounded-sm"
 							placeholder={"Amount in Tokens"}
 							value={amount || ""}
 							onChange={(e) => setAmount(Number(e.target.value))}
