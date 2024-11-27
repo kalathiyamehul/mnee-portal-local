@@ -75,3 +75,11 @@ enum ActionStatus {
   REJECTED
   CANCELLED
 }
+
+model Config {
+  id         Int    @id @default(1)
+  fees       Json
+  feeAddress String
+  tokenId    String
+  decimals   Int
+}

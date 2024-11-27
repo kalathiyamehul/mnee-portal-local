@@ -1,19 +1,17 @@
 // src/app/layout.tsx
-import type React from 'react';
-import { Providers } from './providers';
-import './globals.css';
+import type { ReactNode } from "react";
+import { Providers } from "./providers";
+import "./globals.css";
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <html lang="en">
       <body>
-        <Providers>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -7,6 +7,7 @@ import Sidebar from '@/components/pages/dash/Sidebar';
 import { authOptions } from "@/lib/authOptions";
 import { getServerSession } from "next-auth";
 import { redirect } from 'next/navigation';
+import Navbar from '@/components/pages/dash/navbar';
 
 // const geistSans = localFont({
 //   src: "./fonts/GeistVF.woff",
@@ -43,7 +44,7 @@ export default async function AuthenticatedLayout({
       <input id="sidebar-toggle" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content flex flex-col">
         {/* Navbar */}
-        {/* <Navbar /> */}
+        <Navbar session={session} />
         {/* Main content */}
         <main className="flex-1">
           {children}

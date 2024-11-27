@@ -22,20 +22,26 @@ type HistoryRecord = {
 
 interface Freeze extends HistoryRecord {
 	address: string;
-};
+}
 
 const DashboardAdminContent: React.FC = () => {
 	const { data: session } = useSession();
 	const [isPaused, setIsPaused] = useState(false);
 	const [isPending, setIsPending] = useState(false);
-	const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(null);
+	const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(
+		null,
+	);
 	const [loading, setLoading] = useState(true);
 	const [history, setHistory] = useState<HistoryRecord[]>([]);
-	const [freezeAddress, setFreezeAddress] = useState('');
+	const [freezeAddress, setFreezeAddress] = useState("");
 	const [activeFreezes, setActiveFreezes] = useState<Freeze[]>([]);
-	const [pendingFreezeRequests, setPendingFreezeRequests] = useState<Freeze[]>([]);
+	const [pendingFreezeRequests, setPendingFreezeRequests] = useState<Freeze[]>(
+		[],
+	);
+	const [freezes, setFreezes] = useState<Freeze[]>([]);
 	const router = useRouter();
 
+	console.log({freezes});
 	// Fetch current status
 	useEffect(() => {
 		const fetchStatus = async () => {
@@ -48,7 +54,7 @@ const DashboardAdminContent: React.FC = () => {
 				setPendingRequest(dataStatus.pendingRequest);
 				setHistory(dataStatus.history);
 
-				const resFreezes = await fetch('/api/freezeList');
+				const resFreezes = await fetch("/api/freezeList");
 				const dataFreezes = await resFreezes.json();
 				setActiveFreezes(dataFreezes.activeFreezes);
 				setPendingFreezeRequests(dataFreezes.pendingFreezeRequests);
@@ -60,6 +66,20 @@ const DashboardAdminContent: React.FC = () => {
 		};
 
 		fetchStatus();
+	}, []);
+
+	// Update the freeze list to include pending approvals
+	useEffect(() => {
+		const fetchFreezes = async () => {
+			try {
+				const response = await fetch('/api/freezes?includePending=true');
+				const data = await response.json();
+				setFreezes(data);
+			} catch (error) {
+				console.error('Error fetching freezes:', error);
+			}
+		};
+		fetchFreezes();
 	}, []);
 
 	const handleSwitchChange = async () => {
@@ -95,28 +115,28 @@ const DashboardAdminContent: React.FC = () => {
 
 	const handleFreeze = async () => {
 		try {
-			await fetch('/api/freeze', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ address: freezeAddress, action: 'FREEZE' }),
+			await fetch("/api/freeze", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ address: freezeAddress, action: "FREEZE" }),
 			});
-			setFreezeAddress('');
+			setFreezeAddress("");
 			router.refresh();
 		} catch (error) {
-			console.error('Error creating freeze request:', error);
+			console.error("Error creating freeze request:", error);
 		}
 	};
 
 	const handleUnfreezeRequest = async (address: string) => {
 		try {
-			await fetch('/api/freeze', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ address, action: 'UNFREEZE' }),
+			await fetch("/api/freeze", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ address, action: "UNFREEZE" }),
 			});
 			router.refresh();
 		} catch (error) {
-			console.error('Error creating unfreeze request:', error);
+			console.error("Error creating unfreeze request:", error);
 		}
 	};
 
@@ -132,7 +152,11 @@ const DashboardAdminContent: React.FC = () => {
 					<input
 						type="checkbox"
 						className={`toggle ${
-							isPending ? 'toggle-warning' : isPaused ? 'toggle-success' : 'toggle-gray'
+							isPending
+								? "toggle-warning"
+								: isPaused
+									? "toggle-success"
+									: "toggle-gray"
 						}`}
 						checked={isPaused || isPending}
 						onChange={handleSwitchChange}
@@ -152,7 +176,8 @@ const DashboardAdminContent: React.FC = () => {
 					<div className="flex items-center my-2">
 						<p className="mr-4">
 							{pendingRequest?.action} request by{" "}
-							{pendingRequest?.requester.name || pendingRequest?.requester.email}
+							{pendingRequest?.requester.name ||
+								pendingRequest?.requester.email}
 						</p>
 						<button
 							type="button"
@@ -189,7 +214,11 @@ const DashboardAdminContent: React.FC = () => {
 						value={freezeAddress}
 						onChange={(e) => setFreezeAddress(e.target.value)}
 					/>
-					<button type="button" className="btn btn-primary" onClick={handleFreeze}>
+					<button
+						type="button"
+						className="btn btn-primary"
+						onClick={handleFreeze}
+					>
 						Request Freeze
 					</button>
 				</div>
@@ -235,7 +264,7 @@ const DashboardAdminContent: React.FC = () => {
 					{pendingFreezeRequests.map((request) => (
 						<div key={request.id} className="flex items-center my-2">
 							<p className="mr-4">
-								{request.action} request for {request.address} by{' '}
+								{request.action} request for {request.address} by{" "}
 								{request.requester.name || request.requester.email}
 							</p>
 							<button
@@ -243,14 +272,14 @@ const DashboardAdminContent: React.FC = () => {
 								className="btn btn-primary"
 								onClick={async () => {
 									try {
-										await fetch('/api/approveFreeze', {
-											method: 'POST',
-											headers: { 'Content-Type': 'application/json' },
+										await fetch("/api/approveFreeze", {
+											method: "POST",
+											headers: { "Content-Type": "application/json" },
 											body: JSON.stringify({ freezeRequestId: request.id }),
 										});
 										router.refresh();
 									} catch (error) {
-										console.error('Error approving freeze request:', error);
+										console.error("Error approving freeze request:", error);
 									}
 								}}
 							>
