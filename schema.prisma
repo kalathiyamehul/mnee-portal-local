@@ -43,6 +43,7 @@ model FreezeRequest {
   status      ActionStatus @default(PENDING)
   action      FreezeAction
   requestedBy String
+  callbackUrl String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 

@@ -1,16 +1,38 @@
 // src/app/api/freezeList/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import type { ActionStatus, FreezeAction } from '@prisma/client';
 
-export async function GET() {
-  // Get approved freeze requests
-  const activeFreezes = await prisma.freezeRequest.findMany({
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const includePending = searchParams.get('includePending') === 'true';
+  
+  console.log('includePending:', includePending);
+
+  const freezeRequests = await prisma.freezeRequest.findMany({
     where: {
-      status: 'APPROVED',
-      action: 'FREEZE',
+      action: 'FREEZE' as FreezeAction,
+      ...(includePending ? {} : { status: 'APPROVED' as ActionStatus }),
     },
-    include: { requester: true },
+    include: { 
+      requester: true,
+      approvals: {
+        include: {
+          approver: {
+            select: {
+              name: true,
+              email: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
   });
 
-  return NextResponse.json({ activeFreezes }, { status: 200 });
+  console.log('Found freeze requests:', freezeRequests);
+
+  return NextResponse.json({ activeFreezes: freezeRequests });
 }

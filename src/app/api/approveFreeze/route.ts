@@ -13,50 +13,100 @@ export async function POST(request: Request) {
 
   const { freezeRequestId } = await request.json();
 
-  // Fetch the freeze request
-  const freezeRequest = await prisma.freezeRequest.findUnique({
-    where: { id: freezeRequestId },
-    include: { approvals: true },
-  });
-
-  if (!freezeRequest || freezeRequest.status !== 'PENDING') {
-    return NextResponse.json({ error: 'Invalid or already processed request' }, { status: 400 });
-  }
-
-  // Check if the user has already approved
-  const existingApproval = await prisma.actionApproval.findFirst({
-    where: {
-      freezeRequestId,
-      approvedBy: session.user.id,
-    },
-  });
-
-  if (existingApproval) {
-    return NextResponse.json({ error: 'You have already approved this request' }, { status: 400 });
-  }
-
-  // Create a new approval
-  await prisma.actionApproval.create({
-    data: {
-      freezeRequestId,
-      approvedBy: session.user.id,
-    },
-  });
-
-  // Check approval count (e.g., requires 2 approvals)
-  const approvalsCount = await prisma.actionApproval.count({
-    where: { freezeRequestId },
-  });
-
-  if (approvalsCount >= 2) {
-    // Update freeze request status to APPROVED
-    await prisma.freezeRequest.update({
+  // Use a transaction to ensure data consistency
+  const result = await prisma.$transaction(async (tx) => {
+    // Fetch the freeze request
+    const freezeRequest = await tx.freezeRequest.findUnique({
       where: { id: freezeRequestId },
-      data: { status: 'APPROVED' },
+      include: { 
+        requester: true,
+        approvals: true 
+      },
     });
 
-    // TODO: Implement logic to perform the freeze/unfreeze action
-  }
+    if (!freezeRequest) {
+      throw new Error('Freeze request not found');
+    }
 
-  return NextResponse.json({ success: true }, { status: 200 });
+    if (freezeRequest.status !== 'PENDING') {
+      throw new Error('Request is not pending');
+    }
+
+    // Prevent self-approval
+    if (freezeRequest.requestedBy === session.user.id) {
+      throw new Error('Cannot approve your own request');
+    }
+
+    // Check if the user has already approved
+    const existingApproval = await tx.actionApproval.findFirst({
+      where: {
+        freezeRequestId,
+        approvedBy: session.user.id,
+      },
+    });
+
+    if (existingApproval) {
+      throw new Error('You have already approved this request');
+    }
+
+    // Create a new approval
+    await tx.actionApproval.create({
+      data: {
+        freezeRequestId,
+        approvedBy: session.user.id,
+      },
+    });
+
+    // Get updated approval count
+    const approvalCount = await tx.actionApproval.count({
+      where: { freezeRequestId },
+    });
+
+    console.log(`Current approval count: ${approvalCount}`);
+
+    // If we now have 2 approvals (including the initial one), update the status
+    if (approvalCount >= 2) {
+      const updatedRequest = await tx.freezeRequest.update({
+        where: { id: freezeRequestId },
+        data: { 
+          status: 'APPROVED',
+          updatedAt: new Date()
+        },
+      });
+
+      // If there's a callback URL, trigger it
+      if (freezeRequest.callbackUrl) {
+        try {
+          const callbackResponse = await fetch(freezeRequest.callbackUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              freezeRequestId: updatedRequest.id,
+              address: updatedRequest.address,
+              action: updatedRequest.action,
+              status: updatedRequest.status,
+            }),
+          });
+
+          console.log('Callback response:', await callbackResponse.json());
+        } catch (error) {
+          console.error('Error calling callback URL:', error);
+          // We might want to handle this differently, maybe set a callbackStatus field
+        }
+      }
+
+      return { approvalCount, status: 'APPROVED' };
+    }
+
+    return { approvalCount, status: 'PENDING' };
+  });
+
+  return NextResponse.json({ 
+    success: true, 
+    message: result.status === 'APPROVED' ? 'Request approved' : 'Approval recorded',
+    approvalCount: result.approvalCount,
+    status: result.status
+  });
 }

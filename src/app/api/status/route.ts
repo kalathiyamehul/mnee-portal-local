@@ -23,10 +23,22 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
   });
 
-  // Get pending freeze requests
-  const pendingFreezeRequests = await prisma.freezeRequest.findMany({
-    where: { status: 'PENDING' },
-    include: { requester: true },
+  // Get all freeze requests with their approvals
+  const freezeRequests = await prisma.freezeRequest.findMany({
+    include: { 
+      requester: true,
+      approvals: {
+        include: {
+          approver: {
+            select: {
+              name: true,
+              email: true
+            }
+          }
+        }
+      }
+    },
+    orderBy: { createdAt: 'desc' },
   });
 
   return NextResponse.json({
@@ -34,6 +46,6 @@ export async function GET() {
     isPending: !!pendingRequest,
     pendingRequest,
     history,
-    pendingFreezeRequests,
+    freezeRequests,
   });
 }

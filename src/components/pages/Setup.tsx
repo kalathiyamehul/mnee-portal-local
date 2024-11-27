@@ -139,7 +139,7 @@ const Setup = () => {
 		}
 		await saveConfig();
 		alert("Configuration saved!");
-		router.push("/dash");
+		router.push("/");
 	};
 
 	return (

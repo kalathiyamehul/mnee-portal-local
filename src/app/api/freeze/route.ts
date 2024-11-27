@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
+import type { FreezeAction } from '@prisma/client';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -11,34 +12,49 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { address, action } = await request.json();
+  const { address, action, callbackUrl } = await request.json();
 
   // Validate input
   if (!address || !['FREEZE', 'UNFREEZE'].includes(action)) {
     return NextResponse.json({ error: 'Invalid input' }, { status: 400 });
   }
 
-  // Check for existing pending request on the same address and action
-  const existingRequest = await prisma.freezeRequest.findFirst({
-    where: {
-      address,
-      action,
-      status: 'PENDING',
-    },
+  // Use transaction to create both request and initial approval
+  const result = await prisma.$transaction(async (tx) => {
+    // Check for existing pending request
+    const existingRequest = await tx.freezeRequest.findFirst({
+      where: {
+        address,
+        action: action as FreezeAction,
+        status: 'PENDING',
+      },
+    });
+
+    if (existingRequest) {
+      throw new Error('A request is already pending for this address and action');
+    }
+
+    // Create the freeze request
+    const freezeRequest = await tx.freezeRequest.create({
+      data: {
+        address,
+        action: action as FreezeAction,
+        requestedBy: session.user.id,
+        callbackUrl,
+        status: 'PENDING'
+      },
+    });
+
+    // Create initial approval from the requester
+    await tx.actionApproval.create({
+      data: {
+        freezeRequestId: freezeRequest.id,
+        approvedBy: session.user.id,
+      },
+    });
+
+    return freezeRequest;
   });
 
-  if (existingRequest) {
-    return NextResponse.json({ error: 'A request is already pending for this address and action' }, { status: 400 });
-  }
-
-  // Create a new freeze/unfreeze request
-  const freezeRequest = await prisma.freezeRequest.create({
-    data: {
-      address,
-      action,
-      requestedBy: session.user.id,
-    },
-  });
-
-  return NextResponse.json({ freezeRequest }, { status: 201 });
+  return NextResponse.json({ freezeRequest: result }, { status: 201 });
 }
