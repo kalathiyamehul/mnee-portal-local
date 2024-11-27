@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { MdOutlineOpenInNew } from 'react-icons/md';
 import { usePathname } from "next/navigation";
-import { FaGear, FaWallet } from "react-icons/fa6";
+import { FaGear, FaGears, FaWallet } from "react-icons/fa6";
 import { RiDashboardFill } from "react-icons/ri";
 import { FaSignOutAlt } from "react-icons/fa";
 
@@ -75,6 +75,9 @@ const Sidebar: React.FC = () => {
             rel="noopener noreferrer"
           >
             <MdOutlineOpenInNew className="mr-2" /> Cosigner Docs
+          </Link>
+          <Link href="/dash/settings" className="flex items-center gap-2">
+            <FaGears /> Settings
           </Link>
           {/* Sign Out */}
           {session && (

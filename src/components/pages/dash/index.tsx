@@ -2,11 +2,13 @@ import { useMemo } from "react"
 import DashboardHomeContent from "./content/home"
 import DashboardWalletContent from "./content/wallet"
 import DashboardAdminContent from "./content/admin"
+import DashboardSettingsContent from './content/settings';
 
 export enum DashPage {
     ADMIN = "admin",
     HOME = "home",
     WALLET = "wallet",
+    SETTINGS = "settings",
 }
 
 export type DashbpardProps = {
@@ -22,6 +24,8 @@ const Dashboard: React.FC<DashbpardProps> = ({ page }) => {
                 return <DashboardAdminContent />
             case DashPage.WALLET:
                 return <DashboardWalletContent />
+            case DashPage.SETTINGS:
+                return <DashboardSettingsContent />
             default:
                 return <div>Not Found</div>
         }
