@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from 'react';
-import { FaLock, FaSpinner } from 'react-icons/fa';
+import { FaSpinner } from 'react-icons/fa';
 import { formatDistanceToNow } from 'date-fns';
 import { useSession } from "next-auth/react";
-import { FaFire, FaPause, FaPlay, FaSnowflake } from 'react-icons/fa6';
+import { FaFire, FaPause, FaPlay, FaSnowflake, FaPlus } from 'react-icons/fa6';
 
 interface Approval {
 	id: string;
@@ -33,6 +33,8 @@ const DashboardAdminContent = () => {
 	const [loading, setLoading] = useState(true);
 	const [isPaused, setIsPaused] = useState(false);
 	const [activities, setActivities] = useState<Activity[]>([]);
+	const [freezeAddress, setFreezeAddress] = useState('');
+	const [freezeLoading, setFreezeLoading] = useState(false);
 
 	const fetchStatus = useCallback(async () => {
 		try {
@@ -68,6 +70,40 @@ const DashboardAdminContent = () => {
 			console.error('Error toggling pause state:', error);
 		} finally {
 			setLoading(false);
+		}
+	};
+
+	const handleFreezeRequest = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!freezeAddress) return;
+
+		try {
+			setFreezeLoading(true);
+			const response = await fetch('/api/freeze', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					address: freezeAddress,
+					action: 'FREEZE',
+					callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/freezeComplete`
+				}),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.message || 'Failed to create freeze request');
+			}
+
+			setFreezeAddress('');
+			await fetchStatus();
+			// Close the modal using the dialog close method
+			const modal = document.getElementById('freeze_modal') as HTMLDialogElement;
+			modal.close();
+		} catch (error) {
+			console.error('Error creating freeze request:', error);
+			alert(error instanceof Error ? error.message : 'Failed to create freeze request');
+		} finally {
+			setFreezeLoading(false);
 		}
 	};
 
@@ -164,14 +200,14 @@ const DashboardAdminContent = () => {
 								type="button"
 								className="btn btn-primary btn-sm"
 								onClick={() => handleApprove(activity.id, activity.type)}
-									disabled={loading || !canApprove(activity)}
-									title={
-										activity.requester.email === session?.user?.email
-											? "Cannot approve your own request"
-											: activity.approvals.some(a => a.approver.email === session?.user?.email)
-											? "Already approved"
-											: "Approve request"
-									}
+								disabled={loading || !canApprove(activity)}
+								title={
+									activity.requester.email === session?.user?.email
+										? "Cannot approve your own request"
+										: activity.approvals.some(a => a.approver.email === session?.user?.email)
+										? "Already approved"
+										: "Approve request"
+								}
 							>
 								{loading ? <FaSpinner className="animate-spin" /> : 'Approve'}
 							</button>
@@ -225,7 +261,62 @@ const DashboardAdminContent = () => {
 			</div>
 
 			<div>
-				<h2 className="text-2xl font-bold mb-4">Activity</h2>
+				<div className="flex justify-between items-center mb-4">
+					<h2 className="text-2xl font-bold">Activity</h2>
+					<button
+						type="button"
+						className="btn btn-primary btn-sm"
+						onClick={() => {
+							const modal = document.getElementById('freeze_modal') as HTMLDialogElement;
+							modal.showModal();
+						}}
+					>
+						<FaPlus className="mr-2" /> New Freeze Request
+					</button>
+				</div>
+
+				{/* Freeze Request Modal */}
+				<dialog id="freeze_modal" className="modal">
+					<div className="modal-box">
+						<h3 className="font-bold text-lg mb-4">Create Freeze Request</h3>
+						<form onSubmit={handleFreezeRequest}>
+							<div className="form-control">
+								<label className="label" htmlFor="freezeAddress">
+									<span className="label-text">Bitcoin Address to Freeze</span>
+								</label>
+								<input
+									type="text"
+									id="freezeAddress"
+									className="input input-bordered w-full"
+									value={freezeAddress}
+									onChange={(e) => setFreezeAddress(e.target.value)}
+									placeholder="Enter Bitcoin SV Address"
+									required
+								/>
+							</div>
+							<div className="modal-action">
+								<button
+									type="button"
+									className="btn"
+									onClick={() => {
+										const modal = document.getElementById('freeze_modal') as HTMLDialogElement;
+										modal.close();
+									}}
+								>
+									Cancel
+								</button>
+								<button
+									type="submit"
+									className="btn btn-primary"
+									disabled={freezeLoading || !freezeAddress}
+								>
+									{freezeLoading ? <FaSpinner className="animate-spin" /> : 'Submit'}
+								</button>
+							</div>
+						</form>
+					</div>
+				</dialog>
+
 				{activities.length === 0 ? (
 					<div className="text-center py-8 text-gray-500">
 						No activity to display

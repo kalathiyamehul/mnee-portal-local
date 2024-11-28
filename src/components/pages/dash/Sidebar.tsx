@@ -103,7 +103,7 @@ const Sidebar: React.FC = () => {
 						<button
 							type="button"
 							onClick={() => signOut({ callbackUrl: "/login" })}
-							className="w-full flex items-center px-6 py-2 mt-2 text-sm font-medium hover:bg-secondary hover:text-secondary-content rounded-lg"
+							className="cursor-pointer w-full flex items-center px-6 py-2 mt-2 text-sm font-medium hover:bg-secondary hover:text-secondary-content rounded-lg"
 						>
 							<FaSignOutAlt className="mr-2" /> Sign Out
 						</button>
