@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from 'react';
-import { FaSpinner } from 'react-icons/fa';
+import { FaLock, FaSpinner } from 'react-icons/fa';
 import { formatDistanceToNow } from 'date-fns';
 import { useSession } from "next-auth/react";
+import { FaFire, FaPause, FaPlay, FaSnowflake } from 'react-icons/fa6';
 
 interface Approval {
 	id: string;
@@ -116,14 +117,16 @@ const DashboardAdminContent = () => {
 							<h3 className="card-title">
 								{activity.type === 'FREEZE' ? (
 									<>
-										{activity.action === 'FREEZE' ? '🔒 Freeze' : '🔓 Unfreeze'} Request
+                  {activity.action === 'FREEZE' ? <FaSnowflake /> : <FaFire />}
+										{activity.action === 'FREEZE' ? 'Freeze' : 'Unfreeze'} Request
 										<div className="badge badge-sm ml-2">
 											{activity.address?.slice(0, 8)}...{activity.address?.slice(-8)}
 										</div>
 									</>
 								) : (
 									<>
-										{activity.action === 'PAUSE' ? '⏸️ Pause' : '▶️ Unpause'} Request
+                  {activity.action === 'PAUSE' ? <FaPause /> : <FaPlay />}
+										{activity.action === 'PAUSE' ? 'Pause' : 'Unpause'} Request
 									</>
 								)}
 							</h3>
@@ -200,7 +203,8 @@ const DashboardAdminContent = () => {
 				<h2 className="text-2xl font-bold mb-4">System Status</h2>
 				<div className="flex items-center gap-4">
 					<div className={`badge badge-lg ${isPaused ? 'badge-warning' : 'badge-success'}`}>
-						{isPaused ? '⏸️ Paused' : '▶️ Active'}
+            {isPaused ? <FaPause /> : <FaPlay />}
+						{isPaused ? 'Paused' : 'Active'}
 					</div>
 					<div className="flex items-center gap-2">
 						<span className="text-sm">Toggle System State:</span>

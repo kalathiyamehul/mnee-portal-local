@@ -14,7 +14,19 @@ export async function GET() {
   // Get all action requests with their approvals
   const actionRequests = await prisma.actionRequest.findMany({
     include: { 
-      requester: true,
+      requester: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          emailVerified: true,
+          idAddress: true,
+          password: true,
+          createdAt: true,
+          updatedAt: true,
+        }
+      },
       approvals: {
         include: {
           approver: {
@@ -32,7 +44,19 @@ export async function GET() {
   // Get all freeze requests with their approvals
   const freezeRequests = await prisma.freezeRequest.findMany({
     include: { 
-      requester: true,
+      requester: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          emailVerified: true,
+          idAddress: true,
+          password: true,
+          createdAt: true,
+          updatedAt: true,
+        }
+      },
       approvals: {
         include: {
           approver: {
@@ -56,7 +80,17 @@ export async function GET() {
       status: action.status,
       createdAt: action.createdAt,
       requester: action.requester,
-      approvals: action.approvals,
+      approvals: [
+        // Add requester's implicit approval for action requests
+        {
+          id: `${action.id}-requester`,
+          approver: {
+            name: action.requester.name,
+            email: action.requester.email
+          }
+        },
+        ...action.approvals
+      ],
     })),
     ...freezeRequests.map(freeze => ({
       type: 'FREEZE',
