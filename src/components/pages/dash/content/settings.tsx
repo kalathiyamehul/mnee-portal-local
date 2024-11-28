@@ -71,7 +71,6 @@ const DashboardSettingsContent: React.FC = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Settings</h1>
 
       <div className="card bg-base-200 p-6">
         {/* Fee Address */}
@@ -88,7 +87,6 @@ const DashboardSettingsContent: React.FC = () => {
 
         {/* Fee Structure */}
         <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-4">Fee Structure</h2>
           
           {/* Existing Fees */}
           <div className="mb-4">

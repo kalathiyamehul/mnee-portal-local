@@ -11,15 +11,21 @@ export async function GET() {
 
   const isPaused = latestApproved?.action === 'PAUSE';
 
-  // Get pending request
-  const pendingRequest = await prisma.actionRequest.findFirst({
-    where: { status: 'PENDING' },
-    include: { requester: true },
-  });
-
-  // Get action history
-  const history = await prisma.actionRequest.findMany({
-    include: { requester: true },
+  // Get all action requests with their approvals
+  const actionRequests = await prisma.actionRequest.findMany({
+    include: { 
+      requester: true,
+      approvals: {
+        include: {
+          approver: {
+            select: {
+              name: true,
+              email: true
+            }
+          }
+        }
+      }
+    },
     orderBy: { createdAt: 'desc' },
   });
 
@@ -41,11 +47,31 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
   });
 
+  // Combine and sort all activities
+  const allActivities = [
+    ...actionRequests.map(action => ({
+      type: 'ACTION',
+      id: action.id,
+      action: action.action,
+      status: action.status,
+      createdAt: action.createdAt,
+      requester: action.requester,
+      approvals: action.approvals,
+    })),
+    ...freezeRequests.map(freeze => ({
+      type: 'FREEZE',
+      id: freeze.id,
+      action: freeze.action,
+      address: freeze.address,
+      status: freeze.status,
+      createdAt: freeze.createdAt,
+      requester: freeze.requester,
+      approvals: freeze.approvals,
+    }))
+  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
   return NextResponse.json({
     isPaused,
-    isPending: !!pendingRequest,
-    pendingRequest,
-    history,
-    freezeRequests,
+    activities: allActivities,
   });
 }

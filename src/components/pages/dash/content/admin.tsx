@@ -1,391 +1,236 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from 'react';
+import { FaSpinner } from 'react-icons/fa';
+import { formatDistanceToNow } from 'date-fns';
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import { FaSpinner, FaTimes } from "react-icons/fa";
-
-type PendingRequest = {
-	id: string;
-	action: string;
-	requestedBy: string;
-	requester: { name: string; email: string };
-};
-
-type HistoryRecord = {
-	id: string;
-	action: string;
-	requester: { name: string; email: string };
-	status: string;
-	createdAt: string;
-};
 
 interface Approval {
 	id: string;
-	actionRequestId: string | null;
-	freezeRequestId: string;
-	approvedBy: string;
-	createdAt: string;
 	approver: {
 		name: string | null;
 		email: string;
 	};
 }
 
-interface Freeze extends HistoryRecord {
-	address: string;
+interface Activity {
+	type: 'ACTION' | 'FREEZE';
+	id: string;
+	action: string;
 	status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+	createdAt: string;
+	address?: string;
+	requester: {
+		name: string | null;
+		email: string;
+	};
 	approvals: Approval[];
-	requestedBy: string;
 }
 
-const DashboardAdminContent: React.FC = () => {
+const DashboardAdminContent = () => {
 	const { data: session } = useSession();
-	const [isPaused, setIsPaused] = useState(false);
-	const [isPending, setIsPending] = useState(false);
-	const [pendingRequest, setPendingRequest] = useState<PendingRequest | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [history, setHistory] = useState<HistoryRecord[]>([]);
-	const [freezeAddress, setFreezeAddress] = useState("");
-	const [freezes, setFreezes] = useState<Freeze[]>([]);
-	const router = useRouter();
+	const [isPaused, setIsPaused] = useState(false);
+	const [activities, setActivities] = useState<Activity[]>([]);
 
-	// Fetch current status
-	useEffect(() => {
-		const fetchData = async () => {
-			setLoading(true);
-			try {
-				const statusRes = await fetch("/api/status");
-				const statusData = await statusRes.json();
-				
-				setIsPaused(statusData.isPaused);
-				setIsPending(statusData.isPending);
-				setPendingRequest(statusData.pendingRequest);
-				setHistory(statusData.history);
-				setFreezes(statusData.freezeRequests || []);
-			} catch (error) {
-				console.error("Error fetching data:", error);
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchData();
+	const fetchStatus = useCallback(async () => {
+		try {
+			const response = await fetch('/api/status');
+			const data = await response.json();
+			setIsPaused(data.isPaused);
+			setActivities(data.activities);
+		} catch (error) {
+			console.error('Error fetching status:', error);
+		} finally {
+			setLoading(false);
+		}
 	}, []);
 
-	const refreshData = async () => {
+	useEffect(() => {
+		fetchStatus();
+		// Poll for updates every 5 seconds
+		const interval = setInterval(fetchStatus, 5000);
+		return () => clearInterval(interval);
+	}, [fetchStatus]);
+
+	const handlePauseToggle = async () => {
 		try {
-			const statusRes = await fetch("/api/status");
-			const statusData = await statusRes.json();
-			setFreezes(statusData.freezeRequests || []);
-			setIsPaused(statusData.isPaused);
-			setIsPending(statusData.isPending);
-			setPendingRequest(statusData.pendingRequest);
-			setHistory(statusData.history);
+			setLoading(true);
+			const action = isPaused ? 'RESUME' : 'PAUSE';
+			await fetch('/api/pause', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ action }),
+			});
+			await fetchStatus();
 		} catch (error) {
-			console.error("Error refreshing data:", error);
+			console.error('Error toggling pause state:', error);
+		} finally {
+			setLoading(false);
 		}
 	};
 
-	const handleSwitchChange = async () => {
-		if (isPending) {
-			// Cancel the request if it's yours
-			if (pendingRequest?.requestedBy === session?.user?.id) {
-				try {
-					await fetch("/api/cancel", {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ actionRequestId: pendingRequest?.id }),
-					});
-					router.refresh();
-				} catch (error) {
-					console.error("Error cancelling request:", error);
-				}
+	const handleApprove = async (id: string, type: 'ACTION' | 'FREEZE') => {
+		try {
+			setLoading(true);
+			const endpoint = type === 'ACTION' ? '/api/approve' : '/api/approveFreeze';
+			const body = type === 'ACTION' ? { actionId: id } : { freezeRequestId: id };
+			
+			const response = await fetch(endpoint, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.message || 'Failed to approve request');
 			}
-		} else {
-			// Create a new request
-			const action = isPaused ? "RESUME" : "PAUSE";
-			try {
-				await fetch("/api/pause", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ action }),
-				});
-				router.refresh();
-			} catch (error) {
-				console.error("Error creating action request:", error);
-			}
-		}
-	};
 
-	const handleFreeze = async () => {
-		try {
-			await fetch("/api/freeze", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ address: freezeAddress, action: "FREEZE", callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/freezeComplete` }),
-			});
-			setFreezeAddress("");
-			await refreshData();
+			await fetchStatus();
 		} catch (error) {
-			console.error("Error creating freeze request:", error);
+			console.error('Error approving request:', error);
+			alert(error instanceof Error ? error.message : 'Failed to approve request');
+		} finally {
+			setLoading(false);
 		}
 	};
 
-	const handleUnfreezeRequest = async (address: string) => {
-		try {
-			await fetch("/api/freeze", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ address, action: "UNFREEZE", callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/unfreezeComplete` }),
-			});
-			await refreshData();
-		} catch (error) {
-			console.error("Error creating unfreeze request:", error);
-		}
+	const canApprove = (activity: Activity) => {
+		if (!session?.user?.email) return false;
+		if (activity.status !== 'PENDING') return false;
+		if (activity.requester.email === session.user.email) return false;
+		return !activity.approvals.some(approval => approval.approver.email === session.user.email);
 	};
 
-	const handleApproveFreeze = async (freezeRequestId: string) => {
-		try {
-			await fetch("/api/approveFreeze", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ freezeRequestId }),
-			});
-			await refreshData();
-		} catch (error) {
-			console.error("Error approving freeze request:", error);
-		}
+	const renderActivityDetails = (activity: Activity) => {
+		const timeAgo = formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true });
+		const approvalCount = activity.approvals.length;
+		const isPending = activity.status === 'PENDING';
+
+		return (
+			<div key={activity.id} className="card bg-base-200 shadow-xl mb-4">
+				<div className="card-body">
+					<div className="flex justify-between items-start">
+						<div>
+							<h3 className="card-title">
+								{activity.type === 'FREEZE' ? (
+									<>
+										{activity.action === 'FREEZE' ? '🔒 Freeze' : '🔓 Unfreeze'} Request
+										<div className="badge badge-sm ml-2">
+											{activity.address?.slice(0, 8)}...{activity.address?.slice(-8)}
+										</div>
+									</>
+								) : (
+									<>
+										{activity.action === 'PAUSE' ? '⏸️ Pause' : '▶️ Unpause'} Request
+									</>
+								)}
+							</h3>
+							<p className="text-sm opacity-70">
+								Requested by {activity.requester.name || activity.requester.email} {timeAgo}
+							</p>
+						</div>
+						<div className="flex items-center gap-2">
+							<div className={`badge ${activity.status === 'APPROVED' ? 'badge-success' : 
+								activity.status === 'PENDING' ? 'badge-warning' : 'badge-error'}`}>
+								{activity.status}
+							</div>
+						</div>
+					</div>
+
+					{/* Approvals Section */}
+					<div className="mt-4">
+						<h4 className="font-semibold mb-2">Approvals ({approvalCount}/2)</h4>
+						<div className="space-y-2">
+							{activity.approvals.map((approval) => (
+								<div key={approval.id} className="text-sm opacity-80">
+									✓ {approval.approver.name || approval.approver.email}
+									{approval.approver.email === activity.requester.email && (
+										<span className="text-info ml-2">(requester)</span>
+									)}
+								</div>
+							))}
+						</div>
+					</div>
+
+					{/* Approve Button */}
+					{isPending && (
+						<div className="card-actions justify-end mt-4">
+							<button
+								type="button"
+								className="btn btn-primary btn-sm"
+								onClick={() => handleApprove(activity.id, activity.type)}
+									disabled={loading || !canApprove(activity)}
+									title={
+										activity.requester.email === session?.user?.email
+											? "Cannot approve your own request"
+											: activity.approvals.some(a => a.approver.email === session?.user?.email)
+											? "Already approved"
+											: "Approve request"
+									}
+							>
+								{loading ? <FaSpinner className="animate-spin" /> : 'Approve'}
+							</button>
+						</div>
+					)}
+				</div>
+			</div>
+		);
 	};
 
-	const getStatusBadgeClass = (status: string) => {
-		switch (status) {
-			case 'PENDING':
-				return 'badge badge-warning';
-			case 'APPROVED':
-				return 'badge badge-success';
-			case 'REJECTED':
-				return 'badge badge-error';
-			case 'CANCELLED':
-				return 'badge badge-ghost';
-			default:
-				return 'badge';
-		}
-	};
-
-	const getApprovalCount = (freeze: Freeze) => {
-		// Count requester as first approval plus any additional approvals
-		// Filter out the requester's approval from the approvals array to avoid double counting
-		const additionalApprovals = freeze.approvals.filter(a => a.approvedBy !== freeze.requestedBy).length;
-		return 1 + additionalApprovals; // 1 for the requester plus additional approvals
-	};
-
-	if (loading) {
-		return <FaSpinner className="animate-spin mx-auto my-12" />;
+	if (loading && activities.length === 0) {
+		return (
+			<div className="flex justify-center items-center min-h-[200px]">
+				<FaSpinner className="animate-spin text-2xl" />
+			</div>
+		);
 	}
 
-	console.log('Current freezes:', freezes);
-	console.log('Pending freezes:', freezes.filter(f => f.status === 'PENDING'));
-	console.log('Approved freezes:', freezes.filter(f => f.status === 'APPROVED'));
-
-	const canApprove = (freeze: Freeze) => {
-		if (freeze.status !== 'PENDING') return false;
-		if (freeze.requestedBy === session?.user?.id) return false;
-		return !freeze.approvals.some(a => a.approver.email === session?.user?.email);
-	};
+	// Find any pending pause/resume request
+	const pendingPauseRequest = activities.find(
+		a => a.type === 'ACTION' && 
+		a.status === 'PENDING' && 
+		(a.action === 'PAUSE' || a.action === 'RESUME')
+	);
 
 	return (
-		<div>
-			<div className="my-4">
-				<div className="flex items-center">
-					<span className="mr-4">Global Pause</span>
-					<input
-						type="checkbox"
-						className={`toggle ${
-							isPending
-								? "toggle-warning"
-								: isPaused
-									? "toggle-success"
-									: "toggle-gray"
-						}`}
-						checked={isPaused || isPending}
-						onChange={handleSwitchChange}
-						disabled={
-							isPending && pendingRequest?.requestedBy !== session?.user?.id
-						}
-					/>
-				</div>
-				{isPending && (
-					<p className="text-yellow-600 mt-2">Action is pending approval</p>
-				)}
-			</div>
-
-			{isPending && pendingRequest?.requestedBy !== session?.user?.id && (
-				<div className="my-4">
-					<h2 className="text-xl">Pending Actions</h2>
-					<div className="flex items-center my-2">
-						<p className="mr-4">
-							{pendingRequest?.action} request by{" "}
-							{pendingRequest?.requester.name ||
-								pendingRequest?.requester.email}
-						</p>
-						<button
-							type="button"
-							className="btn btn-primary"
-							onClick={async () => {
-								try {
-									await fetch("/api/approve", {
-										method: "POST",
-										headers: { "Content-Type": "application/json" },
-										body: JSON.stringify({
-											actionRequestId: pendingRequest?.id,
-										}),
-									});
-									router.refresh();
-								} catch (error) {
-									console.error("Error approving request:", error);
-								}
-							}}
-						>
-							Approve
-						</button>
+		<div className="p-6">
+			<div className="mb-8">
+				<h2 className="text-2xl font-bold mb-4">System Status</h2>
+				<div className="flex items-center gap-4">
+					<div className={`badge badge-lg ${isPaused ? 'badge-warning' : 'badge-success'}`}>
+						{isPaused ? '⏸️ Paused' : '▶️ Active'}
 					</div>
-				</div>
-			)}
-
-			{/* Freeze Address Input */}
-			<div className="my-8">
-				<h2 className="text-2xl mb-4">Freeze Address</h2>
-				<div className="flex items-center">
-					<input
-						type="text"
-						className="input input-bordered w-full max-w-md mr-4"
-						placeholder="Enter Bitcoin SV Address"
-						value={freezeAddress}
-						onChange={(e) => setFreezeAddress(e.target.value)}
-					/>
-					<button
-						type="button"
-						className="btn btn-primary"
-						onClick={handleFreeze}
-					>
-						Request Freeze
-					</button>
+					<div className="flex items-center gap-2">
+						<span className="text-sm">Toggle System State:</span>
+						<input
+							type="checkbox"
+							className={`toggle ${pendingPauseRequest ? 'toggle-warning' : isPaused ? 'toggle-error' : 'toggle-success'}`}
+							checked={isPaused}
+							onChange={handlePauseToggle}
+							disabled={!!pendingPauseRequest}
+						/>
+					</div>
+					{pendingPauseRequest && (
+						<span className="text-warning text-sm">
+							State change pending approval
+						</span>
+					)}
 				</div>
 			</div>
 
-			{/* Freeze Requests Table */}
-			<div className="my-8">
-				<h2 className="text-2xl mb-4">Freeze Requests</h2>
-				<div className="overflow-x-auto">
-					<table className="table table-zebra w-full">
-						<thead>
-							<tr>
-								<th>Address</th>
-								<th>Status</th>
-								<th>Requested By</th>
-								<th>Approvals</th>
-								<th>Date</th>
-								<th>Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							{freezes.map((freeze) => (
-								<tr key={freeze.id} className="hover">
-									<td className="font-mono">{freeze.address}</td>
-									<td>
-										<span className={getStatusBadgeClass(freeze.status)}>
-											{freeze.status}
-										</span>
-									</td>
-									<td>{freeze.requester.name || freeze.requester.email}</td>
-									<td>
-										<div className="flex flex-col gap-1">
-											<span className="text-sm">
-												{getApprovalCount(freeze)} of 2 approvals
-												{freeze.requestedBy === session?.user?.id && (
-													<span className="text-xs text-info ml-2">(includes your request)</span>
-												)}
-											</span>
-											<div className="text-xs opacity-70">
-												<div>
-													{freeze.requester.email === session?.user?.email ? (
-														<span className="text-info">You (requester)</span>
-													) : (
-														`${freeze.requester.name || freeze.requester.email} (requester)`
-													)}
-												</div>
-												{freeze.approvals
-													.filter(approval => approval.approvedBy !== freeze.requestedBy)
-													.map((approval) => (
-														<div key={approval.id}>
-															{approval.approver.email === session?.user?.email ? (
-																<span className="text-success">You</span>
-															) : (
-																approval.approver.name || approval.approver.email
-															)}
-														</div>
-													))}
-											</div>
-										</div>
-									</td>
-									<td>{new Date(freeze.createdAt).toLocaleString()}</td>
-									<td>
-										{freeze.status === 'PENDING' ? (
-											<button
-												type="button"
-												className="btn btn-primary btn-sm"
-												onClick={() => handleApproveFreeze(freeze.id)}
-												disabled={!canApprove(freeze)}
-												title={
-													freeze.requestedBy === session?.user?.id
-														? "Cannot approve your own request"
-														: freeze.approvals.some(a => a.approver.email === session?.user?.email)
-														? "Already approved"
-														: "Approve request"
-												}
-											>
-												Approve
-											</button>
-										) : freeze.status === 'APPROVED' ? (
-											<button
-												type="button"
-												className="btn btn-outline btn-error btn-sm"
-												onClick={() => handleUnfreezeRequest(freeze.address)}
-											>
-												<FaTimes />
-											</button>
-										) : null}
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
-			</div>
-
-			<div className="my-4">
-				<h2 className="text-2xl">Action History</h2>
-				<table className="table w-full mt-4">
-					<thead>
-						<tr>
-							<th>Action</th>
-							<th>Requested By</th>
-							<th>Status</th>
-							<th>Timestamp</th>
-						</tr>
-					</thead>
-					<tbody>
-						{history.map((record) => (
-							<tr key={record.id}>
-								<td>{record.action}</td>
-								<td>{record.requester.name || record.requester.email}</td>
-								<td>{record.status}</td>
-								<td>{new Date(record.createdAt).toLocaleString()}</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
+			<div>
+				<h2 className="text-2xl font-bold mb-4">Activity</h2>
+				{activities.length === 0 ? (
+					<div className="text-center py-8 text-gray-500">
+						No activity to display
+					</div>
+				) : (
+					<div className="space-y-4">
+						{activities.map(renderActivityDetails)}
+					</div>
+				)}
 			</div>
 		</div>
 	);
