@@ -133,11 +133,42 @@ const DashboardAdminContent = () => {
 		}
 	};
 
+	const handleCancel = async (id: string, type: 'ACTION' | 'FREEZE') => {
+		try {
+			setLoading(true);
+			const response = await fetch('/api/cancel', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(
+					type === 'ACTION' 
+						? { actionRequestId: id }
+						: { freezeRequestId: id }
+				),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.message || 'Failed to cancel request');
+			}
+
+			await fetchStatus();
+		} catch (error) {
+			console.error('Error cancelling request:', error);
+			alert(error instanceof Error ? error.message : 'Failed to cancel request');
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	const canApprove = (activity: Activity) => {
 		if (!session?.user?.email) return false;
 		if (activity.status !== 'PENDING') return false;
 		if (activity.requester.email === session.user.email) return false;
 		return !activity.approvals.some(approval => approval.approver.email === session.user.email);
+	};
+
+	const canCancel = (activity: Activity) => {
+		return activity.status === 'PENDING' && activity.requester.email === session?.user?.email;
 	};
 
 	const renderActivityDetails = (activity: Activity) => {
@@ -193,9 +224,19 @@ const DashboardAdminContent = () => {
 						</div>
 					</div>
 
-					{/* Approve Button */}
+					{/* Action Buttons */}
 					{isPending && (
 						<div className="card-actions justify-end mt-4">
+							{canCancel(activity) && (
+								<button
+									type="button"
+									className="btn btn-error btn-sm"
+									onClick={() => handleCancel(activity.id, activity.type)}
+									disabled={loading}
+								>
+									{loading ? <FaSpinner className="animate-spin" /> : 'Cancel Request'}
+								</button>
+							)}
 							<button
 								type="button"
 								className="btn btn-primary btn-sm"

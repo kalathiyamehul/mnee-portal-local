@@ -7,30 +7,56 @@ import { authOptions } from '@/lib/authOptions';
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session || !session.user || !session.user.id) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { actionRequestId } = await request.json();
+  const { actionRequestId, freezeRequestId } = await request.json();
 
-  // Fetch the action request
-  const actionRequest = await prisma.actionRequest.findUnique({
-    where: { id: actionRequestId },
-  });
+  try {
+    if (actionRequestId) {
+      // Cancel action request
+      const actionRequest = await prisma.actionRequest.findUnique({
+        where: { id: actionRequestId },
+      });
 
-  if (!actionRequest || actionRequest.status !== 'PENDING') {
-    return NextResponse.json({ error: 'Invalid action request' }, { status: 400 });
+      if (!actionRequest) {
+        return NextResponse.json({ error: 'Action request not found' }, { status: 404 });
+      }
+
+      if (actionRequest.requestedBy !== session.user.id) {
+        return NextResponse.json({ error: 'Only the creator can cancel this request' }, { status: 403 });
+      }
+
+      await prisma.actionRequest.update({
+        where: { id: actionRequestId },
+        data: { status: 'CANCELLED' },
+      });
+    } else if (freezeRequestId) {
+      // Cancel freeze request
+      const freezeRequest = await prisma.freezeRequest.findUnique({
+        where: { id: freezeRequestId },
+      });
+
+      if (!freezeRequest) {
+        return NextResponse.json({ error: 'Freeze request not found' }, { status: 404 });
+      }
+
+      if (freezeRequest.requestedBy !== session.user.id) {
+        return NextResponse.json({ error: 'Only the creator can cancel this request' }, { status: 403 });
+      }
+
+      await prisma.freezeRequest.update({
+        where: { id: freezeRequestId },
+        data: { status: 'CANCELLED' },
+      });
+    } else {
+      return NextResponse.json({ error: 'No request ID provided' }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error cancelling request:', error);
+    return NextResponse.json({ error: 'Failed to cancel request' }, { status: 500 });
   }
-
-  if (actionRequest.requestedBy !== session.user.id) {
-    return NextResponse.json({ error: 'You cannot cancel this request' }, { status: 403 });
-  }
-
-  // Update the status to CANCELLED
-  await prisma.actionRequest.update({
-    where: { id: actionRequestId },
-    data: { status: 'CANCELLED' },
-  });
-
-  return NextResponse.json({ success: true }, { status: 200 });
 }
