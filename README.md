@@ -4,7 +4,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, set the required environment variables. You can use a .env file if working locally.
+First, set the required environment variables. You can use a .env file if working locally. The dhasboard needs a postgres database to work with.
 
 ```bash
 touch .env
@@ -59,7 +59,10 @@ yarn start
 pnpm start
 ```
 
-
 ## PostInstall
 
 The postinstall script will run `npx prisma generate` and `npx prisma migrate deploy` to ensure the database is up to date.
+
+## Configuration
+
+Once the server is up and running, visit the web interface. You will be redirected to `/setup` which will set the token id and initialize the config table. Once the config is saved you will be redirected to `/signup` if no accounts exist in the `Users` table. You can create an account and login to the dashboard. The database schema supports email verification, but it is not implemented in the initial release of the dashboard.
