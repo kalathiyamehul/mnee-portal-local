@@ -7,9 +7,9 @@ import { signOut, useSession } from "next-auth/react";
 import { MdOutlineOpenInNew } from "react-icons/md";
 import { usePathname } from "next/navigation";
 import { FaGear, FaSliders, FaWallet } from "react-icons/fa6";
-import { RiDashboardFill } from "react-icons/ri";
 import { FaSignOutAlt } from "react-icons/fa";
 import { useEffect, useState } from "react";
+import { TbActivityHeartbeat } from "react-icons/tb";
 
 const Sidebar: React.FC = () => {
 	const { data: session } = useSession();
@@ -63,7 +63,7 @@ const Sidebar: React.FC = () => {
 								: "hover:bg-secondary hover:text-secondary-content"
 						}`}
 					>
-						<RiDashboardFill className="mr-2" /> Dashboard
+						<TbActivityHeartbeat className="mr-2" /> Dashboard
 					</Link>
 					<Link
 						href="/dash/wallet"
@@ -85,14 +85,7 @@ const Sidebar: React.FC = () => {
 					>
 						<FaGear className="mr-2" /> Admin
 					</Link>
-					<Link
-						className="flex items-center px-6 py-2 mt-2 text-sm font-medium hover:bg-secondary hover:text-secondary-content rounded-lg"
-						href={`${process.env.NEXT_PUBLIC_MNEE_API}/v1/docs`}
-						target="_blank"
-						rel="noopener noreferrer"
-					>
-						<MdOutlineOpenInNew className="mr-2" /> Cosigner Docs
-					</Link>
+					
 					{hasConfig && (
 						<Link
 							href="/dash/settings"
@@ -115,6 +108,15 @@ const Sidebar: React.FC = () => {
 							<FaSignOutAlt className="mr-2" /> Sign Out
 						</button>
 					)}
+					<div className="divider" />
+<Link
+						className="flex items-center px-6 py-2 mt-2 text-sm font-medium hover:bg-secondary hover:text-secondary-content rounded-lg"
+						href={`${process.env.NEXT_PUBLIC_MNEE_API}/v1/docs`}
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						<MdOutlineOpenInNew className="mr-2" /> Cosigner Docs
+					</Link>
 				</nav>
 			</div>
 		</aside>

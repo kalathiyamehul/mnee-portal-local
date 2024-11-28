@@ -69,7 +69,7 @@ export default function SignUpPage() {
                         Email
                     </label>
                     <input
-                        className="input input-bordered w-full"
+                        className="input input-bordered w-full max-w-sm"
                         type="email"
                         id="email"
                         value={email}
@@ -82,7 +82,7 @@ export default function SignUpPage() {
                         Password
                     </label>
                     <input
-                        className="input input-bordered w-full"
+                        className="input input-bordered w-full max-w-sm"
                         type="password"
                         id="password"
                         value={password}

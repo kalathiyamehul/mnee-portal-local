@@ -114,31 +114,33 @@ const DashboardSettingsContent: React.FC = () => {
             <h3 className="text-lg mb-2">Add New Fee</h3>
             <div className="flex gap-4 items-end">
               <div>
-                <label className="label">Min Amount</label>
+
+                
+                <label className="label">Min Amount
                 <input
                   type="number"
                   className="input input-bordered w-32"
                   value={newFee.min}
                   onChange={(e) => setNewFee({ ...newFee, min: Number(e.target.value) })}
-                />
+                /></label>
               </div>
               <div>
-                <label className="label">Max Amount</label>
+                <label className="label">Max Amount
                 <input
                   type="number"
                   className="input input-bordered w-32"
                   value={newFee.max}
                   onChange={(e) => setNewFee({ ...newFee, max: Number(e.target.value) })}
-                />
+                /></label>
               </div>
               <div>
-                <label className="label">Fee</label>
+                <label className="label">Fee
                 <input
                   type="number"
                   className="input input-bordered w-32"
                   value={newFee.fee}
                   onChange={(e) => setNewFee({ ...newFee, fee: Number(e.target.value) })}
-                />
+                /></label>
               </div>
               <button
                 type="button"

@@ -81,17 +81,18 @@ const Setup: React.FC = () => {
 	if (hasExistingSetup) {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-screen p-4">
-				<div className="card bg-base-200 p-6 max-w-md w-full">
+				<div className="card bg-base-200 p-6 max-w-xl w-full">
 					<h1 className="text-2xl font-bold mb-4">Setup Already Complete</h1>
 					<div className="mb-4">
 						<p className="mb-2">This instance has been configured with:</p>
 						<ul className="list-disc list-inside space-y-1">
-							<li>Token ID: <code className="text-sm bg-base-300 px-2 py-1 rounded">{tokenId}</code></li>
+							<li>Token ID: <code className="text-xs bg-base-300 px-2 py-1 rounded">{tokenId}</code></li>
 							<li>Decimals: {decimals}</li>
 							<li>Fee Address: <code className="text-sm bg-base-300 px-2 py-1 rounded">{feeAddress}</code></li>
 						</ul>
 					</div>
 					<button
+						type="button"
 						onClick={() => router.push('/dash')}
 						className="btn btn-primary w-full"
 					>

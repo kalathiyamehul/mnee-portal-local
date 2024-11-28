@@ -40,11 +40,11 @@ const DashboardHomeContent = () => {
 				<div className="flex flex-wrap -mx-6">
 					<div className="w-full px-6 sm:w-1/2 xl:w-1/3">
 						<div className="flex items-center px-5 py-6 bg-base-100 rounded-md shadow-xs">
-							<div className="p-3 bg-indigo-600 bg-opacity-75 rounded-full">
-								<FaUsers className="w-6 h-6" />
+							<div className="p-3 bg-primary bg-opacity-75 rounded-full">
+								<FaUsers className="w-8 h-8" />
 							</div>
 							<div className="mx-5">
-								<h4 className="text-2xl font-semibold text-gray-700">
+								<h4 className="text-2xl font-semibold text-neutral">
 									{addresses}
 								</h4>
 								<div className="text-gray-500">Addresses</div>
@@ -54,11 +54,11 @@ const DashboardHomeContent = () => {
 
 					<div className="w-full px-6 mt-6 sm:w-1/2 xl:w-1/3 sm:mt-0">
 						<div className="flex items-center px-5 py-6 bg-base-100 rounded-md shadow-xs">
-							<div className="p-3 bg-orange-600 bg-opacity-75 rounded-full">
-								<FaBitcoinSign className="w-6 h-6" />
+							<div className="p-3 bg-secondary bg-opacity-75 rounded-full">
+								<FaBitcoinSign className="w-8 h-8" />
 							</div>
 							<div className="mx-5">
-								<h4 className="text-2xl font-semibold text-gray-700">
+								<h4 className="text-2xl font-semibold text-neutral">
 									{transactions}
 								</h4>
 								<div className="text-gray-500">Transactions</div>
@@ -68,12 +68,12 @@ const DashboardHomeContent = () => {
 
 					<div className="w-full px-6 mt-6 sm:w-1/2 xl:w-1/3 xl:mt-0">
 						<div className="flex items-center px-5 py-6 bg-base-100 rounded-md shadow-xs">
-							<div className="p-3 bg-pink-600 bg-opacity-75 rounded-full text-sm w-16 h-16 flex items-center justify-center">
+							<div className="bg-accent bg-opacity-75 rounded-full text-sm w-16 h-16 flex items-center justify-center">
 								MNEE
 							</div>
 
 							<div className="mx-5">
-								<h4 className="text-2xl font-semibold text-gray-700 flex items-center">
+								<h4 className="text-2xl font-semibold text-neutral flex items-center">
 									<FaDollarSign className="mr-2 text-lg" /> {volume24h}
 								</h4>
 								<div className="text-gray-500">24h Volume</div>
@@ -86,6 +86,7 @@ const DashboardHomeContent = () => {
 				<div className="flex flex-col mt-8">
 					<div className="py-2 -my-2 overflow-x-auto sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
 						<div className="inline-block min-w-full overflow-hidden align-middle border-b border-gray-200 shadow-sm sm:rounded-lg">
+              <h2 className="text-lg font-semibold mb-4">Recent Activity</h2>
 							<table className="min-w-full">
 								<thead>
 									<tr>

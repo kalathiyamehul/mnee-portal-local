@@ -347,7 +347,7 @@ const DashboardWalletContent: React.FC = () => {
 	}, [mneeBalance, transferMNEE, amount, recipient]);
 
 	return (
-		<div className="min-w-screen min-h-screen px-2 flex flex-col py-12 mb-4">
+		<div className="w-full h-full px-2 flex flex-col py-12 mb-4">
 			{!addresses && (
 				<div className="mx-auto">
 					<button
