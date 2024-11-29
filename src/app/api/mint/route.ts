@@ -34,25 +34,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Create mint request in database
-    await prisma.mintRequest.create({
-      data: {
-        address: body.token_ls,
-        amount: body.amount,
-        requestedBy: session.user.id,
-        latestMinterTx: body.latest_minter_tx,
-        status: 'PENDING',
-      },
+    // Create mint request in database with initial approval
+    const result = await prisma.$transaction(async (tx) => {
+      // Create the mint request
+      const mintRequest = await tx.mintRequest.create({
+        data: {
+          address: body.token_ls,
+          amount: body.amount,
+          requestedBy: session.user.id,
+          latestMinterTx: body.latest_minter_tx,
+          status: 'PENDING',
+          requiresApproval: true,
+        },
+      });
+
+      // Create initial approval from the requester
+      await tx.actionApproval.create({
+        data: {
+          mintRequestId: mintRequest.id,
+          approvedBy: session.user.id,
+        },
+      });
+
+      return mintRequest;
     });
 
-    // Mock response - in reality this would come from the minting service
-    const mockMinterTx = '0x' + Array(64).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-
-    // In production, we would call the actual minting service here
-    // For now, just return a mock transaction
-    return NextResponse.json({
-      minter_tx: mockMinterTx,
-    });
+    return NextResponse.json({ mintRequest: result }, { status: 201 });
   } catch (error) {
     console.error('Error processing mint request:', error);
     return NextResponse.json({ error: 'Failed to process mint request' }, { status: 500 });
