@@ -22,6 +22,7 @@ model User {
   actionRequests  ActionRequest[]  @relation("UserActionRequests")
   actionApprovals ActionApproval[] @relation("UserActionApprovals")
   freezeRequests  FreezeRequest[]  @relation("UserFreezeRequests")
+  mintRequests    MintRequest[]    @relation("UserMintRequests")
 }
 
 model ActionRequest {
@@ -46,28 +47,49 @@ model FreezeRequest {
   callbackUrl String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  requiresApproval Boolean @default(true)
 
   // Relations
   requester User             @relation("UserFreezeRequests", fields: [requestedBy], references: [id])
   approvals ActionApproval[] @relation("FreezeRequestApprovals")
 }
 
-enum FreezeAction {
-  FREEZE
-  UNFREEZE
+model MintRequest {
+  id              String       @id @default(uuid())
+  address         String
+  amount          Int
+  status          ActionStatus @default(PENDING)
+  requestedBy     String
+  latestMinterTx  String?
+  requiresApproval Boolean     @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relations
+  requester User             @relation("UserMintRequests", fields: [requestedBy], references: [id])
+  approvals ActionApproval[] @relation("MintRequestApprovals")
 }
 
 model ActionApproval {
   id              String   @id @default(uuid())
   actionRequestId String?
   freezeRequestId String?
+  mintRequestId   String?
   approvedBy      String
   createdAt       DateTime @default(now())
 
   // Relations
   actionRequest ActionRequest? @relation(fields: [actionRequestId], references: [id])
   freezeRequest FreezeRequest? @relation("FreezeRequestApprovals", fields: [freezeRequestId], references: [id])
+  mintRequest  MintRequest?    @relation("MintRequestApprovals", fields: [mintRequestId], references: [id])
   approver      User           @relation("UserActionApprovals", fields: [approvedBy], references: [id])
+}
+
+enum FreezeAction {
+  FREEZE
+  UNFREEZE
+  BLACKLIST
+  UNBLACKLIST
 }
 
 enum ActionStatus {

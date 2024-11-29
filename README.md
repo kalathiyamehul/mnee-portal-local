@@ -66,3 +66,10 @@ The postinstall script will run `npx prisma generate` and `npx prisma migrate de
 ## Configuration
 
 Once the server is up and running, visit the web interface. You will be redirected to `/setup` which will set the token id and initialize the config table. Once the config is saved you will be redirected to `/signup` if no accounts exist in the `Users` table. You can create an account and login to the dashboard. The database schema supports email verification, but it is not implemented in the initial release of the dashboard.
+
+## Change the Theme
+    
+```html
+<html lang="en" data-theme="forest">
+```
+
