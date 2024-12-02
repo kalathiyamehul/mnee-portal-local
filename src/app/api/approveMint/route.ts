@@ -13,6 +13,15 @@ export async function POST(request: Request) {
   const { mintRequestId } = await request.json();
 
   const result = await prisma.$transaction(async (tx) => {
+    // Verify the approving user exists
+    const approvingUser = await tx.user.findUnique({
+      where: { id: session.user.id }
+    });
+
+    if (!approvingUser) {
+      throw new Error('Approving user not found');
+    }
+
     // Fetch the mint request
     const mintRequest = await tx.mintRequest.findUnique({
       where: { id: mintRequestId },

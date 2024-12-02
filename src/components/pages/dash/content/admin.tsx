@@ -293,7 +293,7 @@ const DashboardAdminContent = () => {
 			setLoading(true);
 			const endpoint = type === 'ACTION' ? '/api/approve' : type === 'FREEZE' ? '/api/approveFreeze' : '/api/approveMint';
 			const body = type === 'ACTION' 
-				? { actionId: id }
+				? { actionRequestId: id }
 				: type === 'FREEZE'
 				? { freezeRequestId: id }
 				: { mintRequestId: id };
