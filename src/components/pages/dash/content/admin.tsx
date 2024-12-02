@@ -236,7 +236,7 @@ const DashboardAdminContent = () => {
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					amount: Number.parseInt(mintAmount),
-					token_ls: mintAddress,
+					address: mintAddress,
 				}),
 			});
 

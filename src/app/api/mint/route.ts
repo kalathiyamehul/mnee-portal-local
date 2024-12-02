@@ -10,13 +10,18 @@ interface FundingUtxo {
   satoshis: number;
 }
 
-interface MintRequest {
+// interface MintRequest {
+//   amount: number;
+//   latest_minter_tx?: string;
+//   token_ls: string;
+//   funding_utxos?: FundingUtxo[];
+//   fee_per_kb?: number;
+//   change_address?: string;
+// }
+
+interface MintRequestParams {
   amount: number;
-  latest_minter_tx?: string;
-  token_ls: string;
-  funding_utxos?: FundingUtxo[];
-  fee_per_kb?: number;
-  change_address?: string;
+  address: string;
 }
 
 export async function POST(request: Request) {
@@ -27,10 +32,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body: MintRequest = await request.json();
+    const body: MintRequestParams = await request.json();
     
     // Validate required fields
-    if (!body.amount || !body.token_ls) {
+    if (!body.amount || !body.address) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -39,10 +44,9 @@ export async function POST(request: Request) {
       // Create the mint request
       const mintRequest = await tx.mintRequest.create({
         data: {
-          address: body.token_ls,
+          address: body.address,
           amount: body.amount,
           requestedBy: session.user.id,
-          latestMinterTx: body.latest_minter_tx,
           status: 'PENDING',
           requiresApproval: true,
         },
