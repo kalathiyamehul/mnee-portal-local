@@ -9,6 +9,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from 'next/navigation';
 import Navbar from '@/components/pages/dash/navbar';
 import { getConfig } from "@/lib/config";
+import { Toaster } from "react-hot-toast";
 
 const geistMono = localFont({
   src: "../fonts/GeistMonoVF.woff",
@@ -55,6 +56,12 @@ export default async function AuthenticatedLayout({
         <label htmlFor="sidebar-toggle" className="drawer-overlay" />
         {/* Use the Sidebar component */}
         <Sidebar />
+        <Toaster 
+          position="bottom-right"
+          toastOptions={{
+            duration: 5000,
+          }}
+        />
       </div>
     </div>
   );

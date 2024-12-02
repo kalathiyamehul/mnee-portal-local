@@ -310,14 +310,21 @@ const DashboardWalletContent: React.FC = () => {
 				throw error;
 			}
 		},
-		onSuccess: (data) => {
+		onSuccess: async (data) => {
 			// Actions to perform on successful mutation
 			const { rawtx } = data;
 
+			console.log("onSuccess", rawtx);
+			const addresses = await wallet.getAddresses();
+			if (!addresses) {
+				throw new Error("Wallet not connected");
+			}
+			// update utxos
+			await fetchMneeUtxos(Object.values(addresses));
+
 			setRecipient("");
 			setAmount(0);
-			toast.success("Transaction submitted successfully");
-			console.log({ rawtx });
+			toast.success("Transfer complete");
 		},
 		onError: (error) => {
 			// Actions to perform on mutation error
