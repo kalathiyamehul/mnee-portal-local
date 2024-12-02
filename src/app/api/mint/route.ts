@@ -3,12 +3,12 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 
-interface FundingUtxo {
-  txid: string;
-  vout: number;
-  locking_script: string;
-  satoshis: number;
-}
+// interface FundingUtxo {
+//   txid: string;
+//   vout: number;
+//   locking_script: string;
+//   satoshis: number;
+// }
 
 // interface MintRequest {
 //   amount: number;
