@@ -189,7 +189,7 @@ const DashboardAdminContent = () => {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					address: freezeAddress,
+					address,
 					action: 'FREEZE',
 					callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/freezeComplete`
 				}),
@@ -554,162 +554,136 @@ const DashboardAdminContent = () => {
 
 	return (
 		<div className="p-4 space-y-4">
-			<div className="mb-8">
-				<h2 className="text-2xl font-bold mb-4">System Status</h2>
-				<div className="flex items-center gap-4">
+			<div className="mb-6">
+				<h2 className="text-xl sm:text-2xl font-bold mb-2">System Status</h2>
+				<div className="flex flex-wrap items-center gap-2">
 					<div className={`badge badge-lg ${isPaused ? 'badge-warning' : 'badge-success'}`}>
-						{isPaused ? <FaPause /> : <FaPlay />}
-						{isPaused ? 'Paused' : 'Active'}
+						{isPaused ? <FaPause className="mr-1" /> : <FaPlay className="mr-1" />}
+						<span className="text-sm">{isPaused ? 'Paused' : 'Active'}</span>
 					</div>
 					<div className="flex items-center gap-2">
-						<span className="text-sm">Toggle System State:</span>
+						<span className="text-xs sm:text-sm">Toggle:</span>
 						<input
 							type="checkbox"
-							className={`toggle ${pendingPauseRequest ? 'toggle-warning' : isPaused ? 'toggle-error' : 'toggle-success'}`}
+							className="toggle toggle-sm sm:toggle-md"
 							checked={isPaused}
 							onChange={handlePauseToggle}
 							disabled={!!pendingPauseRequest}
 						/>
 					</div>
 					{pendingPauseRequest && (
-						<span className="text-warning text-sm">
-							State change pending approval
-						</span>
+						<span className="text-warning text-xs sm:text-sm">Pending approval</span>
 					)}
 				</div>
 			</div>
 
 			{/* Active Restrictions Table */}
-			<div className="mb-8">
-				<h2 className="text-2xl font-bold mb-4">Active Restrictions</h2>
-				<div className="overflow-x-auto">
-					<table className="table w-full">
-						<thead>
-							<tr>
-								<th>Address</th>
-								<th>Blacklist Status</th>
-								<th>Freeze Status</th>
-								<th>Actions</th>
-							</tr>
-						</thead>
-						<tbody>
-							{activeRestrictions.map((status) => (
-								<tr key={status.address}>
-									<td className="font-mono">{status.address}</td>
-									<td>
+			<div className="mb-6 overflow-x-auto">
+				<h2 className="text-xl sm:text-2xl font-bold mb-2">Active Restrictions</h2>
+				<table className="table table-compact sm:table-normal w-full">
+					<thead>
+						<tr>
+							<th className="text-xs sm:text-sm">Address</th>
+							<th className="text-xs sm:text-sm">Status</th>
+							<th className="text-xs sm:text-sm">Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						{activeRestrictions.map((status) => (
+							<tr key={status.address}>
+								<td className="font-mono text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate">
+									{status.address}
+								</td>
+								<td>
+									<div className="flex flex-wrap gap-1 sm:gap-2">
 										{status.isBlacklisted ? (
-											<span className="badge badge-error gap-2">
-												<FaBan /> Blacklisted
+											<span className="badge badge-error badge-sm sm:badge-md gap-1">
+												<FaBan className="w-3 h-3" /> Blacklisted
 											</span>
 										) : (
 											<button
 												type="button"
-												 className="btn btn-sm btn-error"
-												onClick={(e) => handleBlacklistRequest(e, status.address)}
+												className="btn btn-error btn-xs sm:btn-sm"
+												onClick={() => handleBlacklistClick(status.address)}
 											>
-												Blacklist
+												<FaBan className="w-3 h-3 mr-1" /> Block
 											</button>
 										)}
-									</td>
-									<td>
 										{status.isFrozen ? (
-											<span className="badge badge-error gap-2">
-												<FaSnowflake /> Frozen
+											<span className="badge badge-error badge-sm sm:badge-md gap-1">
+												<FaSnowflake className="w-3 h-3" /> Frozen
 											</span>
 										) : (
-											<>
-												{/* Check for pending freeze request */}
-												{(() => {
-													const pendingFreeze = findPendingRequest(activities, status.address, 'FREEZE');
-													if (pendingFreeze) {
-														return (
-															<div className="flex gap-2 items-center">
-																<span className="badge badge-warning gap-2">
-																	<FaSnowflake className="animate-spin" /> Pending
-																</span>
-																{canApprove(pendingFreeze) && (
-																	<button
-																		type="button"
-																		className="btn btn-xs btn-success"
-																		onClick={() => handleApprove(pendingFreeze.id, 'FREEZE')}
-																		disabled={loading}
-																	>
-																		Approve
-																	</button>
-																)}
-																{canCancel(pendingFreeze) && (
-																	<button
-																		type="button"
-																		className="btn btn-xs btn-ghost"
-																		onClick={() => handleCancel(pendingFreeze.id, 'FREEZE')}
-																		disabled={loading}
-																	>
-																		Cancel
-																	</button>
-																)}
-															</div>
-														);
-													}
-													return (
-														<button
-															type="button"
-															className="btn btn-sm btn-primary"
-															onClick={(e) => handleFreezeRequest(e,status.address)}
-														>
-															Freeze
-														</button>
-													);
-												})()}
-											</>
+											<button
+												type="button"
+												className="btn btn-primary btn-xs sm:btn-sm"
+												onClick={() => handleFreezeClick(status.address)}
+											>
+												<FaSnowflake className="w-3 h-3 mr-1" /> Freeze
+											</button>
 										)}
-									</td>
-									<td>
-										<div className="flex gap-2">
-											{status.isBlacklisted && (
-												<button
-													type="button"
-													className="btn btn-sm btn-outline"
-													onClick={() => handleUnblacklist(status.address)}
-													disabled={loading}
-												>
-													{loading ? <FaSpinner className="animate-spin" /> : 'Remove Blacklist'}
-												</button>
-											)}
-											{status.isFrozen && (
-												<button
-													type="button"
-													className="btn btn-sm btn-outline"
-													onClick={() => handleUnfreeze(status.address)}
-													disabled={loading}
-												>
-													{loading ? <FaSpinner className="animate-spin" /> : 'Unfreeze'}
-												</button>
-											)}
-										</div>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
+									</div>
+								</td>
+								<td>
+									<div className="flex flex-wrap gap-1 sm:gap-2">
+										{status.isBlacklisted && (
+											<button
+												type="button"
+												className="btn btn-outline btn-xs sm:btn-sm"
+												onClick={() => handleUnblacklist(status.address)}
+												disabled={loading}
+											>
+												{loading ? (
+													<FaSpinner className="animate-spin w-3 h-3" />
+												) : (
+													<>
+														<FaBan className="w-3 h-3 mr-1" />
+														<span className="text-xs sm:text-sm">Unblock</span>
+													</>
+												)}
+											</button>
+										)}
+										{status.isFrozen && (
+											<button
+												type="button"
+												className="btn btn-outline btn-xs sm:btn-sm"
+												onClick={() => handleUnfreeze(status.address)}
+												disabled={loading}
+											>
+												{loading ? (
+													<FaSpinner className="animate-spin w-3 h-3" />
+												) : (
+													<>
+														<FaSnowflake className="w-3 h-3 mr-1" />
+														<span className="text-xs sm:text-sm">Unfreeze</span>
+													</>
+												)}
+											</button>
+										)}
+									</div>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
 			</div>
 
 			{/* Activity Section */}
 			<div>
-				<div className="flex justify-between items-center mb-4">
-					<div className="flex items-center gap-4">
-						<h2 className="text-2xl font-bold">Activity</h2>
-						<label className="label cursor-pointer gap-2">
-							<span className="label-text">Show only pending approvals</span>
+				<div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+					<div className="flex flex-wrap items-center gap-2">
+						<h2 className="text-xl sm:text-2xl font-bold">Activity</h2>
+						<label className="label cursor-pointer gap-2 px-2">
+							<span className="label-text text-sm">Show pending</span>
 							<input
 								type="checkbox"
-								className="toggle toggle-primary"
+								className="toggle toggle-primary toggle-sm sm:toggle-md"
 								checked={showOnlyPending}
 								onChange={(e) => setShowOnlyPending(e.target.checked)}
 							/>
 						</label>
 					</div>
-					<div className="flex gap-2">
+					<div className="flex flex-wrap gap-2">
 						<button
 							type="button"
 							className="btn btn-primary btn-sm"
@@ -718,7 +692,8 @@ const DashboardAdminContent = () => {
 								modal.showModal();
 							}}
 						>
-							<FaShieldHalved className="mr-2" /> Restrict Address
+							<FaShieldHalved className="mr-1" /> 
+							<span className="text-sm">Restrict</span>
 						</button>
 						<button
 							type="button"
@@ -728,7 +703,8 @@ const DashboardAdminContent = () => {
 								modal.showModal();
 							}}
 						>
-							<FaCoins className="mr-2" /> New Mint Request
+							<FaCoins className="mr-1" /> 
+							<span className="text-sm">Mint</span>
 						</button>
 					</div>
 				</div>
@@ -844,17 +820,76 @@ const DashboardAdminContent = () => {
 				</dialog>
 
 				{/* Activity List */}
-				<div className="space-y-4">
+				<div className="space-y-3">
 					{filteredActivities.map((activity) => (
-						<div key={activity.id} className="card bg-base-200 shadow-xl">
-							{renderActivityDetails(activity)}
+						<div key={activity.id} className="card bg-base-200 shadow-sm">
+							<div className="card-body p-3 sm:p-4">
+								<div className="flex flex-wrap justify-between gap-2">
+									<div className="flex items-center gap-2 flex-wrap">
+										{getActivityIcon(activity)}
+										<span className="font-semibold text-sm sm:text-base">
+											{getActivityDisplayText(activity)}
+										</span>
+										{activity.type === 'FREEZE' && activity.address && (
+											<div className="badge badge-sm">
+												{activity.address.slice(0, 4)}...{activity.address.slice(-4)}
+											</div>
+										)}
+										{activity.type === 'MINT' && activity.amount && (
+											<div className="badge badge-sm">
+												Amount: {activity.amount}
+											</div>
+										)}
+									</div>
+									<div className={`badge badge-sm sm:badge-md ${
+										activity.status === 'APPROVED' ? 'badge-success' : 
+										activity.status === 'PENDING' ? 'badge-warning' : 'badge-error'
+									}`}>
+										{activity.status}
+									</div>
+								</div>
+								
+								<div className="text-xs sm:text-sm opacity-70 mt-2">
+									<p>By: {activity.requester.name || activity.requester.email}</p>
+									<p className="mt-1">
+										Approvals: {activity.approvals.map(a => a.approver.email).join(', ')}
+									</p>
+								</div>
+
+								{activity.status === 'PENDING' && (
+									<div className="card-actions justify-end mt-2">
+										{canCancel(activity) && (
+											<button
+												type="button"
+												className="btn btn-error btn-xs sm:btn-sm"
+												onClick={() => handleCancel(activity.id, activity.type)}
+												disabled={loading}
+											>
+												{loading ? <FaSpinner className="animate-spin" /> : 'Cancel'}
+											</button>
+										)}
+										{REQUEST_TYPES[activity.action].requiresApproval && (
+											<button
+												type="button"
+												className="btn btn-primary btn-xs sm:btn-sm"
+												onClick={() => handleApprove(activity.id, activity.type)}
+												disabled={loading || !canApprove(activity)}
+												title={
+													activity.requester.email === session?.user?.email
+														? "Cannot approve your own request"
+														: activity.approvals.some(a => a.approver.email === session?.user?.email)
+														? "Already approved"
+														: "Approve request"
+												}
+											>
+												{loading ? <FaSpinner className="animate-spin" /> : 'Approve'}
+											</button>
+										)}
+									</div>
+								)}
+							</div>
 						</div>
 					))}
-					{filteredActivities.length === 0 && (
-						<div className="text-center py-8 text-gray-500">
-							{showOnlyPending ? 'No pending approvals' : 'No activity to show'}
-						</div>
-					)}
 				</div>
 			</div>
 		</div>
