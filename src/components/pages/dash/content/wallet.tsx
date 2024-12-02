@@ -320,10 +320,11 @@ const DashboardWalletContent: React.FC = () => {
 				throw new Error("Wallet not connected");
 			}
 			// update utxos
-			await fetchMneeUtxos(Object.values(addresses));
+			await fetchMneeBalance(Object.values(addresses));
 
 			setRecipient("");
 			setAmount(0);
+
 			toast.success("Transfer complete");
 		},
 		onError: (error) => {

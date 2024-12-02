@@ -59,7 +59,11 @@ export default async function AuthenticatedLayout({
         <Toaster 
           position="bottom-right"
           toastOptions={{
-            duration: 5000,
+            style: {
+              borderRadius: '10px',
+              background: '#333',
+              color: '#fff',
+            },
           }}
         />
       </div>
