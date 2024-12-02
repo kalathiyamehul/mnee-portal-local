@@ -16,12 +16,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { tokenId, feeAddress, fees, decimals } = await request.json();
+  const { tokenId, feeAddress, fees, decimals, latestMinterTx } = await request.json();
   try {
     const config = await prisma.config.upsert({
       where: { id: 1 },
-      update: { tokenId, feeAddress, fees, decimals },
-      create: { id: 1, tokenId, feeAddress, fees, decimals },
+      update: { tokenId, feeAddress, fees, decimals, latestMinterTx },
+      create: { id: 1, tokenId, feeAddress, fees, decimals, latestMinterTx },
     });
     return NextResponse.json(config, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {

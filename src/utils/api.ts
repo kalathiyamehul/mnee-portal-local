@@ -1,4 +1,5 @@
-import { Config, MNEEUtxo } from "@/types";
+import type { Config, MNEEUtxo } from "@/types";
+import type { IndexContext } from "@/types/indexContext";
 import { Transaction, Utils } from "@bsv/sdk";
 const { toArray } = Utils;
 
@@ -41,3 +42,10 @@ export const fetchMneeUtxos = async (addresses: string[]) => {
     }
     return await response.json() as MNEEUtxo[];
 };
+
+export const ingestTxid = async (txid: string) => {
+  const response = await fetch(`${MNEE_API}/v1/ingest/${txid}`, {
+    method: 'POST',
+  });
+  return await response.json() as IndexContext;
+}

@@ -15,6 +15,7 @@ NEXT_PUBLIC_MNEE_API=https://api.somehost.net:8082
 DATABASE_URL=postgresql://postgres:****@postgres.somehost.net:52253/dbname
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key
+MNEE_ORDINALS_SERVICE=https://mnee-ordinals-service.somehost.net
 ```
 
 install the dependencies:

@@ -97,6 +97,7 @@ enum ActionStatus {
   APPROVED
   REJECTED
   CANCELLED
+  DONE
 }
 
 model config {
@@ -105,4 +106,5 @@ model config {
   feeAddress  String @map("fee_address")
   tokenId     String @map("token_id")
   decimals    Int
+  latestMinterTx String @map("latest_minter_tx")
 }

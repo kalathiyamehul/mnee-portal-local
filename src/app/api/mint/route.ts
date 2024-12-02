@@ -3,22 +3,6 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 
-// interface FundingUtxo {
-//   txid: string;
-//   vout: number;
-//   locking_script: string;
-//   satoshis: number;
-// }
-
-// interface MintRequest {
-//   amount: number;
-//   latest_minter_tx?: string;
-//   token_ls: string;
-//   funding_utxos?: FundingUtxo[];
-//   fee_per_kb?: number;
-//   change_address?: string;
-// }
-
 interface MintRequestParams {
   amount: number;
   address: string;

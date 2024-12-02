@@ -4,12 +4,16 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaSpinner } from 'react-icons/fa';
+import { fetchTransaction, ingestTxid } from '@/utils/api';
 
 // Default fees that will be used during setup
 const DEFAULT_FEES = [
 	{ min: 0, max: 10000, fee: 50 },
 	{ min: 10001, max: Number.MAX_SAFE_INTEGER, fee: 1000 },
 ];
+
+// TODO: Allow user to set latest_minter_tx
+// latest_minter_tx
 
 const Setup: React.FC = () => {
 	const router = useRouter();
@@ -18,7 +22,23 @@ const Setup: React.FC = () => {
 	const [tokenId, setTokenId] = useState('');
 	const [decimals, setDecimals] = useState<number | null>(null);
 	const [feeAddress, setFeeAddress] = useState('');
-
+  const [latestMinterTx, setLatestMinterTx] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const fire = async () => {
+      const [txid, vout] = tokenId.split('_');
+      const data = await ingestTxid(txid);
+      const token = data.txos[Number.parseInt(vout)].data.bsv21;
+      setDecimals(token.dec);
+      const tx = await fetchTransaction(txid)
+      // update config and set latest_minter_tx to tx.toHex()
+      setLatestMinterTx(tx.toHex());
+    }
+    if (tokenId) {
+      fire();
+    }
+  }, [tokenId]);
+  
 	useEffect(() => {
 		const checkExistingSetup = async () => {
 			try {
@@ -29,6 +49,7 @@ const Setup: React.FC = () => {
 					setTokenId(data.tokenId);
 					setDecimals(data.decimals);
 					setFeeAddress(data.feeAddress);
+					setLatestMinterTx(data.latestMinterTx);
 				}
 			} catch (error) {
 				console.error('Error checking config:', error);
@@ -55,6 +76,7 @@ const Setup: React.FC = () => {
 					decimals,
 					feeAddress,
 					fees: DEFAULT_FEES,
+					latestMinterTx,
 				}),
 			});
 
