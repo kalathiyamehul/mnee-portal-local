@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 		}
 
 		// Check if the user has already approved
-		const existingApproval = await tx.actionApproval.findFirst({
+		const existingApproval = await tx.freezeApproval.findFirst({
 			where: {
 				freezeRequestId,
 				approvedBy: session.user.id,
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 		}
 
 		// Create a new approval
-		await tx.actionApproval.create({
+		await tx.freezeApproval.create({
 			data: {
 				freezeRequestId,
 				approvedBy: session.user.id,
@@ -67,11 +67,9 @@ export async function POST(request: Request) {
 		});
 
 		// Get updated approval count
-		const approvalCount = await tx.actionApproval.count({
+		const approvalCount = await tx.freezeApproval.count({
 			where: { freezeRequestId },
 		});
-
-		console.log(`Current approval count: ${approvalCount}`);
 
 		// If we now have 2 approvals (including the initial one), update the status
 		if (approvalCount >= 2) {

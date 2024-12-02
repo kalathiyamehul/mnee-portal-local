@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { actionRequestId, freezeRequestId, mintRequestId } = await request.json();
+  const { actionRequestId, freezeRequestId, blacklistRequestId, mintRequestId } = await request.json();
 
   try {
     if (actionRequestId) {
@@ -48,6 +48,24 @@ export async function POST(request: Request) {
 
       await prisma.freezeRequest.update({
         where: { id: freezeRequestId },
+        data: { status: 'CANCELLED' },
+      });
+    } else if (blacklistRequestId) {
+      // Cancel blacklist request
+      const blacklistRequest = await prisma.blacklistRequest.findUnique({
+        where: { id: blacklistRequestId },
+      });
+
+      if (!blacklistRequest) {
+        return NextResponse.json({ error: 'Blacklist request not found' }, { status: 404 });
+      }
+
+      if (blacklistRequest.requestedBy !== session.user.id) {
+        return NextResponse.json({ error: 'Only the creator can cancel this request' }, { status: 403 });
+      }
+
+      await prisma.blacklistRequest.update({
+        where: { id: blacklistRequestId },
         data: { status: 'CANCELLED' },
       });
     } else if (mintRequestId) {

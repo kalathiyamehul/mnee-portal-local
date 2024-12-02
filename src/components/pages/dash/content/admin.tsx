@@ -53,7 +53,12 @@ interface MintActivity extends BaseActivity {
 	amount: number;
 }
 
-type Activity = FreezeActivity | SystemActivity | MintActivity;
+interface BlacklistActivity extends BaseActivity {
+	type: 'BLACKLIST';
+	address: string;
+}
+
+type Activity = FreezeActivity | SystemActivity | MintActivity | BlacklistActivity;
 
 interface AddressStatus {
 	address: string;
@@ -68,6 +73,7 @@ const DashboardAdminContent = () => {
 	const [activities, setActivities] = useState<Activity[]>([]);
 	const [freezeAddress, setFreezeAddress] = useState('');
 	const [freezeLoading, setFreezeLoading] = useState(false);
+	const [blacklistLoading, setBlacklistLoading] = useState(false);
 	const [mintAddress, setMintAddress] = useState('');
 	const [mintAmount, setMintAmount] = useState('');
 	const [mintLoading, setMintLoading] = useState(false);
@@ -93,36 +99,25 @@ const DashboardAdminContent = () => {
 			(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
 		);
 		
-		console.log('Processing activities:', sortedActivities);
-		
 		// First pass: get the latest approved action for each address
 		for (const activity of sortedActivities) {
-			if (activity.type === 'FREEZE' && activity.address && activity.status === 'APPROVED') {
+			if ((activity.type === 'FREEZE' || activity.type === 'BLACKLIST') && 
+				activity.address && 
+				activity.status === 'APPROVED') {
 				// Only process if we haven't seen this address yet (since activities are sorted newest first)
 				if (!addressMap.has(activity.address)) {
 					const status = {
 						address: activity.address,
-						isBlacklisted: activity.action === 'BLACKLIST',
-						isFrozen: activity.action === 'FREEZE'
+						isBlacklisted: activity.type === 'BLACKLIST' && activity.action === 'BLACKLIST',
+						isFrozen: activity.type === 'FREEZE' && activity.action === 'FREEZE'
 					};
-					console.log('Setting initial status for address:', activity.address, status);
 					addressMap.set(activity.address, status);
 				}
 			}
 		}
 
 		// Convert to array and filter out addresses with no active restrictions
-		const allAddresses = Array.from(addressMap.values());
-		console.log('All addresses before filtering:', allAddresses);
-		
-		const result = allAddresses.filter(status => {
-			const isActive = status.isBlacklisted || status.isFrozen;
-			console.log('Address:', status.address, 'isBlacklisted:', status.isBlacklisted, 'isFrozen:', status.isFrozen, 'isActive:', isActive);
-			return isActive;
-		});
-		
-		console.log('Final active restrictions:', result);
-		return result;
+		return Array.from(addressMap.values()).filter(status => status.isBlacklisted || status.isFrozen);
 	}, [activities]);
 
 	const fetchStatus = useCallback(async () => {
@@ -183,8 +178,9 @@ const DashboardAdminContent = () => {
 		}
 	};
 
-	// Split the freeze request logic
-	const submitFreezeRequest = async (address: string, isBlacklist: boolean) => {
+	// Split into separate handlers for freeze and blacklist
+	const handleFreezeRequest = async (e: React.FormEvent<HTMLFormElement | HTMLButtonElement>, address: string = freezeAddress) => {
+		e.preventDefault();
 		if (!address) return;
 
 		try {
@@ -193,11 +189,9 @@ const DashboardAdminContent = () => {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					address,
-					action: isBlacklist ? 'BLACKLIST' : 'FREEZE',
-					callbackUrl: isBlacklist 
-						? `${process.env.NEXT_PUBLIC_MNEE_API}/v1/blacklistComplete`
-						: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/freezeComplete`
+					address: freezeAddress,
+					action: 'FREEZE',
+					callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/freezeComplete`
 				}),
 			});
 
@@ -219,10 +213,38 @@ const DashboardAdminContent = () => {
 		}
 	};
 
-	// Handle form submission
-	const handleFreezeRequest = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent<HTMLButtonElement>, isBlacklist: boolean) => {
+	const handleBlacklistRequest = async (e: React.MouseEvent<HTMLButtonElement | HTMLFormElement>, address: string = freezeAddress) => {
 		e.preventDefault();
-		await submitFreezeRequest(freezeAddress, isBlacklist);
+		if (!address) return;
+
+		try {
+			setBlacklistLoading(true);
+			const response = await fetch('/api/blacklist', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					address,
+					action: 'BLACKLIST',
+					callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/blacklistComplete`
+				}),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.message || 'Failed to create blacklist request');
+			}
+
+			setFreezeAddress('');
+			await fetchStatus();
+			// Close the modal using the dialog close method
+			const modal = document.getElementById('freeze_modal') as HTMLDialogElement;
+			modal.close();
+		} catch (error) {
+			console.error('Error creating blacklist request:', error);
+			alert(error instanceof Error ? error.message : 'Failed to create blacklist request');
+		} finally {
+			setBlacklistLoading(false);
+		}
 	};
 
 	const handleMintRequest = async (e: React.FormEvent) => {
@@ -259,7 +281,7 @@ const DashboardAdminContent = () => {
 		}
 	};
 
-	const handleCancel = async (id: string, type: 'ACTION' | 'FREEZE' | 'MINT') => {
+	const handleCancel = async (id: string, type: 'ACTION' | 'FREEZE' | 'MINT' | 'BLACKLIST') => {
 		try {
 			setLoading(true);
 			const response = await fetch('/api/cancel', {
@@ -288,7 +310,7 @@ const DashboardAdminContent = () => {
 		}
 	};
 
-	const handleApprove = async (id: string, type: 'ACTION' | 'FREEZE' | 'MINT') => {
+	const handleApprove = async (id: string, type: 'ACTION' | 'FREEZE' | 'MINT' | 'BLACKLIST') => {
 		try {
 			setLoading(true);
 			const endpoint = type === 'ACTION' ? '/api/approve' : type === 'FREEZE' ? '/api/approveFreeze' : '/api/approveMint';
@@ -359,13 +381,13 @@ const DashboardAdminContent = () => {
 	const handleUnblacklist = async (address: string) => {
 		try {
 			setLoading(true);
-			const response = await fetch('/api/freeze', {
+			const response = await fetch('/api/blacklist', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					address,
 					action: 'UNBLACKLIST',
-					callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/blacklistComplete`
+					callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/unblacklistComplete`
 				}),
 			});
 
@@ -430,14 +452,14 @@ const DashboardAdminContent = () => {
 										{activity.address.slice(0, 8)}...{activity.address.slice(-8)}
 									</div>
 								)}
-								{activity.type === 'MINT' && activity.amount && (
+								{activity.type === 'MINT' && activity.amount > 0 && (
 									<div className="badge badge-sm ml-2">
 										Amount: {activity.amount}
 									</div>
 								)}
 							</h3>
 							<p className="text-sm opacity-70">
-								Requested by {activity.requester.name || activity.requester.email} {timeAgo}
+								Requested by {activity.requester.name ?? activity.requester.email} {timeAgo}
 							</p>
 						</div>
 						<div className="flex items-center gap-2">
@@ -583,7 +605,7 @@ const DashboardAdminContent = () => {
 											<button
 												type="button"
 												 className="btn btn-sm btn-error"
-												onClick={() => submitFreezeRequest(status.address, true)}
+												onClick={(e) => handleBlacklistRequest(e, status.address)}
 											>
 												Blacklist
 											</button>
@@ -632,7 +654,7 @@ const DashboardAdminContent = () => {
 														<button
 															type="button"
 															className="btn btn-sm btn-primary"
-															onClick={() => submitFreezeRequest(status.address, false)}
+															onClick={(e) => handleFreezeRequest(e,status.address)}
 														>
 															Freeze
 														</button>
@@ -719,7 +741,7 @@ const DashboardAdminContent = () => {
 							<p><FaSnowflake className="inline mr-2" /> Freeze: Prevents an address from sending funds</p>
 							<p><FaLock className="inline mr-2" /> Blacklist: Prevents an address from receiving funds</p>
 						</div>
-						<form onSubmit={(e) => handleFreezeRequest(e, false)}>
+						<form onSubmit={() => {}}>
 							<div className="form-control">
 								<label className="label" htmlFor="freezeAddress">
 									<span className="label-text">Bitcoin Address</span>
@@ -748,14 +770,15 @@ const DashboardAdminContent = () => {
 								<button
 									type="button"
 									className="btn btn-error"
-									onClick={(e) => handleFreezeRequest(e, true)}
-									disabled={freezeLoading || !freezeAddress}
+									onClick={handleBlacklistRequest}
+									disabled={blacklistLoading || !freezeAddress}
 								>
-									{freezeLoading ? <FaSpinner className="animate-spin" /> : 'Blacklist'}
+									{blacklistLoading ? <FaSpinner className="animate-spin" /> : 'Blacklist'}
 								</button>
 								<button
-									type="submit"
+									type="button"
 									className="btn btn-primary"
+									onClick={handleFreezeRequest}
 									disabled={freezeLoading || !freezeAddress}
 								>
 									{freezeLoading ? <FaSpinner className="animate-spin" /> : 'Freeze'}

@@ -19,10 +19,13 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  actionRequests  ActionRequest[]  @relation("UserActionRequests")
-  actionApprovals ActionApproval[] @relation("UserActionApprovals")
-  freezeRequests  FreezeRequest[]  @relation("UserFreezeRequests")
-  mintRequests    MintRequest[]    @relation("UserMintRequests")
+  actionRequests    ActionRequest[]    @relation("UserActionRequests")
+  actionApprovals   ActionApproval[]   @relation("UserActionApprovals")
+  freezeRequests    FreezeRequest[]    @relation("UserFreezeRequests")
+  freezeApprovals   FreezeApproval[]   @relation("UserFreezeApprovals")
+  blacklistRequests BlacklistRequest[] @relation("UserBlacklistRequests")
+  blacklistApprovals BlacklistApproval[] @relation("UserBlacklistApprovals")
+  mintRequests      MintRequest[]      @relation("UserMintRequests")
 }
 
 model ActionRequest {
@@ -39,19 +42,35 @@ model ActionRequest {
 }
 
 model FreezeRequest {
-  id          String       @id @default(uuid())
+  id          String            @id @default(uuid())
   address     String
-  status      ActionStatus @default(PENDING)
-  action      FreezeAction
+  status      ActionStatus      @default(PENDING)
+  action      FreezeRequestAction
   requestedBy String
   callbackUrl String?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  requiresApproval Boolean @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  requiresApproval Boolean      @default(true)
 
   // Relations
   requester User             @relation("UserFreezeRequests", fields: [requestedBy], references: [id])
-  approvals ActionApproval[] @relation("FreezeRequestApprovals")
+  approvals FreezeApproval[]
+}
+
+model BlacklistRequest {
+  id          String         @id @default(uuid())
+  address     String
+  status      ActionStatus   @default(PENDING)
+  action      BlacklistAction
+  requestedBy String
+  callbackUrl String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  requiresApproval Boolean   @default(false)
+
+  // Relations
+  requester User               @relation("UserBlacklistRequests", fields: [requestedBy], references: [id])
+  approvals BlacklistApproval[]
 }
 
 model MintRequest {
@@ -73,23 +92,46 @@ model MintRequest {
 model ActionApproval {
   id              String   @id @default(uuid())
   actionRequestId String?
-  freezeRequestId String?
   mintRequestId   String?
   approvedBy      String
   createdAt       DateTime @default(now())
 
   // Relations
   actionRequest ActionRequest? @relation(fields: [actionRequestId], references: [id])
-  freezeRequest FreezeRequest? @relation("FreezeRequestApprovals", fields: [freezeRequestId], references: [id])
   mintRequest  MintRequest?    @relation("MintRequestApprovals", fields: [mintRequestId], references: [id])
   approver      User           @relation("UserActionApprovals", fields: [approvedBy], references: [id])
 }
 
-enum FreezeAction {
-  FREEZE
-  UNFREEZE
+model FreezeApproval {
+  id              String   @id @default(uuid())
+  freezeRequestId String
+  approvedBy      String
+  createdAt       DateTime @default(now())
+
+  // Relations
+  freezeRequest FreezeRequest @relation(fields: [freezeRequestId], references: [id])
+  approver      User         @relation("UserFreezeApprovals", fields: [approvedBy], references: [id])
+}
+
+model BlacklistApproval {
+  id                String   @id @default(uuid())
+  blacklistRequestId String
+  approvedBy        String
+  createdAt         DateTime @default(now())
+
+  // Relations
+  blacklistRequest BlacklistRequest @relation(fields: [blacklistRequestId], references: [id])
+  approver         User            @relation("UserBlacklistApprovals", fields: [approvedBy], references: [id])
+}
+
+enum BlacklistAction {
   BLACKLIST
   UNBLACKLIST
+}
+
+enum FreezeRequestAction {
+  FREEZE
+  UNFREEZE
 }
 
 enum ActionStatus {
