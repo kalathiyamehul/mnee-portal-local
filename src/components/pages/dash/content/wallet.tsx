@@ -139,7 +139,7 @@ const DashboardWalletContent: React.FC = () => {
 			const utxos = await fetchMneeUtxos(Object.values(addresses));
 
 			const fee = config.fees.find(
-				(fee) => tokenSatAmt >= fee.minAmt && tokenSatAmt <= fee.maxAmt,
+				(fee) => tokenSatAmt >= fee.min && tokenSatAmt <= fee.max,
 			)?.fee;
 			if (fee === undefined) {
 				throw new Error("Fee ranges inadequate");

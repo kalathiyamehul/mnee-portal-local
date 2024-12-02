@@ -5,8 +5,8 @@ export type Config = {
     approver: string;
     feeAddress: string;
     fees: {
-        minAmt: number;
-        maxAmt: number;
+        min: number;
+        max: number;
         fee: number;
     }[];
 };
