@@ -329,6 +329,7 @@ const DashboardWalletContent: React.FC = () => {
 		onError: (error) => {
 			// Actions to perform on mutation error
 			console.log({ error });
+			toast.error(error.message);
 		},
 	});
 
