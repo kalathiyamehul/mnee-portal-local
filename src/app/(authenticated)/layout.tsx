@@ -59,6 +59,7 @@ export default async function AuthenticatedLayout({
         <Toaster 
           position="bottom-right"
           toastOptions={{
+            // className: 'bg-primary text-primary-content',
             style: {
               borderRadius: '10px',
               background: '#333',
