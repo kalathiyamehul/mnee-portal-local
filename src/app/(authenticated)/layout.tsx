@@ -53,7 +53,7 @@ export default async function AuthenticatedLayout({
         </main>
       </div>
       <div className="drawer-side h-screen">
-        <label htmlFor="sidebar-toggle" className="drawer-overlay" />
+        <label htmlFor="sidebar-toggle" className="drawer-overlay" aria-label="Toggle sidebar" />
         {/* Use the Sidebar component */}
         <Sidebar />
         <Toaster 

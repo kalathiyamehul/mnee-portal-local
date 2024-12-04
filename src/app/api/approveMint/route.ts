@@ -158,7 +158,6 @@ const mintMnee = async (amount: number, address: string) => {
 	}
 
   try {
-
     const { minter_tx } = await mintResponse.json();
     
     const tx = Transaction.fromHex(minter_tx);
