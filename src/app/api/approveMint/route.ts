@@ -6,18 +6,12 @@ import { P2PKH, PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
 import { fetchConfig, MNEE_API } from "@/utils/api";
+import { FundingUtxo, MintRequest } from "@/types/utxo";
 
 const MNEE_ORDINALS_SERVICE = process.env.MNEE_ORDINALS_SERVICE as string;
 const MINT_FEE_WIF = process.env.MINT_FEE_WIF as string;
 
-// interface MintRequest {
-//   amount: number;
-//   latest_minter_tx?: string;
-//   token_ls: string;
-//   funding_utxos?: FundingUtxo[];
-//   fee_per_kb?: number;
-//   change_address?: string;
-// }
+
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -138,7 +132,7 @@ const mintMnee = async (amount: number, address: string) => {
 	const pk = PrivateKey.fromWif(MINT_FEE_WIF);
 	const fundingAddress = pk.toAddress();
 	const utxosResponse = await fetch(`${MNEE_API}/v1/utxos/${fundingAddress}`);
-	const funding_utxos = await utxosResponse.json();
+	const funding_utxos = await utxosResponse.json() as FundingUtxo[];
 
 	const fee_per_kb = 10;
 	const change_addr = "";
@@ -153,7 +147,7 @@ const mintMnee = async (amount: number, address: string) => {
 			funding_utxos,
 			fee_per_kb,
 			change_addr,
-		}),
+		} as MintRequest),
 	});
 
 	if (!mintResponse.ok) {
@@ -161,7 +155,7 @@ const mintMnee = async (amount: number, address: string) => {
 	}
 
 	try {
-		const { minter_tx } = await mintResponse.json();
+		const { minter_tx } = await mintResponse.json() as { minter_tx: string };
 
 		const tx = Transaction.fromHex(minter_tx);
 
