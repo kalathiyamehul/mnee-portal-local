@@ -133,7 +133,7 @@ const mintMnee = async (amount: number, address: string) => {
 	const funding_utxos = await utxosResponse.json() as FundingUtxo[];
 
 	const fee_per_kb = 10;
-	const change_addr = "";
+	const change_addr = fundingAddress;
 
 	// mint the MNEE
 	const mintResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/mint`, {

@@ -16,6 +16,7 @@ DATABASE_URL=postgresql://postgres:****@postgres.somehost.net:52253/dbname
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key
 MNEE_ORDINALS_SERVICE=https://mnee-ordinals-service.somehost.net
+MINT_FEE_WIF=<some_wif>
 ```
 
 install the dependencies:
