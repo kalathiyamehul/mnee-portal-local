@@ -135,17 +135,21 @@ const mintMnee = async (amount: number, address: string) => {
 	const fee_per_kb = 10;
 	const change_addr = fundingAddress;
 
+  const mintRequest: MintRequest = {
+    amount,
+    token_ls,
+    latest_minter_tx,
+    funding_utxos,
+    fee_per_kb,
+    change_addr,
+  }
+
+  console.log("Minting MNEE", amount, address, mintRequest);
+
 	// mint the MNEE
 	const mintResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/mint`, {
 		method: "POST",
-		body: JSON.stringify({
-			amount,
-			token_ls,
-			latest_minter_tx,
-			funding_utxos,
-			fee_per_kb,
-			change_addr,
-		} as MintRequest),
+		body: JSON.stringify(mintRequest),
 	});
 
 	if (!mintResponse.ok) {

@@ -11,5 +11,5 @@ export interface MintRequest {
   token_ls: string;
   funding_utxos?: FundingUtxo[];
   fee_per_kb?: number;
-  change_address?: string;
+  change_addr?: string;
 }

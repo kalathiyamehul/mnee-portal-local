@@ -170,6 +170,8 @@ const Setup: React.FC = () => {
 							type="number"
 							className="input input-bordered w-full"
 							value={decimals || ''}
+							min={0}
+							max={12}
 							onChange={(e) => setDecimals(Number(e.target.value))}
 							required
 						/>
