@@ -6,7 +6,7 @@ import { P2PKH, PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
 import { fetchConfig, MNEE_API } from "@/utils/api";
-import { FundingUtxo, MintRequest } from "@/types/utxo";
+import type { FundingUtxo, MintRequest } from "@/types/utxo";
 
 const MNEE_ORDINALS_SERVICE = process.env.MNEE_ORDINALS_SERVICE as string;
 const MINT_FEE_WIF = process.env.MINT_FEE_WIF as string;
