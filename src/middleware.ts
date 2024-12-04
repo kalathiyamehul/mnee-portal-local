@@ -3,7 +3,6 @@ import { NextResponse } from "next/server";
 
 export default withAuth(
 	function middleware() {
-		// Add any custom middleware logic here if needed
 		return NextResponse.next();
 	},
 	{
@@ -17,6 +16,6 @@ export default withAuth(
 export const config = {
 	matcher: [
 		"/dash/:path*",
-		"/api/((?!auth|config|status).*)/:path*", // Protect all API routes except /api/auth/* and /api/config
+		"/api/((?!auth|config).*)/:path*", // Protect all API routes except /api/auth/* and /api/config
 	],
 };

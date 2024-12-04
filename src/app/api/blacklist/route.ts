@@ -73,24 +73,24 @@ export async function POST(request: Request) {
     });
 
     // If there's a callback URL, trigger it immediately since blacklist actions are auto-approved
-    if (callbackUrl) {
-      try {
-        await fetch(callbackUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            blacklistRequestId: blacklistRequest.id,
-            address: blacklistRequest.address,
-            action: blacklistRequest.action,
-            status: blacklistRequest.status,
-          }),
-        });
-      } catch (error) {
-        console.error('Error calling callback URL:', error);
-      }
-    }
+    // if (callbackUrl) {
+    //   try {
+    //     await fetch(callbackUrl, {
+    //       method: 'POST',
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //       },
+    //       body: JSON.stringify({
+    //         blacklistRequestId: blacklistRequest.id,
+    //         address: blacklistRequest.address,
+    //         action: blacklistRequest.action,
+    //         status: blacklistRequest.status,
+    //       }),
+    //     });
+    //   } catch (error) {
+    //     console.error('Error calling callback URL:', error);
+    //   }
+    // }
 
     return blacklistRequest;
   });
