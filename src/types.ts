@@ -1,9 +1,11 @@
+import type { FundingUtxo } from "./types/utxo";
 
 export type Config = {
     tokenId: string;
     decimals: number;
     approver: string;
     feeAddress: string;
+    fundingUtxos: FundingUtxo[];
     fees: {
         min: number;
         max: number;

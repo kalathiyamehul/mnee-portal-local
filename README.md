@@ -74,3 +74,9 @@ Once the server is up and running, visit the web interface. You will be redirect
 <html lang="en" data-theme="forest">
 ```
 
+## Resetting the database
+
+There is a helper script to reset the database. This will drop all tables and re-run the migrations.
+```bash
+bun run db-reset
+```

@@ -6,15 +6,9 @@ import { PublicKey } from "@bsv/sdk";
 import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
 import { fetchConfig, MNEE_API } from "@/utils/api";
+import { FundingUtxo } from "@/types/utxo";
 
 const MNEE_ORDINALS_SERVICE = process.env.MNEE_ORDINALS_SERVICE;
-
-// interface FundingUtxo {
-//   txid: string;
-//   vout: number;
-//   locking_script: string;
-//   satoshis: number;
-// }
 
 // interface MintRequest {
 //   amount: number;
@@ -128,6 +122,7 @@ export async function POST(request: Request) {
 const mintMnee = async (amount: number, address: string) => {
 	const config = await fetchConfig();
 
+  // create the cosign template
 	const template = new CosignTemplate().lock(
 		address,
 		PublicKey.fromString(config.approver),
@@ -138,12 +133,22 @@ const mintMnee = async (amount: number, address: string) => {
 	// look up latest_minter_tx
 	const dbConfig = await getConfig();
 	const latest_minter_tx = dbConfig?.latestMinterTx;
+
+  // MNEE contract config
+  const funding_utxos: FundingUtxo[] = config.fundingUtxos;
+  const fee_per_kb = 10;
+  const change_addr = "";
+
+	// mint the MNEE
 	const mintResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/mint`, {
 		method: "POST",
 		body: JSON.stringify({
 			amount,
 			token_ls,
 			latest_minter_tx,
+      funding_utxos,
+      fee_per_kb,
+      change_addr,
 		}),
 	});
 
