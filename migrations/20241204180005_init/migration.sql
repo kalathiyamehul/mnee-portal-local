@@ -118,7 +118,6 @@ CREATE TABLE "config" (
     "token_id" TEXT NOT NULL,
     "decimals" INTEGER NOT NULL,
     "latest_minter_tx" TEXT NOT NULL,
-    "funding_utxos" JSONB NOT NULL,
 
     CONSTRAINT "config_pkey" PRIMARY KEY ("id")
 );

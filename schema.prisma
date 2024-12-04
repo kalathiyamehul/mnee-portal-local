@@ -165,5 +165,4 @@ model config {
   tokenId     String @map("token_id")
   decimals    Int
   latestMinterTx String @map("latest_minter_tx")
-  fundingUtxos   Json @map("funding_utxos")
 }

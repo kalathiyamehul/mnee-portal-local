@@ -6,7 +6,6 @@ import { P2PKH, PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
 import { fetchConfig, MNEE_API } from "@/utils/api";
-import type { FundingUtxo } from "@/types/utxo";
 
 const MNEE_ORDINALS_SERVICE = process.env.MNEE_ORDINALS_SERVICE as string;
 const MINT_FEE_WIF = process.env.MINT_FEE_WIF as string;
@@ -123,7 +122,7 @@ export async function POST(request: Request) {
 const mintMnee = async (amount: number, address: string) => {
 	const config = await fetchConfig();
 
-  // create the cosign template
+	// create the cosign template
 	const template = new CosignTemplate().lock(
 		address,
 		PublicKey.fromString(config.approver),
@@ -135,10 +134,14 @@ const mintMnee = async (amount: number, address: string) => {
 	const dbConfig = await getConfig();
 	const latest_minter_tx = dbConfig?.latestMinterTx;
 
-  // MNEE contract config
-  const funding_utxos: FundingUtxo[] = config.fundingUtxos;
-  const fee_per_kb = 10;
-  const change_addr = "";
+	// MNEE contract config
+	const pk = PrivateKey.fromWif(MINT_FEE_WIF);
+	const fundingAddress = pk.toAddress();
+	const utxosResponse = await fetch(`${MNEE_API}/v1/utxos/${fundingAddress}`);
+	const funding_utxos = await utxosResponse.json();
+
+	const fee_per_kb = 10;
+	const change_addr = "";
 
 	// mint the MNEE
 	const mintResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/mint`, {
@@ -147,9 +150,9 @@ const mintMnee = async (amount: number, address: string) => {
 			amount,
 			token_ls,
 			latest_minter_tx,
-      funding_utxos,
-      fee_per_kb,
-      change_addr,
+			funding_utxos,
+			fee_per_kb,
+			change_addr,
 		}),
 	});
 
@@ -157,42 +160,41 @@ const mintMnee = async (amount: number, address: string) => {
 		throw new Error("Failed to mint MNEE");
 	}
 
-  try {
-    const { minter_tx } = await mintResponse.json();
-    
-    const tx = Transaction.fromHex(minter_tx);
-    const pk = PrivateKey.fromWif(MINT_FEE_WIF);
+	try {
+		const { minter_tx } = await mintResponse.json();
 
-    // iterate over the inputs and set script template to p2pkh
-    for (const input of tx.inputs) {
-      if (!input.unlockingScript?.chunks.length) {
-        input.unlockingScriptTemplate = new P2PKH().unlock(pk);
-      }
-    }
+		const tx = Transaction.fromHex(minter_tx);
 
-    await tx.sign()
+		// iterate over the inputs and set script template to p2pkh
+		for (const input of tx.inputs) {
+			if (!input.unlockingScript?.chunks.length) {
+				input.unlockingScriptTemplate = new P2PKH().unlock(pk);
+			}
+		}
 
-    // save the new tx id to the db
-    if (dbConfig) {
-      await prisma.config.update({
-        where: { id: dbConfig.id },
-        data: { latestMinterTx: minter_tx },
-      });
-    }
+		await tx.sign();
 
-    // ingest
-    const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
-      method: "POST",
-      body: JSON.stringify({
-        rawtx: Buffer.from(tx.toHex(), 'hex').toString('base64'),
-      }),
-    });
+		// save the new tx id to the db
+		if (dbConfig) {
+			await prisma.config.update({
+				where: { id: dbConfig.id },
+				data: { latestMinterTx: minter_tx },
+			});
+		}
 
-    if (!broadcastResponse.ok) {
-      throw new Error("Failed to broadcast MNEE");
-    }
+		// ingest
+		const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
+			method: "POST",
+			body: JSON.stringify({
+				rawtx: Buffer.from(tx.toHex(), "hex").toString("base64"),
+			}),
+		});
 
-    return { rawtx: minter_tx };
+		if (!broadcastResponse.ok) {
+			throw new Error("Failed to broadcast MNEE");
+		}
+
+		return { rawtx: minter_tx };
 	} catch (error) {
 		console.error(error);
 		throw new Error("Failed to mint MNEE");
