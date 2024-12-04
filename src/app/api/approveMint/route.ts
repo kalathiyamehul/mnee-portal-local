@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PublicKey } from "@bsv/sdk";
+import { P2PKH, PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
 import { fetchConfig, MNEE_API } from "@/utils/api";
-import { FundingUtxo } from "@/types/utxo";
+import type { FundingUtxo } from "@/types/utxo";
 
-const MNEE_ORDINALS_SERVICE = process.env.MNEE_ORDINALS_SERVICE;
+const MNEE_ORDINALS_SERVICE = process.env.MNEE_ORDINALS_SERVICE as string;
+const MINT_FEE_WIF = process.env.MINT_FEE_WIF as string;
 
 // interface MintRequest {
 //   amount: number;
@@ -160,6 +161,18 @@ const mintMnee = async (amount: number, address: string) => {
 
     const { minter_tx } = await mintResponse.json();
     
+    const tx = Transaction.fromHex(minter_tx);
+    const pk = PrivateKey.fromWif(MINT_FEE_WIF);
+
+    // iterate over the inputs and set script template to p2pkh
+    for (const input of tx.inputs) {
+      if (!input.unlockingScript?.chunks.length) {
+        input.unlockingScriptTemplate = new P2PKH().unlock(pk);
+      }
+    }
+
+    await tx.sign()
+
     // save the new tx id to the db
     if (dbConfig) {
       await prisma.config.update({
@@ -172,7 +185,7 @@ const mintMnee = async (amount: number, address: string) => {
     const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
       method: "POST",
       body: JSON.stringify({
-        rawtx: Buffer.from(minter_tx, 'hex').toString('base64'),
+        rawtx: Buffer.from(tx.toHex(), 'hex').toString('base64'),
       }),
     });
 
