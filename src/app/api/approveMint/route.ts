@@ -11,8 +11,6 @@ import type { FundingUtxo, MintRequest } from "@/types/utxo";
 const MNEE_ORDINALS_SERVICE = process.env.MNEE_ORDINALS_SERVICE as string;
 const MINT_FEE_WIF = process.env.MINT_FEE_WIF as string;
 
-
-
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
 
@@ -176,7 +174,7 @@ const mintMnee = async (amount: number, address: string) => {
 			});
 		}
 
-		// ingest
+		// broadcast & ingest
 		const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
 			method: "POST",
 			body: JSON.stringify({
