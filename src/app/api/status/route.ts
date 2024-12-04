@@ -1,13 +1,13 @@
 // src/app/api/status/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { ActionStatus } from '@prisma/client';
+import type { ActionStatus } from '@prisma/client';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status') as ActionStatus | null;
   const type = searchParams.get('type');
-  const limit = parseInt(searchParams.get('limit') || '50', 10);
+  const limit = Number.parseInt(searchParams.get('limit') || '50', 10);
 
   // Get the latest approved action
   const latestApproved = await prisma.actionRequest.findFirst({
