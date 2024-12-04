@@ -51,6 +51,7 @@ interface SystemActivity extends BaseActivity {
 interface MintActivity extends BaseActivity {
 	type: 'MINT';
 	amount: number;
+  address: string;
 }
 
 interface BlacklistActivity extends BaseActivity {
@@ -839,9 +840,14 @@ const DashboardAdminContent = () => {
 											</div>
 										)}
 										{activity.type === 'MINT' && activity.amount && (
+                      <>
 											<div className="badge badge-sm">
 												Amount: {activity.amount}
 											</div>
+                      <div className="badge badge-sm">
+                        Minted To: {activity.address}
+                      </div>
+                      </>
 										)}
 									</div>
 									<div className={`badge badge-sm sm:badge-md ${
