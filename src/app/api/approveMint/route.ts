@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 import { PublicKey } from "@bsv/sdk";
 import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
-import { fetchConfig } from "@/utils/api";
+import { fetchConfig, MNEE_API } from "@/utils/api";
 
 const MNEE_ORDINALS_SERVICE = process.env.MNEE_ORDINALS_SERVICE;
 
@@ -138,7 +138,7 @@ const mintMnee = async (amount: number, address: string) => {
 	// look up latest_minter_tx
 	const dbConfig = await getConfig();
 	const latest_minter_tx = dbConfig?.latestMinterTx;
-	const response = await fetch(`${MNEE_ORDINALS_SERVICE}/mint`, {
+	const mintResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/mint`, {
 		method: "POST",
 		body: JSON.stringify({
 			amount,
@@ -147,13 +147,13 @@ const mintMnee = async (amount: number, address: string) => {
 		}),
 	});
 
-	if (!response.ok) {
+	if (!mintResponse.ok) {
 		throw new Error("Failed to mint MNEE");
 	}
 
   try {
 
-    const { minter_tx } = await response.json();
+    const { minter_tx } = await mintResponse.json();
     
     // save the new tx id to the db
     if (dbConfig) {
@@ -162,6 +162,19 @@ const mintMnee = async (amount: number, address: string) => {
         data: { latestMinterTx: minter_tx },
       });
     }
+
+    // ingest
+    const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
+      method: "POST",
+      body: JSON.stringify({
+        rawtx: Buffer.from(minter_tx, 'hex').toString('base64'),
+      }),
+    });
+
+    if (!broadcastResponse.ok) {
+      throw new Error("Failed to broadcast MNEE");
+    }
+
     return { rawtx: minter_tx };
 	} catch (error) {
 		console.error(error);
