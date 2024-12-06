@@ -4,14 +4,15 @@ import { authOptions } from "@/lib/authOptions";
 import {
 	P2PKH,
 	PrivateKey,
-	Script,
 	Transaction,
-	TransactionInput,
-	TransactionOutput,
+	type TransactionInput,
+	type TransactionOutput,
 } from "@bsv/sdk";
 import { getFundingUtxos } from "../approveMint/route";
-import { fetchTransaction } from "@/utils/api";
+import { fetchTransaction, MNEE_API } from "@/utils/api";
 import { MINT_FEE_WIF } from "@/env";
+import { prisma } from "@/lib/prisma";
+import { getConfig } from "@/lib/config";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -45,6 +46,8 @@ export async function POST(request: Request) {
 }
 
 const deployMnee = async (amount: number, symbol: string, decimals: number) => {
+  console.log("deploying mnee", { amount, symbol, decimals });
+
 	const tx = new Transaction();
 
 	const pk = PrivateKey.fromWif(MINT_FEE_WIF);
@@ -74,8 +77,31 @@ const deployMnee = async (amount: number, symbol: string, decimals: number) => {
 	} as TransactionOutput);
 
 	await tx.fee();
-  
+
 	await tx.sign();
 
-	return tx.toHex();
+const deployTx = tx.toHex();
+
+	// broadcast & ingest
+	const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
+		method: "POST",
+		body: JSON.stringify({
+			rawtx: Buffer.from(deployTx, "hex").toString("base64"),
+		}),
+	});
+
+	if (!broadcastResponse.ok) {
+		throw new Error("Failed to broadcast MNEE");
+	}
+
+	// save the new tx id to the db
+  const dbConfig = await getConfig();
+	if (dbConfig) {
+		await prisma.config.update({
+			where: { id: dbConfig.id },
+			data: { latestMinterTx: deployTx },
+		});
+	}
+  
+	return { rawtx: deployTx };
 };
