@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 import { P2PKH, PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
-import { fetchConfig, MNEE_API } from "@/utils/api";
+import { fetchConfig, fetchTransaction, MNEE_API } from "@/utils/api";
 import type { FundingUtxo, MintRequest } from "@/types/utxo";
 
 const MNEE_ORDINALS_SERVICE = process.env.MNEE_ORDINALS_SERVICE as string;
@@ -164,6 +164,7 @@ const mintMnee = async (amount: number, address: string) => {
 		// iterate over the inputs and set script template to p2pkh
 		for (const input of tx.inputs) {
 			if (!input.unlockingScript?.chunks.length) {
+        input.sourceTransaction= await fetchTransaction(input.sourceTXID as string);
 				input.unlockingScriptTemplate = new P2PKH().unlock(pk);
 			}
 		}
