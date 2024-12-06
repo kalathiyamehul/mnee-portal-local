@@ -5,9 +5,9 @@ import { authOptions } from "@/lib/authOptions";
 import { P2PKH, PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
-import { fetchConfig, fetchTransaction, MNEE_API } from "@/utils/api";
+import { fetchConfig, fetchTransaction } from "@/utils/api";
 import type { FundingUtxo, MintRequest } from "@/types/utxo";
-import { MINT_FEE_WIF, MNEE_ORDINALS_SERVICE } from "@/env";
+import { MINT_FEE_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
