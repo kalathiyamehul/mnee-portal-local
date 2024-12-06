@@ -53,7 +53,6 @@ export default function Setup() {
     symbol: string; 
     amount: string; 
     decimals: number; 
-    destinationAddress: string;
     feeAddress: string;
   }) => {
     setLoading(true);

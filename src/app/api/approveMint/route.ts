@@ -7,9 +7,7 @@ import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
 import { fetchConfig, fetchTransaction, MNEE_API } from "@/utils/api";
 import type { FundingUtxo, MintRequest } from "@/types/utxo";
-
-const MNEE_ORDINALS_SERVICE = process.env.MNEE_ORDINALS_SERVICE as string;
-const MINT_FEE_WIF = process.env.MINT_FEE_WIF as string;
+import { MINT_FEE_WIF, MNEE_ORDINALS_SERVICE } from "@/env";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -127,10 +125,9 @@ const mintMnee = async (amount: number, address: string) => {
 	const latest_minter_tx = dbConfig?.latestMinterTx;
 
 	// MNEE contract config
-	const pk = PrivateKey.fromWif(MINT_FEE_WIF);
+  const pk = PrivateKey.fromWif(MINT_FEE_WIF);
 	const fundingAddress = pk.toAddress();
-	const utxosResponse = await fetch(`${MNEE_API}/v1/utxos/${fundingAddress}`);
-	const funding_utxos = await utxosResponse.json() as FundingUtxo[];
+	const funding_utxos = await getFundingUtxos(fundingAddress);
 
 	const fee_per_kb = 10;
 	const change_addr = fundingAddress;
@@ -197,3 +194,10 @@ const mintMnee = async (amount: number, address: string) => {
 		throw new Error("Failed to mint MNEE");
 	}
 };
+
+export const getFundingUtxos = async (fundingAddress: string) => {
+	const utxosResponse = await fetch(`${MNEE_API}/v1/utxos/${fundingAddress}`);
+	const funding_utxos = await utxosResponse.json() as FundingUtxo[];
+
+  return funding_utxos;
+}

@@ -7,7 +7,6 @@ interface DeployFormProps {
     symbol: string; 
     amount: string; 
     decimals: number; 
-    destinationAddress: string;
     feeAddress: string;
   }) => Promise<void>;
   loading: boolean;
@@ -17,12 +16,11 @@ export function DeployForm({ onBack, onDeploy, loading }: DeployFormProps) {
   const [symbol, setSymbol] = useState('');
   const [amount, setAmount] = useState('');
   const [decimals, setDecimals] = useState<number>(8);
-  const [destinationAddress, setDestinationAddress] = useState('');
   const [feeAddress, setFeeAddress] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onDeploy({ symbol, amount, decimals, destinationAddress, feeAddress });
+    await onDeploy({ symbol, amount, decimals, feeAddress });
   };
 
   return (
@@ -66,19 +64,6 @@ export function DeployForm({ onBack, onDeploy, loading }: DeployFormProps) {
             onChange={(e) => setDecimals(Number(e.target.value))}
             min={0}
             max={12}
-            required
-          />
-        </div>
-        <div className="form-control">
-          <label htmlFor="destinationAddress" className="label">
-            <span className="label-text">Destination Address</span>
-          </label>
-          <input
-            id="destinationAddress"
-            type="text"
-            className="input input-bordered max-w-md w-full"
-            value={destinationAddress}
-            onChange={(e) => setDestinationAddress(e.target.value)}
             required
           />
         </div>
