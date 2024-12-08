@@ -8,6 +8,7 @@ import { getConfig } from "@/lib/config";
 import { fetchConfig, fetchTransaction } from "@/utils/api";
 import type { FundingUtxo, MintRequest } from "@/types/utxo";
 import { MINT_FEE_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
+import { signMint } from "@/templates/valut";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -161,11 +162,12 @@ const mintMnee = async (amount: number, address: string) => {
 		// iterate over the inputs and set script template to p2pkh
 		for (const input of tx.inputs) {
 			if (!input.unlockingScript?.chunks.length) {
-        input.sourceTransaction= await fetchTransaction(input.sourceTXID as string);
+        		input.sourceTransaction= await fetchTransaction(input.sourceTXID as string);
 				input.unlockingScriptTemplate = new P2PKH().unlock(pk);
 			}
 		}
 
+		await signMint(tx, 0, pk);
 		await tx.sign();
 
 		// save the new tx id to the db

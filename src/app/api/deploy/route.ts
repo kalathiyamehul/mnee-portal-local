@@ -10,7 +10,7 @@ import {
 } from "@bsv/sdk";
 import { getFundingUtxos } from "../approveMint/route";
 import { fetchTransaction } from "@/utils/api";
-import { MINT_FEE_WIF, MNEE_API } from "@/env";
+import { MINT_FEE_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 import { prisma } from "@/lib/prisma";
 import { getConfig } from "@/lib/config";
 
@@ -45,31 +45,39 @@ export async function POST(request: Request) {
 	}
 }
 
-const deployMnee = async (amount: number, symbol: string, decimals: number) => {
-  console.log("deploying mnee", { amount, symbol, decimals });
+type DeployRequest = {
+	pubkey_issuer: string;
+}
 
-	const tx = new Transaction();
+const deployMnee = async (amount: number, symbol: string, decimals: number) => {
+	console.log("deploying mnee", { amount, symbol, decimals });
+
 
 	const pk = PrivateKey.fromWif(MINT_FEE_WIF);
+	const deployResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/deploy`, {
+		method: "POST",
+		body: JSON.stringify({
+			pubkey_issuer: pk.toPublicKey().toString(),
+		} as DeployRequest),
+	});
+
+	if (!deployResponse.ok) {
+		throw new Error("Failed to deploy MNEE");
+	}
+
+	const { minterTx } = await deployResponse.json();
+	const tx = Transaction.fromHex(minterTx);
+
 	const fundingAddress = pk.toAddress();
-
 	const fundingUtxos = await getFundingUtxos(fundingAddress);
-	const sourceTransaction = await fetchTransaction(fundingUtxos[0].txid);
-
-	// add funding utxos to tx
 	for (const utxo of fundingUtxos) {
 		tx.addInput({
-			sourceTransaction,
+			sourceTransaction: await fetchTransaction(utxo.txid),
 			sourceTXID: utxo.txid,
 			sourceOutputIndex: utxo.vout,
 			unlockingScriptTemplate: new P2PKH().unlock(pk),
 		} as TransactionInput);
 	}
-
-	tx.addOutput({
-		satoshis: 1,
-		// lockingScript: new VauleLock(symbol).lockingScript,
-	} as TransactionOutput);
 
 	tx.addOutput({
 		change: true,
@@ -80,7 +88,7 @@ const deployMnee = async (amount: number, symbol: string, decimals: number) => {
 
 	await tx.sign();
 
-const deployTx = tx.toHex();
+	const deployTx = tx.toHex();
 
 	// broadcast & ingest
 	const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
@@ -95,13 +103,13 @@ const deployTx = tx.toHex();
 	}
 
 	// save the new tx id to the db
-  const dbConfig = await getConfig();
+	const dbConfig = await getConfig();
 	if (dbConfig) {
 		await prisma.config.update({
 			where: { id: dbConfig.id },
 			data: { latestMinterTx: deployTx },
 		});
 	}
-  
+
 	return { rawtx: deployTx };
 };
