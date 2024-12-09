@@ -1,31 +1,22 @@
 // lib/prisma.ts
 import { PrismaClient } from '@prisma/client';
 
-export const prisma = new PrismaClient();
-
-// model User {
-//     id             String   @id @default(cuid())
-//     name           String?
-//     email          String   @unique
-//     image           String?
-//     emailVerified  DateTime?
-//     idAddress      String
-//     password       String
-//     createdAt      DateTime @default(now())
-//     updatedAt      DateTime @updatedAt
-//   }
-
-type User = {
-    id: string;
-    name: string | null;
-    email: string;
-    image: string | null;
-    emailVerified: Date | null;
-    idAddress: string | null;
-    password: string;
-    createdAt: Date;
-    updatedAt: Date;
+export type User = {
+  id: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+  emailVerified: Date | null;
+  password: string;
+  createdAt: Date;
+  updatedAt: Date;
 };
+
+export type UserWithoutPassword = Omit<User, 'password'> & {
+  password: null;
+};
+
+export const prisma = new PrismaClient();
 
 export async function getUserByEmail(email: string): Promise<User | null> {
     try {

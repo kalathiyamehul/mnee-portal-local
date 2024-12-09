@@ -16,6 +16,6 @@ export default withAuth(
 export const config = {
 	matcher: [
 		"/dash/:path*",
-		"/api/((?!auth|config).*)/:path*", // Protect all API routes except /api/auth/* and /api/config
+		"/api/((?!auth|config|deploy).*)/:path*", // Protect all API routes except /api/auth/* and /api/config
 	],
 };

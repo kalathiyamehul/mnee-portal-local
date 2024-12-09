@@ -1,41 +1,18 @@
 // src/app/signup/page.tsx
 'use client';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { type Addresses, useYoursWallet } from 'yours-wallet-provider';
+import Link from 'next/link';
 
 export default function SignUpPage() {
-    const { connect, isReady, isConnected, getAddresses } = useYoursWallet();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const router = useRouter();
     const [error, setError] = useState('');
 
-    const [addresses, setAddresses] = useState<Addresses>();
-
-    useEffect(() => {
-        const fetchAddresses = async () => {
-            const c = await isConnected();
-            if (!c) await connect();
-
-            const a = await getAddresses();
-            if (a) setAddresses(a);
-        };
-
-        if (isReady && !addresses) {
-            fetchAddresses();
-        }
-    }, [addresses, getAddresses, isReady, isConnected, connect]);
-
     const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
-        // Check if addresses are available
-        if (!addresses?.identityAddress) {
-            setError('Wallet is not connected');
-            return;
-        }
 
         try {
             const res = await fetch('/api/auth/signup', {
@@ -44,7 +21,6 @@ export default function SignUpPage() {
                 body: JSON.stringify({
                     email,
                     password,
-                    idAddress: addresses.identityAddress,
                 }),
             });
 
@@ -95,6 +71,10 @@ export default function SignUpPage() {
                     Sign Up
                 </button>
             </form>
+            <div className="mt-4">
+              <p>Already have an account?</p>
+              <Link href="/login" className="btn btn-link">Login</Link>
+              </div>
         </div>
     );
 }

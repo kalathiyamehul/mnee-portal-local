@@ -1,3 +1,5 @@
+"use server"
+
 // src/lib/config.ts
 import { prisma } from "@/lib/prisma";
 

@@ -5,6 +5,10 @@ import { FaSpinner, FaLock } from 'react-icons/fa';
 // import { formatDistanceToNow } from 'date-fns';
 import { useSession } from "next-auth/react";
 import { FaFire, FaPause, FaPlay, FaSnowflake, FaCoins, FaShieldHalved, FaBan, FaLifeRing } from 'react-icons/fa6';
+import { toToken, toTokenSat } from 'satoshi-token';
+import { getConfig } from '@/lib/config';
+import { config } from '@prisma/client';
+import { DEFAULT_DECIMALS } from '@/lib/constants';
 
 interface Approval {
 	id: string;
@@ -80,7 +84,19 @@ const DashboardAdminContent = () => {
 	const [mintLoading, setMintLoading] = useState(false);
 	const [showOnlyPending, setShowOnlyPending] = useState(true);
 
+	const [config, setConfig] = useState<config | null>(null);
+
 	const POLL_INTERVAL = 5000; // 5 seconds
+
+	useEffect(() => {
+		const fetchConfig = async () => {
+			const config = await getConfig();
+      if (config) {
+        setConfig(config);
+      }
+    };
+    fetchConfig();
+  }, []);
 
 	// Filter activities based on showOnlyPending state
 	const filteredActivities = useMemo(() => {
@@ -252,13 +268,21 @@ const DashboardAdminContent = () => {
 		e.preventDefault();
 		if (!mintAddress || !mintAmount) return;
 
+    // get the config
+    const config = await getConfig();
+    if (!config) {
+      alert("No config found");
+      return;
+    }
+
+    
 		try {
 			setMintLoading(true);
 			const response = await fetch('/api/mint', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					amount: Number.parseInt(mintAmount),
+					amount: toTokenSat(mintAmount, config.decimals),
 					address: mintAddress,
 				}),
 			});
@@ -842,7 +866,7 @@ const DashboardAdminContent = () => {
 										{activity.type === 'MINT' && activity.amount && (
                       <>
 											<div className="badge badge-sm">
-												Amount: {activity.amount}
+												Amount: {toToken(activity.amount, config?.decimals || DEFAULT_DECIMALS)}
 											</div>
                       <div className="badge badge-sm">
                         Minted To: {activity.address}

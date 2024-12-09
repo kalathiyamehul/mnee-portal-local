@@ -24,10 +24,10 @@ import {
 	fetchConfig,
 	fetchMneeUtxos,
 	fetchTransaction,
-	MNEE_API,
 } from "@/utils/api";
 import CosignTemplate from "@/templates/cosign";
 import { FaSpinner } from "react-icons/fa";
+import { MNEE_API } from "@/env";
 
 const { toArray, toBase64 } = Utils;
 
