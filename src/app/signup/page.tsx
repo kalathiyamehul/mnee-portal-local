@@ -3,6 +3,7 @@
 import type React from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function SignUpPage() {
     const [email, setEmail] = useState('');
@@ -70,6 +71,10 @@ export default function SignUpPage() {
                     Sign Up
                 </button>
             </form>
+            <div className="mt-4">
+              <p>Already have an account?</p>
+              <Link href="/login" className="btn btn-link">Login</Link>
+              </div>
         </div>
     );
 }

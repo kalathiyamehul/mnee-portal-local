@@ -66,7 +66,7 @@ export default function Setup() {
       }
       
       toast.success('Token deployed and configured successfully');
-      router.push('/dash');
+      router.push('/signup');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to deploy token');
       console.error('Error deploying token:', error);
@@ -97,7 +97,7 @@ export default function Setup() {
 
       if (!response.ok) throw new Error('Failed to save configuration');
       toast.success('Configuration saved successfully');
-      router.push('/dash');
+      router.push('/signup');
     } catch (error) {
       toast.error('Failed to save configuration');
       console.error('Error saving config:', error);

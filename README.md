@@ -81,3 +81,9 @@ There is a helper script to reset the database. This will drop all tables and re
 ```bash
 bun run db-reset
 ```
+
+## New USers
+`/signup` will create a new user accounts.
+
+## Deploying a new token
+`/setup` will deploy a new token and configure the dashboard.
