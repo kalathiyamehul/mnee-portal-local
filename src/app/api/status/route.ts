@@ -31,7 +31,6 @@ export async function GET(request: Request) {
           email: true,
           image: true,
           emailVerified: true,
-          idAddress: true,
           createdAt: true,
           updatedAt: true,
         }
@@ -62,7 +61,6 @@ export async function GET(request: Request) {
           email: true,
           image: true,
           emailVerified: true,
-          idAddress: true,
           createdAt: true,
           updatedAt: true,
         }
@@ -93,7 +91,6 @@ export async function GET(request: Request) {
           email: true,
           image: true,
           emailVerified: true,
-          idAddress: true,
           createdAt: true,
           updatedAt: true,
         }
@@ -124,7 +121,6 @@ export async function GET(request: Request) {
           email: true,
           image: true,
           emailVerified: true,
-          idAddress: true,
           createdAt: true,
           updatedAt: true,
         }
