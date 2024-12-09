@@ -4,11 +4,12 @@ import { useCallback, useEffect, useState, useMemo } from 'react';
 import { FaSpinner, FaLock } from 'react-icons/fa';
 // import { formatDistanceToNow } from 'date-fns';
 import { useSession } from "next-auth/react";
-import { FaFire, FaPause, FaPlay, FaSnowflake, FaCoins, FaShieldHalved, FaBan, FaLifeRing } from 'react-icons/fa6';
+import { FaFire, FaPause, FaPlay, FaSnowflake, FaCoins, FaBan } from 'react-icons/fa6';
 import { toToken, toTokenSat } from 'satoshi-token';
 import { getConfig } from '@/lib/config';
 import { config } from '@prisma/client';
 import { DEFAULT_DECIMALS } from '@/lib/constants';
+import { toast } from 'react-hot-toast';
 
 interface Approval {
 	id: string;
@@ -19,51 +20,55 @@ interface Approval {
 }
 
 // Action type definitions
-type ActionType = 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT';
+type ActionType = 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT' | 'BURN';
 
-const REQUEST_TYPES: Record<ActionType, { requiresApproval: boolean }> = {
-	FREEZE: { requiresApproval: true },
-	UNFREEZE: { requiresApproval: true },
-	BLACKLIST: { requiresApproval: false },
-	UNBLACKLIST: { requiresApproval: false },
-	PAUSE: { requiresApproval: true },
-	RESUME: { requiresApproval: true },
-	MINT: { requiresApproval: true },
-} as const;
-
-interface BaseActivity {
+interface BaseRequest {
 	id: string;
-	status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+	status: 'PENDING' | 'APPROVED' | 'CANCELLED';
 	createdAt: string;
 	requester: {
-		name: string | null;
 		email: string;
+		name: string | null;
 	};
-	approvals: Approval[];
-	action: ActionType;
+	approvals: Array<{
+		id: string;
+		approver: {
+			email: string;
+			name: string | null;
+		};
+	}>;
 }
 
-interface FreezeActivity extends BaseActivity {
-	type: 'FREEZE';
+interface FreezeRequest extends BaseRequest {
+	action: 'FREEZE' | 'UNFREEZE';
 	address: string;
 }
 
-interface SystemActivity extends BaseActivity {
-	type: 'ACTION';
+interface BlacklistRequest extends BaseRequest {
+	action: 'BLACKLIST' | 'UNBLACKLIST';
+	address: string;
 }
 
-interface MintActivity extends BaseActivity {
-	type: 'MINT';
+interface SystemRequest extends BaseRequest {
+	action: 'PAUSE' | 'RESUME';
+}
+
+interface MintRequest extends BaseRequest {
 	amount: number;
-  address: string;
-}
-
-interface BlacklistActivity extends BaseActivity {
-	type: 'BLACKLIST';
 	address: string;
 }
 
-type Activity = FreezeActivity | SystemActivity | MintActivity | BlacklistActivity;
+interface BurnRequest extends BaseRequest {
+	amount: number;
+}
+
+type Activity = (
+	| (FreezeRequest & { type: 'FREEZE' })
+	| (BlacklistRequest & { type: 'BLACKLIST' })
+	| (SystemRequest & { type: 'ACTION' })
+	| (MintRequest & { type: 'MINT'; action: 'MINT' })
+	| (BurnRequest & { type: 'BURN'; action: 'BURN' })
+);
 
 interface AddressStatus {
 	address: string;
@@ -83,6 +88,8 @@ const DashboardAdminContent = () => {
 	const [mintAmount, setMintAmount] = useState('');
 	const [mintLoading, setMintLoading] = useState(false);
 	const [showOnlyPending, setShowOnlyPending] = useState(true);
+	const [burnAmount, setBurnAmount] = useState('');
+	const [burnLoading, setBurnLoading] = useState(false);
 
 	const [config, setConfig] = useState<config | null>(null);
 
@@ -98,12 +105,27 @@ const DashboardAdminContent = () => {
     fetchConfig();
   }, []);
 
-	// Filter activities based on showOnlyPending state
+
+	// Helper function to check if activity requires approval
+	const requiresApproval = (activity: Activity): boolean => {
+		switch (activity.type) {
+			case 'BURN':
+			case 'MINT':
+			case 'FREEZE':
+				return true;
+			case 'BLACKLIST':
+				return false;
+			case 'ACTION':
+				return activity.action === 'PAUSE' || activity.action === 'RESUME';
+		}
+	};
+  
+	// Filter activities based on showOnlyPending
 	const filteredActivities = useMemo(() => {
 		if (!showOnlyPending) return activities;
-		return activities.filter(activity => 
+		return activities?.filter(activity => 
 			activity.status === 'PENDING' && 
-			REQUEST_TYPES[activity.action]?.requiresApproval
+			requiresApproval(activity)
 		);
 	}, [activities, showOnlyPending]);
 
@@ -111,6 +133,8 @@ const DashboardAdminContent = () => {
 	const activeRestrictions = useMemo(() => {
 		const addressMap = new Map<string, AddressStatus>();
 		
+    if (!activities) return [];
+
 		// Sort activities by timestamp, newest first
 		const sortedActivities = [...activities].sort(
 			(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -137,45 +161,39 @@ const DashboardAdminContent = () => {
 		return Array.from(addressMap.values()).filter(status => status.isBlacklisted || status.isFrozen);
 	}, [activities]);
 
+	// Fetch status and activities
 	const fetchStatus = useCallback(async () => {
 		try {
-			const response = await fetch('/api/status');
-			if (response.ok) {
-				const data = await response.json();
-				setIsPaused(data.isPaused);
-				setActivities(data.activities);
-			} else {
-				console.error('Failed to fetch status:', await response.text());
-			}
+			setLoading(true);
+			const res = await fetch('/api/status?includePending=true');
+			const data = await res.json();
+
+			if (!res.ok) throw new Error(data.error || 'Failed to fetch status');
+
+			// Process activities
+			const allActivities: Activity[] = [
+				...data.freezeRequests.map((req: FreezeRequest) => ({ ...req, type: 'FREEZE' })),
+				...data.blacklistRequests.map((req: BlacklistRequest) => ({ ...req, type: 'BLACKLIST' })),
+				...data.systemRequests.map((req: SystemRequest) => ({ ...req, type: 'ACTION' })),
+				...data.mintRequests.map((req: MintRequest) => ({ ...req, type: 'MINT', action: 'MINT' })),
+				...data.burnRequests.map((req: BurnRequest) => ({ ...req, type: 'BURN', action: 'BURN' })),
+			].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+			setActivities(allActivities);
+			setIsPaused(data.isPaused);
 		} catch (error) {
 			console.error('Error fetching status:', error);
+			toast.error('Failed to fetch status');
 		} finally {
 			setLoading(false);
 		}
 	}, []);
 
+	// Set up polling
 	useEffect(() => {
-		let mounted = true;
-		let timeoutId: ReturnType<typeof setTimeout>;
-
-		const poll = async () => {
-			if (!mounted) return;
-			await fetchStatus();
-			if (mounted) {
-				timeoutId = setTimeout(poll, POLL_INTERVAL);
-			}
-		};
-
-		// Start polling
-		poll();
-
-		// Cleanup
-		return () => {
-			mounted = false;
-			if (timeoutId) {
-				clearTimeout(timeoutId);
-			}
-		};
+		fetchStatus();
+		const interval = setInterval(fetchStatus, POLL_INTERVAL);
+		return () => clearInterval(interval);
 	}, [fetchStatus]);
 
 	const handlePauseToggle = async () => {
@@ -306,74 +324,80 @@ const DashboardAdminContent = () => {
 		}
 	};
 
-	const handleCancel = async (id: string, type: 'ACTION' | 'FREEZE' | 'MINT' | 'BLACKLIST') => {
+	const handleCancel = async (id: string, type: Activity['type']) => {
 		try {
 			setLoading(true);
-			const response = await fetch('/api/cancel', {
+			const res = await fetch('/api/cancel', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(
-					type === 'ACTION' 
-						? { actionRequestId: id }
-						: type === 'FREEZE'
-						? { freezeRequestId: id }
-						: { mintRequestId: id }
-				),
+				body: JSON.stringify({
+					freezeRequestId: type === 'FREEZE' ? id : undefined,
+					mintRequestId: type === 'MINT' ? id : undefined,
+					burnRequestId: type === 'BURN' ? id : undefined,
+					actionRequestId: type === 'ACTION' ? id : undefined,
+				}),
 			});
 
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || 'Failed to cancel request');
-			}
-
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || 'Failed to cancel request');
+			
+			toast.success('Request cancelled successfully');
 			await fetchStatus();
 		} catch (error) {
 			console.error('Error cancelling request:', error);
-			alert(error instanceof Error ? error.message : 'Failed to cancel request');
+			toast.error(error instanceof Error ? error.message : 'Failed to cancel request');
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const handleApprove = async (id: string, type: 'ACTION' | 'FREEZE' | 'MINT' | 'BLACKLIST') => {
+	const handleApprove = async (id: string, type: Activity['type']) => {
 		try {
 			setLoading(true);
-			const endpoint = type === 'ACTION' ? '/api/approve' : type === 'FREEZE' ? '/api/approveFreeze' : '/api/approveMint';
-			const body = type === 'ACTION' 
-				? { actionRequestId: id }
-				: type === 'FREEZE'
-				? { freezeRequestId: id }
-				: { mintRequestId: id };
-			
-			const response = await fetch(endpoint, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(body),
-			});
-
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || 'Failed to approve request');
+			let endpoint = '';
+			switch (type) {
+				case 'FREEZE':
+					endpoint = '/api/approveFreeze';
+					break;
+				case 'MINT':
+					endpoint = '/api/approveMint';
+					break;
+				case 'BURN':
+					endpoint = '/api/approveBurn';
+					break;
+				case 'ACTION':
+					endpoint = '/api/approve';
+					break;
+				default:
+					throw new Error('Invalid request type');
 			}
 
+			const res = await fetch(endpoint, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					freezeRequestId: type === 'FREEZE' ? id : undefined,
+					mintRequestId: type === 'MINT' ? id : undefined,
+					burnRequestId: type === 'BURN' ? id : undefined,
+					actionRequestId: type === 'ACTION' ? id : undefined,
+				}),
+			});
+
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || 'Failed to approve request');
+			
+			toast.success('Request approved successfully');
 			await fetchStatus();
 		} catch (error) {
 			console.error('Error approving request:', error);
-			alert(error instanceof Error ? error.message : 'Failed to approve request');
+			toast.error(error instanceof Error ? error.message : 'Failed to approve request');
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const canApprove = (activity: Activity) => {
-		if (!session?.user?.email) return false;
-		if (activity.status !== 'PENDING') return false;
-		if (!REQUEST_TYPES[activity.action].requiresApproval) return false;
-		if (activity.requester.email === session.user.email) return false;
-		return !activity.approvals.some(approval => approval.approver.email === session.user.email);
-	};
 
-	const canCancel = (activity: Activity) => {
+	const canCancel = (activity: Activity): boolean => {
 		return activity.status === 'PENDING' && activity.requester.email === session?.user?.email;
 	};
 
@@ -433,139 +457,110 @@ const DashboardAdminContent = () => {
 		}
 	};
 
-	// Helper function to get activity display text
-	const getActivityDisplayText = (activity: Activity): string => {
-		const needsRequestSuffix = REQUEST_TYPES[activity.action].requiresApproval;
-		return needsRequestSuffix ? `${activity.action} Request` : activity.action;
-	};
-
 	// Helper function to get activity icon
 	const getActivityIcon = (activity: Activity) => {
-		switch (activity.action) {
-			case 'PAUSE':
-				return <FaPause />;
-			case 'RESUME':
-				return <FaPlay />;
-			case 'MINT':
-				return <FaCoins />;
+		switch (activity.type) {
 			case 'FREEZE':
 				return <FaSnowflake />;
-			case 'UNFREEZE':
-				return <FaFire />;
 			case 'BLACKLIST':
 				return <FaBan />;
-			case 'UNBLACKLIST':
-				return <FaLifeRing />;
+			case 'ACTION':
+				return activity.action === 'PAUSE' ? <FaPause /> : <FaPlay />;
+			case 'MINT':
+				return <FaCoins />;
+			case 'BURN':
+				return <FaFire className="text-red-500" />;
 			default:
 				return null;
 		}
 	};
 
-	// const renderActivityDetails = (activity: Activity) => {
-	// 	const timeAgo = formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true });
-	// 	const approvalCount = activity.approvals.length;
-	// 	const isPending = activity.status === 'PENDING';
-	// 	const requiresApproval = REQUEST_TYPES[activity.action].requiresApproval;
+	// Helper function to get activity display text
+	const getActivityDisplayText = (activity: Activity): string => {
+		switch (activity.type) {
+			case 'BURN':
+				return `Burn ${toToken(activity.amount, config?.decimals || DEFAULT_DECIMALS)} tokens`;
+			case 'MINT':
+				return `Mint ${toToken(activity.amount, config?.decimals || DEFAULT_DECIMALS)} tokens to ${activity.address}`;
+			case 'FREEZE':
+				return `${activity.action} ${activity.address}`;
+			case 'BLACKLIST':
+				return `${activity.action} ${activity.address}`;
+			case 'ACTION':
+				return activity.action;
+		}
+	};
 
-	// 	return (
-	// 		<div key={activity.id} className="card bg-base-200 shadow-xl mb-4">
-	// 			<div className="card-body">
-	// 				<div className="flex justify-between items-start">
-	// 					<div>
-	// 						<h3 className="card-title">
-	// 							{getActivityIcon(activity)}
-	// 							{getActivityDisplayText(activity)}
-	// 							{activity.type === 'FREEZE' && activity.address && (
-	// 								<div className="badge badge-sm ml-2">
-	// 									{activity.address.slice(0, 8)}...{activity.address.slice(-8)}
-	// 								</div>
-	// 							)}
-	// 							{activity.type === 'MINT' && activity.amount > 0 && (
-	// 								<div className="badge badge-sm ml-2">
-	// 									Amount: {activity.amount}
-	// 								</div>
-	// 							)}
-	// 						</h3>
-	// 						<p className="text-sm opacity-70">
-	// 							Requested by {activity.requester.name ?? activity.requester.email} {timeAgo}
-	// 						</p>
-	// 					</div>
-	// 					<div className="flex items-center gap-2">
-	// 						<div className={`badge ${activity.status === 'APPROVED' ? 'badge-success' : 
-	// 							activity.status === 'PENDING' ? 'badge-warning' : 'badge-error'}`}>
-	// 							{activity.status}
-	// 						</div>
-	// 						{!requiresApproval && (
-	// 							<div className="badge badge-neutral">No Approval Required</div>
-	// 						)}
-	// 					</div>
-	// 				</div>
+	const handleBurnRequest = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!burnAmount) return;
 
-	// 				{/* Approvals Section */}
-	// 				{requiresApproval && (
-	// 					<div className="mt-4">
-	// 						<h4 className="font-semibold mb-2">Approvals ({approvalCount}/2)</h4>
-	// 						<div className="space-y-2">
-	// 							{activity.approvals.map((approval) => (
-	// 								<div key={approval.id} className="text-sm opacity-80">
-	// 									✓ {approval.approver.name || approval.approver.email}
-	// 									{approval.approver.email === activity.requester.email && (
-	// 										<span className="text-info ml-2">(requester)</span>
-	// 									)}
-	// 								</div>
-	// 							))}
-	// 						</div>
-	// 					</div>
-	// 				)}
+		try {
+			setBurnLoading(true);
+			const response = await fetch('/api/burn', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					amount: burnAmount,
+				}),
+			});
 
-	// 				{/* Action Buttons */}
-	// 				{isPending && (
-	// 					<div className="card-actions justify-end mt-4">
-	// 						{canCancel(activity) && (
-	// 							<button
-	// 								type="button"
-	// 								className="btn btn-error btn-sm"
-	// 								onClick={() => handleCancel(activity.id, activity.type)}
-	// 								disabled={loading}
-	// 							>
-	// 								{loading ? <FaSpinner className="animate-spin" /> : 'Cancel Request'}
-	// 							</button>
-	// 						)}
-	// 						{requiresApproval && (
-	// 							<button
-	// 								type="button"
-	// 								className="btn btn-primary btn-sm"
-	// 								onClick={() => handleApprove(activity.id, activity.type)}
-	// 								disabled={loading || !canApprove(activity)}
-	// 								title={
-	// 									activity.requester.email === session?.user?.email
-	// 										? "Cannot approve your own request"
-	// 										: activity.approvals.some(a => a.approver.email === session?.user?.email)
-	// 										? "Already approved"
-	// 										: "Approve request"
-	// 								}
-	// 							>
-	// 								{loading ? <FaSpinner className="animate-spin" /> : 'Approve'}
-	// 							</button>
-	// 						)}
-	// 					</div>
-	// 				)}
-	// 			</div>
-	// 		</div>
-	// 	);
-	// };
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.message || 'Failed to create burn request');
+			}
 
-	// Helper function to find pending request for an address and action
-	// const findPendingRequest = (activities: Activity[], address: string, action: ActionType): Activity | undefined => {
-	// 	return activities.find(activity => 
-	// 		activity.type === 'FREEZE' && 
-	// 		activity.address === address && 
-	// 		activity.action === action && 
-	// 		activity.status === 'PENDING'
-	// 	);
-	// };
+			setBurnAmount('');
+			await fetchStatus();
+			// Close the modal using the dialog close method
+			const modal = document.getElementById('burn_modal') as HTMLDialogElement;
+			modal.close();
+		} catch (error) {
+			console.error('Error creating burn request:', error);
+			alert(error instanceof Error ? error.message : 'Failed to create burn request');
+		} finally {
+			setBurnLoading(false);
+		}
+	};
 
-	if (loading && activities.length === 0) {
+	const handleApproveBurn = async (burnRequestId: string) => {
+		try {
+			const response = await fetch('/api/approveBurn', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ burnRequestId }),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.message || 'Failed to approve burn request');
+			}
+
+			await fetchStatus();
+		} catch (error) {
+			console.error('Error approving burn request:', error);
+			alert(error instanceof Error ? error.message : 'Failed to approve burn request');
+		}
+	};
+
+
+	const canApprove = (activity: Activity): boolean => {
+		if (!session?.user?.email) return false;
+		if (activity.status !== 'PENDING') return false;
+		if (!requiresApproval(activity)) return false;
+		// The requester's request counts as the first approval
+		if (activity.requester.email === session.user.email) return false;
+		return !activity.approvals.some(approval => approval.approver.email === session.user.email);
+	};
+
+	// Get total approval count (including the requester's implicit approval)
+	const getApprovalCount = (activity: Activity): number => {
+		if (!requiresApproval(activity)) return 0;
+		// Count the requester's request as an approval
+		return activity.approvals.length + 1;
+	};
+
+	if (loading && activities?.length === 0) {
 		return (
 			<div className="flex justify-center items-center min-h-[200px]">
 				<FaSpinner className="animate-spin text-2xl" />
@@ -574,7 +569,7 @@ const DashboardAdminContent = () => {
 	}
 
 	// Find any pending pause/resume request
-	const pendingPauseRequest = activities.find(
+	const pendingPauseRequest = activities?.find(
 		a => a.type === 'ACTION' && 
 		a.status === 'PENDING' && 
 		(a.action === 'PAUSE' || a.action === 'RESUME')
@@ -702,7 +697,7 @@ const DashboardAdminContent = () => {
 					<div className="flex flex-wrap items-center gap-2">
 						<h2 className="text-xl sm:text-2xl font-bold">Activity</h2>
 						<label className="label cursor-pointer gap-2 px-2">
-							<span className="label-text text-sm">Show pending</span>
+							<span className="label-text text-sm">Pending Only</span>
 							<input
 								type="checkbox"
 								className="toggle toggle-primary toggle-sm sm:toggle-md"
@@ -711,16 +706,16 @@ const DashboardAdminContent = () => {
 							/>
 						</label>
 					</div>
-					<div className="flex flex-wrap gap-2">
+					<div className="flex gap-2 mb-4">
 						<button
 							type="button"
 							className="btn btn-primary btn-sm"
 							onClick={() => {
 								const modal = document.getElementById('freeze_modal') as HTMLDialogElement;
-								modal.showModal();
+									modal.showModal();
 							}}
 						>
-							<FaShieldHalved className="mr-1" /> 
+							<FaSnowflake className="mr-1" /> 
 							<span className="text-sm">Restrict</span>
 						</button>
 						<button
@@ -733,6 +728,15 @@ const DashboardAdminContent = () => {
 						>
 							<FaCoins className="mr-1" /> 
 							<span className="text-sm">Mint</span>
+						</button>
+						<button
+							className="btn btn-primary"
+							onClick={() => {
+								const modal = document.getElementById('burn_modal') as HTMLDialogElement;
+								modal.showModal();
+							}}
+						>
+							<FaFire className="mr-2" /> Burn
 						</button>
 					</div>
 				</div>
@@ -847,66 +851,113 @@ const DashboardAdminContent = () => {
 					</div>
 				</dialog>
 
+				{/* Burn Modal */}
+				<dialog id="burn_modal" className="modal">
+					<div className="modal-box">
+						<h3 className="font-bold text-lg mb-4">Burn Tokens</h3>
+						<form onSubmit={handleBurnRequest}>
+							<div className="form-control">
+								<label className="label">
+									<span className="label-text">Amount</span>
+								</label>
+								<input
+									type="number"
+									className="input input-bordered"
+									value={burnAmount}
+									onChange={(e) => setBurnAmount(e.target.value)}
+									required
+								/>
+							</div>
+							<div className="modal-action">
+								<button type="button" className="btn" onClick={() => {
+									const modal = document.getElementById('burn_modal') as HTMLDialogElement;
+									modal.close();
+								}}>
+									Cancel
+								</button>
+								<button type="submit" className={`btn btn-primary ${burnLoading ? 'loading' : ''}`}>
+									{burnLoading ? 'Creating...' : 'Create Burn Request'}
+								</button>
+							</div>
+						</form>
+					</div>
+				</dialog>
+
 				{/* Activity List */}
 				<div className="space-y-3">
-					{filteredActivities.map((activity) => (
+					{filteredActivities?.map((activity) => (
 						<div key={activity.id} className="card bg-base-200 shadow-sm">
 							<div className="card-body p-3 sm:p-4">
 								<div className="flex flex-wrap justify-between gap-2">
-									<div className="flex items-center gap-2 flex-wrap">
+									<div className="flex items-center gap-2">
 										{getActivityIcon(activity)}
-										<span className="font-semibold text-sm sm:text-base">
-											{getActivityDisplayText(activity)}
-										</span>
+										<span>{getActivityDisplayText(activity)}</span>
 										{activity.type === 'FREEZE' && activity.address && (
 											<div className="badge badge-sm">
-												{activity.address.slice(0, 4)}...{activity.address.slice(-4)}
+												{activity.address.slice(0, 8)}...{activity.address.slice(-8)}
 											</div>
 										)}
-										{activity.type === 'MINT' && activity.amount && (
-                      <>
+										{activity.type === 'MINT' && (
 											<div className="badge badge-sm">
 												Amount: {toToken(activity.amount, config?.decimals || DEFAULT_DECIMALS)}
 											</div>
-                      <div className="badge badge-sm">
-                        Minted To: {activity.address}
-                      </div>
-                      </>
+										)}
+										{activity.type === 'BURN' && (
+											<div className="badge badge-sm">
+												Amount: {toToken(activity.amount, config?.decimals || DEFAULT_DECIMALS)}
+											</div>
 										)}
 									</div>
-									<div className={`badge badge-sm sm:badge-md ${
-										activity.status === 'APPROVED' ? 'badge-success' : 
-										activity.status === 'PENDING' ? 'badge-warning' : 'badge-error'
-									}`}>
-										{activity.status}
+									<div className="flex items-center gap-2">
+										<div className={`badge badge-sm ${
+											activity.status === 'APPROVED' ? 'badge-success' :
+											activity.status === 'PENDING' ? 'badge-warning' :
+											'badge-error'
+										}`}>
+											{activity.status}
+										</div>
+										{!requiresApproval(activity) && (
+											<div className="badge badge-sm badge-neutral">No Approval Required</div>
+										)}
 									</div>
 								</div>
-								
-								<div className="text-xs sm:text-sm opacity-70 mt-2">
-									<p>By: {activity.requester.name || activity.requester.email}</p>
-									<p className="mt-1">
-										Approvals: {activity.approvals.map(a => a.approver.email).join(', ')}
-									</p>
-								</div>
 
+								{/* Approvals Section */}
+								{requiresApproval(activity) && (
+									<div className="mt-2">
+										<div className="text-sm opacity-70">
+											Approvals ({getApprovalCount(activity)}/2)
+										</div>
+										<div className="space-y-1">
+											<div className="text-sm">
+												✓ {activity.requester.name || activity.requester.email} (Requester)
+											</div>
+											{activity.approvals.map((approval) => (
+												<div key={approval.id} className="text-sm">
+													✓ {approval.approver.name || approval.approver.email}
+												</div>
+											))}
+										</div>
+									</div>
+								)}
+
+								{/* Action Buttons */}
 								{activity.status === 'PENDING' && (
-									<div className="card-actions justify-end mt-2">
+									<div className="card-actions justify-end mt-3">
 										{canCancel(activity) && (
 											<button
-												type="button"
-												className="btn btn-error btn-xs sm:btn-sm"
+												className="btn btn-error btn-sm"
 												onClick={() => handleCancel(activity.id, activity.type)}
 												disabled={loading}
 											>
-												{loading ? <FaSpinner className="animate-spin" /> : 'Cancel'}
+												Cancel
 											</button>
 										)}
-										{REQUEST_TYPES[activity.action].requiresApproval && (
+										{canApprove(activity) && (
 											<button
-												type="button"
-												className="btn btn-primary btn-xs sm:btn-sm"
+												className="btn btn-primary btn-sm"
 												onClick={() => handleApprove(activity.id, activity.type)}
-												disabled={loading || !canApprove(activity)}
+												disabled={loading}
 												title={
 													activity.requester.email === session?.user?.email
 														? "Cannot approve your own request"
@@ -915,7 +966,7 @@ const DashboardAdminContent = () => {
 														: "Approve request"
 												}
 											>
-												{loading ? <FaSpinner className="animate-spin" /> : 'Approve'}
+												Approve
 											</button>
 										)}
 									</div>

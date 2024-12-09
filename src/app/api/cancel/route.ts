@@ -11,21 +11,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { actionRequestId, freezeRequestId, blacklistRequestId, mintRequestId } = await request.json();
+  const { actionRequestId, freezeRequestId, blacklistRequestId, mintRequestId, burnRequestId } = await request.json();
 
   try {
     if (actionRequestId) {
-      // Cancel action request
-      const actionRequest = await prisma.actionRequest.findUnique({
+      const request = await prisma.actionRequest.findUnique({
         where: { id: actionRequestId },
       });
 
-      if (!actionRequest) {
-        return NextResponse.json({ error: 'Action request not found' }, { status: 404 });
+      if (!request) {
+        return NextResponse.json({ error: 'Request not found' }, { status: 404 });
       }
 
-      if (actionRequest.requestedBy !== session.user.id) {
-        return NextResponse.json({ error: 'Only the creator can cancel this request' }, { status: 403 });
+      if (request.requestedBy !== session.user.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
       await prisma.actionRequest.update({
@@ -33,17 +32,16 @@ export async function POST(request: Request) {
         data: { status: 'CANCELLED' },
       });
     } else if (freezeRequestId) {
-      // Cancel freeze request
-      const freezeRequest = await prisma.freezeRequest.findUnique({
+      const request = await prisma.freezeRequest.findUnique({
         where: { id: freezeRequestId },
       });
 
-      if (!freezeRequest) {
-        return NextResponse.json({ error: 'Freeze request not found' }, { status: 404 });
+      if (!request) {
+        return NextResponse.json({ error: 'Request not found' }, { status: 404 });
       }
 
-      if (freezeRequest.requestedBy !== session.user.id) {
-        return NextResponse.json({ error: 'Only the creator can cancel this request' }, { status: 403 });
+      if (request.requestedBy !== session.user.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
       await prisma.freezeRequest.update({
@@ -51,17 +49,16 @@ export async function POST(request: Request) {
         data: { status: 'CANCELLED' },
       });
     } else if (blacklistRequestId) {
-      // Cancel blacklist request
-      const blacklistRequest = await prisma.blacklistRequest.findUnique({
+      const request = await prisma.blacklistRequest.findUnique({
         where: { id: blacklistRequestId },
       });
 
-      if (!blacklistRequest) {
-        return NextResponse.json({ error: 'Blacklist request not found' }, { status: 404 });
+      if (!request) {
+        return NextResponse.json({ error: 'Request not found' }, { status: 404 });
       }
 
-      if (blacklistRequest.requestedBy !== session.user.id) {
-        return NextResponse.json({ error: 'Only the creator can cancel this request' }, { status: 403 });
+      if (request.requestedBy !== session.user.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
       await prisma.blacklistRequest.update({
@@ -69,25 +66,41 @@ export async function POST(request: Request) {
         data: { status: 'CANCELLED' },
       });
     } else if (mintRequestId) {
-      // Cancel mint request
-      const mintRequest = await prisma.mintRequest.findUnique({
+      const request = await prisma.mintRequest.findUnique({
         where: { id: mintRequestId },
       });
 
-      if (!mintRequest) {
-        return NextResponse.json({ error: 'Mint request not found' }, { status: 404 });
+      if (!request) {
+        return NextResponse.json({ error: 'Request not found' }, { status: 404 });
       }
 
-      if (mintRequest.requestedBy !== session.user.id) {
-        return NextResponse.json({ error: 'Only the creator can cancel this request' }, { status: 403 });
+      if (request.requestedBy !== session.user.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
       await prisma.mintRequest.update({
         where: { id: mintRequestId },
         data: { status: 'CANCELLED' },
       });
+    } else if (burnRequestId) {
+      const request = await prisma.burnRequest.findUnique({
+        where: { id: burnRequestId },
+      });
+
+      if (!request) {
+        return NextResponse.json({ error: 'Request not found' }, { status: 404 });
+      }
+
+      if (request.requestedBy !== session.user.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      await prisma.burnRequest.update({
+        where: { id: burnRequestId },
+        data: { status: 'CANCELLED' },
+      });
     } else {
-      return NextResponse.json({ error: 'No request ID provided' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
     return NextResponse.json({ success: true });

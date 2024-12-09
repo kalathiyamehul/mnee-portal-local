@@ -25,6 +25,8 @@ model User {
   blacklistRequests BlacklistRequest[] @relation("UserBlacklistRequests")
   blacklistApprovals BlacklistApproval[] @relation("UserBlacklistApprovals")
   mintRequests      MintRequest[]      @relation("UserMintRequests")
+  burnRequests      BurnRequest[]      @relation("UserBurnRequests")
+  burnApprovals     BurnApproval[]     @relation("UserBurnApprovals")
 
   @@map("user")
 }
@@ -137,6 +139,35 @@ model BlacklistApproval {
   approver         User            @relation("UserBlacklistApprovals", fields: [approvedBy], references: [id])
 
   @@map("blacklist_approval")
+}
+
+model BurnRequest {
+  id              String       @id @default(uuid())
+  amount          Int
+  status          ActionStatus @default(PENDING)
+  requestedBy     String       @map("requested_by")
+  requiresApproval Boolean     @default(true) @map("requires_approval")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  requester User             @relation("UserBurnRequests", fields: [requestedBy], references: [id])
+  approvals BurnApproval[]
+
+  @@map("burn_request")
+}
+
+model BurnApproval {
+  id              String   @id @default(uuid())
+  burnRequestId   String   @map("burn_request_id")
+  approvedBy      String   @map("approved_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  burnRequest BurnRequest @relation(fields: [burnRequestId], references: [id])
+  approver    User       @relation("UserBurnApprovals", fields: [approvedBy], references: [id])
+
+  @@map("burn_approval")
 }
 
 enum BlacklistAction {

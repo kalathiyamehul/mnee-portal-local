@@ -1,202 +1,126 @@
 // src/app/api/status/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import type { ActionStatus } from '@prisma/client';
+import { ActionStatus } from '@prisma/client';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const status = searchParams.get('status') as ActionStatus | null;
   const type = searchParams.get('type');
-  const limit = Number.parseInt(searchParams.get('limit') || '50', 10);
+  const includePending = searchParams.get('includePending') === 'true';
 
-  // Get the latest approved action
-  const latestApproved = await prisma.actionRequest.findFirst({
-    where: { status: 'APPROVED' },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  const isPaused = latestApproved?.action === 'PAUSE';
-
-  // Base where clause for status filtering
-  const statusWhere = status ? { status } : {};
-
-  // Get all action requests with their approvals
-  const actionRequests = await prisma.actionRequest.findMany({
-    where: statusWhere,
-    include: { 
-      requester: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-          emailVerified: true,
-          createdAt: true,
-          updatedAt: true,
-        }
-      },
-      approvals: {
-        include: {
-          approver: {
-            select: {
-              name: true,
-              email: true
-            }
-          }
-        }
+  // Base query conditions
+  const whereCondition = includePending ? {} : { status: 'APPROVED' as ActionStatus };
+  const includeOptions = {
+    requester: { select: { name: true, email: true } },
+    approvals: {
+      include: {
+        approver: { select: { name: true, email: true } }
       }
-    },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  });
+    }
+  };
 
-  // Get all freeze requests with their approvals
-  const freezeRequests = await prisma.freezeRequest.findMany({
-    where: statusWhere,
-    include: { 
-      requester: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-          emailVerified: true,
-          createdAt: true,
-          updatedAt: true,
-        }
-      },
-      approvals: {
-        include: {
-          approver: {
-            select: {
-              name: true,
-              email: true
-            }
-          }
-        }
-      }
-    },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  });
+  try {
+    // If no type is specified, return all activities
+    if (!type) {
+      const [freezeRequests, blacklistRequests, systemRequests, mintRequests, burnRequests] = await Promise.all([
+        prisma.freezeRequest.findMany({
+          where: whereCondition,
+          include: includeOptions,
+          orderBy: { createdAt: 'desc' }
+        }),
+        prisma.blacklistRequest.findMany({
+          where: whereCondition,
+          include: includeOptions,
+          orderBy: { createdAt: 'desc' }
+        }),
+        prisma.actionRequest.findMany({
+          where: whereCondition,
+          include: includeOptions,
+          orderBy: { createdAt: 'desc' }
+        }),
+        prisma.mintRequest.findMany({
+          where: whereCondition,
+          include: includeOptions,
+          orderBy: { createdAt: 'desc' }
+        }),
+        prisma.burnRequest.findMany({
+          where: whereCondition,
+          include: includeOptions,
+          orderBy: { createdAt: 'desc' }
+        })
+      ]);
 
-  // Get all blacklist requests with their approvals
-  const blacklistRequests = await prisma.blacklistRequest.findMany({
-    where: statusWhere,
-    include: { 
-      requester: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-          emailVerified: true,
-          createdAt: true,
-          updatedAt: true,
-        }
-      },
-      approvals: {
-        include: {
-          approver: {
-            select: {
-              name: true,
-              email: true
-            }
-          }
-        }
-      }
-    },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  });
+      // Get system pause status
+      const latestPauseAction = await prisma.actionRequest.findFirst({
+        where: {
+          action: { in: ['PAUSE', 'RESUME'] },
+          status: 'APPROVED',
+        },
+        orderBy: { createdAt: 'desc' },
+      });
 
-  // Get all mint requests with their approvals
-  const mintRequests = await prisma.mintRequest.findMany({
-    where: statusWhere,
-    include: { 
-      requester: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          image: true,
-          emailVerified: true,
-          createdAt: true,
-          updatedAt: true,
-        }
-      },
-      approvals: {
-        include: {
-          approver: {
-            select: {
-              name: true,
-              email: true
-            }
-          }
-        }
-      }
-    },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-  });
+      const isPaused = latestPauseAction?.action === 'PAUSE';
 
-  // Combine and sort all activities
-  let allActivities = [
-    ...actionRequests.map(action => ({
-      type: 'ACTION',
-      id: action.id,
-      action: action.action,
-      status: action.status,
-      createdAt: action.createdAt,
-      requester: action.requester,
-      approvals: action.approvals,
-    })),
-    ...freezeRequests.map(freeze => ({
-      type: 'FREEZE',
-      id: freeze.id,
-      action: freeze.action,
-      address: freeze.address,
-      status: freeze.status,
-      createdAt: freeze.createdAt,
-      requester: freeze.requester,
-      approvals: freeze.approvals,
-    })),
-    ...blacklistRequests.map(blacklist => ({
-      type: 'BLACKLIST',
-      id: blacklist.id,
-      action: blacklist.action,
-      address: blacklist.address,
-      status: blacklist.status,
-      createdAt: blacklist.createdAt,
-      requester: blacklist.requester,
-      approvals: blacklist.approvals,
-    })),
-    ...mintRequests.map(mint => ({
-      type: 'MINT',
-      id: mint.id,
-      action: 'MINT',
-      amount: mint.amount,
-      address: mint.address,
-      status: mint.status,
-      createdAt: mint.createdAt,
-      requester: mint.requester,
-      approvals: mint.approvals,
-    }))
-  ];
+      return NextResponse.json({
+        isPaused,
+        freezeRequests,
+        blacklistRequests,
+        systemRequests,
+        mintRequests,
+        burnRequests
+      });
+    }
 
-  // Filter by type if specified
-  if (type) {
-    allActivities = allActivities.filter(activity => activity.type === type.toUpperCase());
+    // Handle specific type requests
+    switch (type) {
+      case 'freeze':
+        const freezeRequests = await prisma.freezeRequest.findMany({
+          where: whereCondition,
+          include: includeOptions,
+          orderBy: { createdAt: 'desc' }
+        });
+        return NextResponse.json({ freezeRequests });
+
+      case 'blacklist':
+        const blacklistRequests = await prisma.blacklistRequest.findMany({
+          where: whereCondition,
+          include: includeOptions,
+          orderBy: { createdAt: 'desc' }
+        });
+        return NextResponse.json({ blacklistRequests });
+
+      case 'system':
+        const systemRequests = await prisma.actionRequest.findMany({
+          where: whereCondition,
+          include: includeOptions,
+          orderBy: { createdAt: 'desc' }
+        });
+        return NextResponse.json({ systemRequests });
+
+      case 'mint':
+        const mintRequests = await prisma.mintRequest.findMany({
+          where: whereCondition,
+          include: includeOptions,
+          orderBy: { createdAt: 'desc' }
+        });
+        return NextResponse.json({ mintRequests });
+
+      case 'burn':
+        const burnRequests = await prisma.burnRequest.findMany({
+          where: whereCondition,
+          include: includeOptions,
+          orderBy: { createdAt: 'desc' }
+        });
+        return NextResponse.json({ burnRequests });
+
+      default:
+        return NextResponse.json({ error: 'Invalid request type' }, { status: 400 });
+    }
+  } catch (error) {
+    console.error('Error fetching requests:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch requests' },
+      { status: 500 }
+    );
   }
-
-  // Sort by creation date
-  allActivities.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-  // Apply limit after combining and sorting
-  allActivities = allActivities.slice(0, limit);
-
-  return NextResponse.json({
-    isPaused,
-    activities: allActivities,
-  });
 }
