@@ -6,9 +6,7 @@ import { FaSpinner, FaLock } from 'react-icons/fa';
 import { useSession } from "next-auth/react";
 import { FaFire, FaPause, FaPlay, FaSnowflake, FaCoins, FaShieldHalved, FaBan, FaLifeRing } from 'react-icons/fa6';
 import { toTokenSat } from 'satoshi-token';
-
-// MNEE token always has 5 decimals
-export const MNEE_DECIMALS = 5;
+import { getConfig } from '@/lib/config';
 
 interface Approval {
 	id: string;
@@ -256,13 +254,21 @@ const DashboardAdminContent = () => {
 		e.preventDefault();
 		if (!mintAddress || !mintAmount) return;
 
+    // get the config
+    const config = await getConfig();
+    if (!config) {
+      alert("No config found");
+      return;
+    }
+
+    
 		try {
 			setMintLoading(true);
 			const response = await fetch('/api/mint', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					amount: toTokenSat(mintAmount, MNEE_DECIMALS),
+					amount: toTokenSat(mintAmount, config.decimals),
 					address: mintAddress,
 				}),
 			});

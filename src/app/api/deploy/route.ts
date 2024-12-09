@@ -10,14 +10,12 @@ import { getFundingUtxos } from "../approveMint/route";
 import { fetchTransaction } from "@/utils/api";
 import { MINT_FEE_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 import { prisma } from "@/lib/prisma";
+import type { IndexContext } from "@/types/indexContext";
 
 const DEFAULT_FEES = [
 	{ min: 0, max: 10000, fee: 50 },
 	{ min: 10001, max: Number.MAX_SAFE_INTEGER, fee: 1000 },
   ];
-
-// MNEE token always has 5 decimals
-const MNEE_DECIMALS = 5;
 
 export async function POST(request: Request) {
 	console.log("deploying token");
@@ -113,14 +111,17 @@ const deployMnee = async (feeAddress: string) => {
 			throw new Error("Failed to broadcast MNEE");
 		}
 
-		console.log("broadcasted mnee", deployTxid);
+    const data = await broadcastResponse.json() as IndexContext;
+    const token = data.txos[0].data.bsv21;
+
+		console.log("broadcasted mnee", deployTxid, token);
 		
 		// Create config data object
 		const configData = {
 			tokenId, 
 			feeAddress, 
 			fees: DEFAULT_FEES, 
-			decimals: MNEE_DECIMALS, 
+			decimals: token.dec, 
 			latestMinterTx: deployTx
 		};
 
@@ -139,7 +140,7 @@ const deployMnee = async (feeAddress: string) => {
 			// Even if config update fails, return deployment info
 			return { 
 				tokenId,
-				decimals: MNEE_DECIMALS,
+				decimals: token.dec,
 				deployTx,
 				deployTxid,
 				configError: "Failed to save configuration"
@@ -148,7 +149,7 @@ const deployMnee = async (feeAddress: string) => {
 
 		return { 
 			tokenId,
-			decimals: MNEE_DECIMALS,
+			decimals: token.dec,
 			deployTx,
 			deployTxid
 		};
