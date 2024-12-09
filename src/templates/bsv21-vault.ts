@@ -15,7 +15,7 @@ import {
     Utils,
 } from '@bsv/sdk'
 import { applyInscription, DeployMintTokenInscription, Inscription, TransferTokenInscription, Utxo } from 'js-1sat-ord';
-import { vaultPrefixBin, vaultPrefixScript, vaultSuffixHex, vaultSuffixScript } from './constants';
+import { vaultPrefixBin, vaultPrefixScript, vaultSuffixScript } from './constants';
 
 export interface Bsv21VaultParams {
     id: string
@@ -56,7 +56,9 @@ export class Bsv21Vault implements ScriptTemplate {
             throw new Error('invalid inscription')
         }
 
-        let {id, op, amt} = JSON.parse(Utils.toUTF8(chunks[6].data))
+        const data = JSON.parse(Utils.toUTF8(chunks[6].data))
+        const { op, amt} = data
+        let { id } = data;
         if (op == "deploy+mint") {
             id = `${tx.id('hex')}_0`
         }
