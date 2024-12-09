@@ -57,8 +57,8 @@ const deployMnee = async (amount: number, symbol: string, decimals: number) => {
 		throw new Error("Failed to deploy MNEE");
 	}
 
-	const { minterTx } = await deployResponse.json();
-	const tx = Transaction.fromHex(minterTx);
+	const { minter_tx } = await deployResponse.json();
+	const tx = Transaction.fromHex(minter_tx);
 
 	const fundingAddress = pk.toAddress();
 	const fundingUtxos = await getFundingUtxos(fundingAddress);
