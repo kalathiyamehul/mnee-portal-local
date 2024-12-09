@@ -48,12 +48,12 @@ const DashboardWalletContent: React.FC = () => {
 		const pubKey = await wallet.connect();
 		if (pubKey) {
 			const addresses = await wallet.getAddresses();
-			if (!addresses) {
-				throw new Error("Failed to fetch addresses");
-			}
+
+      // make sure addresses are not empty strings
+      if (!addresses || Object.values(addresses).some(addr => addr === "")) {
+        throw new Error("Failed to fetch addresses");
+      }
 			setAddresses(addresses ?? []);
-			await fetchBalance(Object.values(addresses));
-			await fetchMneeBalance(Object.values(addresses));
 		}
 	};
 
@@ -74,7 +74,7 @@ const DashboardWalletContent: React.FC = () => {
 	//   ]
 	// }
 
-	const fetchBalance = async (addresses: string[]) => {
+	const fetchBalance = useCallback(async (addresses: string[]) => {
 		try {
 			// const utxos = await fetchUtxos(addresses);
 			// const totalBalance = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
@@ -89,7 +89,7 @@ const DashboardWalletContent: React.FC = () => {
 		} catch (error) {
 			console.error("Error fetching balance:", error);
 		}
-	};
+	}, [wallet]);
 
 	const fetchMneeBalance = useCallback(async (addresses: string[]) => {
 		try {
@@ -104,6 +104,20 @@ const DashboardWalletContent: React.FC = () => {
 			console.error("Error fetching balance:", error);
 		}
 	}, []);
+
+  useEffect(() => {
+    const fire = async () => {
+      if (!addresses) {
+        return;
+      }
+      await fetchBalance(Object.values(addresses));
+      await fetchMneeBalance(Object.values(addresses));
+    }
+    if (addresses) {
+    fire()
+    }
+  }, [addresses, fetchBalance, fetchMneeBalance]);
+  
 
 	useEffect(() => {
 		const init = async () => {
