@@ -151,9 +151,7 @@ const mintMnee = async (amount: number, address: string) => {
 	// mint the MNEE
 	const mintResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/mint`, {
 		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
+		headers: {"Content-Type": "application/json"},
 		body: JSON.stringify(mintRequest),
 	});
 
@@ -189,6 +187,7 @@ const mintMnee = async (amount: number, address: string) => {
 		// broadcast & ingest
 		const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
 			method: "POST",
+			headers: {"Content-Type": "application/json"},
 			body: JSON.stringify({
 				rawtx: Buffer.from(tx.toHex(), "hex").toString("base64"),
 			}),
