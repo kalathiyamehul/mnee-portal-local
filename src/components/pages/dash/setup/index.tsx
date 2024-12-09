@@ -49,12 +49,7 @@ export default function Setup() {
     fetchTokenDetails();
   }, [tokenId]);
 
-  const handleDeploy = async (data: { 
-    symbol: string; 
-    amount: string; 
-    decimals: number; 
-    feeAddress: string;
-  }) => {
+  const handleDeploy = async (data: { feeAddress: string }) => {
     setLoading(true);
     try {
       const response = await fetch('/api/deploy', {
@@ -62,35 +57,29 @@ export default function Setup() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...data,
-          amount: Number.parseInt(data.amount),
-        }),
+        body: JSON.stringify(data),
       });
 
-      if (!response.ok) throw new Error('Failed to deploy token');
-      const responseData = await response.json();
-      
-      // Set all the config values from the deploy response and form data
-      setTokenId(responseData.tokenId);
-      setDecimals(data.decimals);
-      setFeeAddress(data.feeAddress);
-      setLatestMinterTx(responseData.latestMinterTx);
-      
-      // Save the config immediately after successful deployment
-      await saveConfig();
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to deploy token');
+      }
       
       toast.success('Token deployed and configured successfully');
       router.push('/dash');
     } catch (error) {
-      toast.error('Failed to deploy token');
+      toast.error(error instanceof Error ? error.message : 'Failed to deploy token');
       console.error('Error deploying token:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const saveConfig = async () => {
+  const handleImportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!decimals) return;
+    
+    setLoading(true);
     try {
       const response = await fetch('/api/config', {
         method: 'POST',
@@ -107,24 +96,11 @@ export default function Setup() {
       });
 
       if (!response.ok) throw new Error('Failed to save configuration');
-      return true;
-    } catch (error) {
-      console.error('Error saving config:', error);
-      throw error;
-    }
-  };
-
-  const handleImportSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!decimals) return;
-    
-    setLoading(true);
-    try {
-      await saveConfig();
       toast.success('Configuration saved successfully');
       router.push('/dash');
     } catch (error) {
-      toast.error(`Failed to save configuration: ${error}`);
+      toast.error('Failed to save configuration');
+      console.error('Error saving config:', error);
     } finally {
       setLoading(false);
     }

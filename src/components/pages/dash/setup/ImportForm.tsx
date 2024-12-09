@@ -53,17 +53,8 @@ export function ImportForm({
         </div>
 
         {decimals !== null && (
-          <div className="form-control">
-            <label htmlFor="decimals" className="label">
-              <span className="label-text">Decimals</span>
-            </label>
-            <input
-              id="decimals"
-              type="number"
-              className="input input-bordered max-w-md w-full"
-              value={decimals}
-              disabled
-            />
+          <div className="alert alert-info">
+            <span>Token decimals: {decimals}</span>
           </div>
         )}
 
