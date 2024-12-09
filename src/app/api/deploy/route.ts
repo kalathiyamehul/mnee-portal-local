@@ -8,7 +8,7 @@ import {
 } from "@bsv/sdk";
 import { getFundingUtxos } from "../approveMint/route";
 import { fetchTransaction } from "@/utils/api";
-import { MINT_FEE_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
+import { MINT_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 import { prisma } from "@/lib/prisma";
 
 const DEFAULT_FEES = [
@@ -53,7 +53,7 @@ const deployMnee = async (feeAddress: string) => {
 	console.log("deploying mnee", { feeAddress });
 
 	try {
-		const pk = PrivateKey.fromWif(MINT_FEE_WIF);
+		const pk = PrivateKey.fromWif(MINT_WIF);
 		const deployResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/deploy`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },

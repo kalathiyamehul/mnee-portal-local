@@ -7,7 +7,7 @@ import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
 import { fetchConfig, fetchTransaction } from "@/utils/api";
 import type { FundingUtxo, MintRequest } from "@/types/utxo";
-import { MINT_FEE_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
+import { MINT_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 import { signMint } from "@/templates/valut";
 
 export async function POST(request: Request) {
@@ -130,7 +130,7 @@ const mintMnee = async (amount: number, address: string) => {
 	}
 
 	// MNEE contract config
-	const pk = PrivateKey.fromWif(MINT_FEE_WIF);
+	const pk = PrivateKey.fromWif(MINT_WIF);
 	const fundingAddress = pk.toAddress();
 	const funding_utxos = await getFundingUtxos(fundingAddress);
 
