@@ -5,6 +5,11 @@ import { FaSpinner, FaLock } from 'react-icons/fa';
 // import { formatDistanceToNow } from 'date-fns';
 import { useSession } from "next-auth/react";
 import { FaFire, FaPause, FaPlay, FaSnowflake, FaCoins, FaShieldHalved, FaBan, FaLifeRing } from 'react-icons/fa6';
+import { toTokenSat } from 'satoshi-token';
+
+
+// MNEE token always has 5 decimals
+export const MNEE_DECIMALS = 5;
 
 interface Approval {
 	id: string;
@@ -258,7 +263,7 @@ const DashboardAdminContent = () => {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					amount: Number.parseInt(mintAmount),
+					amount: toTokenSat(mintAmount, MNEE_DECIMALS),
 					address: mintAddress,
 				}),
 			});

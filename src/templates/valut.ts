@@ -1,4 +1,4 @@
-import { Hash, PrivateKey, Script, Transaction, TransactionSignature } from "@bsv/sdk"
+import { Hash, type PrivateKey, Script, type Transaction, TransactionSignature } from "@bsv/sdk"
 
 export function signMint(tx: Transaction, inputIndex: number, issuerPriv: PrivateKey) {
     const input = tx.inputs[inputIndex]

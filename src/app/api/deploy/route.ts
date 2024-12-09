@@ -11,13 +11,13 @@ import { fetchTransaction } from "@/utils/api";
 import { MINT_FEE_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 import { prisma } from "@/lib/prisma";
 
-export const DEFAULT_FEES = [
+const DEFAULT_FEES = [
 	{ min: 0, max: 10000, fee: 50 },
 	{ min: 10001, max: Number.MAX_SAFE_INTEGER, fee: 1000 },
   ];
 
-// MNEE token always has 8 decimals
-const MNEE_DECIMALS = 8;
+// MNEE token always has 5 decimals
+const MNEE_DECIMALS = 5;
 
 export async function POST(request: Request) {
 	console.log("deploying token");

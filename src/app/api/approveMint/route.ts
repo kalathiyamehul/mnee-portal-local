@@ -167,14 +167,20 @@ const mintMnee = async (amount: number, address: string) => {
 			}
 		}
 
-		await signMint(tx, 0, pk);
+    console.log("entering sign 1")
+		signMint(tx, 0, pk);
+		console.log("entering sign 2")
 		await tx.sign();
 
+    console.log("saving db config")
 		// save the new tx id to the db
+
+    const rawtx = tx.toHex();
+    
 		if (dbConfig) {
 			await prisma.config.update({
 				where: { id: dbConfig.id },
-				data: { latestMinterTx: minter_tx },
+				data: { latestMinterTx: rawtx },
 			});
 		}
 
@@ -190,7 +196,7 @@ const mintMnee = async (amount: number, address: string) => {
 			throw new Error("Failed to broadcast MNEE");
 		}
 
-		return { rawtx: minter_tx };
+		return { rawtx };
 	} catch (error) {
 		console.error(error);
 		throw new Error("Failed to mint MNEE");
