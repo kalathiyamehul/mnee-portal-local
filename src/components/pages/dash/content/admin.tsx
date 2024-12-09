@@ -7,7 +7,6 @@ import { useSession } from "next-auth/react";
 import { FaFire, FaPause, FaPlay, FaSnowflake, FaCoins, FaShieldHalved, FaBan, FaLifeRing } from 'react-icons/fa6';
 import { toTokenSat } from 'satoshi-token';
 
-
 // MNEE token always has 5 decimals
 export const MNEE_DECIMALS = 5;
 

@@ -125,64 +125,75 @@ const mintMnee = async (amount: number, address: string) => {
 	const dbConfig = await getConfig();
 	const latest_minter_tx = dbConfig?.latestMinterTx;
 
+	if (!latest_minter_tx) {
+		throw new Error("Latest minter tx not found");
+	}
+
 	// MNEE contract config
-  const pk = PrivateKey.fromWif(MINT_FEE_WIF);
+	const pk = PrivateKey.fromWif(MINT_FEE_WIF);
 	const fundingAddress = pk.toAddress();
 	const funding_utxos = await getFundingUtxos(fundingAddress);
 
 	const fee_per_kb = 10;
 	const change_addr = fundingAddress;
 
-  const mintRequest: MintRequest = {
-    amount,
-    token_ls,
-    latest_minter_tx,
-    funding_utxos,
-    fee_per_kb,
-    change_addr,
-  }
+	const mintRequest: MintRequest = {
+		amount,
+		token_ls,
+		latest_minter_tx,
+		funding_utxos,
+		fee_per_kb,
+		change_addr,
+	};
 
-  console.log("Minting MNEE", amount, address, mintRequest);
+	console.log("Minting MNEE", amount, address, mintRequest);
 
 	// mint the MNEE
 	const mintResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/mint`, {
 		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+		},
 		body: JSON.stringify(mintRequest),
 	});
 
 	if (!mintResponse.ok) {
-		throw new Error("Failed to mint MNEE");
+		const st = await mintResponse.text();
+		throw new Error(
+			`Failed to mint MNEE ${mintResponse.status}. Script template: ${st}`,
+		);
 	}
 
 	try {
-		const { minter_tx } = await mintResponse.json() as { minter_tx: string };
+		const { minter_tx } = (await mintResponse.json()) as { minter_tx: string };
 
 		const tx = Transaction.fromHex(minter_tx);
 
 		// iterate over the inputs and set script template to p2pkh
 		for (const input of tx.inputs) {
 			if (!input.unlockingScript?.chunks.length) {
-        		input.sourceTransaction= await fetchTransaction(input.sourceTXID as string);
+				input.sourceTransaction = await fetchTransaction(
+					input.sourceTXID as string,
+				);
 				input.unlockingScriptTemplate = new P2PKH().unlock(pk);
 			}
 		}
 
-    console.log("entering sign 1")
+		console.log("entering sign 1");
+		tx.inputs[0].sourceTransaction = Transaction.fromHex(latest_minter_tx);
 		signMint(tx, 0, pk);
-		console.log("entering sign 2")
+		console.log("entering sign 2");
 		await tx.sign();
 
-    console.log("saving db config")
+		console.log("saving db config");
 		// save the new tx id to the db
 
-    const rawtx = tx.toHex();
-    
-		if (dbConfig) {
-			await prisma.config.update({
-				where: { id: dbConfig.id },
-				data: { latestMinterTx: rawtx },
-			});
-		}
+		const rawtx = tx.toHex();
+
+		await prisma.config.update({
+			where: { id: 1 },
+			data: { latestMinterTx: rawtx },
+		});
 
 		// broadcast & ingest
 		const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
@@ -205,7 +216,5 @@ const mintMnee = async (amount: number, address: string) => {
 
 export const getFundingUtxos = async (fundingAddress: string) => {
 	const utxosResponse = await fetch(`${MNEE_API}/v1/utxos/${fundingAddress}`);
-	const funding_utxos = await utxosResponse.json() as FundingUtxo[];
-
-  return funding_utxos;
-}
+	return (await utxosResponse.json()) as FundingUtxo[];
+};

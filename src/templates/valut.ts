@@ -1,12 +1,15 @@
 import { Hash, type PrivateKey, Script, type Transaction, TransactionSignature } from "@bsv/sdk"
 
 export function signMint(tx: Transaction, inputIndex: number, issuerPriv: PrivateKey) {
+  try {
     const input = tx.inputs[inputIndex]
     if(!input.unlockingScript) {
+        console.log("missing unlockingScript")
         throw new Error('Missing unlockingScript')
     }
     const sourceTXID = input.sourceTXID || input.sourceTransaction?.id('hex')
     if (!sourceTXID || !input.sourceTransaction) {
+        console.log("missing sourceTXID or sourceTransaction")
         throw new Error('Missing sourceTransaction')
     }
     const sourceOutput = input.sourceTransaction.outputs[input.sourceOutputIndex];
@@ -39,4 +42,8 @@ export function signMint(tx: Transaction, inputIndex: number, issuerPriv: Privat
         ...input.unlockingScript.chunks.slice(1)
     ])
     return
+  } catch (error) {
+    console.error("Error signing mint:", error);
+    throw error;
+  }
 }
