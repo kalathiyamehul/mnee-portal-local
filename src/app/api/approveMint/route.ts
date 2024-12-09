@@ -179,22 +179,13 @@ const mintMnee = async (amount: number, address: string) => {
 			}
 		}
 
-		console.log("entering sign 1");
+		// set the source transaction to the latest minter tx
 		tx.inputs[0].sourceTransaction = Transaction.fromHex(latest_minter_tx);
 		signMint(tx, 0, pk);
-		console.log("entering sign 2");
 		await tx.sign();
 
-		console.log("saving db config");
-		// save the new tx id to the db
-
 		const rawtx = tx.toHex();
-
-		await prisma.config.update({
-			where: { id: 1 },
-			data: { latestMinterTx: rawtx },
-		});
-
+    
 		// broadcast & ingest
 		const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
 			method: "POST",
@@ -206,6 +197,13 @@ const mintMnee = async (amount: number, address: string) => {
 		if (!broadcastResponse.ok) {
 			throw new Error("Failed to broadcast MNEE");
 		}
+    
+    // save the new tx id to the db
+		console.log("saving db config");
+		await prisma.config.update({
+			where: { id: 1 },
+			data: { latestMinterTx: rawtx },
+		});
 
 		return { rawtx };
 	} catch (error) {
