@@ -53,6 +53,7 @@ const deployMnee = async (feeAddress: string) => {
 		const pk = PrivateKey.fromWif(MINT_WIF);
 		const pubkey_issuer = pk.toPublicKey().toString()
 		console.log("deploying mnee", { feeAddress , pubkey_issuer});
+		const mintAddress = pk.toAddress();
 		const deployResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/deploy`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -121,7 +122,8 @@ const deployMnee = async (feeAddress: string) => {
 			feeAddress, 
 			fees: DEFAULT_FEES, 
 			decimals: token.dec, 
-			latestMinterTx: deployTx
+			latestMinterTx: deployTx,
+			mintAddress,
 		};
 
 		// Update config
@@ -131,6 +133,7 @@ const deployMnee = async (feeAddress: string) => {
 				update: configData,
 				create: { 
 					id: 1,
+          fundAddress: "", // fund address will get populated by the ordinals service
 					...configData,
 				},
 			});
