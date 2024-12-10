@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { fetchMneeUtxos } from '@/utils/api';
-import { FaSpinner, FaLink } from 'react-icons/fa6';
+import { FaSpinner } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
 import type { MNEEUtxo } from '@/types';
 import { MdOutlineOpenInNew } from 'react-icons/md';
+import { DEFAULT_DECIMALS } from '@/lib/constants';
 
 export const BurnsTab = () => {
   const [burns, setBurns] = useState<MNEEUtxo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [burnAddress, setBurnAddress] = useState<string | null>(null);
+  const [decimals, setDecimals] = useState(DEFAULT_DECIMALS);
 
   const fetchBurns = async () => {
     try {
@@ -23,6 +25,7 @@ export const BurnsTab = () => {
       }
 
       setBurnAddress(config.fundAddress);
+      setDecimals(config.decimals || DEFAULT_DECIMALS);
       // Fetch UTXOs for burn address
       const utxos = await fetchMneeUtxos([config.fundAddress]);
       setBurns(utxos);
@@ -91,11 +94,11 @@ export const BurnsTab = () => {
                     className="hover:text-primary flex items-center gap-1"
                   >
                     {burn.txid}
-                    <FaExternalLinkAlt className="w-3 h-3" />
+                    <MdOutlineOpenInNew className="w-3 h-3" />
                   </a>
                 </td>
                 <td className="text-xs sm:text-sm">
-                  {toToken(burn.satoshis, burn.token?.dec || 8)}
+                  {toToken(burn.satoshis, decimals)}
                 </td>
                 <td className="text-xs sm:text-sm">
                   {new Date(burn.height * 1000).toLocaleString()}
