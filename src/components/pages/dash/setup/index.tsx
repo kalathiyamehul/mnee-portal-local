@@ -8,8 +8,6 @@ import { ChooseMode } from './ChooseMode';
 import { DeployForm } from './DeployForm';
 import { ImportForm } from './ImportForm';
 import type { SetupMode } from './types';
-import { PrivateKey } from '@bsv/sdk';
-import { MINT_WIF, FUND_ADDRESS } from '@/env';
 
 // Default fees that will be used during setup
 const DEFAULT_FEES = [
