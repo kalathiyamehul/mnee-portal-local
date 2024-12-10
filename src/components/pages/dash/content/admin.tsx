@@ -11,16 +11,16 @@ import { config } from '@prisma/client';
 import { DEFAULT_DECIMALS } from '@/lib/constants';
 import { toast } from 'react-hot-toast';
 
-interface Approval {
-	id: string;
-	approver: {
-		name: string | null;
-		email: string;
-	};
-}
+// interface Approval {
+// 	id: string;
+// 	approver: {
+// 		name: string | null;
+// 		email: string;
+// 	};
+// }
 
-// Action type definitions
-type ActionType = 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT' | 'BURN';
+// // Action type definitions
+// type ActionType = 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT' | 'BURN';
 
 interface BaseRequest {
 	id: string;
@@ -523,25 +523,25 @@ const DashboardAdminContent = () => {
 		}
 	};
 
-	const handleApproveBurn = async (burnRequestId: string) => {
-		try {
-			const response = await fetch('/api/approveBurn', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ burnRequestId }),
-			});
+	// const handleApproveBurn = async (burnRequestId: string) => {
+	// 	try {
+	// 		const response = await fetch('/api/approveBurn', {
+	// 			method: 'POST',
+	// 			headers: { 'Content-Type': 'application/json' },
+	// 			body: JSON.stringify({ burnRequestId }),
+	// 		});
 
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || 'Failed to approve burn request');
-			}
+	// 		if (!response.ok) {
+	// 			const error = await response.json();
+	// 			throw new Error(error.message || 'Failed to approve burn request');
+	// 		}
 
-			await fetchStatus();
-		} catch (error) {
-			console.error('Error approving burn request:', error);
-			alert(error instanceof Error ? error.message : 'Failed to approve burn request');
-		}
-	};
+	// 		await fetchStatus();
+	// 	} catch (error) {
+	// 		console.error('Error approving burn request:', error);
+	// 		alert(error instanceof Error ? error.message : 'Failed to approve burn request');
+	// 	}
+	// };
 
 
 	const canApprove = (activity: Activity): boolean => {
