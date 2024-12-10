@@ -8,7 +8,7 @@ import { getConfig } from "@/lib/config";
 import { fetchConfig, fetchTransaction } from "@/utils/api";
 import type { FundingUtxo, MintRequest } from "@/types/utxo";
 import { MINT_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
-import { signMint } from "@/templates/valut";
+import { signMint } from "@/templates/vault";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
