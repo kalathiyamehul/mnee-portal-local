@@ -22,7 +22,7 @@ export function signMint(tx: Transaction, inputIndex: number, issuerPriv: Privat
         sourceOutputIndex: input.sourceOutputIndex,
         sourceSatoshis: sourceOutput.satoshis || 0,
         transactionVersion: tx.version,
-        otherInputs: tx.inputs.splice(inputIndex, 1),
+        otherInputs: tx.inputs.slice(1),
         inputIndex,
         outputs: tx.outputs,
         inputSequence: input.sequence || 0xffffffff,
