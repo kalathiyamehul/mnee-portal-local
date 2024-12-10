@@ -200,6 +200,32 @@ export default function AdminPage() {
 		return activity.approvals.length;
 	}, []);
 
+	const handleModalClose = () => {
+		setShowFreezeModal(false);
+		setShowMintModal(false);
+		setShowBurnModal(false);
+	};
+
+	const handleModalSuccess = async () => {
+		await fetchStatus();
+		handleModalClose();
+	};
+
+	// Function to show modals
+	const showModal = (id: string) => {
+		switch (id) {
+			case 'freeze_modal':
+				setShowFreezeModal(true);
+				break;
+			case 'mint_modal':
+				setShowMintModal(true);
+				break;
+			case 'burn_modal':
+				setShowBurnModal(true);
+				break;
+		}
+	};
+
 	if (initialLoading) {
 		return (
 			<div className="flex justify-center items-center h-screen">
@@ -259,6 +285,7 @@ export default function AdminPage() {
 						getActivityDisplayText={getActivityDisplayText}
 						requiresApproval={requiresApproval}
 						getApprovalCount={getApprovalCount}
+						showModal={showModal}
 					/>
 				)}
 
@@ -354,13 +381,24 @@ export default function AdminPage() {
 			</div>
 
 			{showFreezeModal && (
-				<FreezeModal onClose={() => setShowFreezeModal(false)} onSuccess={fetchStatus} />
+				<FreezeModal
+					onClose={handleModalClose}
+					onSuccess={handleModalSuccess}
+				/>
 			)}
+
 			{showMintModal && (
-				<MintModal onClose={() => setShowMintModal(false)} onSuccess={fetchStatus} />
+				<MintModal
+					onClose={handleModalClose}
+					onSuccess={handleModalSuccess}
+				/>
 			)}
+
 			{showBurnModal && (
-				<BurnModal onClose={() => setShowBurnModal(false)} onSuccess={fetchStatus} />
+				<BurnModal
+					onClose={handleModalClose}
+					onSuccess={handleModalSuccess}
+				/>
 			)}
 		</div>
 	);

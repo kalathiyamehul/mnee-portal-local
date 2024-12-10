@@ -16,12 +16,8 @@ export const ActivityList = ({
   getActivityDisplayText,
   requiresApproval,
   getApprovalCount,
+  showModal,
 }: Omit<ActivityListProps, 'session'>) => {
-  const showModal = (id: string) => {
-    const modal = document.getElementById(id) as HTMLDialogElement;
-    if (modal) modal.showModal();
-  };
-
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">

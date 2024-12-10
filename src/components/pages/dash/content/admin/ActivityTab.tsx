@@ -16,6 +16,7 @@ interface ActivityTabProps {
   getActivityDisplayText: (activity: Activity) => string;
   requiresApproval: (activity: Activity) => boolean;
   getApprovalCount: (activity: Activity) => number;
+  showModal: (id: string) => void;
 }
 
 export const ActivityTab = ({
@@ -32,6 +33,7 @@ export const ActivityTab = ({
   getActivityDisplayText,
   requiresApproval,
   getApprovalCount,
+  showModal,
 }: ActivityTabProps) => {
   return (
     <div className="p-4">
@@ -50,6 +52,7 @@ export const ActivityTab = ({
         getActivityDisplayText={getActivityDisplayText}
         requiresApproval={requiresApproval}
         getApprovalCount={getApprovalCount}
+        showModal={showModal}
       />
     </div>
   );

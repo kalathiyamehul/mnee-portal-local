@@ -104,6 +104,24 @@ export interface ActivityListProps {
 	getActivityDisplayText: (activity: Activity) => string;
 	requiresApproval: (activity: Activity) => boolean;
 	getApprovalCount: (activity: Activity) => number;
+	showModal: (id: string) => void;
+}
+
+export interface ActivityTabProps {
+	showOnlyPending: boolean;
+	setShowOnlyPending: (value: boolean) => void;
+	filteredActivities: Activity[];
+	config: ConfigWithFees | null;
+	loading: boolean;
+	canCancel: (activity: Activity) => boolean;
+	canApprove: (activity: Activity) => boolean;
+	handleCancel: (id: string, type: Activity['type']) => Promise<void>;
+	handleApprove: (id: string, type: Activity['type']) => Promise<void>;
+	getActivityIcon: (activity: Activity) => IconType;
+	getActivityDisplayText: (activity: Activity) => string;
+	requiresApproval: (activity: Activity) => boolean;
+	getApprovalCount: (activity: Activity) => number;
+	showModal: (id: string) => void;
 }
 
 export interface SystemStatusProps {
