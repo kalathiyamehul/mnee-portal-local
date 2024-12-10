@@ -51,23 +51,6 @@ export default class CosignTemplate implements ScriptTemplate {
         return lockingScript
     }
 
-
-//     OP_FALSE
-// OP_IF
-// ord
-// OP_1
-// application/bsv-20
-// OP_0
-// {“p”: “bsv-20”,”id”:“<tokenId>”,”op”:”transfer”,”amt”:”<amt>”}
-// OP_ENDIF
-// OP_DUP
-// OP_HASH160
-// <User PKH>
-// OP_EQUALVERIFY
-// OP_CHECKSIGVERIFY
-// <Approver PubKey>
-// OP_CHECKSIG
-
     /**
      * Creates a function that generates a P2PKH unlocking script along with its signature and length estimation.
      *
