@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { FaSpinner, FaPlus, FaTrash, FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
 import { toToken } from 'satoshi-token';
 import { Fee, ConfigWithFees } from './admin/types';
-import { config as PrismaConfig } from '@prisma/client';
+import { Config } from '@prisma/client';
 
 interface EditFeesModalProps {
 	fees: Fee[];
@@ -126,7 +126,7 @@ const DashboardSettingsContent = () => {
 		const fetchConfig = async () => {
 			try {
 				const response = await fetch('/api/config');
-				const data = await response.json() as PrismaConfig;
+				const data = await response.json() as Config;
 				setConfig({
 					...data,
 					fees: data.fees as Fee[]
@@ -277,13 +277,14 @@ const DashboardSettingsContent = () => {
 							<div>
 								<div className="flex items-center gap-2">
 									<span className="font-semibold">Mint Address:</span>
-									<div className="tooltip" data-tip="Address authorized to mint new tokens">
+									<div className="tooltip" data-tip="Address that will pay for minting new tokens">
 										<FaQuestionCircle className="text-base-content/60" />
 									</div>
 								</div>
 								<div className="font-mono text-sm break-all bg-base-300 p-2 rounded mt-1">
 									{config.mintAddress}
 								</div>
+								<p className="text-xs text-base-content/70 mt-1">Set from MINT_WIF environment variable</p>
 							</div>
 							{config.fundAddress && (
 								<div>
@@ -298,6 +299,18 @@ const DashboardSettingsContent = () => {
 									</div>
 								</div>
 							)}
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold">Burn Address:</span>
+                  <div className="tooltip" data-tip="Address that will pay for burning tokens">
+                    <FaQuestionCircle className="text-base-content/60" />
+                  </div>
+                </div>
+                <div className="font-mono text-sm break-all bg-base-300 p-2 rounded mt-1">
+                  {config.burnAddress || 'Not set'}
+                </div>
+                <p className="text-xs text-base-content/70 mt-1">Set from BURN_WIF environment variable</p>
+              </div>
 						</div>
 					</div>
 				</div>

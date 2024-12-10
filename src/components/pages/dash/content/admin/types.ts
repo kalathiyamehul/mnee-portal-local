@@ -1,4 +1,4 @@
-import { config as PrismaConfig } from '@prisma/client';
+import { Config } from '@prisma/client';
 import type { Session } from 'next-auth';
 import type { IconType } from 'react-icons';
 
@@ -9,7 +9,7 @@ export interface Fee {
 	[key: string]: number;
 }
 
-export type ConfigWithFees = Omit<PrismaConfig, 'fees'> & {
+export type ConfigWithFees = Omit<Config, 'fees'> & {
 	fees: Fee[];
 }
 
@@ -17,7 +17,7 @@ export interface Approval {
 	id: string;
 	approver: {
 		name: string | null;
-		email: string;
+			email: string;
 	};
 }
 

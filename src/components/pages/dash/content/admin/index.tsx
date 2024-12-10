@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
-import { FaSpinner } from 'react-icons/fa6';
+import { FaSpinner, FaSnowflake, FaPause, FaPlay, FaCoins, FaBan, FaFire } from 'react-icons/fa6';
+import { toToken, toTokenSat } from 'satoshi-token';
+import { getConfig } from '@/lib/config';
+import { Config } from '@prisma/client';
+import { DEFAULT_DECIMALS } from '@/lib/constants';
 import type { Activity, ConfigWithFees, Fee, StatusResponse, AddressStatus } from './types';
 import { getActivityIcon, getActivityDisplayText } from './utils';
 import { toast } from 'react-hot-toast';

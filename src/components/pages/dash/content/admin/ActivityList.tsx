@@ -47,13 +47,6 @@ export const ActivityList = ({
             <FaCoins className="mr-1" /> 
             <span className="text-sm">Mint</span>
           </button>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => showModal('burn_modal')}
-          >
-            <FaFire className="mr-2" /> Burn
-          </button>
         </div>
       </div>
       <div className="space-y-3">

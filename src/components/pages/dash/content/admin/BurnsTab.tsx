@@ -4,14 +4,19 @@ import { FaSpinner } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
 import type { MNEEUtxo } from '@/types';
 import { MdOutlineOpenInNew } from 'react-icons/md';
+import type { BurnRequest } from './types';
 import { DEFAULT_DECIMALS } from '@/lib/constants';
 
+interface BurnUtxo extends MNEEUtxo {
+  burnRequest?: BurnRequest;
+}
+
 export const BurnsTab = () => {
-  const [burns, setBurns] = useState<MNEEUtxo[]>([]);
+  const [burns, setBurns] = useState<BurnUtxo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [burnAddress, setBurnAddress] = useState<string | null>(null);
-  const [decimals, setDecimals] = useState(DEFAULT_DECIMALS);
+  const [decimals, setDecimals] = useState(8);
 
   const fetchBurns = async () => {
     try {
@@ -20,20 +25,60 @@ export const BurnsTab = () => {
       // Fetch config to get burn address
       const configResponse = await fetch('/api/config');
       const config = await configResponse.json();
-      if (!config?.fundAddress) {
+      if (!config?.burnAddress) {
         throw new Error('Burn address not configured');
       }
 
-      setBurnAddress(config.fundAddress);
+      setBurnAddress(config.burnAddress);
       setDecimals(config.decimals || DEFAULT_DECIMALS);
+      
       // Fetch UTXOs for burn address
-      const utxos = await fetchMneeUtxos([config.fundAddress]);
-      setBurns(utxos);
+      const utxos = await fetchMneeUtxos([config.burnAddress]);
+
+      // Fetch burn requests to match with UTXOs
+      const statusResponse = await fetch('/api/status');
+      const status = await statusResponse.json();
+      const burnRequests = status.burnRequests || [];
+
+      // Match UTXOs with burn requests
+      const burnsWithRequests = utxos.map(utxo => ({
+        ...utxo,
+        burnRequest: burnRequests.find((req: BurnRequest) => 
+          // TODO: Add outpoint to burn request to match with UTXO
+          req.amount === utxo.satoshis.toString()
+        ),
+      }));
+
+      setBurns(burnsWithRequests);
     } catch (err) {
       console.error('Error fetching burns:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch burns');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateBurnRequest = async (utxo: BurnUtxo) => {
+    try {
+      // TODO: Add outpoint to burn request payload
+      const response = await fetch('/api/burn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: utxo.satoshis,
+          // outpoint: `${utxo.txid}_${utxo.vout}`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create burn request');
+      }
+
+      // Refresh the list to show the new request
+      await fetchBurns();
+    } catch (err) {
+      console.error('Error creating burn request:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create burn request');
     }
   };
 
@@ -81,6 +126,8 @@ export const BurnsTab = () => {
               <th className="text-xs sm:text-sm">Transaction</th>
               <th className="text-xs sm:text-sm">Amount</th>
               <th className="text-xs sm:text-sm">Date</th>
+              <th className="text-xs sm:text-sm">Status</th>
+              <th className="text-xs sm:text-sm">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -103,11 +150,34 @@ export const BurnsTab = () => {
                 <td className="text-xs sm:text-sm">
                   {new Date(burn.height * 1000).toLocaleString()}
                 </td>
+                <td className="text-xs sm:text-sm">
+                  {burn.burnRequest ? (
+                    <span className={`badge ${
+                      burn.burnRequest.status === 'APPROVED' ? 'badge-success' :
+                      burn.burnRequest.status === 'PENDING' ? 'badge-warning' :
+                      'badge-error'
+                    } badge-sm`}>
+                      {burn.burnRequest.status}
+                    </span>
+                  ) : (
+                    <span className="text-base-content/50">No request</span>
+                  )}
+                </td>
+                <td>
+                  {!burn.burnRequest && (
+                    <button
+                      onClick={() => handleCreateBurnRequest(burn)}
+                      className="btn btn-error btn-xs sm:btn-sm"
+                    >
+                      Create Burn Request
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
             {!loading && burns.length === 0 && (
               <tr>
-                <td colSpan={3} className="text-center text-sm text-base-content/70">
+                <td colSpan={5} className="text-center text-sm text-base-content/70">
                   No burns found
                 </td>
               </tr>

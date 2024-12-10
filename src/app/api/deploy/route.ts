@@ -8,7 +8,7 @@ import {
 } from "@bsv/sdk";
 import { getFundingUtxos } from "../approveMint/route";
 import { fetchTransaction } from "@/utils/api";
-import { MINT_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
+import { MINT_WIF, BURN_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 import { prisma } from "@/lib/prisma";
 import type { IndexContext } from "@/types/indexContext";
 
@@ -51,14 +51,16 @@ const deployMnee = async (feeAddress: string) => {
 	console.log("deploying mnee", { feeAddress });
 
 	try {
-		const pk = PrivateKey.fromWif(MINT_WIF);
-		const mintAddress = pk.toAddress();
+		const mintPk = PrivateKey.fromWif(MINT_WIF);
+		const burnPk = PrivateKey.fromWif(BURN_WIF);
+		const mintAddress = mintPk.toAddress();
+		const burnAddress = burnPk.toAddress();
 
 		const deployResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/deploy`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
-				pubkey_issuer: pk.toPublicKey().toString(),
+				pubkey_issuer: mintPk.toPublicKey().toString(),
 			} as DeployRequest),
 		});
 
@@ -74,7 +76,7 @@ const deployMnee = async (feeAddress: string) => {
 		}
 
 		const tx = Transaction.fromHex(minter_tx);
-		const fundingAddress = pk.toAddress();
+		const fundingAddress = mintPk.toAddress();
 		const fundingUtxos = await getFundingUtxos(fundingAddress);
 		
 		console.log("funding utxos", fundingUtxos);
@@ -83,7 +85,7 @@ const deployMnee = async (feeAddress: string) => {
 				sourceTransaction: await fetchTransaction(utxo.txid),
 				sourceTXID: utxo.txid,
 				sourceOutputIndex: utxo.vout,
-				unlockingScriptTemplate: new P2PKH().unlock(pk),
+				unlockingScriptTemplate: new P2PKH().unlock(mintPk),
 			} as TransactionInput);
 		}
 
@@ -92,6 +94,7 @@ const deployMnee = async (feeAddress: string) => {
 			lockingScript: new P2PKH().lock(fundingAddress),
 		} as TransactionOutput);
 
+		
 		await tx.fee();
 		await tx.sign();
 
@@ -126,6 +129,8 @@ const deployMnee = async (feeAddress: string) => {
 			decimals: token.dec, 
 			latestMinterTx: deployTx,
 			mintAddress,
+			burnAddress,
+			fundAddress: "",
 		};
 
 		// Update config
@@ -135,7 +140,6 @@ const deployMnee = async (feeAddress: string) => {
 				update: configData,
 				create: { 
 					id: 1,
-          fundAddress: "", // fund address will get populated by the ordinals service
 					...configData,
 				},
 			});
