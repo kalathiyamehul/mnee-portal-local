@@ -195,4 +195,6 @@ model config {
   tokenId     String @map("token_id")
   decimals    Int
   latestMinterTx String @map("latest_minter_tx")
+  mintAddress String @map("mint_address")
+  fundAddress String @map("fund_address")
 }
