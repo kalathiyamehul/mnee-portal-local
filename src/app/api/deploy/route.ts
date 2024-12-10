@@ -48,16 +48,15 @@ type DeployRequest = {
 }
 
 const deployMnee = async (feeAddress: string) => {
-	console.log("deploying mnee", { feeAddress });
-
+	
 	try {
 		const pk = PrivateKey.fromWif(MINT_WIF);
+		const pubkey_issuer = pk.toPublicKey().toString()
+		console.log("deploying mnee", { feeAddress , pubkey_issuer});
 		const deployResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/deploy`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				pubkey_issuer: pk.toPublicKey().toString(),
-			} as DeployRequest),
+			body: JSON.stringify({pubkey_issuer} as DeployRequest),
 		});
 
 		if (!deployResponse.ok) {
