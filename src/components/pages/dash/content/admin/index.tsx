@@ -2,11 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
-import { FaSpinner, FaSnowflake, FaPause, FaPlay, FaCoins, FaBan, FaFire } from 'react-icons/fa6';
-import { toToken, toTokenSat } from 'satoshi-token';
-import { getConfig } from '@/lib/config';
-import { Config } from '@prisma/client';
-import { DEFAULT_DECIMALS } from '@/lib/constants';
+import { FaSpinner } from 'react-icons/fa6';
 import type { Activity, ConfigWithFees, Fee, StatusResponse, AddressStatus } from './types';
 import { getActivityIcon, getActivityDisplayText } from './utils';
 import { toast } from 'react-hot-toast';
@@ -16,13 +12,12 @@ import { BurnModal } from '../modals/BurnModal';
 import type { Session } from 'next-auth';
 import { ActivityTab } from './ActivityTab';
 import { BurnsTab } from './BurnsTab';
-import { WhitelistTab } from './WhitelistTab';
 import { ActiveRestrictionsTab } from './ActiveRestrictionsTab';
 import { SystemStatus } from './SystemStatus';
 
 const POLL_INTERVAL = 5000; // 5 seconds
 
-type TabType = 'activity' | 'restrictions' | 'burns' | 'whitelist';
+type TabType = 'activity' | 'restrictions' | 'burns';
 
 export default function AdminPage() {
 	const { data: session } = useSession() as { data: Session | null };
@@ -265,13 +260,6 @@ export default function AdminPage() {
 					>
 						Burns
 					</button>
-					<button
-						role="tab"
-						className={`tab ${activeTab === 'whitelist' ? 'tab-active' : ''}`}
-						onClick={() => setActiveTab('whitelist')}
-					>
-						Whitelist
-					</button>
 				</div>
 
 				{activeTab === 'activity' && (
@@ -381,7 +369,6 @@ export default function AdminPage() {
 				)}
 
 				{activeTab === 'burns' && <BurnsTab />}
-				{activeTab === 'whitelist' && <WhitelistTab />}
 			</div>
 
 			{showFreezeModal && (

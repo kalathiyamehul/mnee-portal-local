@@ -1,4 +1,4 @@
-import { FaSnowflake, FaCoins, FaFire } from 'react-icons/fa6';
+import { FaSnowflake, FaCoins } from 'react-icons/fa6';
 import { ActivityCard } from './ActivityCard';
 import type { ActivityListProps } from './types';
 
