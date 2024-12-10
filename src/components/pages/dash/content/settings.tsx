@@ -2,14 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { FaSpinner, FaPlus, FaTrash, FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
-import { config } from '@prisma/client';
 import { toToken } from 'satoshi-token';
-
-interface Fee {
-	min: number;
-	max: number;
-	fee: number;
-}
+import { Fee, ConfigWithFees } from './admin/types';
+import { config as PrismaConfig } from '@prisma/client';
 
 interface EditFeesModalProps {
 	fees: Fee[];
@@ -121,7 +116,7 @@ const EditFeesModal = ({ fees: initialFees, onSave, onClose }: EditFeesModalProp
 };
 
 const DashboardSettingsContent = () => {
-	const [config, setConfig] = useState<config | null>(null);
+	const [config, setConfig] = useState<ConfigWithFees | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [showEditFeesModal, setShowEditFeesModal] = useState(false);
 	const [feeAddress, setFeeAddress] = useState("");
@@ -131,8 +126,11 @@ const DashboardSettingsContent = () => {
 		const fetchConfig = async () => {
 			try {
 				const response = await fetch('/api/config');
-				const data = await response.json();
-				setConfig(data);
+				const data = await response.json() as PrismaConfig;
+				setConfig({
+					...data,
+					fees: data.fees as Fee[]
+				});
 				setFeeAddress(data.feeAddress || "");
 			} catch (error) {
 				console.error('Error fetching config:', error);

@@ -1,23 +1,22 @@
-import { FaSpinner, FaBan, FaSnowflake } from 'react-icons/fa6';
+import { FaBan, FaSnowflake } from 'react-icons/fa6';
 import type { AddressStatus } from './types';
 
 interface ActiveRestrictionsProps {
-  activeRestrictions: AddressStatus[];
+  restrictions: AddressStatus[];
   loading: boolean;
-  handleUnblacklist: (e: React.MouseEvent<HTMLButtonElement>, address: string) => void;
-  handleFreezeRequest: (e: React.FormEvent<HTMLFormElement | HTMLButtonElement>, address: string) => void;
-  handleUnfreeze: (address: string) => void;
+  handleUnblacklist: (e: React.MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
+  handleFreezeRequest: (e: React.FormEvent<HTMLFormElement | HTMLButtonElement>, address: string) => Promise<void>;
+  handleUnfreeze: (address: string) => Promise<void>;
 }
 
 export const ActiveRestrictions = ({
-  activeRestrictions,
+  restrictions,
   loading,
   handleUnblacklist,
   handleFreezeRequest,
   handleUnfreeze
 }: ActiveRestrictionsProps) => (
-  <div className="mb-6 overflow-x-auto">
-    <h2 className="text-xl sm:text-2xl font-bold mb-2">Active Restrictions</h2>
+  <div className="overflow-x-auto">
     <table className="table table-compact sm:table-normal w-full">
       <thead>
         <tr>
@@ -27,7 +26,7 @@ export const ActiveRestrictions = ({
         </tr>
       </thead>
       <tbody>
-        {activeRestrictions.map((status) => (
+        {restrictions.map((status) => (
           <tr key={status.address}>
             <td className="font-mono text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate">
               {status.address}
@@ -43,6 +42,7 @@ export const ActiveRestrictions = ({
                     type="button"
                     className="btn btn-error btn-xs sm:btn-sm"
                     onClick={(e) => handleUnblacklist(e, status.address)}
+                    disabled={loading}
                   >
                     <FaBan className="w-3 h-3 mr-1" /> Block
                   </button>
@@ -56,6 +56,7 @@ export const ActiveRestrictions = ({
                     type="button"
                     className="btn btn-primary btn-xs sm:btn-sm"
                     onClick={(e) => handleFreezeRequest(e, status.address)}
+                    disabled={loading}
                   >
                     <FaSnowflake className="w-3 h-3 mr-1" /> Freeze
                   </button>
@@ -71,14 +72,7 @@ export const ActiveRestrictions = ({
                     onClick={(e) => handleUnblacklist(e, status.address)}
                     disabled={loading}
                   >
-                    {loading ? (
-                      <FaSpinner className="animate-spin w-3 h-3" />
-                    ) : (
-                      <>
-                        <FaBan className="w-3 h-3 mr-1" />
-                        <span className="text-xs sm:text-sm">Unblock</span>
-                      </>
-                    )}
+                    <FaBan className="w-3 h-3 mr-1" /> Unblock
                   </button>
                 )}
                 {status.isFrozen && (
@@ -88,14 +82,7 @@ export const ActiveRestrictions = ({
                     onClick={() => handleUnfreeze(status.address)}
                     disabled={loading}
                   >
-                    {loading ? (
-                      <FaSpinner className="animate-spin w-3 h-3" />
-                    ) : (
-                      <>
-                        <FaSnowflake className="w-3 h-3 mr-1" />
-                        <span className="text-xs sm:text-sm">Unfreeze</span>
-                      </>
-                    )}
+                    <FaSnowflake className="w-3 h-3 mr-1" /> Unfreeze
                   </button>
                 )}
               </div>

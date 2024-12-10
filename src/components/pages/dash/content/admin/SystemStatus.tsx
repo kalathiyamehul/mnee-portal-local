@@ -1,37 +1,25 @@
-import { FaPause, FaPlay } from 'react-icons/fa6';
-import type { Activity } from './types';
-
 interface SystemStatusProps {
   isPaused: boolean;
-  handlePauseToggle: () => void;
-  pendingPauseRequest: Activity | undefined;
+  onPauseToggle: () => Promise<void>;
 }
 
-export const SystemStatus = ({ 
-  isPaused, 
-  handlePauseToggle, 
-  pendingPauseRequest 
-}: SystemStatusProps) => (
-  <div className="mb-6">
-    <h2 className="text-xl sm:text-2xl font-bold mb-2">System Status</h2>
-    <div className="flex flex-wrap items-center gap-2">
-      <div className={`badge badge-lg ${isPaused ? 'badge-warning' : 'badge-success'}`}>
-        {isPaused ? <FaPause className="mr-1" /> : <FaPlay className="mr-1" />}
-        <span className="text-sm">{isPaused ? 'Paused' : 'Active'}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs sm:text-sm">Toggle:</span>
+export const SystemStatus = ({ isPaused, onPauseToggle }: SystemStatusProps) => {
+  return (
+    <div className="bg-base-200 rounded-lg p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <div className={`w-3 h-3 rounded-full ${isPaused ? 'bg-error' : 'bg-success'}`} />
+          <span className="font-medium">
+            System is {isPaused ? 'Paused' : 'Active'}
+          </span>
+        </div>
         <input
           type="checkbox"
-          className="toggle toggle-sm sm:toggle-md"
-          checked={isPaused}
-          onChange={handlePauseToggle}
-          disabled={!!pendingPauseRequest}
+          className="toggle toggle-success"
+          checked={!isPaused}
+          onChange={onPauseToggle}
         />
       </div>
-      {pendingPauseRequest && (
-        <span className="text-warning text-xs sm:text-sm">Pending approval</span>
-      )}
     </div>
-  </div>
-); 
+  );
+}; 

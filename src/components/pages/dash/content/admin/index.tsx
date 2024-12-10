@@ -1,121 +1,51 @@
 "use client";
 
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
-import { FaSpinner, FaSnowflake, FaPause, FaPlay, FaCoins, FaBan, FaFire } from 'react-icons/fa6';
-import { toToken, toTokenSat } from 'satoshi-token';
-import { getConfig } from '@/lib/config';
-import { config } from '@prisma/client';
-import { DEFAULT_DECIMALS } from '@/lib/constants';
+import { FaSpinner } from 'react-icons/fa6';
+import type { Activity, ConfigWithFees, Fee, StatusResponse, AddressStatus } from './types';
+import { getActivityIcon, getActivityDisplayText } from './utils';
 import { toast } from 'react-hot-toast';
-import { SystemStatus } from './SystemStatus';
-import { ActivityList } from './ActivityList';
-import { ActiveRestrictions } from './ActiveRestrictions';
 import { FreezeModal } from '../modals/FreezeModal';
 import { MintModal } from '../modals/MintModal';
 import { BurnModal } from '../modals/BurnModal';
-import type { Activity, AddressStatus } from './types';
 import type { Session } from 'next-auth';
+import { ActivityTab } from './ActivityTab';
+import { BurnsTab } from './BurnsTab';
+import { WhitelistTab } from './WhitelistTab';
+import { ActiveRestrictionsTab } from './ActiveRestrictionsTab';
+import { SystemStatus } from './SystemStatus';
 
-const DashboardAdminContent = () => {
+const POLL_INTERVAL = 5000; // 5 seconds
+
+type TabType = 'activity' | 'restrictions' | 'burns' | 'whitelist';
+
+export default function AdminPage() {
 	const { data: session } = useSession() as { data: Session | null };
 	const [loading, setLoading] = useState(true);
 	const [initialLoading, setInitialLoading] = useState(true);
 	const [isPaused, setIsPaused] = useState(false);
-	const [activities, setActivities] = useState<Activity[]>([]);
-	const [freezeAddress, setFreezeAddress] = useState('');
-	const [freezeLoading, setFreezeLoading] = useState(false);
-	const [blacklistLoading, setBlacklistLoading] = useState(false);
-	const [mintAddress, setMintAddress] = useState('');
-	const [mintAmount, setMintAmount] = useState('');
-	const [mintLoading, setMintLoading] = useState(false);
 	const [showOnlyPending, setShowOnlyPending] = useState(true);
-	const [burnAmount, setBurnAmount] = useState('');
-	const [burnLoading, setBurnLoading] = useState(false);
-	const [config, setConfig] = useState<config | null>(null);
+	const [activities, setActivities] = useState<Activity[]>([]);
+	const [config, setConfig] = useState<ConfigWithFees | null>(null);
+	const [showFreezeModal, setShowFreezeModal] = useState(false);
+	const [showMintModal, setShowMintModal] = useState(false);
+	const [showBurnModal, setShowBurnModal] = useState(false);
+	const [activeTab, setActiveTab] = useState<TabType>('activity');
 
-	const POLL_INTERVAL = 5000; // 5 seconds
-
-	useEffect(() => {
-		const fetchConfig = async () => {
-			const config = await getConfig();
-			if (config) {
-				setConfig(config);
-			}
-		};
-		fetchConfig();
-	}, []);
-
-	// Helper function to check if activity requires approval
-	const requiresApproval = (activity: Activity): boolean => {
-		switch (activity.type) {
-			case 'BURN':
-			case 'MINT':
-			case 'FREEZE':
-				return true;
-			case 'BLACKLIST':
-				return false;
-			case 'ACTION':
-				return activity.action === 'PAUSE' || activity.action === 'RESUME';
-		}
-	};
-
-	// Filter activities based on showOnlyPending
-	const filteredActivities = useMemo(() => {
-		if (!showOnlyPending) return activities;
-		return activities?.filter(activity => 
-			activity.status === 'PENDING' && 
-			requiresApproval(activity)
-		);
-	}, [activities, showOnlyPending]);
-
-	// Compute active restrictions from activities
-	const activeRestrictions = useMemo(() => {
-		const addressMap = new Map<string, AddressStatus>();
-		
-		if (!activities) return [];
-
-		// Sort activities by timestamp, newest first
-		const sortedActivities = [...activities].sort(
-			(a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-		);
-		
-		// First pass: get the latest approved action for each address
-		for (const activity of sortedActivities) {
-			if ((activity.type === 'FREEZE' || activity.type === 'BLACKLIST') && 
-				activity.address && 
-				activity.status === 'APPROVED') {
-				// Only process if we haven't seen this address yet (since activities are sorted newest first)
-				if (!addressMap.has(activity.address)) {
-					const status = {
-						address: activity.address,
-						isBlacklisted: activity.type === 'BLACKLIST' && activity.action === 'BLACKLIST',
-						isFrozen: activity.type === 'FREEZE' && activity.action === 'FREEZE'
-					};
-					addressMap.set(activity.address, status);
-				}
-			}
-		}
-
-		// Convert to array and filter out addresses with no active restrictions
-		return Array.from(addressMap.values()).filter(status => status.isBlacklisted || status.isFrozen);
-	}, [activities]);
-
-	// Fetch status and activities
 	const fetchStatus = useCallback(async () => {
 		try {
-			const res = await fetch('/api/status?includePending=true');
-			const data = await res.json();
+			const response = await fetch('/api/status?includePending=true');
+			const data = await response.json() as StatusResponse;
+			
+			if (!response.ok) throw new Error(data.error || 'Failed to fetch status');
 
-			if (!res.ok) throw new Error(data.error || 'Failed to fetch status');
-
-			// Process activities
 			const allActivities: Activity[] = [
-				...data.freezeRequests.map((req: any) => ({ ...req, type: 'FREEZE' })),
-				...data.blacklistRequests.map((req: any) => ({ ...req, type: 'BLACKLIST' })),
-				...data.systemRequests.map((req: any) => ({ ...req, type: 'ACTION' })),
-				...data.mintRequests.map((req: any) => ({ ...req, type: 'MINT', action: 'MINT' })),
-				...data.burnRequests.map((req: any) => ({ ...req, type: 'BURN', action: 'BURN' })),
+				...data.freezeRequests.map(req => ({ ...req, type: 'FREEZE' as const })),
+				...data.blacklistRequests.map(req => ({ ...req, type: 'BLACKLIST' as const })),
+				...data.systemRequests.map(req => ({ ...req, type: 'ACTION' as const })),
+				...data.mintRequests.map(req => ({ ...req, type: 'MINT' as const, action: 'MINT' as const })),
+				...data.burnRequests.map(req => ({ ...req, type: 'BURN' as const, action: 'BURN' as const })),
 			].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
 			setActivities(allActivities);
@@ -136,155 +66,95 @@ const DashboardAdminContent = () => {
 		return () => clearInterval(interval);
 	}, [fetchStatus]);
 
+	useEffect(() => {
+		const fetchConfig = async () => {
+			try {
+				const response = await fetch('/api/config');
+				const data = await response.json();
+				if (data) {
+					setConfig({
+						...data,
+						fees: data.fees as Fee[]
+					});
+				}
+			} catch (error) {
+				console.error('Error fetching config:', error);
+			}
+		};
+
+		fetchConfig();
+	}, []);
+
+	// Filter activities based on showOnlyPending
+	const filteredActivities = activities.filter(activity => 
+		!showOnlyPending || activity.status === 'PENDING'
+	);
+
+	// Compute active restrictions from activities
+	const activeRestrictions = activities.reduce((addressMap, activity) => {
+		if (activity.type === 'FREEZE' || activity.type === 'BLACKLIST') {
+			const address = activity.address;
+			const status = addressMap.get(address) || { address, isBlacklisted: false, isFrozen: false };
+
+			if (activity.status === 'APPROVED') {
+				if (activity.type === 'FREEZE') {
+					status.isFrozen = activity.action === 'FREEZE';
+				} else {
+					status.isBlacklisted = activity.action === 'BLACKLIST';
+				}
+			}
+
+			addressMap.set(address, status);
+		}
+		return addressMap;
+	}, new Map<string, AddressStatus>());
+
 	const handlePauseToggle = async () => {
 		try {
 			setLoading(true);
 			const action = isPaused ? 'RESUME' : 'PAUSE';
+			
 			await fetch('/api/pause', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ action }),
 			});
+			
 			await fetchStatus();
 		} catch (error) {
-			console.error('Error toggling pause state:', error);
+			console.error('Error toggling pause:', error);
+			toast.error('Failed to toggle pause');
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	// Split into separate handlers for freeze and blacklist
-	const handleFreezeRequest = async (e: React.FormEvent<HTMLFormElement | HTMLButtonElement>, address: string = freezeAddress) => {
-		e.preventDefault();
-		if (!address) return;
+	const canCancel = useCallback((activity: Activity) => {
+		if (!session?.user?.email) return false;
+		return activity.status === 'PENDING' && activity.requester.email === session.user.email;
+	}, [session]);
 
-		try {
-			setFreezeLoading(true);
-			const response = await fetch('/api/freeze', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					address,
-					action: 'FREEZE',
-					callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/freezeComplete`
-				}),
-			});
-
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || 'Failed to create freeze request');
-			}
-
-			setFreezeAddress('');
-			await fetchStatus();
-			// Close the modal using the dialog close method
-			const modal = document.getElementById('freeze_modal') as HTMLDialogElement;
-			modal.close();
-		} catch (error) {
-			console.error('Error creating freeze request:', error);
-			alert(error instanceof Error ? error.message : 'Failed to create freeze request');
-		} finally {
-			setFreezeLoading(false);
-		}
-	};
-
-	const handleBlacklistRequest = async (e: React.MouseEvent<HTMLButtonElement | HTMLFormElement>, address: string = freezeAddress) => {
-		e.preventDefault();
-		if (!address) return;
-
-		try {
-			setBlacklistLoading(true);
-			const response = await fetch('/api/blacklist', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					address,
-					action: 'BLACKLIST',
-					callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/blacklistComplete`
-				}),
-			});
-
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || 'Failed to create blacklist request');
-			}
-
-			setFreezeAddress('');
-			await fetchStatus();
-			// Close the modal using the dialog close method
-			const modal = document.getElementById('freeze_modal') as HTMLDialogElement;
-			modal.close();
-		} catch (error) {
-			console.error('Error creating blacklist request:', error);
-			alert(error instanceof Error ? error.message : 'Failed to create blacklist request');
-		} finally {
-			setBlacklistLoading(false);
-		}
-	};
-
-	const handleMintRequest = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!mintAddress || !mintAmount) return;
-
-		// get the config
-		const config = await getConfig();
-		if (!config) {
-			alert("No config found");
-			return;
-		}
-
-		try {
-			setMintLoading(true);
-			const response = await fetch('/api/mint', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					amount: toTokenSat(mintAmount, config.decimals),
-					address: mintAddress,
-				}),
-			});
-
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || 'Failed to create mint request');
-			}
-
-			setMintAddress('');
-			setMintAmount('');
-			await fetchStatus();
-			// Close the modal using the dialog close method
-			const modal = document.getElementById('mint_modal') as HTMLDialogElement;
-			modal.close();
-		} catch (error) {
-			console.error('Error creating mint request:', error);
-			alert(error instanceof Error ? error.message : 'Failed to create mint request');
-		} finally {
-			setMintLoading(false);
-		}
-	};
+	const canApprove = useCallback((activity: Activity) => {
+		if (!session?.user?.email) return false;
+		if (activity.status !== 'PENDING') return false;
+		if (activity.requester.email === session.user.email) return false;
+		return !activity.approvals.some(approval => approval.approver.email === session.user.email);
+	}, [session]);
 
 	const handleCancel = async (id: string, type: Activity['type']) => {
 		try {
 			setLoading(true);
-			const res = await fetch('/api/cancel', {
+			const requestType = type.toLowerCase() + 'RequestId';
+			await fetch('/api/cancel', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					freezeRequestId: type === 'FREEZE' ? id : undefined,
-					mintRequestId: type === 'MINT' ? id : undefined,
-					burnRequestId: type === 'BURN' ? id : undefined,
-					actionRequestId: type === 'ACTION' ? id : undefined,
-				}),
+				body: JSON.stringify({ [requestType]: id }),
 			});
-
-			const data = await res.json();
-			if (!res.ok) throw new Error(data.error || 'Failed to cancel request');
-			
-			toast.success('Request cancelled successfully');
 			await fetchStatus();
+			toast.success('Request cancelled');
 		} catch (error) {
 			console.error('Error cancelling request:', error);
-			toast.error(error instanceof Error ? error.message : 'Failed to cancel request');
+			toast.error('Failed to cancel request');
 		} finally {
 			setLoading(false);
 		}
@@ -293,265 +163,205 @@ const DashboardAdminContent = () => {
 	const handleApprove = async (id: string, type: Activity['type']) => {
 		try {
 			setLoading(true);
-			let endpoint = '';
-			switch (type) {
-				case 'FREEZE':
-					endpoint = '/api/approveFreeze';
-					break;
-				case 'MINT':
-					endpoint = '/api/approveMint';
-					break;
-				case 'BURN':
-					endpoint = '/api/approveBurn';
-					break;
-				case 'ACTION':
-					endpoint = '/api/approve';
-					break;
-				default:
-					throw new Error('Invalid request type');
-			}
+			const endpoint = type === 'ACTION' ? 'approve' :
+				type === 'FREEZE' ? 'approveFreeze' :
+				type === 'BLACKLIST' ? 'approveBlacklist' :
+				type === 'MINT' ? 'approveMint' :
+				type === 'BURN' ? 'approveBurn' : null;
 
-			const res = await fetch(endpoint, {
+			if (!endpoint) throw new Error('Invalid activity type');
+
+			const requestType = type === 'ACTION' ? 'actionRequestId' :
+				type === 'FREEZE' ? 'freezeRequestId' :
+				type === 'BLACKLIST' ? 'blacklistRequestId' :
+				type === 'MINT' ? 'mintRequestId' :
+				'burnRequestId';
+
+			await fetch(`/api/${endpoint}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					freezeRequestId: type === 'FREEZE' ? id : undefined,
-					mintRequestId: type === 'MINT' ? id : undefined,
-					burnRequestId: type === 'BURN' ? id : undefined,
-					actionRequestId: type === 'ACTION' ? id : undefined,
-				}),
+				body: JSON.stringify({ [requestType]: id }),
 			});
-
-			const data = await res.json();
-			if (!res.ok) throw new Error(data.error || 'Failed to approve request');
-			
-			toast.success('Request approved successfully');
 			await fetchStatus();
+			toast.success('Request approved');
 		} catch (error) {
 			console.error('Error approving request:', error);
-			toast.error(error instanceof Error ? error.message : 'Failed to approve request');
+			toast.error('Failed to approve request');
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const canCancel = (activity: Activity): boolean => {
-		return activity.status === 'PENDING' && activity.requester.email === session?.user?.email;
-	};
+	const requiresApproval = useCallback((activity: Activity) => {
+		return activity.type !== 'BLACKLIST';
+	}, []);
 
-	const handleUnfreeze = async (address: string) => {
-		try {
-			setLoading(true);
-			const response = await fetch('/api/freeze', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					address,
-					action: 'UNFREEZE',
-					callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/unfreezeComplete`
-				}),
-			});
-
-			if (!response.ok) {
-				throw new Error('Failed to create unfreeze request');
-			}
-
-			await fetchStatus();
-		} catch (error) {
-			console.error('Error creating unfreeze request:', error);
-			alert(error instanceof Error ? error.message : 'Failed to create unfreeze request');
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleUnblacklist = async (e: React.MouseEvent<HTMLButtonElement>, address: string) => {
-		e.preventDefault();
-
-		if (!address) return;
-		try {
-			setLoading(true);
-			const response = await fetch('/api/blacklist', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					address,
-					action: 'UNBLACKLIST',
-					callbackUrl: `${process.env.NEXT_PUBLIC_MNEE_API}/v1/unblacklistComplete`
-				}),
-			});
-
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || 'Failed to unblacklist address');
-			}
-
-			await fetchStatus();
-		} catch (error) {
-			console.error('Error unblacklisting address:', error);
-			alert(error instanceof Error ? error.message : 'Failed to unblacklist address');
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	// Helper function to get activity icon
-	const getActivityIcon = (activity: Activity) => {
-		switch (activity.type) {
-			case 'FREEZE':
-				return <FaSnowflake />;
-			case 'BLACKLIST':
-				return <FaBan />;
-			case 'ACTION':
-				return activity.action === 'PAUSE' ? <FaPause /> : <FaPlay />;
-			case 'MINT':
-				return <FaCoins />;
-			case 'BURN':
-				return <FaFire className="text-red-500" />;
-			default:
-				return null;
-		}
-	};
-
-	// Helper function to get activity display text
-	const getActivityDisplayText = (activity: Activity): string => {
-		switch (activity.type) {
-			case 'BURN':
-				return `Burn ${toToken(activity.amount, config?.decimals || DEFAULT_DECIMALS)} tokens`;
-			case 'MINT':
-				return `Mint ${toToken(activity.amount, config?.decimals || DEFAULT_DECIMALS)} tokens to ${activity.address}`;
-			case 'FREEZE':
-				return `${activity.action} ${activity.address}`;
-			case 'BLACKLIST':
-				return `${activity.action} ${activity.address}`;
-			case 'ACTION':
-				return activity.action;
-		}
-	};
-
-	const handleBurnRequest = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!burnAmount) return;
-
-		try {
-			setBurnLoading(true);
-			const response = await fetch('/api/burn', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					amount: burnAmount,
-				}),
-			});
-
-			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.message || 'Failed to create burn request');
-			}
-
-			setBurnAmount('');
-			await fetchStatus();
-			// Close the modal using the dialog close method
-			const modal = document.getElementById('burn_modal') as HTMLDialogElement;
-			modal.close();
-		} catch (error) {
-			console.error('Error creating burn request:', error);
-			alert(error instanceof Error ? error.message : 'Failed to create burn request');
-		} finally {
-			setBurnLoading(false);
-		}
-	};
-
-	const canApprove = (activity: Activity): boolean => {
-		if (!session?.user?.email) return false;
-		if (activity.status !== 'PENDING') return false;
-		if (!requiresApproval(activity)) return false;
-		// The requester's request counts as the first approval
-		if (activity.requester.email === session.user.email) return false;
-		return !activity.approvals.some(approval => approval.approver.email === session.user.email);
-	};
-
-	// Get total approval count
-	const getApprovalCount = (activity: Activity): number => {
-		if (!requiresApproval(activity)) return 0;
-		// Just return the number of approvals, the requester's approval is already included
+	const getApprovalCount = useCallback((activity: Activity) => {
 		return activity.approvals.length;
-	};
+	}, []);
 
-	// Only show loading indicator on initial load
 	if (initialLoading) {
 		return (
-			<div className="flex justify-center items-center min-h-[200px]">
-				<FaSpinner className="animate-spin text-2xl" />
+			<div className="flex justify-center items-center h-screen">
+				<FaSpinner className="animate-spin text-4xl" />
 			</div>
 		);
 	}
 
-	// Find any pending pause/resume request
-	const pendingPauseRequest = activities?.find(
-		a => a.type === 'ACTION' && 
-		a.status === 'PENDING' && 
-		(a.action === 'PAUSE' || a.action === 'RESUME')
-	);
-
 	return (
-		<div className="p-4 space-y-4">
-			<SystemStatus
-				isPaused={isPaused}
-				handlePauseToggle={handlePauseToggle}
-				pendingPauseRequest={pendingPauseRequest}
-			/>
+		<div className="space-y-6">
+			<SystemStatus isPaused={isPaused} onPauseToggle={handlePauseToggle} />
+			
+			<div className="w-full">
+				<div role="tablist" className="tabs tabs-bordered">
+					<button
+						role="tab"
+						className={`tab ${activeTab === 'activity' ? 'tab-active' : ''}`}
+						onClick={() => setActiveTab('activity')}
+					>
+						Activity
+					</button>
+					<button
+						role="tab"
+						className={`tab ${activeTab === 'restrictions' ? 'tab-active' : ''}`}
+						onClick={() => setActiveTab('restrictions')}
+					>
+						Restrictions
+					</button>
+					<button
+						role="tab"
+						className={`tab ${activeTab === 'burns' ? 'tab-active' : ''}`}
+						onClick={() => setActiveTab('burns')}
+					>
+						Burns
+					</button>
+					<button
+						role="tab"
+						className={`tab ${activeTab === 'whitelist' ? 'tab-active' : ''}`}
+						onClick={() => setActiveTab('whitelist')}
+					>
+						Whitelist
+					</button>
+				</div>
 
-			<ActiveRestrictions
-				activeRestrictions={activeRestrictions}
-				loading={loading}
-				handleUnblacklist={handleUnblacklist}
-				handleFreezeRequest={handleFreezeRequest}
-				handleUnfreeze={handleUnfreeze}
-			/>
+				{activeTab === 'activity' && (
+					<ActivityTab
+						showOnlyPending={showOnlyPending}
+						setShowOnlyPending={setShowOnlyPending}
+						filteredActivities={filteredActivities}
+						config={config}
+						loading={loading}
+						canCancel={canCancel}
+						canApprove={canApprove}
+						handleCancel={handleCancel}
+						handleApprove={handleApprove}
+						getActivityIcon={getActivityIcon}
+						getActivityDisplayText={getActivityDisplayText}
+						requiresApproval={requiresApproval}
+						getApprovalCount={getApprovalCount}
+					/>
+				)}
 
-			<ActivityList
-				showOnlyPending={showOnlyPending}
-				setShowOnlyPending={setShowOnlyPending}
-				filteredActivities={filteredActivities}
-				config={config}
-				session={session}
-				loading={loading}
-				canCancel={canCancel}
-				canApprove={canApprove}
-				handleCancel={handleCancel}
-				handleApprove={handleApprove}
-				getActivityIcon={getActivityIcon}
-				getActivityDisplayText={getActivityDisplayText}
-				requiresApproval={requiresApproval}
-				getApprovalCount={getApprovalCount}
-			/>
+				{activeTab === 'restrictions' && (
+					<ActiveRestrictionsTab
+						restrictions={Array.from(activeRestrictions.values())}
+						loading={loading}
+						handleUnblacklist={async (e, address) => {
+							e.preventDefault();
+							try {
+								setLoading(true);
+								const response = await fetch('/api/blacklist', {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({
+										address,
+										action: 'UNBLACKLIST',
+									}),
+								});
 
-			<FreezeModal
-				freezeAddress={freezeAddress}
-				setFreezeAddress={setFreezeAddress}
-				freezeLoading={freezeLoading}
-				blacklistLoading={blacklistLoading}
-				handleFreezeRequest={handleFreezeRequest}
-				handleBlacklistRequest={handleBlacklistRequest}
-			/>
+								if (!response.ok) {
+									const error = await response.json();
+									throw new Error(error.message || 'Failed to unblacklist address');
+								}
 
-			<MintModal
-				mintAddress={mintAddress}
-				setMintAddress={setMintAddress}
-				mintAmount={mintAmount}
-				setMintAmount={setMintAmount}
-				mintLoading={mintLoading}
-				handleMintRequest={handleMintRequest}
-			/>
+								await fetchStatus();
+								toast.success('Address unblacklisted');
+							} catch (error) {
+								console.error('Error unblacklisting address:', error);
+								toast.error(error instanceof Error ? error.message : 'Failed to unblacklist address');
+							} finally {
+								setLoading(false);
+							}
+						}}
+						handleFreezeRequest={async (e, address) => {
+							e.preventDefault();
+							try {
+								setLoading(true);
+								const response = await fetch('/api/freeze', {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({
+										address,
+										action: 'FREEZE',
+									}),
+								});
 
-			<BurnModal
-				burnAmount={burnAmount}
-				setBurnAmount={setBurnAmount}
-				burnLoading={burnLoading}
-				handleBurnRequest={handleBurnRequest}
-			/>
+								if (!response.ok) {
+									const error = await response.json();
+									throw new Error(error.message || 'Failed to freeze address');
+								}
+
+								await fetchStatus();
+								toast.success('Freeze request created');
+							} catch (error) {
+								console.error('Error freezing address:', error);
+								toast.error(error instanceof Error ? error.message : 'Failed to freeze address');
+							} finally {
+								setLoading(false);
+							}
+						}}
+						handleUnfreeze={async (address) => {
+							try {
+								setLoading(true);
+								const response = await fetch('/api/freeze', {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({
+										address,
+										action: 'UNFREEZE',
+									}),
+								});
+
+								if (!response.ok) {
+									const error = await response.json();
+									throw new Error(error.message || 'Failed to unfreeze address');
+								}
+
+								await fetchStatus();
+								toast.success('Unfreeze request created');
+							} catch (error) {
+								console.error('Error unfreezing address:', error);
+								toast.error(error instanceof Error ? error.message : 'Failed to unfreeze address');
+							} finally {
+								setLoading(false);
+							}
+						}}
+					/>
+				)}
+
+				{activeTab === 'burns' && <BurnsTab />}
+				{activeTab === 'whitelist' && <WhitelistTab />}
+			</div>
+
+			{showFreezeModal && (
+				<FreezeModal onClose={() => setShowFreezeModal(false)} onSuccess={fetchStatus} />
+			)}
+			{showMintModal && (
+				<MintModal onClose={() => setShowMintModal(false)} onSuccess={fetchStatus} />
+			)}
+			{showBurnModal && (
+				<BurnModal onClose={() => setShowBurnModal(false)} onSuccess={fetchStatus} />
+			)}
 		</div>
 	);
-};
-
-export default DashboardAdminContent; 
+} 

@@ -95,7 +95,7 @@ const Sidebar: React.FC = () => {
 									: "hover:bg-secondary hover:text-secondary-content"
 							}`}
 						>
-							<FaSliders className="mr-2" /> Settings
+							<FaSliders className="mr-2" /> Config
 						</Link>
 					)}
 					{/* Sign Out */}

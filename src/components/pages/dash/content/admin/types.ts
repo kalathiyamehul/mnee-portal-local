@@ -1,5 +1,17 @@
-import { config } from '@prisma/client';
+import { config as PrismaConfig } from '@prisma/client';
 import type { Session } from 'next-auth';
+import type { IconType } from 'react-icons';
+
+export interface Fee {
+	min: number;
+	max: number;
+	fee: number;
+	[key: string]: number;
+}
+
+export type ConfigWithFees = Omit<PrismaConfig, 'fees'> & {
+	fees: Fee[];
+}
 
 export interface Approval {
 	id: string;
@@ -43,20 +55,22 @@ export interface SystemRequest extends BaseRequest {
 }
 
 export interface MintRequest extends BaseRequest {
-	amount: number;
+	action: 'MINT';
 	address: string;
+	amount: string;
 }
 
 export interface BurnRequest extends BaseRequest {
-	amount: number;
+	action: 'BURN';
+	amount: string;
 }
 
 export type Activity = (
 	| (FreezeRequest & { type: 'FREEZE' })
 	| (BlacklistRequest & { type: 'BLACKLIST' })
 	| (SystemRequest & { type: 'ACTION' })
-	| (MintRequest & { type: 'MINT'; action: 'MINT' })
-	| (BurnRequest & { type: 'BURN'; action: 'BURN' })
+	| (MintRequest & { type: 'MINT' })
+	| (BurnRequest & { type: 'BURN' })
 );
 
 export interface AddressStatus {
@@ -65,34 +79,38 @@ export interface AddressStatus {
 	isFrozen: boolean;
 }
 
-export interface ActivityCardProps {
-	activity: Activity;
-	config: config | null;
-	session: Session | null;
-	loading: boolean;
-	canCancel: (activity: Activity) => boolean;
-	canApprove: (activity: Activity) => boolean;
-	handleCancel: (id: string, type: Activity['type']) => void;
-	handleApprove: (id: string, type: Activity['type']) => void;
-	getActivityIcon: (activity: Activity) => JSX.Element | null;
-	getActivityDisplayText: (activity: Activity) => string;
-	requiresApproval: (activity: Activity) => boolean;
-	getApprovalCount: (activity: Activity) => number;
+export interface StatusResponse {
+	isPaused: boolean;
+	freezeRequests: FreezeRequest[];
+	blacklistRequests: BlacklistRequest[];
+	systemRequests: SystemRequest[];
+	mintRequests: MintRequest[];
+	burnRequests: BurnRequest[];
+	error?: string;
 }
 
 export interface ActivityListProps {
 	showOnlyPending: boolean;
 	setShowOnlyPending: (value: boolean) => void;
 	filteredActivities: Activity[];
-	config: config | null;
+	config: ConfigWithFees | null;
 	session: Session | null;
 	loading: boolean;
 	canCancel: (activity: Activity) => boolean;
 	canApprove: (activity: Activity) => boolean;
-	handleCancel: (id: string, type: Activity['type']) => void;
-	handleApprove: (id: string, type: Activity['type']) => void;
-	getActivityIcon: (activity: Activity) => JSX.Element | null;
+	handleCancel: (id: string, type: Activity['type']) => Promise<void>;
+	handleApprove: (id: string, type: Activity['type']) => Promise<void>;
+	getActivityIcon: (activity: Activity) => IconType;
 	getActivityDisplayText: (activity: Activity) => string;
 	requiresApproval: (activity: Activity) => boolean;
 	getApprovalCount: (activity: Activity) => number;
+}
+
+export interface SystemStatusProps {
+	isPaused: boolean;
+	onPauseToggle: () => Promise<void>;
+}
+
+export interface ActiveRestrictionsProps {
+	restrictions: AddressStatus[];
 } 
