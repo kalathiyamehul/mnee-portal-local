@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { toTokenSat } from 'satoshi-token';
-import { DEFAULT_DECIMALS } from '@/lib/constants';
 import { getConfig } from '@/lib/config';
 
 interface MintRequestParams {

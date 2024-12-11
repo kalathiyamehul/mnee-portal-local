@@ -284,7 +284,7 @@ const DashboardSettingsContent = () => {
 								<div className="font-mono text-sm break-all bg-base-300 p-2 rounded mt-1">
 									{config.mintAddress}
 								</div>
-								<p className="text-xs text-base-content/70 mt-1">Set from MINT_WIF environment variable</p>
+								<p className="text-xs text-base-content/70 mt-1">From MINT_WIF environment variable</p>
 							</div>
 							{config.fundAddress && (
 								<div>
@@ -297,7 +297,7 @@ const DashboardSettingsContent = () => {
 									<div className="font-mono text-sm break-all bg-base-300 p-2 rounded mt-1">
 										{config.fundAddress}
 									</div>
-                  <p className="text-xs text-base-content/70 mt-1">Set from APPROVER_WIF environment variable on the cosigner</p>
+                  <p className="text-xs text-base-content/70 mt-1">From APPROVER_WIF environment variable on the cosigner</p>
 								</div>
 							)}
               <div>
@@ -310,7 +310,7 @@ const DashboardSettingsContent = () => {
                 <div className="font-mono text-sm break-all bg-base-300 p-2 rounded mt-1">
                   {config.burnAddress || 'Not set'}
                 </div>
-                <p className="text-xs text-base-content/70 mt-1">Set from BURN_WIF environment variable</p>
+                <p className="text-xs text-base-content/70 mt-1">From BURN_WIF environment variable</p>
               </div>
 						</div>
 					</div>
