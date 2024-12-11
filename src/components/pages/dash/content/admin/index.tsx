@@ -185,16 +185,22 @@ export default function AdminPage() {
 				type === 'MINT' ? 'mintRequestId' :
 				'burnRequestId';
 
-			await fetch(`/api/${endpoint}`, {
+			const response = await fetch(`/api/${endpoint}`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ [requestType]: id }),
 			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || 'Failed to approve request');
+			}
+
 			await fetchStatus();
 			toast.success('Request approved');
 		} catch (error) {
 			console.error('Error approving request:', error);
-			toast.error('Failed to approve request');
+			toast.error(error instanceof Error ? error.message : 'Failed to approve request');
 		} finally {
 			setLoading(false);
 		}

@@ -18,6 +18,7 @@ export type MNEEUtxo = {
     txid: string;
     vout: number;
     satoshis: number;
+    owners: string[];
     data: {
         bsv21: {
             amt: number;

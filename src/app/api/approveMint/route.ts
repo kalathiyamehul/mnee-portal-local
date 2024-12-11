@@ -17,101 +17,118 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const { mintRequestId } = await request.json();
+	try {
+		const { mintRequestId } = await request.json();
+		const result = await prisma.$transaction(async (tx) => {
+			// Verify the approving user exists
+			const approvingUser = await tx.user.findUnique({
+				where: { id: session.user.id },
+			});
 
-	const result = await prisma.$transaction(async (tx) => {
-		// Verify the approving user exists
-		const approvingUser = await tx.user.findUnique({
-			where: { id: session.user.id },
-		});
+			if (!approvingUser) {
+				throw new Error("Approving user not found");
+			}
 
-		if (!approvingUser) {
-			throw new Error("Approving user not found");
-		}
-
-		// Fetch the mint request
-		const mintRequest = await tx.mintRequest.findUnique({
-			where: { id: mintRequestId },
-			include: {
-				requester: true,
-				approvals: true,
-			},
-		});
-
-		if (!mintRequest) {
-			throw new Error("Mint request not found");
-		}
-
-		if (mintRequest.status !== "PENDING") {
-			throw new Error("Request is not pending");
-		}
-
-		// Prevent self-approval
-		if (mintRequest.requestedBy === session.user.id) {
-			throw new Error("Cannot approve your own request");
-		}
-
-		// Check if the user has already approved
-		const existingApproval = await tx.actionApproval.findFirst({
-			where: {
-				mintRequestId,
-				approvedBy: session.user.id,
-			},
-		});
-
-		if (existingApproval) {
-			throw new Error("You have already approved this request");
-		}
-
-		// Create a new approval
-		await tx.actionApproval.create({
-			data: {
-				mintRequestId,
-				approvedBy: session.user.id,
-			},
-		});
-
-		// Get updated approval count
-		const approvalCount = await tx.actionApproval.count({
-			where: { mintRequestId },
-		});
-
-		// If we now have 2 approvals (including the initial one), update the status
-		if (approvalCount >= 2) {
-			await tx.mintRequest.update({
+			// Fetch the mint request
+			const mintRequest = await tx.mintRequest.findUnique({
 				where: { id: mintRequestId },
+				include: {
+					requester: true,
+					approvals: true,
+				},
+			});
+
+			if (!mintRequest) {
+				throw new Error("Mint request not found");
+			}
+
+			if (mintRequest.status !== "PENDING") {
+				throw new Error("Request is not pending");
+			}
+
+			// Prevent self-approval
+			if (mintRequest.requestedBy === session.user.id) {
+				throw new Error("Cannot approve your own request");
+			}
+
+			// Check if the user has already approved
+			const existingApproval = await tx.actionApproval.findFirst({
+				where: {
+					mintRequestId,
+					approvedBy: session.user.id,
+				},
+			});
+
+			if (existingApproval) {
+				throw new Error("You have already approved this request");
+			}
+
+			// Create a new approval
+			await tx.actionApproval.create({
 				data: {
-					status: "APPROVED",
-					updatedAt: new Date(),
+					mintRequestId,
+					approvedBy: session.user.id,
 				},
 			});
 
-			const { rawtx } = await mintMnee(mintRequest.amount, mintRequest.address);
-
-			// update the request status and txid
-			await tx.mintRequest.update({
-				where: { id: mintRequestId },
-				data: { 
-					status: "DONE", 
-					updatedAt: new Date(),
-					txid: Transaction.fromHex(rawtx).id('hex'),
-				},
+			// Get updated approval count
+			const approvalCount = await tx.actionApproval.count({
+				where: { mintRequestId },
 			});
 
-			return { approvalCount, status: "DONE", minterTx: rawtx };
-		}
+			// If we now have 2 approvals (including the initial one), update the status
+			if (approvalCount >= 2) {
+				await tx.mintRequest.update({
+					where: { id: mintRequestId },
+					data: {
+						status: "APPROVED",
+						updatedAt: new Date(),
+					},
+				});
 
-		return { approvalCount, status: "PENDING" };
-	});
+				try {
+					const { rawtx } = await mintMnee(mintRequest.amount, mintRequest.address);
 
-	return NextResponse.json({
-		success: true,
-		message:
-			result.status === "APPROVED" ? "Request approved" : "Approval recorded",
-		approvalCount: result.approvalCount,
-		status: result.status,
-		minterTx: result.minterTx,
-	});
+					// update the request status and txid
+					await tx.mintRequest.update({
+						where: { id: mintRequestId },
+						data: { 
+							status: "DONE", 
+							updatedAt: new Date(),
+							txid: Transaction.fromHex(rawtx).id('hex'),
+						},
+					});
+
+					return { approvalCount, status: "DONE", minterTx: rawtx };
+				} catch (error) {
+					// If minting fails, keep the request in APPROVED state but propagate a cleaner error
+					console.error("Error during minting:", error);
+					throw new Error(
+						error instanceof Error 
+							? error.message.replace(/^Error: /, '') // Remove "Error: " prefix
+							: "Transaction submission failed"
+					);
+				}
+			}
+
+			return { approvalCount, status: "PENDING" };
+		});
+
+		return NextResponse.json({
+			success: true,
+			message:
+				result.status === "APPROVED" ? "Request approved" : "Approval recorded",
+			approvalCount: result.approvalCount,
+			status: result.status,
+			minterTx: result.minterTx,
+		});
+	} catch (error) {
+		console.error("Error processing approval:", error);
+		return NextResponse.json({ 
+			success: false,
+			error: error instanceof Error ? error.message : "Failed to process approval"
+		}, { status: 500 });
+	}
 }
 
 const mintMnee = async (amount: number, address: string) => {

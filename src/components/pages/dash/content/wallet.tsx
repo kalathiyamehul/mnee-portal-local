@@ -41,19 +41,26 @@ const DashboardWalletContent: React.FC = () => {
 	const [config, setConfig] = useState<Config | null>(null);
 
 	const connectWallet = async () => {
-		if (!wallet.isReady) {
-			window.open("https://yours.org", "_blank");
-			return;
-		}
-		const pubKey = await wallet.connect();
-		if (pubKey) {
-			const addresses = await wallet.getAddresses();
+		try {
+			if (!wallet.isReady) {
+				toast.error("Please install the Yours Wallet extension first");
+				window.open("https://yours.org", "_blank");
+				return;
+			}
+			const pubKey = await wallet.connect();
+			if (pubKey) {
+				const addresses = await wallet.getAddresses();
 
-      // make sure addresses are not empty strings
-      if (!addresses || Object.values(addresses).some(addr => addr === "")) {
-        throw new Error("Failed to fetch addresses");
-      }
-			setAddresses(addresses ?? []);
+				// make sure addresses are not empty strings
+				if (!addresses || Object.values(addresses).some(addr => addr === "")) {
+					throw new Error("Failed to get valid wallet addresses");
+				}
+				setAddresses(addresses ?? []);
+				toast.success("Wallet connected successfully");
+			}
+		} catch (error) {
+			console.error("Error connecting wallet:", error);
+			toast.error("Failed to connect wallet: " + (error instanceof Error ? error.message : "Unknown error"));
 		}
 	};
 
@@ -76,18 +83,16 @@ const DashboardWalletContent: React.FC = () => {
 
 	const fetchBalance = useCallback(async (addresses: string[]) => {
 		try {
-			// const utxos = await fetchUtxos(addresses);
-			// const totalBalance = utxos.reduce((sum: number, utxo: any) => sum + utxo.satoshis, 0);
-
 			console.log({ addresses });
 			const balance = await wallet.getBalance();
 			if (!balance) {
-				throw new Error("Failed to fetch balance");
+				throw new Error("Failed to fetch wallet balance");
 			}
 
 			setBalance(balance);
 		} catch (error) {
 			console.error("Error fetching balance:", error);
+			toast.error("Failed to fetch BSV balance: " + (error instanceof Error ? error.message : "Unknown error"));
 		}
 	}, [wallet]);
 
@@ -101,7 +106,8 @@ const DashboardWalletContent: React.FC = () => {
 
 			setMneeBalance(balance);
 		} catch (error) {
-			console.error("Error fetching balance:", error);
+			console.error("Error fetching MNEE balance:", error);
+			toast.error("Failed to fetch MNEE balance: " + (error instanceof Error ? error.message : "Unknown error"));
 		}
 	}, []);
 
@@ -163,6 +169,7 @@ const DashboardWalletContent: React.FC = () => {
 			const tx = new Transaction(1, [], [], 0);
 
 			let tokensIn = 0;
+			const signingAddresses: string[] = [];
 			while (tokensIn < tokenSatAmt + fee) {
 				const utxo = utxos.shift();
 				if (!utxo) {
@@ -172,6 +179,9 @@ const DashboardWalletContent: React.FC = () => {
 				if (!sourceTransaction) {
 					throw new Error("Failed to fetch source transaction");
 				}
+				
+				signingAddresses.push(utxo.owners[0]);
+				
 				tx.addInput({
 					sourceTXID: utxo.txid,
 					sourceOutputIndex: utxo.vout,
@@ -258,18 +268,20 @@ const DashboardWalletContent: React.FC = () => {
 				satoshis: 1,
 			});
 
-			// debugger
 			// Sign the transaction
 			const sigRequests: SignatureRequest[] = [];
 			for (const [index, input] of tx.inputs.entries()) {
 				if (!input.sourceTransaction || !input.sourceTXID) {
 					throw new Error("Source transaction not found");
 				}
+        
+        const addressToUse = signingAddresses[index];
+
 				sigRequests.push({
 					prevTxid: input.sourceTXID,
 					outputIndex: input.sourceOutputIndex,
 					inputIndex: index,
-					address: addresses.ordAddress,
+					address: addressToUse,
 					script:
 						input.sourceTransaction.outputs[
 							input.sourceOutputIndex
@@ -307,20 +319,39 @@ const DashboardWalletContent: React.FC = () => {
 
 				console.log({ tx: tx.toHex() });
 				// Submit the transaction
-				// debugger
 				const response = await fetch(`${MNEE_API}/v1/transfer`, {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ rawtx: toBase64(tx.toBinary()) }),
 				});
+
 				if (!response.ok) {
-					throw new Error("Transaction submission failed");
+					const errorData = await response.json().catch(() => ({}));
+					
+					// Handle specific status codes
+					switch (response.status) {
+						case 423:
+							if (errorData.message?.includes("frozen")) {
+								throw new Error("Your address is currently frozen and cannot send tokens");
+							} else if (errorData.message?.includes("blacklisted")) {
+								throw new Error("The recipient address is blacklisted and cannot receive tokens");
+							} else {
+								throw new Error("Transaction blocked: Address is either frozen or blacklisted");
+							}
+						case 503:
+							if (errorData.message?.includes("cosigner is paused")) {
+								throw new Error("Token transfers are currently paused by the administrator");
+							}
+							throw new Error(errorData.message || "Service temporarily unavailable");
+						default:
+							throw new Error(errorData.message || "Transaction submission failed");
+					}
 				}
 
 				// rawtx is base64 encoded
 				return response.json() as Promise<{ rawtx: string }>;
 			} catch (error) {
-				console.error("Error signing transaction:", error);
+				console.error("Error signing/submitting transaction:", error);
 				throw error;
 			}
 		},
@@ -343,31 +374,60 @@ const DashboardWalletContent: React.FC = () => {
 		},
 		onError: (error) => {
 			// Actions to perform on mutation error
-			console.log({ error });
-			toast.error(error.message);
+			console.error("Transfer error:", error);
+			
+			// Handle specific error messages with more user-friendly text
+			let errorMessage = error.message;
+			if (errorMessage.includes("frozen")) {
+				errorMessage = "Your address is currently frozen and cannot send tokens";
+			} else if (errorMessage.includes("blacklisted")) {
+				errorMessage = "The recipient address is blacklisted and cannot receive tokens";
+			} else if (errorMessage.includes("Insufficient")) {
+				errorMessage = "You don't have enough MNEE tokens for this transfer";
+			} else if (errorMessage.includes("cosigner is paused")) {
+				errorMessage = "Token transfers are currently paused by the administrator";
+			}
+			
+			toast.error(errorMessage);
 		},
 	});
 
 	const isLoading = mneeStatus === "pending";
 
 	const handleTransfer = useCallback(async () => {
-		if (amount <= 0) {
-			alert("Please enter a valid amount.");
-			return;
-		}
+		try {
+			if (!config) {
+				toast.error("Token configuration not loaded");
+				return;
+			}
 
-		if (!recipient) {
-			alert("Please enter a recipient address.");
-			return;
-		}
+			if (amount <= 0) {
+				toast.error("Please enter a valid amount greater than 0");
+				return;
+			}
 
-		if (amount > mneeBalance) {
-			alert("Insufficient MNEE balance.");
-			return;
-		}
+			if (!recipient) {
+				toast.error("Please enter a recipient address");
+				return;
+			}
 
-		transferMNEE({ recipient, amount });
-	}, [mneeBalance, transferMNEE, amount, recipient]);
+			if (amount > toToken(mneeBalance, config.decimals)) {
+				toast.error("Insufficient MNEE balance");
+				return;
+			}
+
+			// Validate recipient address format
+			if (!recipient.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/)) {
+				toast.error("Invalid recipient address format");
+				return;
+			}
+
+			transferMNEE({ recipient, amount });
+		} catch (error) {
+			console.error("Error in transfer:", error);
+			toast.error("Transfer failed: " + (error instanceof Error ? error.message : "Unknown error"));
+		}
+	}, [mneeBalance, transferMNEE, amount, recipient, config]);
 
 	return (
 		<div className="w-full h-full px-2 flex flex-col py-12 mb-4">
@@ -388,7 +448,7 @@ const DashboardWalletContent: React.FC = () => {
 						<p>BSV Address: {addresses?.bsvAddress}</p>
 						<p>ORD Address: {addresses?.ordAddress}</p>
 					</div>
-					{!config && <FaSpinner className="animate-spin mx-auto my-12" />}
+					{!config && <div className="text-center"><FaSpinner className="animate-spin mx-auto my-12" /><p className="text-sm text-neutral">Loading token configuration...</p></div>}
 					{config && (
 						<div className="mx-auto mb-4 flex flex-col items-center justify-center py-12">
 							<h2 className="text-4xl">
@@ -407,45 +467,56 @@ const DashboardWalletContent: React.FC = () => {
 					)}
 
 					<div className="flex flex-col w-full max-w-md mx-auto p-4 bg-neutral rounded-lg">
-						{/* Recipient Address */}
 						<label htmlFor="recipient" className="text-sm font-semibold mb-2">
 							Recipient Address
 						</label>
 						<input
 							type="text"
+							id="recipient"
 							className="text-sm p-2 mb-2 rounded-sm"
-							placeholder="Recipient Address"
+							placeholder="Enter BSV address"
 							value={recipient}
 							onChange={(e) => setRecipient(e.target.value)}
 						/>
-						{/* Amount */}
 						<label htmlFor="amount" className="text-sm font-semibold mb-2">
 							Amount (MNEE)
 						</label>
 						<input
+							id="amount"
 							name="amount"
 							type="number"
 							className="text-sm p-2 mb-2 rounded-sm"
-							placeholder={"Amount in Tokens"}
+							placeholder="Enter amount to send"
 							value={amount || ""}
 							onChange={(e) => setAmount(Number(e.target.value))}
+							min="0"
+							step="any"
 						/>
-						{/* Send Button */}
 						<button
 							type="button"
 							className="btn btn-primary"
 							onClick={handleTransfer}
 							disabled={isLoading}
-						>
-							Send MNEE
+							>
+							{isLoading ? (
+								<span className="flex items-center justify-center">
+									<FaSpinner className="animate-spin mr-2" />
+									Sending...
+								</span>
+							) : (
+								"Send MNEE"
+							)}
 						</button>
 					</div>
 				</>
 			)}
 			{mneeError && (
-				<p className="mx-auto w-md bg-neutral p-2">
-					Error: {mneeError.message} {mneeError.stack}
-				</p>
+				<div className="mx-auto mt-4 max-w-md w-full">
+					<div className="bg-error/10 border border-error text-error p-4 rounded-lg">
+						<p className="font-semibold mb-1">Transaction Failed</p>
+						<p className="text-sm">{mneeError.message}</p>
+					</div>
+				</div>
 			)}
 		</div>
 	);
