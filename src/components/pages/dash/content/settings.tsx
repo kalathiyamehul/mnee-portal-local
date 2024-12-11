@@ -231,7 +231,7 @@ const DashboardSettingsContent = () => {
 							<div>
 								<div className="flex items-center gap-2">
 									<span className="font-semibold">Fee Address:</span>
-									<div className="tooltip" data-tip="Address where transaction fees are collected">
+									<div className="tooltip" data-tip="Address where transaction fees are collected (MNEE)">
 										<FaQuestionCircle className="text-base-content/60" />
 									</div>
 								</div>
@@ -276,8 +276,8 @@ const DashboardSettingsContent = () => {
 							</div>
 							<div>
 								<div className="flex items-center gap-2">
-									<span className="font-semibold">Mint Address:</span>
-									<div className="tooltip" data-tip="Address that will pay for minting new tokens">
+									<span className="font-semibold">Minter Funding Address:</span>
+									<div className="tooltip" data-tip="Address that will pay for minting/burning tokens (BSV)">
 										<FaQuestionCircle className="text-base-content/60" />
 									</div>
 								</div>
@@ -289,20 +289,21 @@ const DashboardSettingsContent = () => {
 							{config.fundAddress && (
 								<div>
 									<div className="flex items-center gap-2">
-										<span className="font-semibold">Fund Address:</span>
-										<div className="tooltip" data-tip="Address used for funding token operations">
+										<span className="font-semibold">Cosigner Funding Address:</span>
+										<div className="tooltip" data-tip="Address of the key that signs and funds MNEE transfers (BSV).">
 											<FaQuestionCircle className="text-base-content/60" />
 										</div>
 									</div>
 									<div className="font-mono text-sm break-all bg-base-300 p-2 rounded mt-1">
 										{config.fundAddress}
 									</div>
+                  <p className="text-xs text-base-content/70 mt-1">Set from APPROVER_WIF environment variable on the cosigner</p>
 								</div>
 							)}
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">Burn Address:</span>
-                  <div className="tooltip" data-tip="Address that will pay for burning tokens">
+                  <div className="tooltip" data-tip="Address to send burned tokens (MNEE)">
                     <FaQuestionCircle className="text-base-content/60" />
                   </div>
                 </div>

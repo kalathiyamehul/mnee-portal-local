@@ -130,7 +130,6 @@ const deployMnee = async (feeAddress: string) => {
 			latestMinterTx: deployTx,
 			mintAddress,
 			burnAddress,
-			fundAddress: "",
 		};
 
 		// Update config
@@ -141,6 +140,7 @@ const deployMnee = async (feeAddress: string) => {
 				create: { 
 					id: 1,
 					...configData,
+          fundAddress: "",
 				},
 			});
 		} catch (error) {
