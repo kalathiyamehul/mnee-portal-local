@@ -188,13 +188,16 @@ enum ActionStatus {
   DONE
 }
 
-model config {
-  id          Int    @id @default(1)
-  fees        Json
-  feeAddress  String @map("fee_address")
-  tokenId     String @map("token_id")
-  decimals    Int
+model Config {
+  id            Int    @id @default(1)
+  fees          Json
+  feeAddress    String @map("fee_address")
+  tokenId       String @map("token_id")
+  decimals      Int    @default(8)
   latestMinterTx String @map("latest_minter_tx")
-  mintAddress String @map("mint_address")
-  fundAddress String @map("fund_address")
+  mintAddress   String @map("mint_address")
+  burnAddress   String @map("burn_address")
+  fundAddress   String @map("fund_address")
+
+  @@map("config")
 }

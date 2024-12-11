@@ -17,6 +17,7 @@ NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key
 MNEE_ORDINALS_SERVICE=https://mnee-ordinals-service.somehost.net
 MINT_WIF=<some_wif>
+BURN_WIF=<some_wif>
 ```
 
 install the dependencies:

@@ -1,7 +1,7 @@
 // src/app/api/config/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { MINT_WIF } from "@/env";
+import { BURN_WIF, MINT_WIF } from "@/env";
 import { PrivateKey } from "@bsv/sdk";
 
 export async function GET() {
@@ -21,11 +21,12 @@ export async function POST(request: Request) {
   const { tokenId, feeAddress, fees, decimals, latestMinterTx } = await request.json();
 
   const mintAddress = PrivateKey.fromWif(MINT_WIF).toAddress();
+  const burnAddress = PrivateKey.fromWif(BURN_WIF).toAddress();
   try {
     const config = await prisma.config.upsert({
       where: { id: 1 },
-      update: { tokenId, feeAddress, fees, decimals, latestMinterTx, mintAddress },
-      create: { id: 1, tokenId, feeAddress, fees, decimals, latestMinterTx, fundAddress: "", mintAddress },
+      update: { tokenId, feeAddress, fees, decimals, latestMinterTx, mintAddress, burnAddress },
+      create: { id: 1, tokenId, feeAddress, fees, decimals, latestMinterTx, fundAddress: "", mintAddress, burnAddress },
     });
     return NextResponse.json(config, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
