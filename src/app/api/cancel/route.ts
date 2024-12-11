@@ -49,19 +49,18 @@ export async function POST(request: Request) {
         data: { status: 'CANCELLED' },
       });
     } else if (blacklistRequestId) {
-      const request = await prisma.blacklistRequest.findUnique({
+      const request = await prisma.blacklist.findUnique({
         where: { id: blacklistRequestId },
       });
 
       if (!request) {
-        return NextResponse.json({ error: 'Request not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Blacklist request not found' },
+          { status: 404 }
+        );
       }
 
-      if (request.requestedBy !== session.user.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
-
-      await prisma.blacklistRequest.update({
+      await prisma.blacklist.update({
         where: { id: blacklistRequestId },
         data: { status: 'CANCELLED' },
       });

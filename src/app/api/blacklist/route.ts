@@ -29,10 +29,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid action type' }, { status: 400 });
   }
 
-  // Use transaction to create both request and initial approval
-  const result = await prisma.$transaction(async (tx) => {
+  try {
     // Check for existing pending request
-    const existingRequest = await tx.blacklistRequest.findFirst({
+    const existingRequest = await prisma.blacklist.findFirst({
       where: {
         address,
         action: action as BlacklistAction,
@@ -45,7 +44,7 @@ export async function POST(request: Request) {
     }
 
     // Get the latest approved status for this address
-    const latestStatus = await tx.blacklistRequest.findFirst({
+    const latestStatus = await prisma.blacklist.findFirst({
       where: {
         address,
         status: 'APPROVED',
@@ -60,40 +59,43 @@ export async function POST(request: Request) {
       throw new Error('Address is not currently blacklisted');
     }
 
-    // Create the blacklist request (no approval required for blacklist actions)
-    const blacklistRequest = await tx.blacklistRequest.create({
+    // Create the blacklist entry (auto-approved)
+    const blacklist = await prisma.blacklist.create({
       data: {
         address,
         action: action as BlacklistAction,
         requestedBy: session.user.id,
         callbackUrl,
-        status: 'APPROVED', // Auto-approve blacklist actions
-        requiresApproval: false,
+        status: 'APPROVED',
       },
     });
 
     // If there's a callback URL, trigger it immediately since blacklist actions are auto-approved
-    // if (callbackUrl) {
-    //   try {
-    //     await fetch(callbackUrl, {
-    //       method: 'POST',
-    //       headers: {
-    //         'Content-Type': 'application/json',
-    //       },
-    //       body: JSON.stringify({
-    //         blacklistRequestId: blacklistRequest.id,
-    //         address: blacklistRequest.address,
-    //         action: blacklistRequest.action,
-    //         status: blacklistRequest.status,
-    //       }),
-    //     });
-    //   } catch (error) {
-    //     console.error('Error calling callback URL:', error);
-    //   }
-    // }
+    if (callbackUrl) {
+      try {
+        await fetch(callbackUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            blacklistId: blacklist.id,
+            address: blacklist.address,
+            action: blacklist.action,
+            status: blacklist.status,
+          }),
+        });
+      } catch (error) {
+        console.error('Error calling callback URL:', error);
+      }
+    }
 
-    return blacklistRequest;
-  });
-
-  return NextResponse.json({ blacklistRequest: result }, { status: 201 });
+    return NextResponse.json({ blacklist }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating blacklist:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create blacklist' },
+      { status: 500 }
+    );
+  }
 } 

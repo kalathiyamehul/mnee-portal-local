@@ -36,7 +36,7 @@ export async function GET() {
     });
 
     // Get active blacklists
-    const activeBlacklists = await prisma.blacklistRequest.findMany({
+    const activeBlacklists = await prisma.blacklist.findMany({
       where: {
         status: 'APPROVED',
         action: 'BLACKLIST',
@@ -51,39 +51,13 @@ export async function GET() {
             email: true,
           },
         },
-        approvals: {
-          include: {
-            approver: {
-              select: {
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
-
-    // Get system pause status
-    const latestPauseAction = await prisma.actionRequest.findFirst({
-      where: {
-        action: {
-          in: ['PAUSE', 'RESUME'],
-        },
-        status: 'APPROVED',
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    const isPaused = latestPauseAction?.action === 'PAUSE';
 
     return NextResponse.json({
-      isPaused,
       activeFreezes: activeFreezes.map(freeze => ({
         id: freeze.id,
         address: freeze.address,
@@ -96,7 +70,6 @@ export async function GET() {
         address: blacklist.address,
         createdAt: blacklist.createdAt,
         requester: blacklist.requester,
-        approvers: blacklist.approvals.map(a => a.approver),
       })),
     });
   } catch (error) {

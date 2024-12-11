@@ -22,15 +22,30 @@ export async function GET(request: Request) {
   try {
     // If no type is specified, return all activities
     if (!type) {
-      const [freezeRequests, blacklistRequests, systemRequests, mintRequests, burnRequests] = await Promise.all([
+      const [freezeRequests, blacklists, systemRequests, mintRequests, burnRequests] = await Promise.all([
         prisma.freezeRequest.findMany({
           where: whereCondition,
           include: includeOptions,
           orderBy: { createdAt: 'desc' }
         }),
-        prisma.blacklistRequest.findMany({
-          where: whereCondition,
-          include: includeOptions,
+        prisma.blacklist.findMany({
+          where: {
+            ...whereCondition,
+            action: 'BLACKLIST',
+          },
+          select: {
+            id: true,
+            address: true,
+            createdAt: true,
+            status: true,
+            action: true,
+            requester: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
           orderBy: { createdAt: 'desc' }
         }),
         prisma.actionRequest.findMany({
@@ -64,7 +79,7 @@ export async function GET(request: Request) {
       return NextResponse.json({
         isPaused,
         freezeRequests,
-        blacklistRequests,
+        blacklists,
         systemRequests,
         mintRequests,
         burnRequests
@@ -82,12 +97,27 @@ export async function GET(request: Request) {
         return NextResponse.json({ freezeRequests });
 
       case 'blacklist':
-        const blacklistRequests = await prisma.blacklistRequest.findMany({
-          where: whereCondition,
-          include: includeOptions,
+        const blacklists = await prisma.blacklist.findMany({
+          where: {
+            ...whereCondition,
+            action: 'BLACKLIST',
+          },
+          select: {
+            id: true,
+            address: true,
+            createdAt: true,
+            status: true,
+            action: true,
+            requester: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
           orderBy: { createdAt: 'desc' }
         });
-        return NextResponse.json({ blacklistRequests });
+        return NextResponse.json({ blacklists });
 
       case 'system':
         const systemRequests = await prisma.actionRequest.findMany({

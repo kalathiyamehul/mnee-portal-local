@@ -41,7 +41,7 @@ export default function AdminPage() {
 
 			const allActivities: Activity[] = [
 				...data.freezeRequests.map(req => ({ ...req, type: 'FREEZE' as const })),
-				...data.blacklistRequests.map(req => ({ ...req, type: 'BLACKLIST' as const })),
+				...data.blacklists.map(req => ({ ...req, type: 'BLACKLIST' as const })),
 				...data.systemRequests.map(req => ({ ...req, type: 'ACTION' as const })),
 				...data.mintRequests.map(req => ({ ...req, type: 'MINT' as const, action: 'MINT' as const })),
 				...data.burnRequests.map(req => ({ ...req, type: 'BURN' as const, action: 'BURN' as const })),
@@ -93,20 +93,28 @@ export default function AdminPage() {
 	const activeRestrictions = activities.reduce((addressMap, activity) => {
 		if (activity.type === 'FREEZE' || activity.type === 'BLACKLIST') {
 			const address = activity.address;
-			const status = addressMap.get(address) || { address, isBlacklisted: false, isFrozen: false };
+			const existingStatus = addressMap.get(address);
+			const currentTimestamp = new Date(activity.createdAt).getTime();
 
+			// Only process if status is APPROVED
 			if (activity.status === 'APPROVED') {
-				if (activity.type === 'FREEZE') {
-					status.isFrozen = activity.action === 'FREEZE';
-				} else {
-					status.isBlacklisted = activity.action === 'BLACKLIST';
+				// If no existing status, or this activity is newer
+				if (!existingStatus || currentTimestamp > new Date(existingStatus.lastUpdate).getTime()) {
+					addressMap.set(address, {
+						address,
+						isBlacklisted: activity.type === 'BLACKLIST' ? activity.action === 'BLACKLIST' : (existingStatus?.isBlacklisted || false),
+						isFrozen: activity.type === 'FREEZE' ? activity.action === 'FREEZE' : (existingStatus?.isFrozen || false),
+						lastUpdate: activity.createdAt
+					});
 				}
 			}
-
-			addressMap.set(address, status);
 		}
 		return addressMap;
-	}, new Map<string, AddressStatus>());
+	}, new Map<string, AddressStatus & { lastUpdate: string }>());
+
+	// Filter out addresses that are neither frozen nor blacklisted
+	const filteredRestrictions = Array.from(activeRestrictions.values())
+		.filter(status => status.isBlacklisted || status.isFrozen);
 
 	const handlePauseToggle = async () => {
 		try {
@@ -137,7 +145,8 @@ export default function AdminPage() {
 		if (!session?.user?.email) return false;
 		if (activity.status !== 'PENDING') return false;
 		if (activity.requester.email === session.user.email) return false;
-		return !activity.approvals.some(approval => approval.approver.email === session.user.email);
+		if (activity.type === 'BLACKLIST') return false;
+		return !activity.approvals?.some(approval => approval.approver.email === session.user.email);
 	}, [session]);
 
 	const handleCancel = async (id: string, type: Activity['type']) => {
@@ -196,7 +205,8 @@ export default function AdminPage() {
 	}, []);
 
 	const getApprovalCount = useCallback((activity: Activity) => {
-		return activity.approvals.length;
+		if (activity.type === 'BLACKLIST') return 0;
+		return activity.approvals?.length || 0;
 	}, []);
 
 	const handleModalClose = () => {
@@ -283,7 +293,7 @@ export default function AdminPage() {
 
 				{activeTab === 'restrictions' && (
 					<ActiveRestrictionsTab
-						restrictions={Array.from(activeRestrictions.values())}
+						restrictions={filteredRestrictions}
 						loading={loading}
 						handleUnblacklist={async (e, address) => {
 							e.preventDefault();

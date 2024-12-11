@@ -34,9 +34,10 @@ export const ActivityCard = ({
   getApprovalCount,
 }: Omit<ActivityCardProps, 'session'>) => {
   // Filter out requester's approval from the approvals list
-  const otherApprovals = activity.approvals.filter(
-    approval => approval.approver.email !== activity.requester.email
-  );
+  const otherApprovals = activity.type === 'BLACKLIST' ? [] : 
+    activity.approvals?.filter(
+      approval => approval.approver.email !== activity.requester.email
+    ) || [];
 
   const Icon = getActivityIcon(activity);
 

@@ -45,9 +45,17 @@ export interface FreezeRequest extends BaseRequest {
 	address: string;
 }
 
-export interface BlacklistRequest extends BaseRequest {
+export interface BlacklistRequest {
+	id: string;
+	status: 'PENDING' | 'APPROVED' | 'CANCELLED';
+	createdAt: string;
+	requester: {
+		email: string;
+		name: string | null;
+	};
 	action: 'BLACKLIST' | 'UNBLACKLIST';
 	address: string;
+	type?: 'BLACKLIST';
 }
 
 export interface SystemRequest extends BaseRequest {
@@ -82,7 +90,7 @@ export interface AddressStatus {
 export interface StatusResponse {
 	isPaused: boolean;
 	freezeRequests: FreezeRequest[];
-	blacklistRequests: BlacklistRequest[];
+	blacklists: BlacklistRequest[];
 	systemRequests: SystemRequest[];
 	mintRequests: MintRequest[];
 	burnRequests: BurnRequest[];
