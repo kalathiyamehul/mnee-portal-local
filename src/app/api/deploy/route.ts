@@ -48,8 +48,7 @@ type DeployRequest = {
 }
 
 const deployMnee = async (feeAddress: string) => {
-	console.log("deploying mnee", { feeAddress });
-
+	
 	try {
 		const mintPk = PrivateKey.fromWif(MINT_WIF);
 		const burnPk = PrivateKey.fromWif(BURN_WIF);
