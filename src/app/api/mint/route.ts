@@ -19,8 +19,12 @@ export async function POST(request: Request) {
     const body: MintRequestParams = await request.json();
     
     // Validate required fields
-    if (!body.amount || !body.address) {
+    if (!body?.amount || !body?.address) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (typeof body.amount !== 'number') {
+      return NextResponse.json({ error: 'Amount must be a number' }, { status: 400 });
     }
 
     // Create mint request in database with initial approval
@@ -47,9 +51,15 @@ export async function POST(request: Request) {
       return mintRequest;
     });
 
+    if (!result) {
+      throw new Error('Failed to create mint request');
+    }
+
     return NextResponse.json({ mintRequest: result }, { status: 201 });
   } catch (error) {
-    console.error('Error processing mint request:', error);
-    return NextResponse.json({ error: 'Failed to process mint request' }, { status: 500 });
+    console.error('Error processing mint request:', error instanceof Error ? error.message : 'Unknown error');
+    return NextResponse.json({ 
+      error: error instanceof Error ? error.message : 'Failed to process mint request' 
+    }, { status: 500 });
   }
 } 
