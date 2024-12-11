@@ -22,9 +22,9 @@ export const getActivityIcon = (activity: Activity): IconType => {
 export const getActivityDisplayText = (activity: Activity): string => {
   switch (activity.type) {
     case 'BURN':
-      return `Burn ${activity.amount} tokens`;
+      return `Burn tokens`;
     case 'MINT':
-      return `Mint ${activity.amount} tokens to ${activity.address}`;
+      return `Mint to ${activity.address}`;
     case 'FREEZE':
       return `${activity.action} ${activity.address}`;
     case 'BLACKLIST':

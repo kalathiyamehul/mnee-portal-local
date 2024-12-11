@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
+import { toTokenSat } from 'satoshi-token';
+import { DEFAULT_DECIMALS } from '@/lib/constants';
+import { getConfig } from '@/lib/config';
 
 interface MintRequestParams {
-  amount: number;
+  amount: string;
   address: string;
 }
 
@@ -23,8 +26,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (typeof body.amount !== 'number') {
-      return NextResponse.json({ error: 'Amount must be a number' }, { status: 400 });
+    const config = await getConfig();
+    if (!config) {
+      return NextResponse.json({ error: 'Service not configured' }, { status: 500 });
     }
 
     // Create mint request in database with initial approval
@@ -33,7 +37,7 @@ export async function POST(request: Request) {
       const mintRequest = await tx.mintRequest.create({
         data: {
           address: body.address,
-          amount: body.amount,
+          amount: toTokenSat(body.amount, config.decimals),
           requestedBy: session.user.id,
           status: 'PENDING',
           requiresApproval: true,

@@ -19,19 +19,13 @@ export const MintModal = ({
     e.preventDefault();
     if (!address || !amount) return;
 
-    const numericAmount = parseInt(amount, 10);
-    if (isNaN(numericAmount)) {
-      toast.error('Invalid amount');
-      return;
-    }
-
     try {
       setLoading(true);
       const response = await fetch('/api/mint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: numericAmount,
+          amount,
           address,
         }),
       });
