@@ -88,10 +88,14 @@ export async function POST(request: Request) {
 
 			const { rawtx } = await mintMnee(mintRequest.amount, mintRequest.address);
 
-			// update the request status
+			// update the request status and txid
 			await tx.mintRequest.update({
 				where: { id: mintRequestId },
-				data: { status: "DONE", updatedAt: new Date() },
+				data: { 
+					status: "DONE", 
+					updatedAt: new Date(),
+					txid: Transaction.fromHex(rawtx).id('hex'),
+				},
 			});
 
 			return { approvalCount, status: "DONE", minterTx: rawtx };

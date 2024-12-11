@@ -88,7 +88,7 @@ model MintRequest {
   amount          Int
   status          ActionStatus @default(PENDING)
   requestedBy     String      @map("requested_by")
-  latestMinterTx  String?     @map("latest_minter_tx")
+  txid            String      @default("")
   requiresApproval Boolean     @default(true) @map("requires_approval")
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")

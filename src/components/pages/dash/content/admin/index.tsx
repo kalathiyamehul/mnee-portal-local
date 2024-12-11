@@ -17,7 +17,7 @@ import { SystemStatus } from './SystemStatus';
 
 const POLL_INTERVAL = 5000; // 5 seconds
 
-type TabType = 'activity' | 'restrictions' | 'burns';
+type TabType = 'activity' | 'restrictions' | 'burns' | 'mints';
 
 export default function AdminPage() {
 	const { data: session } = useSession() as { data: Session | null };
@@ -262,6 +262,13 @@ export default function AdminPage() {
 						onClick={() => setActiveTab('restrictions')}
 					>
 						Restrictions
+					</button>
+					<button
+						role="tab"
+						className={`tab ${activeTab === 'mints' ? 'tab-active' : ''}`}
+						onClick={() => setActiveTab('restrictions')}
+					>
+						Mints
 					</button>
 					<button
 						role="tab"
