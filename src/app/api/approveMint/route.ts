@@ -131,7 +131,7 @@ export async function POST(request: Request) {
 	}
 }
 
-const mintMnee = async (amount: number, address: string) => {
+const mintMnee = async (amount: bigint, address: string) => {
 	const config = await fetchConfig();
 
 	// create the cosign template
@@ -159,7 +159,7 @@ const mintMnee = async (amount: number, address: string) => {
 	const change_addr = fundingAddress;
 
 	const mintRequest: MintRequest = {
-		amount,
+		amount: Number(amount),
 		token_ls,
 		latest_minter_tx,
 		funding_utxos,

@@ -86,7 +86,7 @@ model Blacklist {
 model MintRequest {
   id              String       @id @default(uuid())
   address         String
-  amount          BigInt
+  amount          BigInt      @db.BigInt
   status          ActionStatus @default(PENDING)
   requestedBy     String      @map("requested_by")
   txid            String      @default("")

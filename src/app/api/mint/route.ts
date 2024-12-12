@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { toTokenSat } from 'satoshi-token';
 import { getConfig } from '@/lib/config';
-import { MAX_INT4 } from '@/lib/constants';
 
 interface MintRequestParams {
   amount: string;
@@ -42,12 +41,6 @@ export async function POST(request: Request) {
 
     // Convert amount to satoshis
     const amountSat = toTokenSat(body.amount, config.decimals);
-    if (amountSat > MAX_INT4) {
-      const maxTokens = (MAX_INT4 / Math.pow(10, config.decimals)).toFixed(config.decimals);
-      return NextResponse.json({ 
-        error: `Amount too large. Maximum is ${maxTokens} tokens`
-      }, { status: 400 });
-    }
 
     // Create mint request in database with initial approval
     const result = await prisma.$transaction(async (tx) => {
