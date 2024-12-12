@@ -66,6 +66,12 @@ export interface MintRequest extends BaseRequest {
 	action: 'MINT';
 	address: string;
 	amount: string;
+	customer?: {
+		id: string;
+		name: string;
+		email: string;
+		address: string;
+	} | null;
 }
 
 export interface BurnRequest extends BaseRequest {

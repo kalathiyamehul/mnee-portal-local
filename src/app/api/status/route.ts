@@ -52,7 +52,17 @@ export async function GET(request: Request) {
         }),
         prisma.mintRequest.findMany({
           where: whereCondition,
-          include: includeOptions,
+          include: {
+            ...includeOptions,
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                address: true
+              }
+            }
+          },
           orderBy: { createdAt: 'desc' }
         }),
         prisma.burnRequest.findMany({
@@ -124,7 +134,17 @@ export async function GET(request: Request) {
       case 'mint':
         const mintRequests = await prisma.mintRequest.findMany({
           where: whereCondition,
-          include: includeOptions,
+          include: {
+            ...includeOptions,
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                address: true
+              }
+            }
+          },
           orderBy: { createdAt: 'desc' }
         });
         return NextResponse.json({ mintRequests });

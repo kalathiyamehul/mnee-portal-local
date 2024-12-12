@@ -7,8 +7,10 @@ import { getConfig } from '@/lib/config';
 
 interface MintRequestParams {
   amount: string;
-  address: string;
+  customerId: string;
 }
+
+const MAX_INT4 = 2147483647;
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -21,8 +23,17 @@ export async function POST(request: Request) {
     const body: MintRequestParams = await request.json();
     
     // Validate required fields
-    if (!body?.amount || !body?.address) {
+    if (!body?.amount || !body?.customerId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Look up customer to get their address
+    const customer = await prisma.customer.findUnique({
+      where: { id: body.customerId }
+    });
+
+    if (!customer) {
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
     const config = await getConfig();
@@ -30,17 +41,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Service not configured' }, { status: 500 });
     }
 
+    // Convert amount to satoshis
+    const amountSat = toTokenSat(body.amount, config.decimals);
+    if (amountSat > MAX_INT4) {
+      const maxTokens = (MAX_INT4 / Math.pow(10, config.decimals)).toFixed(config.decimals);
+      return NextResponse.json({ 
+        error: `Amount too large. Maximum is ${maxTokens} tokens`
+      }, { status: 400 });
+    }
+
     // Create mint request in database with initial approval
     const result = await prisma.$transaction(async (tx) => {
       // Create the mint request
       const mintRequest = await tx.mintRequest.create({
         data: {
-          address: body.address,
-          amount: toTokenSat(body.amount, config.decimals),
+          address: customer.address,
+          amount: amountSat,
           requestedBy: session.user.id,
           status: 'PENDING',
           requiresApproval: true,
+          customerId: customer.id,
         },
+        include: {
+          customer: true
+        }
       });
 
       // Create initial approval from the requester

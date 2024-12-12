@@ -26,6 +26,7 @@ model User {
   mintRequests      MintRequest[]      @relation("UserMintRequests")
   burnRequests      BurnRequest[]      @relation("UserBurnRequests")
   burnApprovals     BurnApproval[]     @relation("UserBurnApprovals")
+  customers         Customer[]         @relation("UserCustomers")
 
   @@map("user")
 }
@@ -85,17 +86,19 @@ model Blacklist {
 model MintRequest {
   id              String       @id @default(uuid())
   address         String
-  amount          Int
+  amount          BigInt
   status          ActionStatus @default(PENDING)
   requestedBy     String      @map("requested_by")
   txid            String      @default("")
   requiresApproval Boolean     @default(true) @map("requires_approval")
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
+  customerId      String?     @map("customer_id")
 
   // Relations
   requester User             @relation("UserMintRequests", fields: [requestedBy], references: [id])
   approvals ActionApproval[] @relation("MintRequestApprovals")
+  customer  Customer?        @relation(fields: [customerId], references: [id])
 
   @@map("mint_request")
 }
@@ -187,4 +190,20 @@ model Config {
   fundAddress   String @map("fund_address")
 
   @@map("config")
+}
+
+model Customer {
+  id          String    @id @default(uuid())
+  name        String
+  email       String    @unique
+  address     String    @unique
+  createdBy   String    @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  creator     User      @relation("UserCustomers", fields: [createdBy], references: [id])
+  mintRequests MintRequest[]
+
+  @@map("customer")
 }

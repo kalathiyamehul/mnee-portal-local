@@ -73,30 +73,31 @@ export const FreezeModal = ({
 
   return (
     <dialog id="freeze_modal" className="modal modal-open">
-      <div className="modal-box">
-        <h3 className="font-bold text-lg mb-2">Restrict Address</h3>
+      <div className="modal-box max-w-lg">
+        <h3 className="text-lg font-bold mb-6">Restrict Address</h3>
         <div className="mb-6 space-y-2 text-sm opacity-70">
           <p><FaSnowflake className="inline mr-2" /> Freeze: Prevents an address from sending funds</p>
           <p><FaLock className="inline mr-2" /> Blacklist: Prevents an address from receiving funds</p>
         </div>
-        <div className="form-control">
-          <label className="label" htmlFor="freezeAddress">
-            <span className="label-text">Bitcoin Address</span>
+        <div className="space-y-4">
+          <label className="form-control w-full block">
+            <div className="label">
+              <span className="label-text">Bitcoin Address</span>
+            </div>
+            <input
+              type="text"
+              className="input input-bordered w-full max-w-md font-mono"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Enter Bitcoin SV Address"
+              required
+            />
           </label>
-          <input
-            type="text"
-            id="freezeAddress"
-            className="input input-bordered w-full"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="Enter Bitcoin SV Address"
-            required
-          />
         </div>
         <div className="modal-action">
           <button
             type="button"
-            className="btn"
+            className="btn btn-ghost"
             onClick={onClose}
           >
             Cancel
@@ -107,7 +108,7 @@ export const FreezeModal = ({
             onClick={handleBlacklistRequest}
             disabled={blacklistLoading || !address}
           >
-            {blacklistLoading ? <FaSpinner className="animate-spin" /> : 'Blacklist'}
+            {blacklistLoading ? <FaSpinner className="animate-spin mr-2" /> : 'Blacklist'}
           </button>
           <button
             type="button"
@@ -115,7 +116,7 @@ export const FreezeModal = ({
             onClick={handleFreezeRequest}
             disabled={freezeLoading || !address}
           >
-            {freezeLoading ? <FaSpinner className="animate-spin" /> : 'Freeze'}
+            {freezeLoading ? <FaSpinner className="animate-spin mr-2" /> : 'Freeze'}
           </button>
         </div>
       </div>

@@ -44,27 +44,37 @@ export const BurnModal = ({
 
   return (
     <dialog id="burn_modal" className="modal modal-open">
-      <div className="modal-box">
-        <h3 className="font-bold text-lg mb-4">Burn Tokens</h3>
+      <div className="modal-box max-w-lg">
+        <h3 className="text-lg font-bold mb-6">Burn Tokens</h3>
         <form onSubmit={handleSubmit}>
-          <div className="form-control">
-            <label className="label">
-              <span className="label-text">Amount</span>
+          <div className="space-y-4">
+            <label className="form-control w-full block">
+              <div className="label">
+                <span className="label-text">Amount</span>
+              </div>
+              <input
+                type="number"
+                className="input input-bordered w-full max-w-md"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount to burn"
+                required
+              />
             </label>
-            <input
-              type="number"
-              className="input input-bordered"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
           </div>
           <div className="modal-action">
-            <button type="button" className="btn" onClick={onClose}>
+            <button type="button" className="btn btn-ghost" onClick={onClose}>
               Cancel
             </button>
             <button type="submit" className="btn btn-primary" disabled={loading || !amount}>
-              {loading ? <FaSpinner className="animate-spin" /> : 'Create Burn Request'}
+              {loading ? (
+                <>
+                  <FaSpinner className="animate-spin mr-2" />
+                  Creating...
+                </>
+              ) : (
+                'Create Request'
+              )}
             </button>
           </div>
         </form>

@@ -1,6 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaSpinner } from 'react-icons/fa6';
 import { toast } from 'react-hot-toast';
+
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  address: string;
+}
 
 interface MintModalProps {
   onClose: () => void;
@@ -11,87 +18,161 @@ export const MintModal = ({
   onClose,
   onSuccess
 }: MintModalProps) => {
-  const [address, setAddress] = useState('');
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingCustomers, setLoadingCustomers] = useState(true);
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const response = await fetch('/api/customers');
+        if (!response.ok) {
+          throw new Error('Failed to fetch customers');
+        }
+        const data = await response.json();
+        setCustomers(data);
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+        toast.error('Failed to fetch customers');
+      } finally {
+        setLoadingCustomers(false);
+      }
+    };
+
+    fetchCustomers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!address || !amount) return;
+    if (!selectedCustomer?.address || !amount) return;
 
     try {
       setLoading(true);
-      const response = await fetch('/api/mint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/mint", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount,
-          address,
+          customerId: selectedCustomer.id,
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to create mint request');
+        throw new Error(error.message || "Failed to create mint request");
       }
 
       await onSuccess();
       onClose();
-      toast.success('Mint request created');
+      toast.success("Mint request created");
     } catch (error) {
-      console.error('Error creating mint request:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create mint request');
+      console.error("Error creating mint request:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to create mint request");
     } finally {
       setLoading(false);
     }
   };
 
+  if (loadingCustomers) {
+    return (
+      <dialog id="mint_modal" className="modal modal-open">
+        <div className="modal-box max-w-lg flex items-center justify-center">
+          <FaSpinner className="animate-spin text-2xl" />
+        </div>
+      </dialog>
+    );
+  }
+
+  if (customers.length === 0) {
+    return (
+      <dialog id="mint_modal" className="modal modal-open">
+        <div className="modal-box max-w-lg">
+          <h3 className="text-lg font-bold mb-4">No Customers Available</h3>
+          <p className="text-sm opacity-70 mb-6">Please add customers before creating mint requests.</p>
+          <div className="modal-action">
+            <button type="button" className="btn btn-ghost" onClick={onClose}>
+              Close
+            </button>
+          </div>
+        </div>
+      </dialog>
+    );
+  }
+
   return (
     <dialog id="mint_modal" className="modal modal-open">
-      <div className="modal-box">
-        <h3 className="font-bold text-lg mb-4">Create Mint Request</h3>
+      <div className="modal-box max-w-lg">
+        <h3 className="text-lg font-bold mb-6">Create Mint Request</h3>
         <form onSubmit={handleSubmit}>
-          <div className="form-control">
-            <label className="label" htmlFor="mintAddress">
-              <span className="label-text">Receiver Address</span>
+          <div className="space-y-4">
+            <label className="form-control w-full block">
+              <div className="label">
+                <span className="label-text">Select Customer</span>
+              </div>
+              <select
+                className="select select-bordered w-full max-w-md"
+                value={selectedCustomer?.id || ''}
+                onChange={(e) => {
+                  const customer = customers.find(c => c.id === e.target.value);
+                  setSelectedCustomer(customer || null);
+                }}
+                required
+              >
+                <option value="">Select a customer</option>
+                {customers.map((customer) => (
+                  <option key={customer.id} value={customer.id}>
+                    {customer.name} - {customer.address.slice(0, 8)}...{customer.address.slice(-8)}
+                  </option>
+                ))}
+              </select>
             </label>
-            <input
-              type="text"
-              id="mintAddress"
-              className="input input-bordered w-full mb-4"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Enter Bitcoin SV Address"
-              required
-            />
-            <label className="label" htmlFor="mintAmount">
-              <span className="label-text">Amount</span>
+
+            {selectedCustomer && (
+              <div className="text-sm opacity-70 -mt-2 mb-2">
+                <p>Selected address: <span className="font-mono">{selectedCustomer.address}</span></p>
+              </div>
+            )}
+
+            <label className="form-control w-full block">
+              <div className="label">
+                <span className="label-text">Amount</span>
+              </div>
+              <input
+                type="number"
+                className="input input-bordered w-full max-w-md"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount to mint"
+                min="1"
+                required
+              />
             </label>
-            <input
-              type="number"
-              id="mintAmount"
-              className="input input-bordered w-full"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount to mint"
-              min="1"
-              required
-            />
           </div>
+
           <div className="modal-action">
             <button
               type="button"
-              className="btn"
+              className="btn btn-ghost"
               onClick={onClose}
+              disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading || !address || !amount}
+              disabled={loading || !selectedCustomer || !amount}
             >
-              {loading ? <FaSpinner className="animate-spin" /> : 'Submit'}
+              {loading ? (
+                <>
+                  <FaSpinner className="animate-spin mr-2" />
+                  Creating...
+                </>
+              ) : (
+                'Create Request'
+              )}
             </button>
           </div>
         </form>

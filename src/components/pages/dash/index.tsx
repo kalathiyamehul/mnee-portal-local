@@ -3,9 +3,11 @@ import DashboardHomeContent from "./content/home"
 import DashboardWalletContent from "./content/wallet"
 import DashboardAdminContent from "./content/admin"
 import DashboardSettingsContent from './content/settings';
+import DashboardCustomersContent from "./content/customers";
 
 export enum DashPage {
     ADMIN = "admin",
+    CUSTOMERS = "customers",
     HOME = "home",
     WALLET = "wallet",
     SETTINGS = "settings",
@@ -27,6 +29,8 @@ const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab }) => {
                 return <DashboardWalletContent />
             case DashPage.SETTINGS:
                 return <DashboardSettingsContent />
+            case DashPage.CUSTOMERS:
+                return <DashboardCustomersContent />
             default:
                 return <div>Not Found</div>
         }
@@ -38,5 +42,5 @@ const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab }) => {
         {dashContent}
     </div>
 }
-
 export default Dashboard;
+
