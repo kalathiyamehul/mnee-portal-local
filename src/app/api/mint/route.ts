@@ -4,13 +4,12 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { toTokenSat } from 'satoshi-token';
 import { getConfig } from '@/lib/config';
+import { MAX_INT4 } from '@/lib/constants';
 
 interface MintRequestParams {
   amount: string;
   customerId: string;
 }
-
-const MAX_INT4 = 2147483647;
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
