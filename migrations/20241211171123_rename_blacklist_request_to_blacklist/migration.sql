@@ -15,6 +15,8 @@ ALTER TABLE "burn_approval" DROP CONSTRAINT "burn_approval_burn_request_id_fkey"
 ALTER TABLE "burn_request" DROP CONSTRAINT "burn_request_requested_by_fkey";
 
 -- AlterTable
+UPDATE "config" SET "mint_address" = '' WHERE "mint_address" IS NULL;
+UPDATE "config" SET "fund_address" = '' WHERE "fund_address" IS NULL;
 ALTER TABLE "config" ALTER COLUMN "decimals" SET DEFAULT 8,
 ALTER COLUMN "mint_address" SET NOT NULL,
 ALTER COLUMN "fund_address" SET NOT NULL,
