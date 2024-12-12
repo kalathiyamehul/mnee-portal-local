@@ -25,7 +25,7 @@ export const getActivityDisplayText = (activity: Activity): string => {
       return `Burn tokens`;
     case 'MINT':
       if ('customer' in activity && activity.customer) {
-        return `Mint to ${activity.customer.name}`;
+        return `Mint to ${activity.customer.address}`;
       }
       return `Mint to ${activity.address}`;
     case 'FREEZE':
