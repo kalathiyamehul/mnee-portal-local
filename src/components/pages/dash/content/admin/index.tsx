@@ -102,8 +102,8 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 
 			// Get all approved actions for this address
 			const addressActions = activities.filter(a => 
-				a.address === address && 
 				(a.type === 'FREEZE' || a.type === 'BLACKLIST') &&
+				a.address === address && 
 				a.status === 'APPROVED'
 			);
 
