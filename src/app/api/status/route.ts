@@ -29,10 +29,7 @@ export async function GET(request: Request) {
           orderBy: { createdAt: 'desc' }
         }),
         prisma.blacklist.findMany({
-          where: {
-            ...whereCondition,
-            action: 'BLACKLIST',
-          },
+          where: whereCondition,
           select: {
             id: true,
             address: true,
@@ -98,10 +95,7 @@ export async function GET(request: Request) {
 
       case 'blacklist':
         const blacklists = await prisma.blacklist.findMany({
-          where: {
-            ...whereCondition,
-            action: 'BLACKLIST',
-          },
+          where: whereCondition,
           select: {
             id: true,
             address: true,

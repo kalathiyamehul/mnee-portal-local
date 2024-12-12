@@ -97,31 +97,53 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 
 	// Compute active restrictions from activities
 	const activeRestrictions = activities.reduce((addressMap, activity) => {
-		if (activity.type === 'FREEZE' || activity.type === 'BLACKLIST') {
+		if ((activity.type === 'FREEZE' || activity.type === 'BLACKLIST') && activity.status === 'APPROVED') {
 			const address = activity.address;
-			const existingStatus = addressMap.get(address);
-			const currentTimestamp = new Date(activity.createdAt).getTime();
 
-			// Only process if status is APPROVED
-			if (activity.status === 'APPROVED') {
-				// If no existing status, or this activity is newer
-				if (!existingStatus || currentTimestamp > new Date(existingStatus.lastUpdate).getTime()) {
-					addressMap.set(address, {
-						address,
-						isBlacklisted: activity.type === 'BLACKLIST' ? activity.action === 'BLACKLIST' : (existingStatus?.isBlacklisted || false),
-						isFrozen: activity.type === 'FREEZE' ? activity.action === 'FREEZE' : (existingStatus?.isFrozen || false),
-						lastUpdate: activity.createdAt
-					});
-				}
+			// Get all approved actions for this address
+			const addressActions = activities.filter(a => 
+				a.address === address && 
+				(a.type === 'FREEZE' || a.type === 'BLACKLIST') &&
+				a.status === 'APPROVED'
+			);
+
+			// Get latest freeze action
+			const latestFreezeAction = addressActions
+				.filter(a => a.type === 'FREEZE')
+				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+			// Get latest blacklist action
+			const latestBlacklistAction = addressActions
+				.filter(a => a.type === 'BLACKLIST')
+				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+			// Determine current status
+			const isFrozen = latestFreezeAction?.action === 'FREEZE';
+			const isBlacklisted = latestBlacklistAction?.action === 'BLACKLIST';
+
+			// Only add to map if there are active restrictions
+			if (isFrozen || isBlacklisted) {
+				addressMap.set(address, {
+					address,
+					isBlacklisted,
+					isFrozen,
+					lastUpdate: new Date(Math.max(
+						latestFreezeAction ? new Date(latestFreezeAction.createdAt).getTime() : 0,
+						latestBlacklistAction ? new Date(latestBlacklistAction.createdAt).getTime() : 0
+					)).toISOString()
+				});
+			} else {
+				// If neither frozen nor blacklisted, remove from map
+				addressMap.delete(address);
 			}
 		}
 		return addressMap;
 	}, new Map<string, AddressStatus & { lastUpdate: string }>());
 
-	// Filter out addresses that are neither frozen nor blacklisted
-	const filteredRestrictions = Array.from(activeRestrictions.values())
-		.filter(status => status.isBlacklisted || status.isFrozen);
+	// No need for additional filtering since we only add addresses with active restrictions
+	const filteredRestrictions = Array.from(activeRestrictions.values());
 
+  console.log({filteredRestrictions})
 	const handlePauseToggle = async () => {
 		try {
 			setLoading(true);
@@ -334,9 +356,9 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 									}),
 								});
 
+								const data = await response.json();
 								if (!response.ok) {
-									const error = await response.json();
-									throw new Error(error.message || 'Failed to unblacklist address');
+									throw new Error(data.message || data.error || 'Failed to unblacklist address');
 								}
 
 								await fetchStatus();
@@ -361,9 +383,9 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 									}),
 								});
 
+								const data = await response.json();
 								if (!response.ok) {
-									const error = await response.json();
-									throw new Error(error.message || 'Failed to freeze address');
+									throw new Error(data.message || data.error || 'Failed to freeze address');
 								}
 
 								await fetchStatus();
@@ -387,9 +409,9 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 									}),
 								});
 
+								const data = await response.json();
 								if (!response.ok) {
-									const error = await response.json();
-									throw new Error(error.message || 'Failed to unfreeze address');
+									throw new Error(data.message || data.error || 'Failed to unfreeze address');
 								}
 
 								await fetchStatus();

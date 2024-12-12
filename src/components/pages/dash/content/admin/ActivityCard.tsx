@@ -49,28 +49,28 @@ export const ActivityCard = ({
             <Icon className={activity.type === 'BURN' ? 'text-red-500' : ''} />
             <span>{getActivityDisplayText(activity)}</span>
             {(activity.type === 'FREEZE' || activity.type === 'BLACKLIST') && activity.address && (
-              <div className="badge badge-sm">
+              <span className="px-2 py-1 text-xs bg-base-300 rounded-lg">
                 {activity.address.slice(0, 8)}...{activity.address.slice(-8)}
-              </div>
+              </span>
             )}
             {(activity.type === 'MINT' || activity.type === 'BURN') && (
-              <div className="badge badge-sm">
+              <span className="px-2 py-1 text-xs bg-base-300 rounded-lg">
                 Amount: {toToken(activity.amount, config?.decimals || DEFAULT_DECIMALS)}
-              </div>
+              </span>
             )}
           </div>
           <div className="flex items-center gap-2">
-            <div className={`badge badge-sm ${
-              activity.status === 'APPROVED' ? 'badge-success' :
-              activity.status === 'PENDING' ? 'badge-warning' :
-              'badge-error'
+            <span className={`px-2 py-1 text-xs rounded-lg ${
+              activity.status === 'APPROVED' ? 'bg-success/20 text-success' :
+              activity.status === 'PENDING' ? 'bg-warning/20 text-warning' :
+              'bg-error/20 text-error'
             }`}>
               {activity.status}
-            </div>
+            </span>
             {activity.status === 'PENDING' && requiresApproval(activity) && (
-              <div className="badge badge-sm badge-ghost">
+              <span className="px-2 py-1 text-xs bg-base-300 rounded-lg">
                 {getApprovalCount(activity)}/2 Approvals
-              </div>
+              </span>
             )}
           </div>
         </div>
@@ -89,7 +89,7 @@ export const ActivityCard = ({
             {canCancel(activity) && (
               <button
                 type="button"
-                className="btn btn-error btn-xs"
+                className="px-2 py-1 text-xs bg-error/10 hover:bg-error/20 text-error rounded-lg transition-colors"
                 onClick={() => handleCancel(activity.id, activity.type)}
                 disabled={loading}
               >
@@ -99,7 +99,7 @@ export const ActivityCard = ({
             {canApprove(activity) && (
               <button
                 type="button"
-                className="btn btn-primary btn-xs"
+                className="px-2 py-1 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors"
                 onClick={() => handleApprove(activity.id, activity.type)}
                 disabled={loading}
               >
