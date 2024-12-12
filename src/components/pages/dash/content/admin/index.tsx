@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
+import { useRouter } from 'next/navigation';
 import { FaSpinner } from 'react-icons/fa6';
 import type { Activity, ConfigWithFees, Fee, StatusResponse, AddressStatus } from './types';
 import { getActivityIcon, getActivityDisplayText } from './utils';
@@ -19,7 +20,12 @@ const POLL_INTERVAL = 5000; // 5 seconds
 
 type TabType = 'activity' | 'restrictions' | 'burns' | 'mints';
 
-export default function AdminPage() {
+interface AdminPageProps {
+	defaultTab?: string;
+}
+
+export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
+	const router = useRouter();
 	const { data: session } = useSession() as { data: Session | null };
 	const [loading, setLoading] = useState(true);
 	const [initialLoading, setInitialLoading] = useState(true);
@@ -30,7 +36,7 @@ export default function AdminPage() {
 	const [showFreezeModal, setShowFreezeModal] = useState(false);
 	const [showMintModal, setShowMintModal] = useState(false);
 	const [showBurnModal, setShowBurnModal] = useState(false);
-	const [activeTab, setActiveTab] = useState<TabType>('activity');
+	const [activeTab, setActiveTab] = useState<TabType>(defaultTab as TabType);
 
 	const fetchStatus = useCallback(async () => {
 		try {
@@ -224,6 +230,8 @@ export default function AdminPage() {
 	const handleModalSuccess = async () => {
 		await fetchStatus();
 		handleModalClose();
+		// Redirect to activity tab after burn request creation
+		handleTabChange('activity');
 	};
 
 	// Function to show modals
@@ -239,6 +247,11 @@ export default function AdminPage() {
 				setShowBurnModal(true);
 				break;
 		}
+	};
+
+	const handleTabChange = (tab: TabType) => {
+		setActiveTab(tab);
+		router.push(`/dash/admin?tab=${tab}`);
 	};
 
 	if (initialLoading) {
@@ -258,28 +271,28 @@ export default function AdminPage() {
 					<button
 						role="tab"
 						className={`tab ${activeTab === 'activity' ? 'tab-active' : ''}`}
-						onClick={() => setActiveTab('activity')}
+						onClick={() => handleTabChange('activity')}
 					>
 						Activity
 					</button>
 					<button
 						role="tab"
 						className={`tab ${activeTab === 'restrictions' ? 'tab-active' : ''}`}
-						onClick={() => setActiveTab('restrictions')}
+						onClick={() => handleTabChange('restrictions')}
 					>
 						Restrictions
 					</button>
 					<button
 						role="tab"
 						className={`tab ${activeTab === 'mints' ? 'tab-active' : ''}`}
-						onClick={() => setActiveTab('restrictions')}
+						onClick={() => handleTabChange('mints')}
 					>
 						Mints
 					</button>
 					<button
 						role="tab"
 						className={`tab ${activeTab === 'burns' ? 'tab-active' : ''}`}
-						onClick={() => setActiveTab('burns')}
+						onClick={() => handleTabChange('burns')}
 					>
 						Burns
 					</button>

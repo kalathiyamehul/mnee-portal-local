@@ -11,17 +11,18 @@ export enum DashPage {
     SETTINGS = "settings",
 }
 
-export type DashbpardProps = {
-    page: DashPage
+export type DashboardProps = {
+    page: DashPage;
+    defaultTab?: string;
 }
 
-const Dashboard: React.FC<DashbpardProps> = ({ page }) => {
+const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab }) => {
     const dashContent = useMemo(() => {
         switch (page) {
             case DashPage.HOME:
                 return <DashboardHomeContent />
             case DashPage.ADMIN:
-                return <DashboardAdminContent />
+                return <DashboardAdminContent defaultTab={defaultTab} />
             case DashPage.WALLET:
                 return <DashboardWalletContent />
             case DashPage.SETTINGS:
@@ -29,7 +30,7 @@ const Dashboard: React.FC<DashbpardProps> = ({ page }) => {
             default:
                 return <div>Not Found</div>
         }
-    }, [page])
+    }, [page, defaultTab])
 
     return <div className="container px-6 py-8 mx-auto">
         <h3 className="text-3xl font-medium text-gray-700">Dashboard : {page}</h3>
