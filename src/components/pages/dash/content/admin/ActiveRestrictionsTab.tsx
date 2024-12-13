@@ -1,13 +1,17 @@
 import { ActiveRestrictions } from './ActiveRestrictions';
 import type { AddressStatus, Activity } from './types';
 import type { MouseEvent } from 'react';
-import { FaSnowflake } from 'react-icons/fa6';
+import { FaSnowflake, FaBan } from 'react-icons/fa6';
+import { MdRemoveCircleOutline } from 'react-icons/md';
 import { formatDistanceToNow } from 'date-fns';
+import { wasAutoApproved } from './utils';
+import md5 from 'md5';
 
 interface ActiveRestrictionsTabProps {
   restrictions: AddressStatus[];
   loading: boolean;
   handleUnblacklist: (e: MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
+  handleBlacklist: (e: MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
   handleFreezeRequest: (e: MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
   handleUnfreeze: (address: string) => Promise<void>;
   showModal: (id: string) => void;
@@ -18,6 +22,7 @@ export const ActiveRestrictionsTab = ({
   restrictions,
   loading,
   handleUnblacklist,
+  handleBlacklist,
   handleFreezeRequest,
   handleUnfreeze,
   showModal,
@@ -27,6 +32,28 @@ export const ActiveRestrictionsTab = ({
   const restrictionActivities = activities.filter(
     activity => activity.type === 'FREEZE' || activity.type === 'BLACKLIST'
   ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const getStatusBadgeClass = (activity: Activity) => {
+    if (activity.status === 'PENDING') return 'badge-warning';
+    if (activity.status === 'CANCELLED') return 'badge-error';
+    return 'badge-success';
+  };
+
+  const getActionBadgeClass = (activity: Activity) => {
+    if (activity.type === 'BLACKLIST') {
+      return activity.action === 'BLACKLIST' ? 'badge-error' : 'badge-success';
+    }
+    return activity.action === 'FREEZE' ? 'badge-warning' : 'badge-info';
+  };
+
+  const getGravatarUrl = (email: string) => {
+    const hash = md5(email.toLowerCase().trim());
+    return `https://www.gravatar.com/avatar/${hash}?d=mp&s=40`;
+  };
+
+  const handleExplore = (address: string) => {
+    window.open(`https://whatsonchain.com/address/${address}`, '_blank');
+  };
 
   return (
     <div className="p-4">
@@ -45,6 +72,7 @@ export const ActiveRestrictionsTab = ({
         restrictions={restrictions}
         loading={loading}
         handleUnblacklist={handleUnblacklist}
+        handleBlacklist={handleBlacklist}
         handleFreezeRequest={handleFreezeRequest}
         handleUnfreeze={handleUnfreeze}
       />
@@ -54,40 +82,101 @@ export const ActiveRestrictionsTab = ({
       <div>
         <h3 className="text-lg font-semibold mb-4">Restrictions History</h3>
         <div className="overflow-x-auto">
-          <table className="table w-full">
+          <table className="table">
             <thead>
               <tr>
+                <th>Requester</th>
                 <th>Address</th>
-                <th>Action</th>
-                <th>Status</th>
-                <th>Requested By</th>
-                <th>Date</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {restrictionActivities.map((activity) => (
                 <tr key={activity.id} className="hover">
-                  <td className="font-mono text-sm">{activity.address}</td>
                   <td>
-                    <span className={`badge ${
-                      activity.type === 'BLACKLIST' 
-                        ? activity.action === 'BLACKLIST' ? 'badge-error' : 'badge-success'
-                        : activity.action === 'FREEZE' ? 'badge-warning' : 'badge-info'
-                    }`}>
-                      {activity.action}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <div className="avatar">
+                        <div className="mask mask-squircle w-10 h-10">
+                          <img
+                            src={getGravatarUrl(activity.requester.email)}
+                            alt="User avatar"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-medium">{activity.requester.email}</div>
+                        <div className="text-sm opacity-50">
+                          {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
+                        </div>
+                      </div>
+                    </div>
                   </td>
                   <td>
-                    <span className={`badge ${
-                      activity.status === 'PENDING' ? 'badge-warning' :
-                      activity.status === 'APPROVED' ? 'badge-success' :
-                      'badge-error'
-                    }`}>
-                      {activity.status}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <button 
+                        onClick={() => handleExplore(activity.address)}
+                        className="font-mono text-sm link link-hover text-left"
+                      >
+                        {activity.address}
+                      </button>
+                      <div className="flex items-center gap-2">
+                        <span className={`badge ${getActionBadgeClass(activity)}`}>
+                          {activity.action}
+                        </span>
+                        {(!wasAutoApproved(activity) || activity.status !== 'APPROVED') && (
+                          <span className={`badge ${getStatusBadgeClass(activity)}`}>
+                            {activity.status}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </td>
-                  <td>{activity.requester.name || activity.requester.email}</td>
-                  <td>{formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}</td>
+                  <td>
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
+                      {activity.type === 'BLACKLIST' && activity.status === 'APPROVED' && (
+                        restrictions.find(r => r.address === activity.address)?.isBlacklisted ? (
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={(e) => handleUnblacklist(e, activity.address)}
+                            disabled={loading}
+                          >
+                            <MdRemoveCircleOutline className="w-3 h-3 mr-1" /> Unblacklist
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-error btn-sm"
+                            onClick={(e) => handleBlacklist(e, activity.address)}
+                            disabled={loading}
+                          >
+                            <FaBan className="w-3 h-3 mr-1" /> Blacklist
+                          </button>
+                        )
+                      )}
+                      {activity.type === 'FREEZE' && activity.status === 'APPROVED' && (
+                        restrictions.find(r => r.address === activity.address)?.isFrozen ? (
+                          <button
+                            type="button"
+                            className="btn btn-outline btn-sm"
+                            onClick={() => handleUnfreeze(activity.address)}
+                            disabled={loading}
+                          >
+                            <FaSnowflake className="w-3 h-3 mr-1" /> Unfreeze
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            onClick={(e) => handleFreezeRequest(e, activity.address)}
+                            disabled={loading}
+                          >
+                            <FaSnowflake className="w-3 h-3 mr-1" /> Freeze
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

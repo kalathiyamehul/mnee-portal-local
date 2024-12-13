@@ -3,25 +3,41 @@ import { formatDistanceToNow } from "date-fns";
 import { FaCheck, FaXmark, FaCoins } from "react-icons/fa6";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
 
-type MintRequest = {
+interface MintRequest {
   id: string;
   address: string;
-  amount: bigint;
-  status: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+  amount: number;
+  status: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "DONE";
   createdAt: string;
+  txid: string | null;
+  requiresApproval: boolean;
+  customerId: string | null;
   customer: {
+    id: string;
     name: string;
     email: string;
+    address: string;
   } | null;
-  txid: string;
-};
+  requester: {
+    name: string;
+    email: string;
+  };
+  approvals: Array<{
+    approver: {
+      name: string;
+      email: string;
+    };
+  }>;
+}
 
 const statusColors = {
   PENDING: "badge-warning",
   APPROVED: "badge-success",
   REJECTED: "badge-error",
-  CANCELLED: "badge-neutral"
+  CANCELLED: "badge-neutral",
+  DONE: "badge-success"
 };
 
 interface MintsTabProps {
@@ -29,29 +45,9 @@ interface MintsTabProps {
 }
 
 export const MintsTab = ({ showModal }: MintsTabProps) => {
-  const [mintRequests, setMintRequests] = useState<MintRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "pending">("all");
-
-  const fetchMintRequests = async () => {
-    try {
-      const response = await fetch("/api/status?includePending=true");
-      if (!response.ok) {
-        throw new Error("Failed to fetch mint requests");
-      }
-      const data = await response.json();
-      setMintRequests(data.mintRequests || []);
-    } catch (error) {
-      console.error("Failed to fetch mint requests:", error);
-      toast.error("Failed to fetch mint requests");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchMintRequests();
-  }, []);
+  const [filter, setFilter] = useState<"all" | "pending">("pending");
+  const { statusData, initialLoading } = useSystemStatus();
+  const mintRequests = statusData?.mintRequests || [];
 
   const handleApprove = async (id: string) => {
     try {
@@ -69,7 +65,6 @@ export const MintsTab = ({ showModal }: MintsTabProps) => {
       }
 
       toast.success("Mint request approved");
-      fetchMintRequests();
     } catch (error) {
       console.error("Failed to approve mint request:", error);
       toast.error(error instanceof Error ? error.message : "Failed to approve mint request");
@@ -92,7 +87,6 @@ export const MintsTab = ({ showModal }: MintsTabProps) => {
       }
 
       toast.success("Mint request rejected");
-      fetchMintRequests();
     } catch (error) {
       console.error("Failed to reject mint request:", error);
       toast.error(error instanceof Error ? error.message : "Failed to reject mint request");
@@ -103,13 +97,13 @@ export const MintsTab = ({ showModal }: MintsTabProps) => {
     filter === "all" || request.status === "PENDING"
   );
 
-  if (loading) {
+  if (initialLoading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <button 
             className={`btn btn-sm ${filter === "all" ? "btn-primary" : "btn-ghost"}`}
@@ -123,14 +117,14 @@ export const MintsTab = ({ showModal }: MintsTabProps) => {
           >
             Pending
           </button>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => showModal('mint_modal')}
+          >
+            <FaCoins className="mr-1" />
+            <span className="text-sm">Mint</span>
+          </button>
         </div>
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={() => showModal('mint_modal')}
-        >
-          <FaCoins className="mr-1" />
-          <span className="text-sm">Mint</span>
-        </button>
       </div>
 
       <div className="overflow-x-auto bg-base-100 rounded-lg shadow">

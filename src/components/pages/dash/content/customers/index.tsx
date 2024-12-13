@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { CustomerModal } from "../modals/CustomerModal";
+import { FaEdit } from "react-icons/fa";
 
 interface Customer {
   id: string;
@@ -17,7 +18,8 @@ export default function DashboardCustomersContent() {
   const { data: session } = useSession();
   const [loading, setLoading] = useState(true);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   const fetchCustomers = async () => {
     if (!session?.user?.id) return;
@@ -41,6 +43,16 @@ export default function DashboardCustomersContent() {
     fetchCustomers();
   }, [session?.user?.id]);
 
+  const handleEdit = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedCustomer(null);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -55,7 +67,7 @@ export default function DashboardCustomersContent() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <button
           className="btn btn-primary btn-sm"
-          onClick={() => setShowAddModal(true)}
+          onClick={() => setShowModal(true)}
         >
           Add Customer
         </button>
@@ -69,6 +81,7 @@ export default function DashboardCustomersContent() {
               <th>Email</th>
               <th>Address</th>
               <th>Created At</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -80,11 +93,20 @@ export default function DashboardCustomersContent() {
                   {customer.address.slice(0, 8)}...{customer.address.slice(-8)}
                 </td>
                 <td>{new Date(customer.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <button
+                    onClick={() => handleEdit(customer)}
+                    className="btn btn-ghost btn-sm"
+                    title="Edit customer"
+                  >
+                    <FaEdit className="text-base-content/70" />
+                  </button>
+                </td>
               </tr>
             ))}
             {customers.length === 0 && (
               <tr>
-                <td colSpan={4} className="text-center py-4">
+                <td colSpan={5} className="text-center py-4">
                   No customers found
                 </td>
               </tr>
@@ -93,10 +115,11 @@ export default function DashboardCustomersContent() {
         </table>
       </div>
 
-      {showAddModal && (
+      {showModal && (
         <CustomerModal
-          onClose={() => setShowAddModal(false)}
+          onClose={handleCloseModal}
           onSuccess={fetchCustomers}
+          customer={selectedCustomer || undefined}
         />
       )}
     </div>

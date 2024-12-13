@@ -38,7 +38,6 @@ export const ActivityTab = ({
 }: ActivityTabProps) => {
   return (
     <div className="p-4">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4">Activity</h2>
       <ActivityList
         showOnlyPending={showOnlyPending}
         setShowOnlyPending={setShowOnlyPending}
@@ -53,7 +52,6 @@ export const ActivityTab = ({
         getActivityDisplayText={getActivityDisplayText}
         requiresApproval={requiresApproval}
         getApprovalCount={getApprovalCount}
-        showModal={showModal}
       />
     </div>
   );

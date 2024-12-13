@@ -188,8 +188,8 @@ const DashboardSettingsContent = () => {
 	}
 
 	return (
-		<div className="p-4 space-y-6">
-			<h2 className="text-2xl font-bold mb-6">Settings</h2>
+		<div className="p-4 space-y-4">
+			<h1 className="text-2xl font-bold">Settings</h1>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 				{/* Token Details */}

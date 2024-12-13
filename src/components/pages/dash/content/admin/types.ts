@@ -91,6 +91,13 @@ export interface AddressStatus {
 	address: string;
 	isBlacklisted: boolean;
 	isFrozen: boolean;
+	hasPendingFreeze: boolean;
+	pendingFreezeAction?: 'FREEZE' | 'UNFREEZE';
+	requester: {
+		email: string;
+		name: string | null;
+	};
+	lastUpdate: string;
 }
 
 export interface StatusResponse {
@@ -118,7 +125,6 @@ export interface ActivityListProps {
 	getActivityDisplayText: (activity: Activity) => string;
 	requiresApproval: (activity: Activity) => boolean;
 	getApprovalCount: (activity: Activity) => number;
-	showModal: (id: string) => void;
 }
 
 export interface ActivityTabProps {

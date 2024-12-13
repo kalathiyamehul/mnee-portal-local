@@ -7,12 +7,18 @@ import { toast } from "react-hot-toast";
 interface CustomerModalProps {
   onClose: () => void;
   onSuccess: () => Promise<void>;
+  customer?: {
+    id: string;
+    name: string;
+    email: string;
+    address: string;
+  };
 }
 
-export const CustomerModal = ({ onClose, onSuccess }: CustomerModalProps) => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [address, setAddress] = useState("");
+export const CustomerModal = ({ onClose, onSuccess, customer }: CustomerModalProps) => {
+  const [name, setName] = useState(customer?.name || "");
+  const [email, setEmail] = useState(customer?.email || "");
+  const [address, setAddress] = useState(customer?.address || "");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,8 +27,8 @@ export const CustomerModal = ({ onClose, onSuccess }: CustomerModalProps) => {
 
     try {
       setLoading(true);
-      const response = await fetch("/api/customers", {
-        method: "POST",
+      const response = await fetch("/api/customers" + (customer ? `/${customer.id}` : ""), {
+        method: customer ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
@@ -33,15 +39,15 @@ export const CustomerModal = ({ onClose, onSuccess }: CustomerModalProps) => {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Failed to create customer");
+        throw new Error(error.message || `Failed to ${customer ? 'update' : 'create'} customer`);
       }
 
       await onSuccess();
       onClose();
-      toast.success("Customer created successfully");
+      toast.success(`Customer ${customer ? 'updated' : 'created'} successfully`);
     } catch (error) {
-      console.error("Error creating customer:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to create customer");
+      console.error(`Error ${customer ? 'updating' : 'creating'} customer:`, error);
+      toast.error(error instanceof Error ? error.message : `Failed to ${customer ? 'update' : 'create'} customer`);
     } finally {
       setLoading(false);
     }
@@ -50,7 +56,7 @@ export const CustomerModal = ({ onClose, onSuccess }: CustomerModalProps) => {
   return (
     <dialog id="customer_modal" className="modal modal-open">
       <div className="modal-box max-w-lg">
-        <h3 className="text-lg font-bold mb-6">Add New Customer</h3>
+        <h3 className="text-lg font-bold mb-6">{customer ? 'Edit' : 'Add New'} Customer</h3>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             <label className="form-control w-full mb-4">
@@ -113,10 +119,10 @@ export const CustomerModal = ({ onClose, onSuccess }: CustomerModalProps) => {
               {loading ? (
                 <>
                   <FaSpinner className="animate-spin mr-2" />
-                  Creating...
+                  {customer ? 'Updating...' : 'Creating...'}
                 </>
               ) : (
-                "Create Customer"
+                customer ? 'Update Customer' : 'Create Customer'
               )}
             </button>
           </div>

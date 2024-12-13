@@ -1,12 +1,16 @@
 "use client";
 
 import type { Session } from "next-auth";
+import { SystemStatus } from "./content/admin/SystemStatus";
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
 
 type NavbarProps = {
 	session: Session;
 };
 
 const Navbar: React.FC<NavbarProps> = ({ session }) => {
+	const { isPaused, hasPendingPause, handlePauseToggle } = useSystemStatus();
+
 	return (
 		<div className="w-full navbar bg-base-300">
 			<div className="flex-none lg:hidden">
@@ -23,7 +27,13 @@ const Navbar: React.FC<NavbarProps> = ({ session }) => {
 					</svg>
 				</label>
 			</div>
-			<div className="flex-1 px-2 mx-2 text-sm">{session.user.email}</div>
+			<div className="flex-1">
+				<SystemStatus 
+					isPaused={isPaused} 
+					hasPendingPause={hasPendingPause} 
+					onPauseToggle={handlePauseToggle} 
+				/>
+			</div>
 		</div>
 	);
 };

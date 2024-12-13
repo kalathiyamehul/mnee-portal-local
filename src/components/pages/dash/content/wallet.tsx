@@ -28,10 +28,11 @@ import {
 import CosignTemplate from "@/templates/cosign";
 import { FaSpinner } from "react-icons/fa";
 import { MNEE_API } from "@/env";
+import { DepositModal } from './modals/DepositModal';
 
 const { toArray, toBase64 } = Utils;
 
-const DashboardWalletContent: React.FC = () => {
+export default function DashboardWalletContent() {
 	const wallet = useYoursWallet();
 	const [addresses, setAddresses] = useState<Addresses | null>(null);
 	const [mneeBalance, setMneeBalance] = useState<number>(0);
@@ -39,6 +40,23 @@ const DashboardWalletContent: React.FC = () => {
 	const [recipient, setRecipient] = useState<string>("");
 	const [amount, setAmount] = useState<number>(0);
 	const [config, setConfig] = useState<Config | null>(null);
+	const [showBsvDepositModal, setShowBsvDepositModal] = useState(false);
+	const [showMneeDepositModal, setShowMneeDepositModal] = useState(false);
+	const [showTransferModal, setShowTransferModal] = useState(false);
+
+	// Add escape key handler at the top level
+	useEffect(() => {
+		if (!showTransferModal) return;
+
+		const handleEscape = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') {
+				setShowTransferModal(false);
+			}
+		};
+
+		window.addEventListener('keydown', handleEscape);
+		return () => window.removeEventListener('keydown', handleEscape);
+	}, [showTransferModal]);
 
 	const connectWallet = async () => {
 		try {
@@ -430,7 +448,9 @@ const DashboardWalletContent: React.FC = () => {
 	}, [mneeBalance, transferMNEE, amount, recipient, config]);
 
 	return (
-		<div className="w-full h-full px-2 flex flex-col py-12 mb-4">
+		<div className="p-4 space-y-4">
+			<h1 className="text-2xl font-bold">Wallet</h1>
+
 			{!addresses && (
 				<div className="mx-auto">
 					<button
@@ -442,84 +462,137 @@ const DashboardWalletContent: React.FC = () => {
 					</button>
 				</div>
 			)}
+
 			{addresses && (
 				<>
-					<div className="mx-auto mb-4 text-xs text-neutral">
-						<p>BSV Address: {addresses?.bsvAddress}</p>
-						<p>ORD Address: {addresses?.ordAddress}</p>
-					</div>
-					{!config && <div className="text-center"><FaSpinner className="animate-spin mx-auto my-12" /><p className="text-sm text-neutral">Loading token configuration...</p></div>}
-					{config && (
-						<div className="mx-auto mb-4 flex flex-col items-center justify-center py-12">
-							<h2 className="text-4xl">
-								<span className="font-mono">
-									{config ? toToken(mneeBalance, config.decimals) : "0"}
-								</span>{" "}
-								MNEE
-							</h2>
-							<p className="text-neutral">
-								<span className="font-mono">
-									{balance ? toBitcoin(balance.satoshis) : "0"}
-								</span>{" "}
-								BSV
-							</p>
+					<div className="stats bg-base-200 w-full">
+						<div className="stat">
+							<div className="stat-title">BSV Balance</div>
+							<div className="stat-value">{balance?.bsv || 0} BSV</div>
+							<div className="stat-actions">
+								<button 
+									className="btn btn-sm btn-primary"
+									onClick={() => setShowBsvDepositModal(true)}
+								>
+									Deposit
+								</button>
+							</div>
 						</div>
+
+						<div className="stat">
+							<div className="stat-title">MNEE Balance</div>
+							<div className="stat-value">{config ? toToken(mneeBalance, config.decimals) : 0} MNEE</div>
+							<div className="stat-actions flex gap-2">
+								<button 
+									className="btn btn-sm btn-primary"
+									onClick={() => setShowMneeDepositModal(true)}
+								>
+									Deposit
+								</button>
+								<button 
+									className="btn btn-sm"
+									onClick={() => setShowTransferModal(true)}
+								>
+									Transfer
+								</button>
+							</div>
+						</div>
+					</div>
+
+					{/* Deposit Modals */}
+					{showBsvDepositModal && (
+						<DepositModal
+							title="Deposit BSV"
+							onClose={() => setShowBsvDepositModal(false)}
+							address={addresses.bsvAddress}
+						/>
 					)}
 
-					<div className="flex flex-col w-full max-w-md mx-auto p-4 bg-neutral rounded-lg">
-						<label htmlFor="recipient" className="text-sm font-semibold mb-2">
-							Recipient Address
-						</label>
-						<input
-							type="text"
-							id="recipient"
-							className="text-sm p-2 mb-2 rounded-sm"
-							placeholder="Enter BSV address"
-							value={recipient}
-							onChange={(e) => setRecipient(e.target.value)}
+					{showMneeDepositModal && (
+						<DepositModal
+							title="Deposit MNEE"
+							onClose={() => setShowMneeDepositModal(false)}
+							address={addresses.ordAddress}
 						/>
-						<label htmlFor="amount" className="text-sm font-semibold mb-2">
-							Amount (MNEE)
-						</label>
-						<input
-							id="amount"
-							name="amount"
-							type="number"
-							className="text-sm p-2 mb-2 rounded-sm"
-							placeholder="Enter amount to send"
-							value={amount || ""}
-							onChange={(e) => setAmount(Number(e.target.value))}
-							min="0"
-							step="any"
-						/>
-						<button
-							type="button"
-							className="btn btn-primary"
-							onClick={handleTransfer}
-							disabled={isLoading}
-							>
-							{isLoading ? (
-								<span className="flex items-center justify-center">
-									<FaSpinner className="animate-spin mr-2" />
-									Sending...
-								</span>
-							) : (
-								"Send MNEE"
-							)}
-						</button>
-					</div>
+					)}
+
+					{/* Transfer Modal */}
+					{showTransferModal && (
+						<dialog id="transfer_modal" className="modal modal-open">
+							<div className="modal-box max-w-sm">
+								<h3 className="text-lg font-bold mb-6">Transfer MNEE</h3>
+								<form onSubmit={handleTransfer}>
+									<div className="space-y-4">
+										<label className="form-control w-full">
+											<div className="label">
+												<span className="label-text">Recipient Address</span>
+											</div>
+											<input
+												type="text"
+												className="input input-bordered w-full"
+												value={recipient}
+												onChange={(e) => setRecipient(e.target.value)}
+												placeholder="Enter recipient address"
+												required
+											/>
+										</label>
+
+										<label className="form-control w-full">
+											<div className="label">
+												<span className="label-text">Amount</span>
+											</div>
+											<input
+												type="number"
+												className="input input-bordered w-full"
+												value={amount}
+												onChange={(e) => setAmount(Number(e.target.value))}
+												placeholder="Enter amount"
+												required
+											/>
+										</label>
+									</div>
+
+									<div className="modal-action">
+										<button
+											type="button"
+											className="btn btn-ghost"
+											onClick={() => setShowTransferModal(false)}
+										>
+											Cancel
+										</button>
+										<button
+											type="submit"
+											className="btn btn-primary"
+											disabled={isLoading}
+										>
+											{isLoading ? (
+												<>
+													<FaSpinner className="animate-spin mr-2" />
+													Sending...
+												</>
+											) : (
+												'Send'
+											)}
+										</button>
+									</div>
+								</form>
+							</div>
+							<form method="dialog" className="modal-backdrop" onClick={() => setShowTransferModal(false)}>
+								<button>close</button>
+							</form>
+						</dialog>
+					)}
+
+					{mneeError && (
+						<div className="mx-auto mt-4 max-w-md w-full">
+							<div className="bg-error/10 border border-error text-error p-4 rounded-lg">
+								<p className="font-semibold mb-1">Transaction Failed</p>
+								<p className="text-sm">{mneeError.message}</p>
+							</div>
+						</div>
+					)}
 				</>
-			)}
-			{mneeError && (
-				<div className="mx-auto mt-4 max-w-md w-full">
-					<div className="bg-error/10 border border-error text-error p-4 rounded-lg">
-						<p className="font-semibold mb-1">Transaction Failed</p>
-						<p className="text-sm">{mneeError.message}</p>
-					</div>
-				</div>
 			)}
 		</div>
 	);
-};
-
-export default DashboardWalletContent;
+}

@@ -15,13 +15,12 @@ export const ActivityList = ({
   getActivityDisplayText,
   requiresApproval,
   getApprovalCount,
-  showModal,
 }: Omit<ActivityListProps, 'session'>) => {
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-4 justify-end">
         <label className="label cursor-pointer gap-2 px-2">
-          <span className="label-text text-sm">Pending Only</span>
+          <span className="label-text text-sm mr-2">Pending Only</span>
           <input
             type="checkbox"
             className="toggle toggle-primary toggle-sm sm:toggle-md"

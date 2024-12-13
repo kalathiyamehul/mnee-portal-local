@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchMneeUtxos } from '@/utils/api';
-import { FaSpinner } from 'react-icons/fa6';
+import { FaSpinner, FaFire } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
 import type { MNEEUtxo } from '@/types';
 import { MdOutlineOpenInNew } from 'react-icons/md';
@@ -103,38 +103,38 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
         </div>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="table table-compact sm:table-normal w-full">
+      <div className="overflow-x-auto bg-base-100 rounded-lg shadow">
+        <table className="table w-full">
           <thead>
             <tr>
-              <th className="text-xs sm:text-sm">Transaction</th>
-              <th className="text-xs sm:text-sm">Amount</th>
-              <th className="text-xs sm:text-sm">Date</th>
-              <th className="text-xs sm:text-sm">Status</th>
-              <th className="text-xs sm:text-sm">Actions</th>
+              <th>Transaction</th>
+              <th>Amount</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {burns.map((burn) => (
-              <tr key={`${burn.txid}_${burn.vout}`}>
-                <td className="font-mono text-xs sm:text-sm max-w-[120px] sm:max-w-none truncate">
+              <tr key={`${burn.txid}_${burn.vout}`} className="hover">
+                <td>
                   <a
                     href={`https://whatsonchain.com/tx/${burn.txid}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hover:text-primary flex items-center gap-1"
+                    className="font-mono text-sm link link-hover flex items-center gap-1"
                   >
-                    {burn.txid}
+                    {burn.txid.slice(0, 8)}...{burn.txid.slice(-8)}
                     <MdOutlineOpenInNew className="w-3 h-3" />
                   </a>
                 </td>
-                <td className="text-xs sm:text-sm">
-                  {toToken(burn.satoshis, decimals)}
+                <td className="font-medium">
+                  {toToken(burn.data.bsv21.amt, decimals)}
                 </td>
-                <td className="text-xs sm:text-sm">
+                <td className="text-sm text-base-content/70">
                   {new Date(burn.height * 1000).toLocaleString()}
                 </td>
-                <td className="text-xs sm:text-sm">
+                <td>
                   {burn.burnRequest ? (
                     <span className={`badge ${
                       burn.burnRequest.status === 'APPROVED' ? 'badge-success' :
@@ -144,16 +144,16 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
                       {burn.burnRequest.status}
                     </span>
                   ) : (
-                    <span className="text-base-content/50">No request</span>
+                    <span className="text-base-content/50 text-sm">No request</span>
                   )}
                 </td>
                 <td>
                   {!burn.burnRequest && (
                     <button
                       onClick={() => handleCreateBurnRequest(burn)}
-                      className="btn btn-error btn-xs sm:btn-sm"
+                      className="btn btn-error btn-sm"
                     >
-                      Create Burn Request
+                      <FaFire className="w-3 h-3 mr-1" /> Burn
                     </button>
                   )}
                 </td>

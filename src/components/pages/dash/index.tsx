@@ -36,9 +36,15 @@ const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab }) => {
         }
     }, [page, defaultTab])
 
-    return <div className="container px-6 py-8 mx-auto">
-        <h3 className="text-3xl font-medium text-gray-700">Dashboard : {page}</h3>
-
+    return <div className="container px-6 py-2 mx-auto">
+        {/* <div className="mb-4">
+            <div className="text-sm breadcrumbs text-base-content/70">
+                <ul>
+                    <li className="capitalize">{page}</li>
+                    {defaultTab && <li className="capitalize">{defaultTab}</li>}
+                </ul>
+            </div>
+        </div> */}
         {dashContent}
     </div>
 }

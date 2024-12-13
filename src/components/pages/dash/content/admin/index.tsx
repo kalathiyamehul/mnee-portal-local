@@ -15,6 +15,9 @@ import { BurnsTab } from './BurnsTab';
 import { ActiveRestrictionsTab } from './ActiveRestrictionsTab';
 import { SystemStatus } from './SystemStatus';
 import { MintsTab } from './MintsTab';
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import { useRouter, useSearchParams } from "next/navigation";
+import { formatDistanceToNow } from 'date-fns';
 
 const POLL_INTERVAL = 5000; // 5 seconds
 
@@ -28,7 +31,6 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	const { data: session } = useSession() as { data: Session | null };
 	const [loading, setLoading] = useState(true);
 	const [initialLoading, setInitialLoading] = useState(true);
-	const [isPaused, setIsPaused] = useState(false);
 	const [showOnlyPending, setShowOnlyPending] = useState(true);
 	const [activities, setActivities] = useState<Activity[]>([]);
 	const [config, setConfig] = useState<ConfigWithFees | null>(null);
@@ -36,11 +38,19 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	const [showMintModal, setShowMintModal] = useState(false);
 	const [showBurnModal, setShowBurnModal] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabType>(defaultTab as TabType);
+	const { isPaused, handlePauseToggle, statusData, fetchStatus } = useSystemStatus();
+	const router = useRouter();
+	const searchParams = useSearchParams();
 
-	// Update activeTab when defaultTab prop changes
 	useEffect(() => {
 		setActiveTab(defaultTab as TabType);
 	}, [defaultTab]);
+
+	const handleTabChange = (tab: TabType) => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set('tab', tab);
+		router.push(`/dash/admin?${params.toString()}`);
+	};
 
 	const showModal = useCallback((id: string) => {
 		switch (id) {
@@ -56,38 +66,21 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		}
 	}, []);
 
-	const fetchStatus = useCallback(async () => {
-		try {
-			const response = await fetch('/api/status?includePending=true');
-			const data = await response.json() as StatusResponse;
-			
-			if (!response.ok) throw new Error(data.error || 'Failed to fetch status');
-
+	useEffect(() => {
+		if (statusData) {
 			const allActivities: Activity[] = [
-				...data.freezeRequests.map(req => ({ ...req, type: 'FREEZE' as const })),
-				...data.blacklists.map(req => ({ ...req, type: 'BLACKLIST' as const })),
-				...data.systemRequests.map(req => ({ ...req, type: 'ACTION' as const })),
-				...data.mintRequests.map(req => ({ ...req, type: 'MINT' as const, action: 'MINT' as const })),
-				...data.burnRequests.map(req => ({ ...req, type: 'BURN' as const, action: 'BURN' as const })),
+				...statusData.freezeRequests.map(req => ({ ...req, type: 'FREEZE' as const })),
+				...statusData.blacklists.map(req => ({ ...req, type: 'BLACKLIST' as const })),
+				...statusData.systemRequests.map(req => ({ ...req, type: 'ACTION' as const })),
+				...statusData.mintRequests.map(req => ({ ...req, type: 'MINT' as const, action: 'MINT' as const })),
+				...statusData.burnRequests.map(req => ({ ...req, type: 'BURN' as const, action: 'BURN' as const })),
 			].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
 			setActivities(allActivities);
-			setIsPaused(data.isPaused);
-		} catch (error) {
-			console.error('Error fetching status:', error);
-			toast.error('Failed to fetch status');
-		} finally {
 			setLoading(false);
 			setInitialLoading(false);
 		}
-	}, []);
-
-	// Set up polling
-	useEffect(() => {
-		fetchStatus();
-		const interval = setInterval(fetchStatus, POLL_INTERVAL);
-		return () => clearInterval(interval);
-	}, [fetchStatus]);
+	}, [statusData]);
 
 	useEffect(() => {
 		const fetchConfig = async () => {
@@ -108,21 +101,15 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		fetchConfig();
 	}, []);
 
-	// Filter activities based on showOnlyPending
-	const filteredActivities = activities.filter(activity => 
-		!showOnlyPending || activity.status === 'PENDING'
-	);
-
-	// Compute active restrictions from activities
+	// Compute active restrictions from activities first
 	const activeRestrictions = activities.reduce((addressMap, activity) => {
-		if ((activity.type === 'FREEZE' || activity.type === 'BLACKLIST') && activity.status === 'APPROVED') {
+		if ((activity.type === 'FREEZE' || activity.type === 'BLACKLIST')) {
 			const address = activity.address;
 
-			// Get all approved actions for this address
+			// Get all actions for this address
 			const addressActions = activities.filter(a => 
 				(a.type === 'FREEZE' || a.type === 'BLACKLIST') &&
-				a.address === address && 
-				a.status === 'APPROVED'
+				a.address === address
 			);
 
 			// Get latest freeze action
@@ -135,51 +122,59 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 				.filter(a => a.type === 'BLACKLIST')
 				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
-			// Determine current status
-			const isFrozen = latestFreezeAction?.action === 'FREEZE';
-			const isBlacklisted = latestBlacklistAction?.action === 'BLACKLIST';
+			// Get pending actions
+			const pendingFreeze = addressActions.find(a => 
+				a.type === 'FREEZE' && 
+				a.status === 'PENDING'
+			);
 
-			// Only add to map if there are active restrictions
-			if (isFrozen || isBlacklisted) {
+			// Determine current status
+			const isFrozen = latestFreezeAction?.status === 'APPROVED' && latestFreezeAction?.action === 'FREEZE';
+			const isBlacklisted = latestBlacklistAction?.status === 'APPROVED' && latestBlacklistAction?.action === 'BLACKLIST';
+
+			// Get the most recent action to determine the requester
+			const mostRecentAction = [latestFreezeAction, latestBlacklistAction, pendingFreeze]
+				.filter(Boolean)
+				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+			// Only add to map if there are active restrictions or pending actions
+			if (isFrozen || isBlacklisted || pendingFreeze) {
 				addressMap.set(address, {
 					address,
 					isBlacklisted,
 					isFrozen,
-					lastUpdate: new Date(Math.max(
-						latestFreezeAction ? new Date(latestFreezeAction.createdAt).getTime() : 0,
-						latestBlacklistAction ? new Date(latestBlacklistAction.createdAt).getTime() : 0
-					)).toISOString()
+					hasPendingFreeze: !!pendingFreeze,
+					pendingFreezeAction: pendingFreeze?.action,
+					requester: mostRecentAction.requester,
+					lastUpdate: formatDistanceToNow(new Date(mostRecentAction.createdAt), { addSuffix: true })
 				});
 			} else {
-				// If neither frozen nor blacklisted, remove from map
+				// If neither frozen nor blacklisted and no pending actions, remove from map
 				addressMap.delete(address);
 			}
 		}
 		return addressMap;
-	}, new Map<string, AddressStatus & { lastUpdate: string }>());
+	}, new Map<string, AddressStatus>());
 
-	// No need for additional filtering since we only add addresses with active restrictions
-	const filteredRestrictions = Array.from(activeRestrictions.values());
-
-	const handlePauseToggle = async () => {
-		try {
-			setLoading(true);
-			const action = isPaused ? 'RESUME' : 'PAUSE';
-			
-			await fetch('/api/pause', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ action }),
-			});
-			
-			await fetchStatus();
-		} catch (error) {
-			console.error('Error toggling pause:', error);
-			toast.error('Failed to toggle pause');
-		} finally {
-			setLoading(false);
+	// Then filter activities based on showOnlyPending and exclude ones that are pending in active restrictions
+	const filteredActivities = activities.filter(activity => {
+		// If it's not a freeze or blacklist action, apply normal pending filter
+		if (activity.type !== 'FREEZE' && activity.type !== 'BLACKLIST') {
+			return !showOnlyPending || activity.status === 'PENDING';
 		}
-	};
+
+		// For freeze/blacklist actions, check if they're pending and in active restrictions
+		const addressStatus = activeRestrictions.get(activity.address);
+		const isPendingInActiveRestrictions = 
+			(activity.type === 'FREEZE' && addressStatus?.hasPendingFreeze) ||
+			(activity.type === 'BLACKLIST' && addressStatus?.hasPendingBlacklist);
+
+		// Only show in history if not pending in active restrictions
+		return (!showOnlyPending || activity.status === 'PENDING') && !isPendingInActiveRestrictions;
+	});
+
+	// Convert active restrictions to array for component
+	const filteredRestrictions = Array.from(activeRestrictions.values());
 
 	const canCancel = useCallback((activity: Activity) => {
 		if (!session?.user?.email) return false;
@@ -343,32 +338,76 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		}
 	};
 
+	const handleBlacklist = async (e: React.MouseEvent, address: string) => {
+		e.preventDefault();
+		try {
+			setLoading(true);
+			const response = await fetch('/api/blacklist', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					address,
+					action: 'BLACKLIST',
+				}),
+			});
+
+			const data = await response.json();
+			if (!response.ok) {
+				throw new Error(data.message || data.error || 'Failed to blacklist address');
+			}
+
+			await fetchStatus();
+			toast.success('Address blacklisted');
+		} catch (error) {
+			console.error('Error blacklisting address:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to blacklist address');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const getTabTitle = (tab: TabType): string => {
+		switch (tab) {
+			case 'activity':
+				return 'Activity';
+			case 'restrictions':
+				return 'Restrictions';
+			case 'burns':
+				return 'Burns';
+			case 'mints':
+				return 'Mints';
+			default:
+				return 'Activity';
+		}
+	};
+
 	return (
-		<div className="p-4">
+		<div className="p-4 space-y-4">
 			<div className="flex flex-col gap-4">
-				<div className="flex justify-between items-center">
-					<div className="tabs tabs-boxed">
+				<div>
+					<h2 className="text-xl sm:text-2xl font-bold">{getTabTitle(activeTab)}</h2>
+					<div className="tabs tabs-boxed mt-4">
 						<a
 							className={`tab ${activeTab === 'activity' ? 'tab-active' : ''}`}
-							onClick={() => setActiveTab('activity')}
+							onClick={() => handleTabChange('activity')}
 						>
 							Activity
 						</a>
 						<a
 							className={`tab ${activeTab === 'restrictions' ? 'tab-active' : ''}`}
-							onClick={() => setActiveTab('restrictions')}
+							onClick={() => handleTabChange('restrictions')}
 						>
 							Restrictions
 						</a>
 						<a
 							className={`tab ${activeTab === 'burns' ? 'tab-active' : ''}`}
-							onClick={() => setActiveTab('burns')}
+							onClick={() => handleTabChange('burns')}
 						>
 							Burns
 						</a>
 						<a
 							className={`tab ${activeTab === 'mints' ? 'tab-active' : ''}`}
-							onClick={() => setActiveTab('mints')}
+							onClick={() => handleTabChange('mints')}
 						>
 							Mints
 						</a>
@@ -381,7 +420,6 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 					</div>
 				) : (
 					<div>
-						<SystemStatus isPaused={isPaused} onPauseToggle={handlePauseToggle} />
 						{activeTab === 'activity' && (
 							<ActivityTab
 								activities={activities}
@@ -406,6 +444,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 								restrictions={filteredRestrictions}
 								loading={loading}
 								handleUnblacklist={handleUnblacklist}
+								handleBlacklist={handleBlacklist}
 								handleFreezeRequest={handleFreezeRequest}
 								handleUnfreeze={handleUnfreeze}
 								showModal={showModal}
