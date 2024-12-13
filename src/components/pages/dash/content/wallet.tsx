@@ -15,8 +15,8 @@ import {
 	Transaction,
 	TransactionSignature,
 	UnlockingScript,
- Utils } from "@bsv/sdk";
-import { toBitcoin, toToken, toTokenSat } from "satoshi-token";
+	Utils } from "@bsv/sdk";
+import { toToken, toTokenSat } from "satoshi-token";
 import { applyInscription, type Inscription } from "js-1sat-ord";
 import toast from "react-hot-toast";
 import type { Config } from "../../../../types";

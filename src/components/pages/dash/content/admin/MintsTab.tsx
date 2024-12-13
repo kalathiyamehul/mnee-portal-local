@@ -1,36 +1,10 @@
-import { useEffect, useState } from "react";
-import { formatDistanceToNow } from "date-fns";
-import { FaCheck, FaXmark, FaCoins } from "react-icons/fa6";
-import Link from "next/link";
-import { toast } from "react-hot-toast";
+import { useState } from 'react';
+import { FaCheck, FaCoins, FaXmark } from 'react-icons/fa6';
+import { toast } from 'react-hot-toast';
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
-
-interface MintRequest {
-  id: string;
-  address: string;
-  amount: number;
-  status: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "DONE";
-  createdAt: string;
-  txid: string | null;
-  requiresApproval: boolean;
-  customerId: string | null;
-  customer: {
-    id: string;
-    name: string;
-    email: string;
-    address: string;
-  } | null;
-  requester: {
-    name: string;
-    email: string;
-  };
-  approvals: Array<{
-    approver: {
-      name: string;
-      email: string;
-    };
-  }>;
-}
+import { formatDistanceToNow } from 'date-fns';
+import Link from 'next/link';
+import { MdOutlineOpenInNew } from 'react-icons/md';
 
 const statusColors = {
   PENDING: "badge-warning",
@@ -44,7 +18,7 @@ interface MintsTabProps {
   showModal: (id: string) => void;
 }
 
-export const MintsTab = ({ showModal }: MintsTabProps) => {
+export function MintsTab({ showModal }: MintsTabProps) {
   const [filter, setFilter] = useState<"all" | "pending">("pending");
   const { statusData, initialLoading } = useSystemStatus();
   const mintRequests = statusData?.mintRequests || [];
@@ -165,7 +139,15 @@ export const MintsTab = ({ showModal }: MintsTabProps) => {
                 <td>{formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}</td>
                 <td>
                   {request.txid ? (
-                    <span className="font-mono text-sm">{request.txid}</span>
+                    <a
+                      href={`https://whatsonchain.com/tx/${request.txid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-sm link link-hover flex items-center gap-1"
+                    >
+                      {request.txid.slice(0, 8)}...{request.txid.slice(-8)}
+                      <MdOutlineOpenInNew className="w-3 h-3" />
+                    </a>
                   ) : (
                     "-"
                   )}
@@ -197,4 +179,4 @@ export const MintsTab = ({ showModal }: MintsTabProps) => {
       </div>
     </div>
   );
-}; 
+} 

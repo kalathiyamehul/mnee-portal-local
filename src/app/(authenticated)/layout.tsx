@@ -48,7 +48,7 @@ export default async function AuthenticatedLayout({
       <SystemStatusProvider>
         <div className="drawer-content flex flex-col">
           {/* Navbar */}
-          <Navbar session={session} />
+          <Navbar />
           {/* Main content */}
           <main className="flex-1">
             {children}

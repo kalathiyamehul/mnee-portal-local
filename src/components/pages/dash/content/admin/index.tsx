@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
 import { FaSpinner } from 'react-icons/fa6';
-import type { Activity, ConfigWithFees, Fee, StatusResponse, AddressStatus } from './types';
+import type { Activity, AddressStatus, ConfigWithFees, Fee } from './types';
 import { getActivityIcon, getActivityDisplayText } from './utils';
 import { toast } from 'react-hot-toast';
 import { FreezeModal } from '../modals/FreezeModal';
@@ -13,13 +13,10 @@ import type { Session } from 'next-auth';
 import { ActivityTab } from './ActivityTab';
 import { BurnsTab } from './BurnsTab';
 import { ActiveRestrictionsTab } from './ActiveRestrictionsTab';
-import { SystemStatus } from './SystemStatus';
 import { MintsTab } from './MintsTab';
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatDistanceToNow } from 'date-fns';
-
-const POLL_INTERVAL = 5000; // 5 seconds
 
 type TabType = 'activity' | 'restrictions' | 'burns' | 'mints';
 
@@ -38,7 +35,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	const [showMintModal, setShowMintModal] = useState(false);
 	const [showBurnModal, setShowBurnModal] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabType>(defaultTab as TabType);
-	const { isPaused, handlePauseToggle, statusData, fetchStatus } = useSystemStatus();
+	const { statusData, fetchStatus } = useSystemStatus();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 
@@ -104,7 +101,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	// Compute active restrictions from activities first
 	const activeRestrictions = activities.reduce((addressMap, activity) => {
 		if ((activity.type === 'FREEZE' || activity.type === 'BLACKLIST')) {
-			const address = activity.address;
+			const address = activity.address as string;
 
 			// Get all actions for this address
 			const addressActions = activities.filter(a => 
@@ -134,7 +131,9 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 
 			// Get the most recent action to determine the requester
 			const mostRecentAction = [latestFreezeAction, latestBlacklistAction, pendingFreeze]
-				.filter(Boolean)
+				.filter((action): action is (typeof latestFreezeAction | typeof latestBlacklistAction | typeof pendingFreeze) & { createdAt: string } => 
+					action !== undefined && action !== null && 'createdAt' in action
+				)
 				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
 			// Only add to map if there are active restrictions or pending actions
@@ -144,9 +143,13 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 					isBlacklisted,
 					isFrozen,
 					hasPendingFreeze: !!pendingFreeze,
-					pendingFreezeAction: pendingFreeze?.action,
-					requester: mostRecentAction.requester,
-					lastUpdate: formatDistanceToNow(new Date(mostRecentAction.createdAt), { addSuffix: true })
+					pendingFreezeAction: pendingFreeze?.action === 'FREEZE' || pendingFreeze?.action === 'UNFREEZE' 
+						? pendingFreeze.action 
+						: undefined,
+					requester: mostRecentAction?.requester || pendingFreeze?.requester || latestFreezeAction?.requester || latestBlacklistAction?.requester,
+					lastUpdate: mostRecentAction 
+						? formatDistanceToNow(new Date(mostRecentAction.createdAt), { addSuffix: true })
+						: 'Unknown'
 				});
 			} else {
 				// If neither frozen nor blacklisted and no pending actions, remove from map
@@ -164,10 +167,9 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		}
 
 		// For freeze/blacklist actions, check if they're pending and in active restrictions
-		const addressStatus = activeRestrictions.get(activity.address);
+		const addressStatus = activeRestrictions.get(activity.address as string);
 		const isPendingInActiveRestrictions = 
-			(activity.type === 'FREEZE' && addressStatus?.hasPendingFreeze) ||
-			(activity.type === 'BLACKLIST' && addressStatus?.hasPendingBlacklist);
+			(activity.type === 'FREEZE' && addressStatus?.hasPendingFreeze);
 
 		// Only show in history if not pending in active restrictions
 		return (!showOnlyPending || activity.status === 'PENDING') && !isPendingInActiveRestrictions;
@@ -432,7 +434,6 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 								onApprove={handleApprove}
 								requiresApproval={requiresApproval}
 								getApprovalCount={getApprovalCount}
-								showModal={showModal}
 								config={config}
 								loading={loading}
 								getActivityIcon={getActivityIcon}

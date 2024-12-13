@@ -17,8 +17,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { address, action, callbackUrl } = await request.json();
-  console.log('Received freeze request:', { address, action, callbackUrl });
+  const { address, action } = await request.json();
+  console.log('Received freeze request:', { address, action });
 
   // Validate input
   if (!address) {
@@ -67,7 +67,6 @@ export async function POST(request: Request) {
         address,
         action: action as FreezeRequestAction,
         requestedBy: session.user.id,
-        callbackUrl,
         status: 'PENDING',
         requiresApproval: true,
       },

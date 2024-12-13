@@ -116,10 +116,19 @@ export async function GET(request: Request) {
         orderBy: { createdAt: 'desc' },
       });
 
+      const pendingPauseRequest = await prisma.actionRequest.findFirst({
+        where: {
+          action: 'PAUSE',
+          status: 'PENDING',
+        },
+      });
+
       const isPaused = latestPauseAction?.action === 'PAUSE';
+      const hasPendingPause = !!pendingPauseRequest;
 
       return NextResponse.json({
         isPaused,
+        hasPendingPause,
         freezeRequests,
         blacklists,
         systemRequests,

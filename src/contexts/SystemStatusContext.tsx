@@ -2,82 +2,82 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import type { StatusResponse } from "@/components/pages/dash/content/admin/types";
+import type { Activity } from "@/components/pages/dash/content/admin/types";
 
-interface SystemStatusContextType {
+interface SystemStatusData {
   isPaused: boolean;
   hasPendingPause: boolean;
-  handlePauseToggle: () => Promise<void>;
-  statusData: StatusResponse | null;
-  loading: boolean;
-  initialLoading: boolean;
-  fetchStatus: () => Promise<void>;
+  freezeRequests: Activity[];
+  blacklists: Activity[];
+  systemRequests: Activity[];
+  mintRequests: Activity[];
+  burnRequests: Activity[];
 }
 
-const SystemStatusContext = createContext<SystemStatusContextType | undefined>(undefined);
+interface SystemStatusContextType {
+  statusData: SystemStatusData | null;
+  initialLoading: boolean;
+  fetchStatus: () => Promise<void>;
+  handlePauseToggle: () => Promise<void>;
+  isPaused: boolean;
+  hasPendingPause: boolean;
+}
+
+const SystemStatusContext = createContext<SystemStatusContextType | null>(null);
 
 export function SystemStatusProvider({ children }: { children: React.ReactNode }) {
-  const [isPaused, setIsPaused] = useState(false);
-  const [hasPendingPause, setHasPendingPause] = useState(false);
-  const [statusData, setStatusData] = useState<StatusResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [statusData, setStatusData] = useState<SystemStatusData | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
 
   const fetchStatus = async () => {
     try {
-      if (initialLoading) {
-        setLoading(true);
-      }
-      const response = await fetch("/api/status?includePending=true");
+      const response = await fetch('/api/status?includePending=true');
       const data = await response.json();
       setStatusData(data);
-      setIsPaused(data.isPaused);
-      setHasPendingPause(data.systemRequests?.some(
-        (req: any) => req.status === "PENDING" && req.action === "PAUSE"
-      ));
     } catch (error) {
-      console.error("Failed to fetch system status:", error);
-    } finally {
-      setLoading(false);
-      setInitialLoading(false);
+      console.error('Error fetching system status:', error);
     }
   };
 
   const handlePauseToggle = async () => {
+    if (!statusData) return;
+
     try {
-      const action = isPaused ? "RESUME" : "PAUSE";
-      const response = await fetch("/api/pause", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+      const response = await fetch('/api/pause', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: statusData.isPaused ? 'UNPAUSE' : 'PAUSE' }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to create pause request");
+        throw new Error(error.message || 'Failed to toggle system pause');
       }
-      toast.success(`System ${action.toLowerCase()} request created`);
+
+      await fetchStatus();
     } catch (error) {
-      console.error("Failed to create pause request:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to create pause request");
+      console.error('Error toggling system pause:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to toggle system pause');
     }
   };
 
   useEffect(() => {
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 5000);
-    return () => clearInterval(interval);
+    const initialize = async () => {
+      await fetchStatus();
+      setInitialLoading(false);
+    };
+
+    initialize();
   }, []);
 
   return (
     <SystemStatusContext.Provider value={{ 
-      isPaused, 
-      hasPendingPause, 
-      handlePauseToggle, 
       statusData, 
-      loading, 
-      initialLoading,
-      fetchStatus 
+      initialLoading, 
+      fetchStatus, 
+      handlePauseToggle,
+      isPaused: statusData?.isPaused || false,
+      hasPendingPause: statusData?.hasPendingPause || false,
     }}>
       {children}
     </SystemStatusContext.Provider>
@@ -86,8 +86,8 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
 
 export function useSystemStatus() {
   const context = useContext(SystemStatusContext);
-  if (context === undefined) {
-    throw new Error("useSystemStatus must be used within a SystemStatusProvider");
+  if (!context) {
+    throw new Error('useSystemStatus must be used within a SystemStatusProvider');
   }
   return context;
 } 

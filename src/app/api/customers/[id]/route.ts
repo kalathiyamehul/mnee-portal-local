@@ -5,8 +5,10 @@ import { authOptions } from "@/lib/authOptions";
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { params } = context;
+  const { id } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -27,13 +29,8 @@ export async function PUT(
     // Check if email or address already exists for other customers
     const existingCustomer = await prisma.customer.findFirst({
       where: {
-        OR: [
-          { email },
-          { address },
-        ],
-        NOT: {
-          id: params.id
-        }
+        OR: [{ email }, { address }],
+        NOT: { id },
       },
     });
 
@@ -45,12 +42,8 @@ export async function PUT(
     }
 
     const customer = await prisma.customer.update({
-      where: { id: params.id },
-      data: {
-        name,
-        email,
-        address,
-      },
+      where: { id },
+      data: { name, email, address },
     });
 
     return NextResponse.json(customer);
@@ -61,4 +54,4 @@ export async function PUT(
       { status: 500 }
     );
   }
-} 
+}

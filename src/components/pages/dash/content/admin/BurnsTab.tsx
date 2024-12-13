@@ -62,7 +62,7 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
     }
   };
 
-  const handleCreateBurnRequest = async (utxo: BurnUtxo) => {
+  const handleCreateBurnRequest = async () => {
     showModal('burn_modal');
   };
 
@@ -150,7 +150,7 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
                 <td>
                   {!burn.burnRequest && (
                     <button
-                      onClick={() => handleCreateBurnRequest(burn)}
+                      onClick={() => handleCreateBurnRequest()}
                       className="btn btn-error btn-sm"
                     >
                       <FaFire className="w-3 h-3 mr-1" /> Burn

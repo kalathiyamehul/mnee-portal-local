@@ -1,5 +1,4 @@
 import { Config } from '@prisma/client';
-import type { Session } from 'next-auth';
 import type { IconType } from 'react-icons';
 
 export interface Fee {
@@ -12,16 +11,6 @@ export interface Fee {
 export type ConfigWithFees = Omit<Config, 'fees'> & {
 	fees: Fee[];
 }
-
-export interface Approval {
-	id: string;
-	approver: {
-		name: string | null;
-			email: string;
-	};
-}
-
-export type ActionType = 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT' | 'BURN';
 
 export interface BaseRequest {
 	id: string;
@@ -45,17 +34,9 @@ export interface FreezeRequest extends BaseRequest {
 	address: string;
 }
 
-export interface BlacklistRequest {
-	id: string;
-	status: 'PENDING' | 'APPROVED' | 'CANCELLED';
-	createdAt: string;
-	requester: {
-		email: string;
-		name: string | null;
-	};
+export interface BlacklistRequest extends BaseRequest {
 	action: 'BLACKLIST' | 'UNBLACKLIST';
 	address: string;
-	type?: 'BLACKLIST';
 }
 
 export interface SystemRequest extends BaseRequest {
@@ -79,13 +60,33 @@ export interface BurnRequest extends BaseRequest {
 	amount: string;
 }
 
-export type Activity = (
-	| (FreezeRequest & { type: 'FREEZE' })
-	| (BlacklistRequest & { type: 'BLACKLIST' })
-	| (SystemRequest & { type: 'ACTION' })
-	| (MintRequest & { type: 'MINT' })
-	| (BurnRequest & { type: 'BURN' })
-);
+export type Activity = {
+	id: string;
+	requester: {
+		email: string;
+		name: string | null;
+	};
+	status: 'PENDING' | 'APPROVED' | 'CANCELLED';
+	createdAt: string;
+	approvals: Array<{
+		id: string;
+		approver: {
+			email: string;
+			name: string | null;
+		};
+	}>;
+	type: 'FREEZE' | 'BLACKLIST' | 'ACTION' | 'MINT' | 'BURN';
+	action?: string;
+	address?: string;
+	txid?: string;
+	amount?: string;
+	customer?: {
+		id: string;
+		name: string;
+		email: string;
+		address: string;
+	} | null;
+};
 
 export interface AddressStatus {
 	address: string;
@@ -93,7 +94,7 @@ export interface AddressStatus {
 	isFrozen: boolean;
 	hasPendingFreeze: boolean;
 	pendingFreezeAction?: 'FREEZE' | 'UNFREEZE';
-	requester: {
+	requester?: {
 		email: string;
 		name: string | null;
 	};
@@ -115,7 +116,6 @@ export interface ActivityListProps {
 	setShowOnlyPending: (value: boolean) => void;
 	filteredActivities: Activity[];
 	config: ConfigWithFees | null;
-	session: Session | null;
 	loading: boolean;
 	canCancel: (activity: Activity) => boolean;
 	canApprove: (activity: Activity) => boolean;
@@ -125,23 +125,6 @@ export interface ActivityListProps {
 	getActivityDisplayText: (activity: Activity) => string;
 	requiresApproval: (activity: Activity) => boolean;
 	getApprovalCount: (activity: Activity) => number;
-}
-
-export interface ActivityTabProps {
-	showOnlyPending: boolean;
-	setShowOnlyPending: (value: boolean) => void;
-	filteredActivities: Activity[];
-	config: ConfigWithFees | null;
-	loading: boolean;
-	canCancel: (activity: Activity) => boolean;
-	canApprove: (activity: Activity) => boolean;
-	handleCancel: (id: string, type: Activity['type']) => Promise<void>;
-	handleApprove: (id: string, type: Activity['type']) => Promise<void>;
-	getActivityIcon: (activity: Activity) => IconType;
-	getActivityDisplayText: (activity: Activity) => string;
-	requiresApproval: (activity: Activity) => boolean;
-	getApprovalCount: (activity: Activity) => number;
-	showModal: (id: string) => void;
 }
 
 export interface SystemStatusProps {

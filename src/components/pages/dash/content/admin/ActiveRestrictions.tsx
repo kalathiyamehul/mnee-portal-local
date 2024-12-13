@@ -21,7 +21,8 @@ export const ActiveRestrictions = ({
   handleFreezeRequest,
   handleUnfreeze
 }: ActiveRestrictionsProps) => {
-  const getGravatarUrl = (email: string) => {
+  const getGravatarUrl = (email: string | undefined) => {
+    if (!email) return 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&s=40';
     const hash = md5(email.toLowerCase().trim());
     return `https://www.gravatar.com/avatar/${hash}?d=mp&s=40`;
   };
@@ -48,13 +49,13 @@ export const ActiveRestrictions = ({
                   <div className="avatar">
                     <div className="mask mask-squircle w-10 h-10">
                       <img
-                        src={getGravatarUrl(status.requester.email)}
+                        src={getGravatarUrl(status.requester?.email)}
                         alt="User avatar"
                       />
                     </div>
                   </div>
                   <div>
-                    <div className="font-medium">{status.requester.email}</div>
+                    <div className="font-medium">{status.requester?.email}</div>
                     <div className="text-sm opacity-50">
                       {status.lastUpdate}
                     </div>

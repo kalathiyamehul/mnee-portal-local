@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 
 		// If we now have 2 approvals (including the initial one), update the status
 		if (approvalCount >= 2) {
-			const updatedRequest = await tx.freezeRequest.update({
+			await tx.freezeRequest.update({
 				where: { id: freezeRequestId },
 				data: {
 					status: "APPROVED",
@@ -82,26 +82,26 @@ export async function POST(request: Request) {
 			});
 
 			// If there's a callback URL, trigger it
-			if (freezeRequest.callbackUrl) {
-				try {
-					const callbackResponse = await fetch(freezeRequest.callbackUrl, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({
-							freezeRequestId: updatedRequest.id,
-							address: updatedRequest.address,
-							action: updatedRequest.action,
-							status: updatedRequest.status,
-						}),
-					});
+			// if (freezeRequest.callbackUrl) {
+			// 	try {
+			// 		const callbackResponse = await fetch(freezeRequest.callbackUrl, {
+			// 			method: "POST",
+			// 			headers: {
+			// 				"Content-Type": "application/json",
+			// 			},
+			// 			body: JSON.stringify({
+			// 				freezeRequestId: updatedRequest.id,
+			// 				address: updatedRequest.address,
+			// 				action: updatedRequest.action,
+			// 				status: updatedRequest.status,
+			// 			}),
+			// 		});
 
-					console.log("Callback response:", await callbackResponse.json());
-				} catch (error) {
-					console.error("Error calling callback URL:", error);
-				}
-			}
+			// 		console.log("Callback response:", await callbackResponse.json());
+			// 	} catch (error) {
+			// 		console.error("Error calling callback URL:", error);
+			// 	}
+			// }
 
 			return { approvalCount, status: "APPROVED" };
 		}

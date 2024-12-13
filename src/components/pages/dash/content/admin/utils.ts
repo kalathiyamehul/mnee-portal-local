@@ -48,6 +48,6 @@ export const getActivityDisplayText = (activity: Activity): string => {
     case 'BLACKLIST':
       return `${activity.action} ${activity.address}`;
     case 'ACTION':
-      return activity.action;
+      return activity.action as string;
   }
 }; 

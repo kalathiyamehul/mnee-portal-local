@@ -114,7 +114,7 @@ export const ActiveRestrictionsTab = ({
                   <td>
                     <div className="flex flex-col gap-1">
                       <button 
-                        onClick={() => handleExplore(activity.address)}
+                        onClick={() => activity.address && handleExplore(activity.address)}
                         className="font-mono text-sm link link-hover text-left"
                       >
                         {activity.address}
@@ -138,7 +138,7 @@ export const ActiveRestrictionsTab = ({
                           <button
                             type="button"
                             className="btn btn-outline btn-sm"
-                            onClick={(e) => handleUnblacklist(e, activity.address)}
+                            onClick={(e) => activity.address && handleUnblacklist(e, activity.address)}
                             disabled={loading}
                           >
                             <MdRemoveCircleOutline className="w-3 h-3 mr-1" /> Unblacklist
@@ -147,7 +147,7 @@ export const ActiveRestrictionsTab = ({
                           <button
                             type="button"
                             className="btn btn-error btn-sm"
-                            onClick={(e) => handleBlacklist(e, activity.address)}
+                            onClick={(e) => activity.address && handleBlacklist(e, activity.address)}
                             disabled={loading}
                           >
                             <FaBan className="w-3 h-3 mr-1" /> Blacklist
@@ -159,7 +159,7 @@ export const ActiveRestrictionsTab = ({
                           <button
                             type="button"
                             className="btn btn-outline btn-sm"
-                            onClick={() => handleUnfreeze(activity.address)}
+                            onClick={() => activity.address && handleUnfreeze(activity.address)}
                             disabled={loading}
                           >
                             <FaSnowflake className="w-3 h-3 mr-1" /> Unfreeze
@@ -168,7 +168,7 @@ export const ActiveRestrictionsTab = ({
                           <button
                             type="button"
                             className="btn btn-primary btn-sm"
-                            onClick={(e) => handleFreezeRequest(e, activity.address)}
+                            onClick={(e) => activity.address && handleFreezeRequest(e, activity.address)}
                             disabled={loading}
                           >
                             <FaSnowflake className="w-3 h-3 mr-1" /> Freeze

@@ -62,7 +62,7 @@ export const ActivityCard = ({
                       </span>
                     </div>
                     <span className="px-2 py-1 text-xs bg-base-300 rounded-lg w-fit">
-                      Amount: {toToken(activity.amount, config?.decimals || DEFAULT_DECIMALS)}
+                      Amount: {toToken(activity.amount as string, config?.decimals || DEFAULT_DECIMALS)}
                     </span>
                   </>
                 ) : (
@@ -71,7 +71,7 @@ export const ActivityCard = ({
                       Address: {activity.address}
                     </span>
                     <span className="px-2 py-1 text-xs bg-base-300 rounded-lg w-fit">
-                      Amount: {toToken(activity.amount, config?.decimals || DEFAULT_DECIMALS)}
+                      Amount: {toToken(activity.amount as string, config?.decimals || DEFAULT_DECIMALS)}
                     </span>
                   </>
                 )}
@@ -79,7 +79,7 @@ export const ActivityCard = ({
             )}
             {activity.type === 'BURN' && (
               <span className="px-2 py-1 text-xs bg-base-300 rounded-lg w-fit">
-                Amount: {toToken(activity.amount, config?.decimals || DEFAULT_DECIMALS)}
+                Amount: {toToken(activity.amount as string, config?.decimals || DEFAULT_DECIMALS)}
               </span>
             )}
             {(activity.type === 'FREEZE' || activity.type === 'BLACKLIST') && activity.address && (

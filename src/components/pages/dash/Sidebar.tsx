@@ -3,8 +3,7 @@
 
 import type React from "react";
 import Link from "next/link";
-import { signOut, useSession } from "next-auth/react";
-import { MdOutlineOpenInNew } from "react-icons/md";
+import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { FaGear, FaSliders, FaWallet } from "react-icons/fa6";
 import { FaSignOutAlt, FaUsers } from "react-icons/fa";
@@ -15,13 +14,10 @@ const Sidebar: React.FC = () => {
   const pathname = usePathname();
 
   return (
-    <div className="bg-base-200 w-80 min-h-full">
-      <div className="flex flex-col h-full">
-        <div className="flex-1">
-          <div className="p-4">
-            <h1 className="text-xl font-bold">MNEE Dashboard</h1>
-          </div>
-          <ul className="menu p-4 text-base-content">
+    <div className="menu bg-base-200 w-56 min-h-full text-base-content">
+      <div className="sticky top-0">
+        <div className="p-4">
+          <ul className="space-y-2">
             <li>
               <Link
                 href="/dash"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { CustomerModal } from "../modals/CustomerModal";
 import { FaEdit } from "react-icons/fa";
@@ -21,7 +21,7 @@ export default function DashboardCustomersContent() {
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     if (!session?.user?.id) return;
     
     try {
@@ -37,11 +37,13 @@ export default function DashboardCustomersContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
-    fetchCustomers();
-  }, [session?.user?.id]);
+    if (session?.user?.id) {
+      fetchCustomers();
+    }
+  }, [session, fetchCustomers]);
 
   const handleEdit = (customer: Customer) => {
     setSelectedCustomer(customer);
