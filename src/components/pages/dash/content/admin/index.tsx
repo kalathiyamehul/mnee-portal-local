@@ -387,27 +387,29 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 								activities={activities}
 								showOnlyPending={showOnlyPending}
 								onShowOnlyPendingChange={setShowOnlyPending}
-									filteredActivities={filteredActivities}
-									canCancel={canCancel}
-									canApprove={canApprove}
-									onCancel={handleCancel}
-									onApprove={handleApprove}
-									requiresApproval={requiresApproval}
-									getApprovalCount={getApprovalCount}
-									showModal={showModal}
-									config={config}
-									loading={loading}
-									getActivityIcon={getActivityIcon}
-									getActivityDisplayText={getActivityDisplayText}
+								filteredActivities={filteredActivities}
+								canCancel={canCancel}
+								canApprove={canApprove}
+								onCancel={handleCancel}
+								onApprove={handleApprove}
+								requiresApproval={requiresApproval}
+								getApprovalCount={getApprovalCount}
+								showModal={showModal}
+								config={config}
+								loading={loading}
+								getActivityIcon={getActivityIcon}
+								getActivityDisplayText={getActivityDisplayText}
 							/>
 						)}
 						{activeTab === 'restrictions' && (
 							<ActiveRestrictionsTab 
 								restrictions={filteredRestrictions}
-									loading={loading}
-									handleUnblacklist={handleUnblacklist}
-									handleFreezeRequest={handleFreezeRequest}
-									handleUnfreeze={handleUnfreeze}
+								loading={loading}
+								handleUnblacklist={handleUnblacklist}
+								handleFreezeRequest={handleFreezeRequest}
+								handleUnfreeze={handleUnfreeze}
+								showModal={showModal}
+								activities={activities}
 							/>
 						)}
 						{activeTab === 'burns' && <BurnsTab showModal={showModal} />}

@@ -1,4 +1,3 @@
-import { FaSnowflake, FaCoins } from 'react-icons/fa6';
 import { ActivityCard } from './ActivityCard';
 import type { ActivityListProps } from './types';
 
@@ -20,7 +19,7 @@ export const ActivityList = ({
 }: Omit<ActivityListProps, 'session'>) => {
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-4">
         <label className="label cursor-pointer gap-2 px-2">
           <span className="label-text text-sm">Pending Only</span>
           <input
@@ -30,24 +29,6 @@ export const ActivityList = ({
             onChange={(e) => setShowOnlyPending(e.target.checked)}
           />
         </label>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => showModal('freeze_modal')}
-          >
-            <FaSnowflake className="mr-1" /> 
-            <span className="text-sm">Restrict</span>
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={() => showModal('mint_modal')}
-          >
-            <FaCoins className="mr-1" /> 
-            <span className="text-sm">Mint</span>
-          </button>
-        </div>
       </div>
       <div className="space-y-3">
         {filteredActivities?.map((activity) => (
