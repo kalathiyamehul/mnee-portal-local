@@ -12,7 +12,7 @@ const Navbar = () => {
 	};
 
 	return (
-		<div className="navbar bg-base-100 border-b">
+		<div className="navbar bg-base-100">
 			<div className="flex-none md:hidden">
 				<button className="btn btn-square btn-ghost" onClick={handleMenuClick}>
 					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="inline-block w-5 h-5 stroke-current">

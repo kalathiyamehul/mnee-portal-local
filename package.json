@@ -30,6 +30,7 @@
     "react-hot-toast": "^2.4.1",
     "react-icons": "^5.4.0",
     "satoshi-token": "^0.0.4",
+    "theme-change": "^2.5.0",
     "yours-wallet-provider": "^3.4.2"
   },
   "devDependencies": {

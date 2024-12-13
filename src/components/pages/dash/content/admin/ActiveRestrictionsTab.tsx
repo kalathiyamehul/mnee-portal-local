@@ -58,7 +58,7 @@ export const ActiveRestrictionsTab = ({
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl sm:text-2xl font-bold">Active Restrictions</h2>
+        <h2 className="text-xl sm:text-2xl font-bold">Active</h2>
         <button
           type="button"
           className="btn btn-primary btn-sm"
@@ -80,7 +80,7 @@ export const ActiveRestrictionsTab = ({
       <div className="divider" />
 
       <div>
-        <h3 className="text-lg font-semibold mb-4">Restrictions History</h3>
+        <h3 className="text-lg font-semibold mb-4">History</h3>
         <div className="overflow-x-auto">
           <table className="table">
             <thead>

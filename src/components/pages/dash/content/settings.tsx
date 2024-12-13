@@ -5,6 +5,7 @@ import { FaSpinner, FaPlus, FaTrash, FaQuestionCircle, FaPencilAlt } from "react
 import { toToken } from 'satoshi-token';
 import { Fee, ConfigWithFees } from './admin/types';
 import { Config } from '@prisma/client';
+import { ThemeSelector } from "@/components/ThemeSelector";
 
 interface EditFeesModalProps {
 	fees: Fee[];
@@ -189,7 +190,10 @@ const DashboardSettingsContent = () => {
 
 	return (
 		<div className="p-4 space-y-4">
-			<h1 className="text-2xl font-bold">Settings</h1>
+			<div className="flex justify-between items-center">
+				<h1 className="text-2xl font-bold">Settings</h1>
+				<ThemeSelector />
+			</div>
 
 			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 				{/* Token Details */}

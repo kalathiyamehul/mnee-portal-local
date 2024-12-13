@@ -371,15 +371,15 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	const getTabTitle = (tab: TabType): string => {
 		switch (tab) {
 			case 'activity':
-				return 'Activity';
+				return 'Admin : Activity';
 			case 'restrictions':
-				return 'Restrictions';
+				return 'Admin : Restrictions';
 			case 'burns':
-				return 'Burns';
+				return 'Admin : Burns';
 			case 'mints':
-				return 'Mints';
+				return 'Admin : Mints';
 			default:
-				return 'Activity';
+				return 'Admin : Activity';
 		}
 	};
 

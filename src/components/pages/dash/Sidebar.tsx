@@ -16,6 +16,7 @@ const Sidebar: React.FC = () => {
   return (
     <div className="menu bg-base-200 w-56 min-h-full text-base-content">
       <div className="sticky top-0">
+        <div className="text-4xl font-black text-center py-6 italic">MNEE</div>
         <div className="p-4">
           <ul className="space-y-2">
             <li>

@@ -91,6 +91,8 @@ export function MintsTab({ showModal }: MintsTabProps) {
           >
             Pending
           </button>
+        </div>
+        <div>
           <button
             className="btn btn-primary btn-sm"
             onClick={() => showModal('mint_modal')}
