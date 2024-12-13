@@ -50,7 +50,7 @@ export const ActivityList = ({
         </div>
       </div>
       <div className="space-y-3">
-        {filteredActivities.map((activity) => (
+        {filteredActivities?.map((activity) => (
           <ActivityCard
             key={activity.id}
             activity={activity}

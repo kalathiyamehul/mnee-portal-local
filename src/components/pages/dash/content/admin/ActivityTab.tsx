@@ -3,15 +3,16 @@ import type { Activity, ConfigWithFees } from './types';
 import type { IconType } from 'react-icons';
 
 interface ActivityTabProps {
+  activities: Activity[];
   showOnlyPending: boolean;
-  setShowOnlyPending: (value: boolean) => void;
+  onShowOnlyPendingChange: (value: boolean) => void;
   filteredActivities: Activity[];
   config: ConfigWithFees | null;
   loading: boolean;
   canCancel: (activity: Activity) => boolean;
   canApprove: (activity: Activity) => boolean;
-  handleCancel: (id: string, type: Activity['type']) => Promise<void>;
-  handleApprove: (id: string, type: Activity['type']) => Promise<void>;
+  onCancel: (id: string, type: Activity['type']) => Promise<void>;
+  onApprove: (id: string, type: Activity['type']) => Promise<void>;
   getActivityIcon: (activity: Activity) => IconType;
   getActivityDisplayText: (activity: Activity) => string;
   requiresApproval: (activity: Activity) => boolean;
@@ -21,14 +22,14 @@ interface ActivityTabProps {
 
 export const ActivityTab = ({
   showOnlyPending,
-  setShowOnlyPending,
+  onShowOnlyPendingChange: setShowOnlyPending,
   filteredActivities,
   config,
   loading,
   canCancel,
   canApprove,
-  handleCancel,
-  handleApprove,
+  onCancel: handleCancel,
+  onApprove: handleApprove,
   getActivityIcon,
   getActivityDisplayText,
   requiresApproval,

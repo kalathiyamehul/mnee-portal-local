@@ -11,7 +11,11 @@ interface BurnUtxo extends MNEEUtxo {
   burnRequest?: BurnRequest;
 }
 
-export const BurnsTab = () => {
+interface BurnsTabProps {
+  showModal: (id: string) => void;
+}
+
+export const BurnsTab = ({ showModal }: BurnsTabProps) => {
   const [burns, setBurns] = useState<BurnUtxo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,27 +63,7 @@ export const BurnsTab = () => {
   };
 
   const handleCreateBurnRequest = async (utxo: BurnUtxo) => {
-    try {
-      // TODO: Add outpoint to burn request payload
-      const response = await fetch('/api/burn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: utxo.satoshis,
-          // outpoint: `${utxo.txid}_${utxo.vout}`,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create burn request');
-      }
-
-      // Refresh the list to show the new request
-      await fetchBurns();
-    } catch (err) {
-      console.error('Error creating burn request:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create burn request');
-    }
+    showModal('burn_modal');
   };
 
   // Initial fetch

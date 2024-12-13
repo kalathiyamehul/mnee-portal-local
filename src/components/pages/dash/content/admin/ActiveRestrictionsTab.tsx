@@ -1,11 +1,12 @@
 import { ActiveRestrictions } from './ActiveRestrictions';
 import type { AddressStatus } from './types';
+import type { MouseEvent } from 'react';
 
 interface ActiveRestrictionsTabProps {
   restrictions: AddressStatus[];
   loading: boolean;
-  handleUnblacklist: (e: React.MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
-  handleFreezeRequest: (e: React.FormEvent<HTMLFormElement | HTMLButtonElement>, address: string) => Promise<void>;
+  handleUnblacklist: (e: MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
+  handleFreezeRequest: (e: MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
   handleUnfreeze: (address: string) => Promise<void>;
 }
 

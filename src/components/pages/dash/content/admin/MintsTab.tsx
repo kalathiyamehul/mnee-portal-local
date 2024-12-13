@@ -1,0 +1,206 @@
+import { useEffect, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { FaCheck, FaXmark, FaCoins } from "react-icons/fa6";
+import Link from "next/link";
+import { toast } from "react-hot-toast";
+
+type MintRequest = {
+  id: string;
+  address: string;
+  amount: bigint;
+  status: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
+  createdAt: string;
+  customer: {
+    name: string;
+    email: string;
+  } | null;
+  txid: string;
+};
+
+const statusColors = {
+  PENDING: "badge-warning",
+  APPROVED: "badge-success",
+  REJECTED: "badge-error",
+  CANCELLED: "badge-neutral"
+};
+
+interface MintsTabProps {
+  showModal: (id: string) => void;
+}
+
+export const MintsTab = ({ showModal }: MintsTabProps) => {
+  const [mintRequests, setMintRequests] = useState<MintRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | "pending">("all");
+
+  const fetchMintRequests = async () => {
+    try {
+      const response = await fetch("/api/status?includePending=true");
+      if (!response.ok) {
+        throw new Error("Failed to fetch mint requests");
+      }
+      const data = await response.json();
+      setMintRequests(data.mintRequests || []);
+    } catch (error) {
+      console.error("Failed to fetch mint requests:", error);
+      toast.error("Failed to fetch mint requests");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMintRequests();
+  }, []);
+
+  const handleApprove = async (id: string) => {
+    try {
+      const response = await fetch("/api/approveMint", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ mintRequestId: id }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to approve mint request");
+      }
+
+      toast.success("Mint request approved");
+      fetchMintRequests();
+    } catch (error) {
+      console.error("Failed to approve mint request:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to approve mint request");
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    try {
+      const response = await fetch("/api/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ mintRequestId: id }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to reject mint request");
+      }
+
+      toast.success("Mint request rejected");
+      fetchMintRequests();
+    } catch (error) {
+      console.error("Failed to reject mint request:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to reject mint request");
+    }
+  };
+
+  const filteredRequests = mintRequests.filter(request => 
+    filter === "all" || request.status === "PENDING"
+  );
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="flex gap-2">
+          <button 
+            className={`btn btn-sm ${filter === "all" ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setFilter("all")}
+          >
+            All Requests
+          </button>
+          <button 
+            className={`btn btn-sm ${filter === "pending" ? "btn-primary" : "btn-ghost"}`}
+            onClick={() => setFilter("pending")}
+          >
+            Pending
+          </button>
+        </div>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={() => showModal('mint_modal')}
+        >
+          <FaCoins className="mr-1" />
+          <span className="text-sm">Mint</span>
+        </button>
+      </div>
+
+      <div className="overflow-x-auto bg-base-100 rounded-lg shadow">
+        <table className="table w-full">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Address</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Requested</th>
+              <th>Transaction</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredRequests.map((request) => (
+              <tr key={request.id} className="hover">
+                <td>
+                  {request.customer ? (
+                    <Link
+                      href={`/dash/customers?id=${request.customer.email}`}
+                      className="hover:underline"
+                    >
+                      {request.customer.name}
+                    </Link>
+                  ) : (
+                    "Unknown"
+                  )}
+                </td>
+                <td className="font-mono text-sm">{request.address}</td>
+                <td>{Number(request.amount).toLocaleString()}</td>
+                <td>
+                  <span className={`badge ${statusColors[request.status]}`}>
+                    {request.status}
+                  </span>
+                </td>
+                <td>{formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}</td>
+                <td>
+                  {request.txid ? (
+                    <span className="font-mono text-sm">{request.txid}</span>
+                  ) : (
+                    "-"
+                  )}
+                </td>
+                <td>
+                  {request.status === "PENDING" && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApprove(request.id)}
+                        className="btn btn-square btn-ghost btn-sm text-success"
+                        title="Approve"
+                      >
+                        <FaCheck />
+                      </button>
+                      <button
+                        onClick={() => handleReject(request.id)}
+                        className="btn btn-square btn-ghost btn-sm text-error"
+                        title="Reject"
+                      >
+                        <FaXmark />
+                      </button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}; 

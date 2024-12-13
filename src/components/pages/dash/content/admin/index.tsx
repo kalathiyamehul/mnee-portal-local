@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
-import { useRouter } from 'next/navigation';
 import { FaSpinner } from 'react-icons/fa6';
 import type { Activity, ConfigWithFees, Fee, StatusResponse, AddressStatus } from './types';
 import { getActivityIcon, getActivityDisplayText } from './utils';
@@ -15,6 +14,7 @@ import { ActivityTab } from './ActivityTab';
 import { BurnsTab } from './BurnsTab';
 import { ActiveRestrictionsTab } from './ActiveRestrictionsTab';
 import { SystemStatus } from './SystemStatus';
+import { MintsTab } from './MintsTab';
 
 const POLL_INTERVAL = 5000; // 5 seconds
 
@@ -25,7 +25,6 @@ interface AdminPageProps {
 }
 
 export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
-	const router = useRouter();
 	const { data: session } = useSession() as { data: Session | null };
 	const [loading, setLoading] = useState(true);
 	const [initialLoading, setInitialLoading] = useState(true);
@@ -37,6 +36,25 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	const [showMintModal, setShowMintModal] = useState(false);
 	const [showBurnModal, setShowBurnModal] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabType>(defaultTab as TabType);
+
+	// Update activeTab when defaultTab prop changes
+	useEffect(() => {
+		setActiveTab(defaultTab as TabType);
+	}, [defaultTab]);
+
+	const showModal = useCallback((id: string) => {
+		switch (id) {
+			case 'freeze_modal':
+				setShowFreezeModal(true);
+				break;
+			case 'mint_modal':
+				setShowMintModal(true);
+				break;
+			case 'burn_modal':
+				setShowBurnModal(true);
+				break;
+		}
+	}, []);
 
 	const fetchStatus = useCallback(async () => {
 		try {
@@ -143,7 +161,6 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	// No need for additional filtering since we only add addresses with active restrictions
 	const filteredRestrictions = Array.from(activeRestrictions.values());
 
-  console.log({filteredRestrictions})
 	const handlePauseToggle = async () => {
 		try {
 			setLoading(true);
@@ -243,211 +260,180 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		return activity.approvals?.length || 0;
 	}, []);
 
-	const handleModalClose = () => {
-		setShowFreezeModal(false);
-		setShowMintModal(false);
-		setShowBurnModal(false);
-	};
+	const handleUnblacklist = async (e: React.MouseEvent, address: string) => {
+		e.preventDefault();
+		try {
+			setLoading(true);
+			const response = await fetch('/api/blacklist', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					address,
+					action: 'UNBLACKLIST',
+				}),
+			});
 
-	const handleModalSuccess = async () => {
-		await fetchStatus();
-		handleModalClose();
-		// Redirect to activity tab after burn request creation
-		handleTabChange('activity');
-	};
+			const data = await response.json();
+			if (!response.ok) {
+				throw new Error(data.message || data.error || 'Failed to unblacklist address');
+			}
 
-	// Function to show modals
-	const showModal = (id: string) => {
-		switch (id) {
-			case 'freeze_modal':
-				setShowFreezeModal(true);
-				break;
-			case 'mint_modal':
-				setShowMintModal(true);
-				break;
-			case 'burn_modal':
-				setShowBurnModal(true);
-				break;
+			await fetchStatus();
+			toast.success('Address unblacklisted');
+		} catch (error) {
+			console.error('Error unblacklisting address:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to unblacklist address');
+		} finally {
+			setLoading(false);
 		}
 	};
 
-	const handleTabChange = (tab: TabType) => {
-		setActiveTab(tab);
-		router.push(`/dash/admin?tab=${tab}`);
+	const handleFreezeRequest = async (e: React.MouseEvent, address: string) => {
+		e.preventDefault();
+		try {
+			setLoading(true);
+			const response = await fetch('/api/freeze', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					address,
+					action: 'FREEZE',
+				}),
+			});
+
+			const data = await response.json();
+			if (!response.ok) {
+				throw new Error(data.message || data.error || 'Failed to freeze address');
+			}
+
+			await fetchStatus();
+			toast.success('Freeze request created');
+		} catch (error) {
+			console.error('Error freezing address:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to freeze address');
+		} finally {
+			setLoading(false);
+		}
 	};
 
-	if (initialLoading) {
-		return (
-			<div className="flex justify-center items-center h-screen">
-				<FaSpinner className="animate-spin text-4xl" />
-			</div>
-		);
-	}
+	const handleUnfreeze = async (address: string) => {
+		try {
+			setLoading(true);
+			const response = await fetch('/api/freeze', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					address,
+					action: 'UNFREEZE',
+				}),
+			});
+
+			const data = await response.json();
+			if (!response.ok) {
+				throw new Error(data.message || data.error || 'Failed to unfreeze address');
+			}
+
+			await fetchStatus();
+			toast.success('Unfreeze request created');
+		} catch (error) {
+			console.error('Error unfreezing address:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to unfreeze address');
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	return (
-		<div className="space-y-6">
-			<SystemStatus isPaused={isPaused} onPauseToggle={handlePauseToggle} />
-			
-			<div className="w-full">
-				<div role="tablist" className="tabs tabs-bordered">
-					<button
-						role="tab"
-						className={`tab ${activeTab === 'activity' ? 'tab-active' : ''}`}
-						onClick={() => handleTabChange('activity')}
-					>
-						Activity
-					</button>
-					<button
-						role="tab"
-						className={`tab ${activeTab === 'restrictions' ? 'tab-active' : ''}`}
-						onClick={() => handleTabChange('restrictions')}
-					>
-						Restrictions
-					</button>
-					<button
-						role="tab"
-						className={`tab ${activeTab === 'mints' ? 'tab-active' : ''}`}
-						onClick={() => handleTabChange('mints')}
-					>
-						Mints
-					</button>
-					<button
-						role="tab"
-						className={`tab ${activeTab === 'burns' ? 'tab-active' : ''}`}
-						onClick={() => handleTabChange('burns')}
-					>
-						Burns
-					</button>
+		<div className="p-4">
+			<div className="flex flex-col gap-4">
+				<div className="flex justify-between items-center">
+					<div className="tabs tabs-boxed">
+						<a
+							className={`tab ${activeTab === 'activity' ? 'tab-active' : ''}`}
+							onClick={() => setActiveTab('activity')}
+						>
+							Activity
+						</a>
+						<a
+							className={`tab ${activeTab === 'restrictions' ? 'tab-active' : ''}`}
+							onClick={() => setActiveTab('restrictions')}
+						>
+							Restrictions
+						</a>
+						<a
+							className={`tab ${activeTab === 'burns' ? 'tab-active' : ''}`}
+							onClick={() => setActiveTab('burns')}
+						>
+							Burns
+						</a>
+						<a
+							className={`tab ${activeTab === 'mints' ? 'tab-active' : ''}`}
+							onClick={() => setActiveTab('mints')}
+						>
+							Mints
+						</a>
+					</div>
 				</div>
 
-				{activeTab === 'activity' && (
-					<ActivityTab
-						showOnlyPending={showOnlyPending}
-						setShowOnlyPending={setShowOnlyPending}
-						filteredActivities={filteredActivities}
-						config={config}
-						loading={loading}
-						canCancel={canCancel}
-						canApprove={canApprove}
-						handleCancel={handleCancel}
-						handleApprove={handleApprove}
-						getActivityIcon={getActivityIcon}
-						getActivityDisplayText={getActivityDisplayText}
-						requiresApproval={requiresApproval}
-						getApprovalCount={getApprovalCount}
-						showModal={showModal}
-					/>
+				{initialLoading ? (
+					<div className="flex justify-center items-center p-8">
+						<FaSpinner className="animate-spin text-2xl" />
+					</div>
+				) : (
+					<div>
+						<SystemStatus isPaused={isPaused} onPauseToggle={handlePauseToggle} />
+						{activeTab === 'activity' && (
+							<ActivityTab
+								activities={activities}
+								showOnlyPending={showOnlyPending}
+								onShowOnlyPendingChange={setShowOnlyPending}
+									filteredActivities={filteredActivities}
+									canCancel={canCancel}
+									canApprove={canApprove}
+									onCancel={handleCancel}
+									onApprove={handleApprove}
+									requiresApproval={requiresApproval}
+									getApprovalCount={getApprovalCount}
+									showModal={showModal}
+									config={config}
+									loading={loading}
+									getActivityIcon={getActivityIcon}
+									getActivityDisplayText={getActivityDisplayText}
+							/>
+						)}
+						{activeTab === 'restrictions' && (
+							<ActiveRestrictionsTab 
+								restrictions={filteredRestrictions}
+									loading={loading}
+									handleUnblacklist={handleUnblacklist}
+									handleFreezeRequest={handleFreezeRequest}
+									handleUnfreeze={handleUnfreeze}
+							/>
+						)}
+						{activeTab === 'burns' && <BurnsTab showModal={showModal} />}
+						{activeTab === 'mints' && (
+							<MintsTab showModal={showModal} />
+						)}
+					</div>
 				)}
-
-				{activeTab === 'restrictions' && (
-					<ActiveRestrictionsTab
-						restrictions={filteredRestrictions}
-						loading={loading}
-						handleUnblacklist={async (e, address) => {
-							e.preventDefault();
-							try {
-								setLoading(true);
-								const response = await fetch('/api/blacklist', {
-									method: 'POST',
-									headers: { 'Content-Type': 'application/json' },
-									body: JSON.stringify({
-										address,
-										action: 'UNBLACKLIST',
-									}),
-								});
-
-								const data = await response.json();
-								if (!response.ok) {
-									throw new Error(data.message || data.error || 'Failed to unblacklist address');
-								}
-
-								await fetchStatus();
-								toast.success('Address unblacklisted');
-							} catch (error) {
-								console.error('Error unblacklisting address:', error);
-								toast.error(error instanceof Error ? error.message : 'Failed to unblacklist address');
-							} finally {
-								setLoading(false);
-							}
-						}}
-						handleFreezeRequest={async (e, address) => {
-							e.preventDefault();
-							try {
-								setLoading(true);
-								const response = await fetch('/api/freeze', {
-									method: 'POST',
-									headers: { 'Content-Type': 'application/json' },
-									body: JSON.stringify({
-										address,
-										action: 'FREEZE',
-									}),
-								});
-
-								const data = await response.json();
-								if (!response.ok) {
-									throw new Error(data.message || data.error || 'Failed to freeze address');
-								}
-
-								await fetchStatus();
-								toast.success('Freeze request created');
-							} catch (error) {
-								console.error('Error freezing address:', error);
-								toast.error(error instanceof Error ? error.message : 'Failed to freeze address');
-							} finally {
-								setLoading(false);
-							}
-						}}
-						handleUnfreeze={async (address) => {
-							try {
-								setLoading(true);
-								const response = await fetch('/api/freeze', {
-									method: 'POST',
-									headers: { 'Content-Type': 'application/json' },
-									body: JSON.stringify({
-										address,
-										action: 'UNFREEZE',
-									}),
-								});
-
-								const data = await response.json();
-								if (!response.ok) {
-									throw new Error(data.message || data.error || 'Failed to unfreeze address');
-								}
-
-								await fetchStatus();
-								toast.success('Unfreeze request created');
-							} catch (error) {
-								console.error('Error unfreezing address:', error);
-								toast.error(error instanceof Error ? error.message : 'Failed to unfreeze address');
-							} finally {
-								setLoading(false);
-							}
-						}}
-					/>
-				)}
-
-				{activeTab === 'burns' && <BurnsTab />}
 			</div>
 
 			{showFreezeModal && (
 				<FreezeModal
-					onClose={handleModalClose}
-					onSuccess={handleModalSuccess}
+					onClose={() => setShowFreezeModal(false)}
+					onSuccess={fetchStatus}
 				/>
 			)}
-
 			{showMintModal && (
 				<MintModal
-					onClose={handleModalClose}
-					onSuccess={handleModalSuccess}
+					onClose={() => setShowMintModal(false)}
+					onSuccess={fetchStatus}
 				/>
 			)}
-
 			{showBurnModal && (
 				<BurnModal
-					onClose={handleModalClose}
-					onSuccess={handleModalSuccess}
-				/>
+          onClose={() => setShowBurnModal(false)}
+          onSuccess={fetchStatus}				/>
 			)}
 		</div>
 	);
