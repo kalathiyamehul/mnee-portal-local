@@ -40,8 +40,23 @@ export const ActivityCard = ({
 
   const Icon = getActivityIcon(activity);
 
+  const getRowBorderClass = (activity: Activity) => {
+    switch (activity.status) {
+      case 'PENDING':
+        return 'border-l-4 border-l-warning';
+      case 'APPROVED':
+      case 'DONE':
+        return 'border-l-4 border-l-success';
+      case 'REJECTED':
+      case 'CANCELLED':
+        return 'border-l-4 border-l-error';
+      default:
+        return '';
+    }
+  };
+
   return (
-    <div className="card bg-base-200 shadow-sm">
+    <div className={`card bg-base-200 shadow-sm ${getRowBorderClass(activity)}`}>
       <div className="card-body p-3 sm:p-4">
         <div className="flex flex-wrap justify-between gap-2">
           <div className="flex flex-col gap-2">
