@@ -16,9 +16,11 @@ export enum DashPage {
 export type DashboardProps = {
     page: DashPage;
     defaultTab?: string;
+    defaultShowTransfer?: boolean;
+    defaultAddress?: string;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab }) => {
+const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab, defaultShowTransfer, defaultAddress }) => {
     const dashContent = useMemo(() => {
         switch (page) {
             case DashPage.HOME:
@@ -26,7 +28,7 @@ const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab }) => {
             case DashPage.ADMIN:
                 return <DashboardAdminContent defaultTab={defaultTab} />
             case DashPage.WALLET:
-                return <DashboardWalletContent />
+                return <DashboardWalletContent defaultShowTransfer={defaultShowTransfer} defaultAddress={defaultAddress} />
             case DashPage.SETTINGS:
                 return <DashboardSettingsContent />
             case DashPage.CUSTOMERS:
@@ -34,19 +36,12 @@ const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab }) => {
             default:
                 return <div>Not Found</div>
         }
-    }, [page, defaultTab])
+    }, [page, defaultTab, defaultShowTransfer, defaultAddress])
 
     return <div className="container px-6 py-2 mx-auto">
-        {/* <div className="mb-4">
-            <div className="text-sm breadcrumbs text-base-content/70">
-                <ul>
-                    <li className="capitalize">{page}</li>
-                    {defaultTab && <li className="capitalize">{defaultTab}</li>}
-                </ul>
-            </div>
-        </div> */}
         {dashContent}
     </div>
 }
+
 export default Dashboard;
 

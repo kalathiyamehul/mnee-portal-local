@@ -13,7 +13,7 @@ import {
 	PublicKey,
 	Script,
 	Transaction,
-	TransactionSignature,
+	TransactionSignature, 
 	UnlockingScript,
 	Utils } from "@bsv/sdk";
 import { toToken, toTokenSat } from "satoshi-token";
@@ -29,28 +29,48 @@ import CosignTemplate from "@/templates/cosign";
 import { FaSpinner } from "react-icons/fa";
 import { MNEE_API } from "@/env";
 import { DepositModal } from './modals/DepositModal';
+import { useRouter } from "next/navigation";
 
 const { toArray, toBase64 } = Utils;
 
-export default function DashboardWalletContent() {
+interface DashboardWalletContentProps {
+	defaultShowTransfer?: boolean;
+	defaultAddress?: string;
+}
+
+export default function DashboardWalletContent({ defaultShowTransfer, defaultAddress }: DashboardWalletContentProps = {}) {
 	const wallet = useYoursWallet();
 	const [addresses, setAddresses] = useState<Addresses | null>(null);
 	const [mneeBalance, setMneeBalance] = useState<number>(0);
 	const [balance, setBalance] = useState<Balance | undefined>();
-	const [recipient, setRecipient] = useState<string>("");
-	const [amount, setAmount] = useState<number>(0);
+	const [recipient, setRecipient] = useState<string>(defaultAddress || "");
+	const [amount, setAmount] = useState<string>("");
 	const [config, setConfig] = useState<Config | null>(null);
 	const [showBsvDepositModal, setShowBsvDepositModal] = useState(false);
 	const [showMneeDepositModal, setShowMneeDepositModal] = useState(false);
-	const [showTransferModal, setShowTransferModal] = useState(false);
+	const [showTransferModal, setShowTransferModal] = useState(defaultShowTransfer || false);
+	const router = useRouter();
 
-	// Add escape key handler at the top level
+	useEffect(() => {
+		if (defaultShowTransfer) {
+			setShowTransferModal(true);
+		}
+		if (defaultAddress) {
+			setRecipient(defaultAddress);
+		}
+	}, [defaultShowTransfer, defaultAddress]);
+
+	const handleCloseTransferModal = () => {
+		setShowTransferModal(false);
+		router.push('/dash/wallet');
+	};
+
 	useEffect(() => {
 		if (!showTransferModal) return;
 
 		const handleEscape = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') {
-				setShowTransferModal(false);
+				handleCloseTransferModal();
 			}
 		};
 
@@ -386,7 +406,7 @@ export default function DashboardWalletContent() {
 			await fetchMneeBalance(Object.values(addresses));
 
 			setRecipient("");
-			setAmount(0);
+			setAmount("");
 
 			toast.success("Transfer complete");
 		},
@@ -419,7 +439,8 @@ export default function DashboardWalletContent() {
 				return;
 			}
 
-			if (amount <= 0) {
+			const numAmount = Number(amount);
+			if (numAmount <= 0 || isNaN(numAmount)) {
 				toast.error("Please enter a valid amount greater than 0");
 				return;
 			}
@@ -429,7 +450,7 @@ export default function DashboardWalletContent() {
 				return;
 			}
 
-			if (amount > toToken(mneeBalance, config.decimals)) {
+			if (numAmount > toToken(mneeBalance, config.decimals)) {
 				toast.error("Insufficient MNEE balance");
 				return;
 			}
@@ -440,12 +461,32 @@ export default function DashboardWalletContent() {
 				return;
 			}
 
-			transferMNEE({ recipient, amount });
+			transferMNEE({ recipient, amount: numAmount });
 		} catch (error) {
 			console.error("Error in transfer:", error);
 			toast.error("Transfer failed: " + (error instanceof Error ? error.message : "Unknown error"));
 		}
 	}, [mneeBalance, transferMNEE, amount, recipient, config]);
+
+	const canTransfer = useCallback(() => {
+		if (!config || !balance) return false;
+		
+		// Need some BSV for transaction fees
+		if (balance.bsv <= 0) return false;
+		
+		// If amount is not set or invalid
+		const numAmount = Number(amount);
+		if (!amount || numAmount <= 0 || isNaN(numAmount)) return false;
+		
+		// Check MNEE balance
+		const mneeTokens = toToken(mneeBalance, config.decimals);
+		if (numAmount > mneeTokens) return false;
+
+		// Check recipient
+		if (!recipient || !recipient.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/)) return false;
+
+		return true;
+	}, [amount, balance, config, mneeBalance, recipient]);
 
 	return (
 		<div className="p-4 space-y-4">
@@ -491,7 +532,10 @@ export default function DashboardWalletContent() {
 								</button>
 								<button 
 									className="btn btn-sm"
-									onClick={() => setShowTransferModal(true)}
+									onClick={() => {
+										router.push('/dash/wallet?showTransfer=true');
+										setShowTransferModal(true);
+									}}
 								>
 									Transfer
 								</button>
@@ -542,11 +586,26 @@ export default function DashboardWalletContent() {
 												<span className="label-text">Amount</span>
 											</div>
 											<input
-												type="number"
+												type="text"
+												inputMode="decimal"
 												className="input input-bordered w-full"
 												value={amount}
-												onChange={(e) => setAmount(Number(e.target.value))}
-												placeholder="Enter amount"
+												onChange={(e) => {
+													const value = e.target.value;
+													// Only allow numbers and a single decimal point
+													if (value === '' || /^\d*\.?\d*$/.test(value)) {
+														// Check decimal places
+														const parts = value.split('.');
+														if (parts.length === 2 && config) {
+															// If we have decimals, check if they exceed the allowed length
+															if (parts[1].length > config.decimals) {
+																return;
+															}
+														}
+														setAmount(value);
+													}
+												}}
+												placeholder={`Enter amount (max ${config?.decimals || 8} decimal places)`}
 												required
 											/>
 										</label>
@@ -556,14 +615,14 @@ export default function DashboardWalletContent() {
 										<button
 											type="button"
 											className="btn btn-ghost"
-											onClick={() => setShowTransferModal(false)}
+											onClick={handleCloseTransferModal}
 										>
 											Cancel
 										</button>
 										<button
 											type="submit"
 											className="btn btn-primary"
-											disabled={isLoading}
+											disabled={isLoading || !canTransfer()}
 										>
 											{isLoading ? (
 												<>
@@ -577,10 +636,28 @@ export default function DashboardWalletContent() {
 									</div>
 								</form>
 							</div>
-							<form method="dialog" className="modal-backdrop" onClick={() => setShowTransferModal(false)}>
+							<form method="dialog" className="modal-backdrop" onClick={handleCloseTransferModal}>
 								<button>close</button>
 							</form>
 						</dialog>
+					)}
+
+					{!canTransfer() && amount && (
+						<div className="text-sm text-error mt-2">
+							{!balance || balance.bsv <= 0 ? (
+								"Insufficient BSV for transaction fees"
+							) : Number(amount) > (config ? toToken(mneeBalance, config.decimals) : 0) ? (
+								<>
+									Insufficient MNEE balance (
+									{config ? `${toToken(mneeBalance, config.decimals)} MNEE available` : '0 MNEE available'}
+									, trying to send {amount} MNEE)
+								</>
+							) : !recipient || !recipient.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/) ? (
+								"Invalid recipient address"
+							) : (
+								"Invalid amount"
+							)}
+						</div>
 					)}
 
 					{mneeError && (

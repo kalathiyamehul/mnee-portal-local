@@ -100,21 +100,23 @@ export function MintsTab({ showModal }: MintsTabProps) {
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <button
-          className="btn btn-primary btn-sm"
+          className="btn btn-primary btn-xs"
           onClick={() => showModal('mint_modal')}
         >
           <FaCoins className="mr-1" />
           <span className="text-sm">Mint</span>
         </button>
-        <label className="label cursor-pointer gap-2 px-2">
-          <span className="label-text text-sm mr-2">Pending Only</span>
-          <input
-            type="checkbox"
-            className="toggle toggle-primary toggle-sm sm:toggle-md"
-            checked={filter === "pending"}
-            onChange={(e) => setFilter(e.target.checked ? "pending" : "all")}
-          />
-        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="label cursor-pointer gap-2 px-2">
+            <span className="label-text text-sm mr-2">Pending Only</span>
+            <input
+              type="checkbox"
+              className="toggle toggle-primary toggle-sm sm:toggle-md"
+              checked={filter === "pending"}
+              onChange={(e) => setFilter(e.target.checked ? "pending" : "all")}
+            />
+          </label>
+        </div>
       </div>
 
       <div className="overflow-x-auto bg-base-100 rounded-lg shadow">

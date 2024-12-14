@@ -4,7 +4,12 @@ import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { CustomerModal } from "../modals/CustomerModal";
-import { FaEdit } from "react-icons/fa";
+import { FaEdit, FaUserPlus, FaPaperPlane } from "react-icons/fa";
+import { MdOutlineOpenInNew } from "react-icons/md";
+import { formatDistanceToNow } from "date-fns";
+import md5 from "md5";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface Customer {
   id: string;
@@ -12,6 +17,11 @@ interface Customer {
   email: string;
   address: string;
   createdAt: string;
+  createdBy: string;
+  creator: {
+    name: string | null;
+    email: string;
+  };
 }
 
 export default function DashboardCustomersContent() {
@@ -20,6 +30,7 @@ export default function DashboardCustomersContent() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const router = useRouter();
 
   const fetchCustomers = useCallback(async () => {
     if (!session?.user?.id) return;
@@ -55,6 +66,20 @@ export default function DashboardCustomersContent() {
     setSelectedCustomer(null);
   };
 
+  const getGravatarUrl = (email: string) => {
+    const hash = md5(email.toLowerCase().trim());
+    return `https://www.gravatar.com/avatar/${hash}?d=mp&s=40`;
+  };
+
+  const handleCopyAddress = (address: string) => {
+    navigator.clipboard.writeText(address);
+    toast.success('Address copied to clipboard');
+  };
+
+  const handleSend = (address: string) => {
+    router.push(`/dash/wallet?showTransfer=true&address=${address}`);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -64,51 +89,108 @@ export default function DashboardCustomersContent() {
   }
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Customers</h1>
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
         <button
-          className="btn btn-primary btn-sm"
+          className="btn btn-primary btn-xs"
           onClick={() => setShowModal(true)}
         >
-          Add Customer
+          <FaUserPlus className="mr-1" />
+          <span className="text-sm">Add Customer</span>
         </button>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto bg-base-100 rounded-lg shadow">
         <table className="table w-full">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Email</th>
+              <th>Customer</th>
               <th>Address</th>
-              <th>Created At</th>
+              <th>Created By</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {customers.map((customer) => (
-              <tr key={customer.id}>
-                <td>{customer.name}</td>
-                <td>{customer.email}</td>
-                <td className="font-mono">
-                  {customer.address.slice(0, 8)}...{customer.address.slice(-8)}
-                </td>
-                <td>{new Date(customer.createdAt).toLocaleDateString()}</td>
+              <tr key={customer.id} className="hover border-l-4 border-l-base-200">
                 <td>
-                  <button
-                    onClick={() => handleEdit(customer)}
-                    className="btn btn-ghost btn-sm"
-                    title="Edit customer"
-                  >
-                    <FaEdit className="text-base-content/70" />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <div className="avatar">
+                      <div className="mask mask-squircle w-10 h-10">
+                        <img
+                          src={getGravatarUrl(customer.email)}
+                          alt="Customer avatar"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium">{customer.name}</div>
+                      <div className="text-sm opacity-50">{customer.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div className="flex flex-col gap-1">
+                    <button 
+                      onClick={() => handleCopyAddress(customer.address)}
+                      className="font-mono text-sm hover:text-primary transition-colors"
+                    >
+                      {customer.address}
+                    </button>
+                    <a
+                      href={`https://whatsonchain.com/address/${customer.address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm link link-hover flex items-center gap-1"
+                    >
+                      View Activity
+                      <MdOutlineOpenInNew className="w-3 h-3" />
+                    </a>
+                  </div>
+                </td>
+                <td>
+                  <div className="flex items-center gap-3">
+                    <div className="avatar">
+                      <div className="mask mask-squircle w-10 h-10">
+                        <img
+                          src={getGravatarUrl(customer.creator.email)}
+                          alt="Creator avatar"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium">{customer.creator.email}</div>
+                      <div className="text-sm opacity-50">
+                        {formatDistanceToNow(new Date(customer.createdAt), { addSuffix: true })}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEdit(customer)}
+                      className="btn btn-ghost btn-sm gap-2"
+                      title="Edit customer"
+                    >
+                      <FaEdit className="text-base-content/70" />
+                      <span>Edit</span>
+                    </button>
+                    <button
+                      onClick={() => handleSend(customer.address)}
+                      className="btn btn-ghost btn-sm gap-2"
+                      title="Send MNEE"
+                    >
+                      <FaPaperPlane className="text-base-content/70" />
+                      <span>Send</span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
             {customers.length === 0 && (
               <tr>
-                <td colSpan={5} className="text-center py-4">
+                <td colSpan={4} className="text-center py-4">
                   No customers found
                 </td>
               </tr>

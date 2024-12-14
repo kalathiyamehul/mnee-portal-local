@@ -13,6 +13,14 @@ export async function GET() {
   try {
     const customers = await prisma.customer.findMany({
       orderBy: { createdAt: "desc" },
+      include: {
+        creator: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(customers);
@@ -66,6 +74,14 @@ export async function POST(request: Request) {
         email,
         address,
         createdBy: session.user.id,
+      },
+      include: {
+        creator: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
       },
     });
 
