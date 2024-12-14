@@ -3,7 +3,6 @@ import { FaCheck, FaCoins, FaXmark } from 'react-icons/fa6';
 import { toast } from 'react-hot-toast';
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { formatDistanceToNow } from 'date-fns';
-import Link from 'next/link';
 import { MdOutlineOpenInNew } from 'react-icons/md';
 import md5 from 'md5';
 

@@ -55,9 +55,17 @@ export interface MintRequest extends BaseRequest {
 	} | null;
 }
 
-export interface BurnRequest extends BaseRequest {
-	action: 'BURN';
+export interface BurnRequest {
+	id: string;
 	amount: string;
+	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'REFUNDED';
+	requester: {
+		email: string;
+	};
+	createdAt: string;
+	updatedAt: string;
+	txid: string;
+	vout: number;
 }
 
 export type Activity = {
@@ -66,7 +74,7 @@ export type Activity = {
 		email: string;
 		name: string | null;
 	};
-	status: 'PENDING' | 'APPROVED' | 'CANCELLED';
+	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'DONE' | 'REJECTD';
 	createdAt: string;
 	approvals: Array<{
 		id: string;

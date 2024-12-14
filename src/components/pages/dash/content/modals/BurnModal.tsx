@@ -7,40 +7,51 @@ interface BurnModalProps {
   onClose: () => void;
   onSuccess: () => void;
   amount: number;
+  utxo: {
+    txid: string;
+    vout: number;
+  };
 }
 
-export function BurnModal({ onClose, onSuccess, amount }: BurnModalProps) {
-  const [loading, setLoading] = useState(false);
+export function BurnModal({ onClose, onSuccess, amount, utxo }: BurnModalProps) {
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleConfirm = async () => {
-    if (!amount) return;
-
+  const handleBurn = async () => {
+    setIsLoading(true);
     try {
-      setLoading(true);
+      console.log('Sending burn request:', { amount, utxo });
+      
       const response = await fetch('/api/burn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amount.toString() }),
+        body: JSON.stringify({
+          amount: amount.toString(),
+          txid: utxo.txid,
+          vout: utxo.vout,
+        }),
       });
 
+      const data = await response.json();
+      console.log('Burn response:', { status: response.status, data });
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create burn request');
+        console.error('Burn failed:', data);
+        toast.error(data.error || 'Failed to create burn request');
+        return;
       }
 
-      toast.success('Burn request created');
+      toast.success('Burn request created successfully');
       onSuccess();
-      onClose();
     } catch (error) {
       console.error('Error creating burn request:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create burn request');
+      toast.error('Failed to create burn request. Please try again.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="modal modal-open">
+    <dialog id="burn_modal" className="modal modal-open">
       <div className="modal-box">
         <h3 className="font-bold text-lg flex items-center gap-2 text-error">
           <FaFire className="w-4 h-4" /> Confirm Token Burn
@@ -50,6 +61,9 @@ export function BurnModal({ onClose, onSuccess, amount }: BurnModalProps) {
           <div className="bg-base-200 p-4 rounded-lg">
             <div className="text-sm opacity-70 mb-1">Amount to burn</div>
             <div className="text-2xl font-bold">{toToken(amount, 8)} MNEE</div>
+            <div className="text-xs opacity-50 mt-1 break-all">
+              UTXO: {utxo.txid}:{utxo.vout}
+            </div>
           </div>
 
           <div className="alert alert-warning">
@@ -68,20 +82,20 @@ export function BurnModal({ onClose, onSuccess, amount }: BurnModalProps) {
             type="button" 
             className="btn" 
             onClick={onClose}
-            disabled={loading}
+            disabled={isLoading}
           >
             Cancel
           </button>
           <button
             type="button"
             className="btn btn-error"
-            onClick={handleConfirm}
-            disabled={loading}
+            onClick={handleBurn}
+            disabled={isLoading}
           >
-            {loading ? (
+            {isLoading ? (
               <>
                 <FaSpinner className="animate-spin mr-2" />
-                Creating Request...
+                Processing...
               </>
             ) : (
               'Request Burn'
@@ -89,6 +103,9 @@ export function BurnModal({ onClose, onSuccess, amount }: BurnModalProps) {
           </button>
         </div>
       </div>
-    </div>
+      <form method="dialog" className="modal-backdrop" onClick={onClose}>
+        <button>close</button>
+      </form>
+    </dialog>
   );
 } 

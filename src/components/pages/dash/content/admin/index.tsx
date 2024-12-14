@@ -474,8 +474,10 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 			)}
 			{showBurnModal && (
 				<BurnModal
-          onClose={() => setShowBurnModal(false)}
-          onSuccess={fetchStatus}				/>
+					onClose={() => setShowBurnModal(false)}
+					onSuccess={fetchStatus}
+					amount={0}
+				/>
 			)}
 		</div>
 	);

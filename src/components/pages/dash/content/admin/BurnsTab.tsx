@@ -9,6 +9,7 @@ import { DEFAULT_DECIMALS } from '@/lib/constants';
 import { formatDistanceToNow } from 'date-fns';
 import md5 from 'md5';
 import { BurnModal } from '../modals/BurnModal';
+import { RefundModal } from '../modals/RefundModal';
 import { toast } from 'react-hot-toast';
 
 interface BurnUtxo extends MNEEUtxo {
@@ -26,6 +27,7 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
   const [burnAddress, setBurnAddress] = useState<string | null>(null);
   const [decimals, setDecimals] = useState(8);
   const [selectedBurn, setSelectedBurn] = useState<BurnUtxo | null>(null);
+  const [selectedRefund, setSelectedRefund] = useState<BurnUtxo | null>(null);
   const [refundingBurnId, setRefundingBurnId] = useState<string | null>(null);
 
   const fetchBurns = async () => {
@@ -44,20 +46,24 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
       
       // Fetch UTXOs for burn address
       const utxos = await fetchMneeUtxos([config.burnAddress]);
+      console.log('Burn UTXOs:', utxos); // Debug log
 
       // Fetch burn requests to match with UTXOs
       const statusResponse = await fetch('/api/status');
       const status = await statusResponse.json();
       const burnRequests = status.burnRequests || [];
+      console.log('Burn Requests:', burnRequests); // Debug log
 
       // Match UTXOs with burn requests
-      const burnsWithRequests = utxos.map(utxo => ({
-        ...utxo,
-        burnRequest: burnRequests.find((req: BurnRequest) => 
-          // TODO: Add outpoint to burn request to match with UTXO
-          req.amount === utxo.satoshis.toString()
-        ),
-      }));
+      const burnsWithRequests = utxos.map(utxo => {
+        const matchingRequest = burnRequests.find((req: BurnRequest) => 
+          req.txid === utxo.txid && req.vout === utxo.vout
+        );
+        return {
+          ...utxo,
+          burnRequest: matchingRequest,
+        };
+      });
 
       setBurns(burnsWithRequests);
     } catch (err) {
@@ -83,34 +89,10 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
     return `https://www.gravatar.com/avatar/${hash}?d=mp&s=40`;
   };
 
-  const handleRefund = async (burn: BurnUtxo) => {
-    if (!burn.burnRequest?.id) return;
-    
-    try {
-      setRefundingBurnId(`${burn.txid}_${burn.vout}`);
-      const response = await fetch('/api/refund', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          burnRequestId: burn.burnRequest.id,
-          txid: burn.txid,
-          vout: burn.vout,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to refund burn');
-      }
-
-      toast.success('Refund initiated successfully');
-      fetchBurns();
-    } catch (error) {
-      console.error('Error refunding burn:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to refund burn');
-    } finally {
-      setRefundingBurnId(null);
-    }
+  const handleRefundSuccess = () => {
+    setSelectedRefund(null);
+    fetchBurns();
+    toast.success('Refund initiated successfully');
   };
 
   const handleCopyAddress = (address: string) => {
@@ -145,7 +127,8 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
               <div className="absolute top-2 right-2 flex items-center gap-1">
                 <button
                   onClick={() => handleCopyAddress(burnAddress)}
-                  className="btn btn-ghost btn-xs hover:bg-base-200"
+                  className="btn btn-ghost btn-xs"
+                  title="Copy address"
                 >
                   <FaCopy className="w-3 h-3" />
                 </button>
@@ -153,14 +136,16 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
                   href={`https://whatsonchain.com/address/${burnAddress}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="btn btn-ghost btn-xs hover:bg-base-200"
+                  className="btn btn-ghost btn-xs"
+                  title="View on WhatsOnChain"
                 >
                   <MdOutlineOpenInNew className="w-3 h-3" />
                 </a>
                 <button
                   onClick={fetchBurns}
                   disabled={loading}
-                  className="btn btn-ghost btn-xs hover:bg-base-200"
+                  className="btn btn-ghost btn-xs"
+                  title="Refresh outputs"
                 >
                   {loading ? (
                     <FaSpinner className="w-3 h-3 animate-spin" />
@@ -225,7 +210,11 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
                   {toToken(burn.data.bsv21.amt, decimals)}
                 </td>
                 <td className="text-sm text-base-content/70">
-                  {new Date(burn.height * 1000).toLocaleString()}
+                  {burn.burnRequest?.createdAt ? (
+                    formatDistanceToNow(new Date(burn.burnRequest.createdAt), { addSuffix: true })
+                  ) : (
+                    `Block ${burn.height}`
+                  )}
                 </td>
                 <td>
                   {burn.burnRequest ? (
@@ -238,33 +227,33 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
                       {burn.burnRequest.status}
                     </span>
                   ) : (
-                    <span className="badge badge-ghost badge-sm">PENDING</span>
+                    <span className="badge badge-warning badge-sm">PENDING</span>
                   )}
                 </td>
                 <td>
                   <div className="flex items-center gap-2">
                     {!burn.burnRequest && (
-                      <button
-                        onClick={() => handleCreateBurnRequest(burn)}
-                        className="btn btn-error btn-sm gap-1"
-                      >
-                        <FaFire className="w-3 h-3" /> Burn
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleCreateBurnRequest(burn)}
+                          className="btn btn-error btn-sm gap-1"
+                        >
+                          <FaFire className="w-3 h-3" /> Burn
+                        </button>
+                        <button
+                          onClick={() => setSelectedRefund(burn)}
+                          className="btn btn-primary btn-sm gap-1"
+                        >
+                          Refund
+                        </button>
+                      </>
                     )}
                     {burn.burnRequest?.status === 'CANCELLED' && (
                       <button
-                        onClick={() => handleRefund(burn)}
-                        disabled={refundingBurnId === `${burn.txid}_${burn.vout}`}
+                        onClick={() => setSelectedRefund(burn)}
                         className="btn btn-primary btn-sm gap-1"
                       >
-                        {refundingBurnId === `${burn.txid}_${burn.vout}` ? (
-                          <>
-                            <FaSpinner className="w-3 h-3 animate-spin" />
-                            Refunding...
-                          </>
-                        ) : (
-                          <>Refund</>
-                        )}
+                        Refund
                       </button>
                     )}
                   </div>
@@ -397,6 +386,22 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
             fetchBurns();
           }}
           amount={selectedBurn.data.bsv21.amt}
+          utxo={{
+            txid: selectedBurn.txid,
+            vout: selectedBurn.vout,
+          }}
+        />
+      )}
+
+      {selectedRefund && (
+        <RefundModal
+          onClose={() => setSelectedRefund(null)}
+          onSuccess={handleRefundSuccess}
+          amount={selectedRefund.data.bsv21.amt}
+          decimals={decimals}
+          txid={selectedRefund.txid}
+          vout={selectedRefund.vout}
+          customerName={selectedRefund.burnRequest?.requester?.name || 'your'}
         />
       )}
     </div>
