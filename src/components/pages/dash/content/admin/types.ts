@@ -14,7 +14,7 @@ export type ConfigWithFees = Omit<Config, 'fees'> & {
 
 export interface BaseRequest {
 	id: string;
-	status: 'PENDING' | 'APPROVED' | 'CANCELLED';
+	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'REFUNDED' | 'DONE';
 	createdAt: string;
 	requester: {
 		email: string;
