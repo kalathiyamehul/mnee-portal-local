@@ -1,7 +1,8 @@
 import { useSession } from "next-auth/react";
-import { FaCheck, FaXmark } from "react-icons/fa6";
+import { FaCheck, FaXmark, FaSpinner } from "react-icons/fa6";
 import { toast } from "react-hot-toast";
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import { useState } from "react";
 
 interface SystemStatusProps {
   isPaused: boolean;
@@ -12,6 +13,8 @@ interface SystemStatusProps {
 export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: SystemStatusProps) => {
   const { data: session } = useSession();
   const { statusData, fetchStatus } = useSystemStatus();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const pendingPause = statusData?.systemRequests?.find(req => 
     req.status === 'PENDING' && 
@@ -48,6 +51,7 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
   const handleCancelPause = async () => {
     if (!pendingPause) return;
     
+    setIsCancelling(true);
     try {
       const response = await fetch("/api/cancel", {
         method: "POST",
@@ -65,6 +69,21 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
     } catch (error) {
       console.error("Failed to cancel pause request:", error);
       toast.error(error instanceof Error ? error.message : "Failed to cancel pause request");
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleToggle = async () => {
+    setIsLoading(true);
+    try {
+      await onPauseToggle();
+      toast.success(isPaused ? 'System resumed successfully' : 'Pause request created');
+    } catch (error) {
+      console.error('Error toggling system pause:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to toggle system pause');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -93,20 +112,28 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
           <button
             onClick={handleCancelPause}
             className="btn btn-error btn-sm gap-2"
+            disabled={isCancelling}
           >
-            <FaXmark className="w-3 h-3" />
+            {isCancelling ? (
+              <FaSpinner className="animate-spin w-3 h-3" />
+            ) : (
+              <FaXmark className="w-3 h-3" />
+            )}
             Cancel
           </button>
         ) : (
           <div className="form-control">
-            <label className="cursor-pointer">
+            <label className="cursor-pointer relative">
               <input
                 type="checkbox"
-                className={`toggle ${hasPendingPause ? 'toggle-warning' : (isPaused ? 'toggle-error' : 'toggle-success')}`}
+                className={`toggle ${hasPendingPause ? 'toggle-warning' : (isPaused ? 'toggle-error' : 'toggle-success')} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 checked={!isPaused}
-                onChange={onPauseToggle}
-                disabled={hasPendingPause}
+                onChange={handleToggle}
+                disabled={hasPendingPause || isLoading}
               />
+              {isLoading && (
+                <FaSpinner className="animate-spin w-3 h-3 absolute right-0 top-1/2 -translate-y-1/2 -translate-x-[200%] text-base-content/70" />
+              )}
             </label>
           </div>
         )}

@@ -5,6 +5,7 @@ import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { MdOutlineOpenInNew } from 'react-icons/md';
+import md5 from 'md5';
 
 const statusColors = {
   PENDING: "badge-warning",
@@ -22,6 +23,11 @@ export function MintsTab({ showModal }: MintsTabProps) {
   const [filter, setFilter] = useState<"all" | "pending">("pending");
   const { statusData, initialLoading } = useSystemStatus();
   const mintRequests = statusData?.mintRequests || [];
+
+  const getGravatarUrl = (email: string) => {
+    const hash = md5(email.toLowerCase().trim());
+    return `https://www.gravatar.com/avatar/${hash}?d=mp&s=40`;
+  };
 
   const handleApprove = async (id: string) => {
     try {
@@ -71,6 +77,21 @@ export function MintsTab({ showModal }: MintsTabProps) {
     filter === "all" || request.status === "PENDING"
   );
 
+  const getRowBorderClass = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 'border-l-4 border-l-warning';
+      case 'APPROVED':
+      case 'DONE':
+        return 'border-l-4 border-l-success';
+      case 'REJECTED':
+      case 'CANCELLED':
+        return 'border-l-4 border-l-error';
+      default:
+        return '';
+    }
+  };
+
   if (initialLoading) {
     return <div>Loading...</div>;
   }
@@ -78,29 +99,22 @@ export function MintsTab({ showModal }: MintsTabProps) {
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-2">
-          <button 
-            className={`btn btn-sm ${filter === "all" ? "btn-primary" : "btn-ghost"}`}
-            onClick={() => setFilter("all")}
-          >
-            All Requests
-          </button>
-          <button 
-            className={`btn btn-sm ${filter === "pending" ? "btn-primary" : "btn-ghost"}`}
-            onClick={() => setFilter("pending")}
-          >
-            Pending
-          </button>
-        </div>
-        <div>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => showModal('mint_modal')}
-          >
-            <FaCoins className="mr-1" />
-            <span className="text-sm">Mint</span>
-          </button>
-        </div>
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={() => showModal('mint_modal')}
+        >
+          <FaCoins className="mr-1" />
+          <span className="text-sm">Mint</span>
+        </button>
+        <label className="label cursor-pointer gap-2 px-2">
+          <span className="label-text text-sm mr-2">Pending Only</span>
+          <input
+            type="checkbox"
+            className="toggle toggle-primary toggle-sm sm:toggle-md"
+            checked={filter === "pending"}
+            onChange={(e) => setFilter(e.target.checked ? "pending" : "all")}
+          />
+        </label>
       </div>
 
       <div className="overflow-x-auto bg-base-100 rounded-lg shadow">
@@ -110,35 +124,59 @@ export function MintsTab({ showModal }: MintsTabProps) {
               <th>Customer</th>
               <th>Address</th>
               <th>Amount</th>
-              <th>Status</th>
-              <th>Requested</th>
               <th>Transaction</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredRequests.map((request) => (
-              <tr key={request.id} className="hover">
+              <tr key={request.id} className={`hover ${getRowBorderClass(request.status)}`}>
                 <td>
                   {request.customer ? (
-                    <Link
-                      href={`/dash/customers?id=${request.customer.email}`}
-                      className="hover:underline"
-                    >
-                      {request.customer.name}
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <div className="avatar">
+                        <div className="mask mask-squircle w-10 h-10">
+                          <img
+                            src={getGravatarUrl(request.customer.email)}
+                            alt="Customer avatar"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-medium">{request.customer.name}</div>
+                        <div className="text-sm opacity-50">
+                          {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
+                        </div>
+                      </div>
+                    </div>
                   ) : (
-                    "Unknown"
+                    <div className="flex items-center gap-3">
+                      <div className="avatar">
+                        <div className="mask mask-squircle w-10 h-10">
+                          <img
+                            src={getGravatarUrl("")}
+                            alt="Unknown customer"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-medium">Unknown</div>
+                        <div className="text-sm opacity-50">
+                          {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </td>
-                <td className="font-mono text-sm">{request.address}</td>
-                <td>{Number(request.amount).toLocaleString()}</td>
                 <td>
-                  <span className={`badge ${statusColors[request.status]}`}>
-                    {request.status}
-                  </span>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-mono text-sm">{request.address}</span>
+                    <span className={`badge badge-sm ${statusColors[request.status]}`}>
+                      {request.status}
+                    </span>
+                  </div>
                 </td>
-                <td>{formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}</td>
+                <td>{Number(request.amount).toLocaleString()}</td>
                 <td>
                   {request.txid ? (
                     <a

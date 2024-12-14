@@ -41,9 +41,16 @@ export const ActiveRestrictionsTab = ({
 
   const getActionBadgeClass = (activity: Activity) => {
     if (activity.type === 'BLACKLIST') {
-      return activity.action === 'BLACKLIST' ? 'badge-error' : 'badge-success';
+      return 'badge-error';
     }
-    return activity.action === 'FREEZE' ? 'badge-warning' : 'badge-info';
+    return 'badge-info';
+  };
+
+  const getRowBorderClass = (activity: Activity) => {
+    if (activity.type === 'BLACKLIST') {
+      return 'border-l-4 border-l-error';
+    }
+    return 'border-l-4 border-l-info';
   };
 
   const getGravatarUrl = (email: string) => {
@@ -92,7 +99,7 @@ export const ActiveRestrictionsTab = ({
             </thead>
             <tbody>
               {restrictionActivities.map((activity) => (
-                <tr key={activity.id} className="hover">
+                <tr key={activity.id} className={`hover ${getRowBorderClass(activity)}`}>
                   <td>
                     <div className="flex items-center gap-3">
                       <div className="avatar">
@@ -120,11 +127,14 @@ export const ActiveRestrictionsTab = ({
                         {activity.address}
                       </button>
                       <div className="flex items-center gap-2">
-                        <span className={`badge ${getActionBadgeClass(activity)}`}>
-                          {activity.action}
+                        <span className={`badge ${getActionBadgeClass(activity)} badge-sm`}>
+                          {activity.type === 'BLACKLIST' ? 
+                            (activity.action === 'BLACKLIST' ? 'Blacklist' : 'Unblacklist') : 
+                            (activity.action === 'FREEZE' ? 'Freeze' : 'Unfreeze')
+                          }
                         </span>
                         {(!wasAutoApproved(activity) || activity.status !== 'APPROVED') && (
-                          <span className={`badge ${getStatusBadgeClass(activity)}`}>
+                          <span className={`badge badge-sm ${activity.status === 'PENDING' ? 'badge-warning' : activity.status === 'CANCELLED' ? 'badge-error' : 'badge-success'}`}>
                             {activity.status}
                           </span>
                         )}

@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import { toast } from "react-hot-toast";
 import type { Activity } from "@/components/pages/dash/content/admin/types";
 
 interface SystemStatusData {
@@ -42,23 +41,18 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
   const handlePauseToggle = async () => {
     if (!statusData) return;
 
-    try {
-      const response = await fetch('/api/pause', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: statusData.isPaused ? 'UNPAUSE' : 'PAUSE' }),
-      });
+    const response = await fetch('/api/pause', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: statusData.isPaused ? 'UNPAUSE' : 'PAUSE' }),
+    });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to toggle system pause');
-      }
-
-      await fetchStatus();
-    } catch (error) {
-      console.error('Error toggling system pause:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to toggle system pause');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to toggle system pause');
     }
+
+    await fetchStatus();
   };
 
   useEffect(() => {
