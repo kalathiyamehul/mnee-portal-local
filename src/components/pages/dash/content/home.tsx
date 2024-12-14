@@ -45,7 +45,8 @@ const DashboardHomeContent = () => {
 	const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
 	const [decimals, setDecimals] = useState(DEFAULT_DECIMALS);
 
-	const selectedChart = searchParams.get('chart') as ChartType | null;
+	// Default to 'volume' if no chart is selected
+	const selectedChart = (searchParams.get('chart') || 'volume') as ChartType;
 
 	const fetchConfig = async () => {
 		try {
@@ -108,8 +109,10 @@ const DashboardHomeContent = () => {
 	}).filter(Boolean) as unknown as BurnUtxo[];
 
 	const getStatCardClass = (chartType: ChartType) => {
-		const baseClass = "stat hover:bg-base-300 transition-colors cursor-pointer";
-		return selectedChart === chartType ? `${baseClass} bg-base-300` : baseClass;
+		const baseClass = "stat hover:bg-base-200 transition-colors cursor-pointer bg-base-200 relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-1 after:opacity-0 after:transition-opacity";
+		return selectedChart === chartType 
+			? `${baseClass} bg-base-300 after:opacity-100 after:bg-accent` 
+			: baseClass;
 	};
 
 	const getChartType = (selected: ChartType) => {
@@ -126,7 +129,8 @@ const DashboardHomeContent = () => {
 	const handleChartSelect = (chartType: ChartType) => {
 		const params = new URLSearchParams(searchParams);
 		if (selectedChart === chartType) {
-			params.delete('chart');
+			// Instead of removing the param, set it back to volume
+			params.set('chart', 'volume');
 		} else {
 			params.set('chart', chartType);
 		}
@@ -135,7 +139,7 @@ const DashboardHomeContent = () => {
 
 	return (
 		<div className="p-4 space-y-8">
-			<div className="stats shadow w-full bg-base-200">
+			<div className="stats shadow w-full">
 				<div 
 					className={getStatCardClass('customers')}
 					onClick={() => handleChartSelect('customers')}
@@ -143,9 +147,11 @@ const DashboardHomeContent = () => {
 					<div className="stat-figure text-base-content/70">
 						<FaUsers className="w-8 h-8" />
 					</div>
-					<div className="stat-title">Total Customers</div>
-					<div className="stat-value">{metrics.totalCustomers}</div>
-					<div className="stat-desc">Active platform users</div>
+					<div className="stat-title text-base-content/70">Total Customers</div>
+					<div className="stat-value text-primary">
+						{metrics.totalCustomers}
+					</div>
+					<div className="stat-desc text-base-content/60">Active platform users</div>
 				</div>
 
 				<div 
@@ -155,9 +161,11 @@ const DashboardHomeContent = () => {
 					<div className="stat-figure text-base-content/70">
 						<FaBitcoinSign className="w-8 h-8" />
 					</div>
-					<div className="stat-title">24h Mint Volume</div>
-					<div className="stat-value">{metrics.totalMintVolume.toLocaleString()}</div>
-					<div className="stat-desc">MNEE</div>
+					<div className="stat-title text-base-content/70">24h Mint Volume</div>
+					<div className="stat-value text-primary">
+						{metrics.totalMintVolume.toLocaleString()}
+					</div>
+					<div className="stat-desc text-base-content/60">MNEE</div>
 				</div>
 
 				<div 
@@ -167,9 +175,11 @@ const DashboardHomeContent = () => {
 					<div className="stat-figure text-base-content/70">
 						<FaMoneyBillTransfer className="w-8 h-8" />
 					</div>
-					<div className="stat-title">Pending Mints</div>
-					<div className="stat-value">{metrics.pendingMints}</div>
-					<div className="stat-desc">Awaiting approval</div>
+					<div className="stat-title text-base-content/70">Pending Mints</div>
+					<div className="stat-value text-primary">
+						{metrics.pendingMints}
+					</div>
+					<div className="stat-desc text-base-content/60">Awaiting approval</div>
 				</div>
 
 				<div 
@@ -177,11 +187,13 @@ const DashboardHomeContent = () => {
 					onClick={() => handleChartSelect('burns')}
 				>
 					<div className="stat-figure text-base-content/70">
-						<FaFire className="w-8 h-8" />
+						<FaBitcoinSign className="w-8 h-8" />
 					</div>
-					<div className="stat-title">Pending Burns</div>
-					<div className="stat-value">{metrics.pendingBurns}</div>
-					<div className="stat-desc">Awaiting approval</div>
+					<div className="stat-title text-base-content/70">Pending Burns</div>
+					<div className="stat-value text-primary">
+						{metrics.pendingBurns}
+					</div>
+					<div className="stat-desc text-base-content/60">Awaiting approval</div>
 				</div>
 
 				<div 
@@ -191,28 +203,28 @@ const DashboardHomeContent = () => {
 					<div className="stat-figure text-base-content/70">
 						<FaCircleExclamation className="w-8 h-8" />
 					</div>
-					<div className="stat-title">Active Restrictions</div>
-					<div className="stat-value">{metrics.activeBlacklists}</div>
-					<div className="stat-desc">Blacklisted or frozen addresses</div>
+					<div className="stat-title text-base-content/70">Active Restrictions</div>
+					<div className="stat-value text-primary">
+						{metrics.activeBlacklists}
+					</div>
+					<div className="stat-desc text-base-content/60">Blacklisted or frozen addresses</div>
 				</div>
 			</div>
 
-			{selectedChart && (
-				<div className="w-full">
-					<h2 className="text-xl font-semibold mb-4">
-						{selectedChart === 'volume' && 'Token Volume History'}
-						{selectedChart === 'mints' && 'Mint Transaction History'}
-						{selectedChart === 'burns' && 'Burn Transaction History'}
-						{selectedChart === 'customers' && 'Customer Growth'}
-						{selectedChart === 'restrictions' && 'Restrictions History'}
-					</h2>
-					<TokenActivityChart 
-						type={getChartType(selectedChart)}
-						highlight={selectedChart === 'burns' ? 'burns' : 'mints'}
-						height={350} 
-					/>
-				</div>
-			)}
+			<div className="w-full">
+				<h2 className="text-xl font-semibold mb-4">
+					{selectedChart === 'volume' && 'Token Volume History'}
+					{selectedChart === 'mints' && 'Mint Transaction History'}
+					{selectedChart === 'burns' && 'Burn Transaction History'}
+					{selectedChart === 'customers' && 'Customer Growth'}
+					{selectedChart === 'restrictions' && 'Restrictions History'}
+				</h2>
+				<TokenActivityChart 
+					type={getChartType(selectedChart)}
+					highlight={selectedChart === 'burns' ? 'burns' : 'mints'}
+					height={350} 
+				/>
+			</div>
 
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 				<div className="w-full">

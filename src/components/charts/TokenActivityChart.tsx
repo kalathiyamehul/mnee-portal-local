@@ -11,6 +11,7 @@ import {
   Legend,
 } from "recharts";
 import { format, parseISO } from "date-fns";
+import { toToken } from "satoshi-token";
 
 interface ChartDataPoint {
   date: string;
@@ -47,16 +48,17 @@ interface TokenActivityChartProps {
 }
 
 export const TokenActivityChart = ({
-  type = "volume",
-  highlight,
+  type = "count",
+  highlight = "mints",
   days = 30,
   height = 300,
   className = ""
 }: TokenActivityChartProps) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<ChartDataPoint[]>([]);
+  const [decimals, setDecimals] = useState(8);
 
-  // Attempt to get the DaisyUI theme color from CSS variables
+  // Get theme colors
   const getColorFromTheme = (variables: string[], opacity = 1): string => {
     if (typeof window === 'undefined') return '';
 
@@ -74,7 +76,6 @@ export const TokenActivityChart = ({
       }
     }
 
-    console.warn(`Could not find color for variables:`, variables);
     return `oklch(50% 0 0 / ${opacity})`; // Neutral gray fallback
   };
 
@@ -82,16 +83,26 @@ export const TokenActivityChart = ({
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/chart-data?type=${type}&days=${days}`);
-        if (!response.ok) {
-          const error = await response.json();
+        const [chartResponse, configResponse] = await Promise.all([
+          fetch(`/api/chart-data?type=${type}&days=${days}`),
+          fetch('/api/config')
+        ]);
+
+        if (!chartResponse.ok) {
+          const error = await chartResponse.json();
           throw new Error(error.error || "Failed to fetch chart data");
         }
-        const result = await response.json();
-        setData(result.chartData);
+
+        const [chartData, configData] = await Promise.all([
+          chartResponse.json(),
+          configResponse.json()
+        ]);
+
+        setDecimals(configData.decimals || 8);
+        setData(chartData.chartData);
       } catch (error) {
-        console.error("Error fetching chart data:", error);
-        toast.error(error instanceof Error ? error.message : "Failed to fetch chart data");
+        console.error("Error fetching data:", error);
+        toast.error(error instanceof Error ? error.message : "Failed to fetch data");
         setData([]);
       } finally {
         setLoading(false);
@@ -103,18 +114,22 @@ export const TokenActivityChart = ({
 
   if (loading) {
     return (
-      <div className={`flex items-center justify-center ${className}`} style={{ height: `${height}px` }}>
-        <div className="loading loading-spinner loading-lg text-primary" />
+      <div className={`bg-base-200 rounded-lg p-4 ${className}`}>
+        <div className="flex items-center justify-center" style={{ height: `${height}px` }}>
+          <div className="loading loading-spinner loading-lg" />
+        </div>
       </div>
     );
   }
 
   if (!data.length) {
     return (
-      <div className={`flex items-center justify-center bg-base-200 rounded-lg ${className}`} style={{ height: `${height}px` }}>
-        <div className="text-base-content/70 text-center">
-          <p>No data available for this period</p>
-          <p className="text-sm mt-1">Try selecting a different time range</p>
+      <div className={`bg-base-200 rounded-lg p-4 ${className}`}>
+        <div className="flex items-center justify-center" style={{ height: `${height}px` }}>
+          <div className="text-base-content/70 text-center">
+            <p>No data available for this period</p>
+            <p className="text-sm mt-1">Try selecting a different time range</p>
+          </div>
         </div>
       </div>
     );
@@ -122,14 +137,12 @@ export const TokenActivityChart = ({
 
   const primaryColor = getColorFromTheme(['--color-primary', '--p']);
   const secondaryColor = getColorFromTheme(['--color-secondary', '--s']);
-  const errorColor = getColorFromTheme(['--color-error', '--er']);
-  const warningColor = getColorFromTheme(['--color-warning', '--wa']);
+  const accentColor = getColorFromTheme(['--color-accent', '--a']);
 
   console.log('Theme colors:', {
     primary: primaryColor,
     secondary: secondaryColor,
-    error: errorColor,
-    warning: warningColor
+    accent: accentColor
   });
 
   const getChartConfig = (): ChartConfig => {
@@ -147,8 +160,8 @@ export const TokenActivityChart = ({
             {
               dataKey: 'burnVolume',
               name: 'Burns',
-              stroke: errorColor,
-              fill: errorColor,
+              stroke: accentColor,
+              fill: accentColor,
               fillOpacity: 0.2
             }
           ],
@@ -174,8 +187,8 @@ export const TokenActivityChart = ({
           areas.push({
             dataKey: 'burnCount',
             name: 'Burns',
-            stroke: errorColor,
-            fill: errorColor,
+            stroke: accentColor,
+            fill: accentColor,
             fillOpacity: 0.2,
             strokeOpacity: 1
           });
@@ -212,15 +225,15 @@ export const TokenActivityChart = ({
             {
               dataKey: 'restrictionCount',
               name: 'New Restrictions',
-              stroke: errorColor,
-              fill: errorColor,
+              stroke: primaryColor,
+              fill: primaryColor,
               fillOpacity: 0.2
             },
             {
               dataKey: 'totalRestrictions',
               name: 'Total Restrictions',
-              stroke: warningColor,
-              fill: warningColor,
+              stroke: secondaryColor,
+              fill: secondaryColor,
               fillOpacity: 0.2
             }
           ],
@@ -232,11 +245,29 @@ export const TokenActivityChart = ({
   const chartConfig = getChartConfig();
 
   const formatValue = (value: number) => {
-    return value.toLocaleString();
+    // For volume charts, convert to token amount first
+    const adjustedValue = type === 'volume' ? Number(toToken(value, decimals)) : value;
+
+    if (adjustedValue >= 1_000_000) {
+      return `${(adjustedValue / 1_000_000).toFixed(1)}M`;
+    }
+    if (adjustedValue >= 1_000) {
+      return `${(adjustedValue / 1_000).toFixed(1)}K`;
+    }
+    return adjustedValue.toFixed(type === 'volume' ? 2 : 0);
   };
 
   const formatTooltipValue = (value: number) => {
-    return `${value.toLocaleString()}${chartConfig.tooltipSuffix}`;
+    // For volume charts, convert to token amount first
+    const adjustedValue = type === 'volume' ? Number(toToken(value, decimals)) : value;
+
+    if (adjustedValue >= 1_000_000) {
+      return `${(adjustedValue / 1_000_000).toFixed(1)}M${chartConfig.tooltipSuffix}`;
+    }
+    if (adjustedValue >= 1_000) {
+      return `${(adjustedValue / 1_000).toFixed(1)}K${chartConfig.tooltipSuffix}`;
+    }
+    return `${adjustedValue.toFixed(type === 'volume' ? 2 : 0)}${chartConfig.tooltipSuffix}`;
   };
 
   interface TooltipProps {

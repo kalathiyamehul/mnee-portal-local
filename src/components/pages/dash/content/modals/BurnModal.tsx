@@ -13,7 +13,7 @@ interface BurnModalProps {
   };
 }
 
-export function BurnModal({ onClose, onSuccess, amount, utxo }: BurnModalProps) {
+export const BurnModal = ({ onClose, onSuccess, amount, utxo }: BurnModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleBurn = async () => {
