@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { fetchMneeUtxos } from '@/utils/api';
 import { FaSpinner, FaFire, FaCopy, FaArrowsRotate } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
@@ -11,6 +11,8 @@ import md5 from 'md5';
 import { BurnModal } from '../modals/BurnModal';
 import { RefundModal } from '../modals/RefundModal';
 import { toast } from 'react-hot-toast';
+import { useSession } from 'next-auth/react';
+import { useSystemStatus } from '@/contexts/SystemStatusContext';
 
 interface BurnUtxo extends MNEEUtxo {
   burnRequest?: BurnRequest;
@@ -21,20 +23,19 @@ interface BurnsTabProps {
 }
 
 export const BurnsTab = ({ showModal }: BurnsTabProps) => {
+  const { data: session } = useSession();
+  const { statusData } = useSystemStatus();
   const [burns, setBurns] = useState<BurnUtxo[]>([]);
+  const [utxos, setUtxos] = useState<MNEEUtxo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [burnAddress, setBurnAddress] = useState<string | null>(null);
   const [decimals, setDecimals] = useState(8);
   const [selectedBurn, setSelectedBurn] = useState<BurnUtxo | null>(null);
   const [selectedRefund, setSelectedRefund] = useState<BurnUtxo | null>(null);
-  const [refundingBurnId, setRefundingBurnId] = useState<string | null>(null);
 
-  const fetchBurns = async () => {
+  const fetchConfig = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      // Fetch config to get burn address
       const configResponse = await fetch('/api/config');
       const config = await configResponse.json();
       if (!config?.burnAddress) {
@@ -43,35 +44,57 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
 
       setBurnAddress(config.burnAddress);
       setDecimals(config.decimals || DEFAULT_DECIMALS);
-      
-      // Fetch UTXOs for burn address
-      const utxos = await fetchMneeUtxos([config.burnAddress]);
-      console.log('Burn UTXOs:', utxos); // Debug log
-
-      // Fetch burn requests to match with UTXOs
-      const statusResponse = await fetch('/api/status');
-      const status = await statusResponse.json();
-      const burnRequests = status.burnRequests || [];
-      console.log('Burn Requests:', burnRequests); // Debug log
-
-      // Match UTXOs with burn requests
-      const burnsWithRequests = utxos.map(utxo => {
-        const matchingRequest = burnRequests.find((req: BurnRequest) => 
-          req.txid === utxo.txid && req.vout === utxo.vout
-        );
-        return {
-          ...utxo,
-          burnRequest: matchingRequest,
-        };
-      });
-
-      setBurns(burnsWithRequests);
+      return config.burnAddress;
     } catch (err) {
-      console.error('Error fetching burns:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch burns');
-    } finally {
-      setLoading(false);
+      console.error('Error fetching config:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch config');
+      return null;
     }
+  };
+
+  const fetchUtxos = async (address: string) => {
+    try {
+      const fetchedUtxos = await fetchMneeUtxos([address]);
+      console.log('Burn UTXOs:', fetchedUtxos);
+      setUtxos(fetchedUtxos);
+    } catch (err) {
+      console.error('Error fetching UTXOs:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch UTXOs');
+    }
+  };
+
+  const updateBurns = useCallback(() => {
+    if (!utxos.length) return;
+
+    const burnsWithRequests = utxos.map(utxo => {
+      const outpoint = `${utxo.txid}_${utxo.vout}`;
+      console.log('Checking outpoint:', outpoint);
+      const matchingRequest = statusData?.burnRequests?.find((req: BurnRequest) => {
+        console.log('Comparing with request:', { 
+          requestOutpoint: req.outpoint, 
+          matches: req.outpoint === outpoint,
+          status: req.status
+        });
+        return req.outpoint === outpoint;
+      });
+      console.log('Matching request:', matchingRequest);
+      return {
+        ...utxo,
+        burnRequest: matchingRequest,
+      };
+    });
+
+    setBurns(burnsWithRequests);
+  }, [utxos, statusData?.burnRequests]);
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    setError(null);
+    const address = await fetchConfig();
+    if (address) {
+      await fetchUtxos(address);
+    }
+    setLoading(false);
   };
 
   const handleCreateBurnRequest = (burn: BurnUtxo) => {
@@ -80,7 +103,32 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
 
   const handleBurnSuccess = () => {
     setSelectedBurn(null);
-    fetchBurns();
+  };
+
+  const handleCancelBurn = async (burnId: string) => {
+    try {
+      const response = await fetch('/api/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ burnRequestId: burnId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to cancel burn request');
+      }
+
+      toast.success('Burn request cancelled');
+    } catch (err) {
+      console.error('Error cancelling burn:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to cancel burn request');
+    }
+  };
+
+  const canCancel = (burn: BurnUtxo) => {
+    if (!burn.burnRequest || !session?.user?.email) return false;
+    return burn.burnRequest.status === 'PENDING' && 
+           burn.burnRequest.requester.email === session.user.email;
   };
 
   const getGravatarUrl = (email: string | undefined) => {
@@ -91,7 +139,7 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
 
   const handleRefundSuccess = () => {
     setSelectedRefund(null);
-    fetchBurns();
+    handleRefresh();
     toast.success('Refund initiated successfully');
   };
 
@@ -105,10 +153,15 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
     toast.success('Transaction ID copied to clipboard');
   };
 
-  // Initial fetch
+  // Initial fetch of config and UTXOs
   useEffect(() => {
-    fetchBurns();
+    handleRefresh();
   }, []);
+
+  // Update burns when status or UTXOs change
+  useEffect(() => {
+    updateBurns();
+  }, [updateBurns]);
 
   // Split burns into pending/active and completed
   const activeBurns = burns.filter(burn => !burn.burnRequest || ['PENDING', 'CANCELLED'].includes(burn.burnRequest.status));
@@ -142,7 +195,7 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
                   <MdOutlineOpenInNew className="w-3 h-3" />
                 </a>
                 <button
-                  onClick={fetchBurns}
+                  onClick={handleRefresh}
                   disabled={loading}
                   className="btn btn-ghost btn-xs"
                   title="Refresh outputs"
@@ -220,35 +273,36 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
                   {burn.burnRequest ? (
                     <span className={`badge ${
                       burn.burnRequest.status === 'APPROVED' ? 'badge-success' :
-                      burn.burnRequest.status === 'CANCELLED' ? 'badge-warning' :
                       burn.burnRequest.status === 'REFUNDED' ? 'badge-info' :
-                      'badge-ghost'
+                      burn.burnRequest.status === 'PENDING' ? 'badge-ghost' :
+                      burn.burnRequest.status === 'CANCELLED' ? 'badge-secondary' :
+                      'badge-warning'
                     } badge-sm`}>
-                      {burn.burnRequest.status}
+                      {burn.burnRequest.status === 'CANCELLED' ? 'AVAILABLE' : burn.burnRequest.status}
                     </span>
                   ) : (
-                    <span className="badge badge-warning badge-sm">PENDING</span>
+                    <span className="badge badge-secondary badge-sm animate-pulse">NEW</span>
                   )}
                 </td>
                 <td>
                   <div className="flex items-center gap-2">
-                    {!burn.burnRequest && (
-                      <>
-                        <button
-                          onClick={() => handleCreateBurnRequest(burn)}
-                          className="btn btn-error btn-sm gap-1"
-                        >
-                          <FaFire className="w-3 h-3" /> Burn
-                        </button>
-                        <button
-                          onClick={() => setSelectedRefund(burn)}
-                          className="btn btn-primary btn-sm gap-1"
-                        >
-                          Refund
-                        </button>
-                      </>
+                    {(!burn.burnRequest || burn.burnRequest.status === 'CANCELLED') && (
+                      <button
+                        onClick={() => handleCreateBurnRequest(burn)}
+                        className="btn btn-error btn-sm gap-1"
+                      >
+                        <FaFire className="w-3 h-3" /> Burn
+                      </button>
                     )}
-                    {burn.burnRequest?.status === 'CANCELLED' && (
+                    {canCancel(burn) && (
+                      <button
+                        onClick={() => handleCancelBurn(burn.burnRequest!.id)}
+                        className="btn btn-ghost btn-sm"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                    {(!burn.burnRequest || !['APPROVED', 'REFUNDED'].includes(burn.burnRequest.status)) && (
                       <button
                         onClick={() => setSelectedRefund(burn)}
                         className="btn btn-primary btn-sm gap-1"
@@ -260,131 +314,14 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
                 </td>
               </tr>
             ))}
-            {!loading && activeBurns.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-center text-sm text-base-content/70">
-                  No pending burns found
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
-      </div>
-
-      <div className="divider my-8" />
-
-      <div>
-        <h3 className="text-lg font-semibold mb-4">History</h3>
-        <div className="overflow-x-auto bg-base-100 rounded-lg shadow">
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Requester</th>
-                <th>Transaction</th>
-                <th>Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {completedBurns.map((burn) => (
-                <tr 
-                  key={`${burn.txid}_${burn.vout}`} 
-                  className={`hover border-l-4 ${
-                    burn.burnRequest?.status === 'APPROVED' ? 'border-l-success' :
-                    burn.burnRequest?.status === 'REFUNDED' ? 'border-l-info' :
-                    'border-l-base-300'
-                  }`}
-                >
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <div className="avatar">
-                        <div className="mask mask-squircle w-10 h-10">
-                          <img
-                            src={getGravatarUrl(burn.burnRequest?.requester.email)}
-                            alt="User avatar"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium">{burn.burnRequest?.requester.email}</div>
-                        <div className="text-sm opacity-50">
-                          {formatDistanceToNow(new Date(burn.height * 1000), { addSuffix: true })}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm">
-                          {burn.txid.slice(0, 8)}...{burn.txid.slice(-8)}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <div className="tooltip" data-tip="Copy transaction ID">
-                            <button
-                              onClick={() => handleCopyTxid(burn.txid)}
-                              className="btn btn-ghost btn-xs btn-square hover:bg-base-200"
-                            >
-                              <FaCopy className="w-3 h-3" />
-                            </button>
-                          </div>
-                          <div className="tooltip" data-tip="View on WhatsOnChain">
-                            <a
-                              href={`https://whatsonchain.com/tx/${burn.txid}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn btn-ghost btn-xs btn-square hover:bg-base-200"
-                            >
-                              <MdOutlineOpenInNew className="w-3 h-3" />
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`badge ${
-                          burn.burnRequest?.status === 'APPROVED' ? 'badge-error' :
-                          burn.burnRequest?.status === 'REFUNDED' ? 'badge-info' :
-                          'badge-ghost'
-                        } badge-sm gap-1`}>
-                          {burn.burnRequest?.status === 'APPROVED' && <FaFire className="w-3 h-3" />}
-                          {burn.burnRequest?.status === 'APPROVED' ? 'Burn' : 'Refunded'}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="font-medium">
-                    {toToken(burn.data.bsv21.amt, decimals)}
-                  </td>
-                  <td>
-                    <span className={`badge ${
-                      burn.burnRequest?.status === 'APPROVED' ? 'badge-success' :
-                      burn.burnRequest?.status === 'REFUNDED' ? 'badge-info' :
-                      'badge-ghost'
-                    } badge-sm`}>
-                      {burn.burnRequest?.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {!loading && completedBurns.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="text-center text-sm text-base-content/70">
-                    No completed burns found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
 
       {selectedBurn && (
         <BurnModal
           onClose={() => setSelectedBurn(null)}
-          onSuccess={() => {
-            setSelectedBurn(null);
-            fetchBurns();
-          }}
+          onSuccess={handleBurnSuccess}
           amount={selectedBurn.data.bsv21.amt}
           utxo={{
             txid: selectedBurn.txid,
@@ -397,11 +334,12 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
         <RefundModal
           onClose={() => setSelectedRefund(null)}
           onSuccess={handleRefundSuccess}
+          utxo={{
+            txid: selectedRefund.txid,
+            vout: selectedRefund.vout,
+          }}
           amount={selectedRefund.data.bsv21.amt}
           decimals={decimals}
-          txid={selectedRefund.txid}
-          vout={selectedRefund.vout}
-          customerName={selectedRefund.burnRequest?.requester?.name || 'your'}
         />
       )}
     </div>

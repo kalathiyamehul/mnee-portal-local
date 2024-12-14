@@ -91,6 +91,7 @@ export async function GET(request: Request) {
             status: true,
             requiresApproval: true,
             createdAt: true,
+            outpoint: true,
             requester: {
               select: { name: true, email: true }
             },
@@ -220,6 +221,7 @@ export async function GET(request: Request) {
             status: true,
             requiresApproval: true,
             createdAt: true,
+            outpoint: true,
             requester: {
               select: { name: true, email: true }
             },

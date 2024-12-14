@@ -19,23 +19,37 @@ export function BurnModal({ onClose, onSuccess, amount, utxo }: BurnModalProps) 
   const handleBurn = async () => {
     setIsLoading(true);
     try {
-      console.log('Sending burn request:', { amount, utxo });
+      console.log('Starting burn request with:', { amount, utxo });
       
-      const response = await fetch('/api/burn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: amount.toString(),
-          txid: utxo.txid,
-          vout: utxo.vout,
-        }),
+      const outpoint = `${utxo.txid}_${utxo.vout}`;
+      const payload = {
+        amount: Number(amount),
+        outpoint,
+      };
+      
+      console.log('Prepared burn payload:', payload);
+      console.log('Payload types:', {
+        amount: typeof payload.amount,
+        outpoint: typeof payload.outpoint,
+        stringifiedPayload: JSON.stringify(payload)
       });
 
+      const response = await fetch('/api/burn', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        cache: 'no-store',
+      });
+
+      console.log('Burn API response status:', response.status);
       const data = await response.json();
-      console.log('Burn response:', { status: response.status, data });
+      console.log('Burn API response data:', data);
 
       if (!response.ok) {
-        console.error('Burn failed:', data);
+        console.error('Burn request failed:', data);
         toast.error(data.error || 'Failed to create burn request');
         return;
       }
@@ -43,7 +57,7 @@ export function BurnModal({ onClose, onSuccess, amount, utxo }: BurnModalProps) 
       toast.success('Burn request created successfully');
       onSuccess();
     } catch (error) {
-      console.error('Error creating burn request:', error);
+      console.error('Error in burn request process:', error);
       toast.error('Failed to create burn request. Please try again.');
     } finally {
       setIsLoading(false);

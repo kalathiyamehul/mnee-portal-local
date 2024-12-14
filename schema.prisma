@@ -131,18 +131,20 @@ model FreezeApproval {
 
 model BurnRequest {
   id              String       @id @default(uuid())
-  amount          Int
+  amount          BigInt      @db.BigInt
   status          ActionStatus @default(PENDING)
   requestedBy     String       @map("requested_by")
   requiresApproval Boolean     @default(true) @map("requires_approval")
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
   refundAddress   String?      @map("refund_address")
+  outpoint        String?
 
   // Relations
   requester User             @relation("UserBurnRequests", fields: [requestedBy], references: [id])
   approvals BurnApproval[]
 
+  @@index([outpoint])
   @@map("burn_request")
 }
 

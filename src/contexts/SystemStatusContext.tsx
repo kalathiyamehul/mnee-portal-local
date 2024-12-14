@@ -62,6 +62,12 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     };
 
     initialize();
+
+    // Set up polling interval
+    const interval = setInterval(fetchStatus, 5000); // Poll every 5 seconds
+
+    // Clean up interval on unmount
+    return () => clearInterval(interval);
   }, []);
 
   return (

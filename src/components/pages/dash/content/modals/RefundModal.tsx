@@ -27,15 +27,13 @@ export const RefundModal = ({
   const handleRefund = async () => {
     setIsLoading(true);
     try {
-      console.log('Sending refund request:', { txid, vout });
+      const outpoint = `${txid}_${vout}`;
+      console.log('Sending refund request:', { outpoint });
       
       const response = await fetch('/api/refund', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          txid,
-          vout,
-        }),
+        body: JSON.stringify({ outpoint }),
       });
 
       const data = await response.json();
