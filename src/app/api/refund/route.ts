@@ -14,13 +14,19 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log('Refund request body:', body);
 
-    if (!body.txid || body.vout === undefined) {
-      console.log('Invalid refund request - missing txid or vout:', body);
-      return NextResponse.json({ error: 'Missing required fields: txid and vout' }, { status: 400 });
+    if (!body.outpoint) {
+      console.log('Invalid refund request - missing outpoint:', body);
+      return NextResponse.json({ error: 'Missing required field: outpoint' }, { status: 400 });
+    }
+
+    const [txid, vout] = body.outpoint.split('_');
+    if (!txid || vout === undefined) {
+      console.log('Invalid outpoint format:', body.outpoint);
+      return NextResponse.json({ error: 'Invalid outpoint format' }, { status: 400 });
     }
 
     // TODO: Implement refund logic
-    console.log('Refund not yet implemented');
+    console.log('Processing refund for:', { txid, vout: parseInt(vout, 10) });
     return NextResponse.json({ error: 'Refund functionality not yet implemented' }, { status: 400 });
 
   } catch (error) {

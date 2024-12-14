@@ -8,8 +8,10 @@ interface RefundModalProps {
   onSuccess: () => void;
   amount: number;
   decimals: number;
-  txid: string;
-  vout: number;
+  utxo: {
+    txid: string;
+    vout: number;
+  };
   customerName?: string;
 }
 
@@ -18,8 +20,7 @@ export const RefundModal = ({
   onSuccess,
   amount,
   decimals,
-  txid,
-  vout,
+  utxo,
   customerName = 'your',
 }: RefundModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +28,7 @@ export const RefundModal = ({
   const handleRefund = async () => {
     setIsLoading(true);
     try {
-      const outpoint = `${txid}_${vout}`;
+      const outpoint = `${utxo.txid}_${utxo.vout}`;
       console.log('Sending refund request:', { outpoint });
       
       const response = await fetch('/api/refund', {
