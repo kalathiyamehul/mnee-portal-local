@@ -1,28 +1,36 @@
 import { useEffect, useState, useCallback } from 'react';
 import { fetchMneeUtxos } from '@/utils/api';
-import { FaSpinner, FaFire, FaCopy, FaArrowsRotate } from 'react-icons/fa6';
+import { FaSpinner, FaFire, FaCopy, FaArrowsRotate, FaCircleInfo } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
 import type { MNEEUtxo } from '@/types';
 import { MdOutlineOpenInNew } from 'react-icons/md';
-import type { BurnRequest } from './types';
+import type { BurnUtxo } from './types';
 import { DEFAULT_DECIMALS } from '@/lib/constants';
 import { formatDistanceToNow } from 'date-fns';
-import md5 from 'md5';
 import { BurnModal } from '../modals/BurnModal';
 import { RefundModal } from '../modals/RefundModal';
 import { toast } from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
 import { useSystemStatus } from '@/contexts/SystemStatusContext';
+import { BurnTable } from './BurnTable';
 
-interface BurnUtxo extends MNEEUtxo {
-  burnRequest?: BurnRequest;
-}
 
-interface BurnsTabProps {
-  showModal: (id: string) => void;
-}
+const getRowBorderClass = (status: string | undefined) => {
+  switch (status) {
+    case 'PENDING':
+      return 'border-l-4 border-l-warning';
+    case 'APPROVED':
+      return 'border-l-4 border-l-success';
+    case 'REFUNDED':
+      return 'border-l-4 border-l-info';
+    case 'CANCELLED':
+      return 'border-l-4 border-l-error';
+    default:
+      return 'border-l-4 border-l-secondary';
+  }
+};
 
-export const BurnsTab = ({ showModal }: BurnsTabProps) => {
+export const BurnsTab = ({}) => {
   const { data: session } = useSession();
   const { statusData } = useSystemStatus();
   const [burns, setBurns] = useState<BurnUtxo[]>([]);
@@ -33,6 +41,7 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
   const [decimals, setDecimals] = useState(8);
   const [selectedBurn, setSelectedBurn] = useState<BurnUtxo | null>(null);
   const [selectedRefund, setSelectedRefund] = useState<BurnUtxo | null>(null);
+  const [mneeBalance, setMneeBalance] = useState<number>(0);
 
   const fetchConfig = async () => {
     try {
@@ -52,42 +61,39 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
     }
   };
 
-  const fetchUtxos = async (address: string) => {
+  const fetchUtxos = useCallback(async (address: string) => {
     try {
       const fetchedUtxos = await fetchMneeUtxos([address]);
       console.log('Burn UTXOs:', fetchedUtxos);
       setUtxos(fetchedUtxos);
+      const total = fetchedUtxos.reduce((sum, utxo) => sum + Number(utxo.data.bsv21.amt), 0);
+      setMneeBalance(total);
     } catch (err) {
       console.error('Error fetching UTXOs:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch UTXOs');
     }
-  };
+  }, []);
 
   const updateBurns = useCallback(() => {
     if (!utxos.length) return;
 
     const burnsWithRequests = utxos.map(utxo => {
       const outpoint = `${utxo.txid}_${utxo.vout}`;
-      console.log('Checking outpoint:', outpoint);
-      const matchingRequest = statusData?.burnRequests?.find((req: BurnRequest) => {
-        console.log('Comparing with request:', { 
-          requestOutpoint: req.outpoint, 
-          matches: req.outpoint === outpoint,
-          status: req.status
-        });
-        return req.outpoint === outpoint;
-      });
-      console.log('Matching request:', matchingRequest);
+      const matchingRequest = statusData?.burnRequests?.find(req => req.outpoint === outpoint);
+      
       return {
         ...utxo,
-        burnRequest: matchingRequest,
+        burnRequest: matchingRequest ? {
+          ...matchingRequest,
+          amount: matchingRequest.amount?.toString() || '0'
+        } : undefined
       };
     });
 
-    setBurns(burnsWithRequests);
+    setBurns(burnsWithRequests as unknown as BurnUtxo[]);
   }, [utxos, statusData?.burnRequests]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     const address = await fetchConfig();
@@ -95,7 +101,7 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
       await fetchUtxos(address);
     }
     setLoading(false);
-  };
+  }, [fetchUtxos]);
 
   const handleCreateBurnRequest = (burn: BurnUtxo) => {
     setSelectedBurn(burn);
@@ -131,12 +137,6 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
            burn.burnRequest.requester.email === session.user.email;
   };
 
-  const getGravatarUrl = (email: string | undefined) => {
-    if (!email) return 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&s=40';
-    const hash = md5(email.toLowerCase().trim());
-    return `https://www.gravatar.com/avatar/${hash}?d=mp&s=40`;
-  };
-
   const handleRefundSuccess = () => {
     setSelectedRefund(null);
     handleRefresh();
@@ -155,8 +155,10 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
 
   // Initial fetch of config and UTXOs
   useEffect(() => {
-    handleRefresh();
-  }, []);
+    if (!burnAddress) {
+      handleRefresh();
+    }
+  }, [burnAddress, handleRefresh]);
 
   // Update burns when status or UTXOs change
   useEffect(() => {
@@ -168,154 +170,187 @@ export const BurnsTab = ({ showModal }: BurnsTabProps) => {
   const completedBurns = burns.filter(burn => burn.burnRequest && ['APPROVED', 'REFUNDED'].includes(burn.burnRequest.status));
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-bold">Burnable Outputs</h2>
-          <p className="text-sm text-base-content/70 mt-1">Send MNEE here to initiate burn</p>
+    <div className="p-4 space-y-8">
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold">Burn Requests</h2>
+          <div className="alert alert-info bg-base-200 text-base-content/70">
+            <FaCircleInfo className="w-4 h-4" />
+            <span>To burn MNEE, send tokens to the burn address</span>
+          </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="lg:col-span-3 space-y-8">
+          {error && (
+            <div className="alert alert-error">
+              <span>{error}</span>
+            </div>
+          )}
+
+          <div className="bg-base-100 rounded-lg">
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr>
+                    <th>Transaction</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeBurns.map((burn) => (
+                    <tr 
+                      key={`${burn.txid}_${burn.vout}_${burn.burnRequest?.id || 'new'}_${burn.burnRequest?.createdAt || Date.now()}`} 
+                      className={`hover ${getRowBorderClass(burn.burnRequest?.status)}`}
+                    >
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm">
+                            {burn.txid.slice(0, 8)}...{burn.txid.slice(-8)}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleCopyTxid(burn.txid)}
+                              className="btn btn-ghost btn-xs btn-square"
+                            >
+                              <FaCopy className="w-3 h-3" />
+                            </button>
+                            <a
+                              href={`https://whatsonchain.com/tx/${burn.txid}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-ghost btn-xs btn-square"
+                            >
+                              <MdOutlineOpenInNew className="w-3 h-3" />
+                            </a>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="font-medium">
+                        {toToken(burn.data.bsv21.amt, decimals)}
+                      </td>
+                      <td className="text-sm text-base-content/70">
+                        {burn.burnRequest?.createdAt ? (
+                          formatDistanceToNow(new Date(burn.burnRequest.createdAt), { addSuffix: true })
+                        ) : (
+                          `Block ${burn.height}`
+                        )}
+                      </td>
+                      <td>
+                        {burn.burnRequest ? (
+                          <span className={`badge ${
+                            burn.burnRequest.status === 'APPROVED' ? 'badge-success' :
+                            burn.burnRequest.status === 'REFUNDED' ? 'badge-info' :
+                            burn.burnRequest.status === 'PENDING' ? 'badge-ghost' :
+                            burn.burnRequest.status === 'CANCELLED' ? 'badge-secondary' :
+                            'badge-warning'
+                          } badge-sm`}>
+                            {burn.burnRequest.status === 'CANCELLED' ? 'AVAILABLE' : burn.burnRequest.status}
+                          </span>
+                        ) : (
+                          <span className="badge badge-secondary badge-sm animate-pulse">NEW</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          {(!burn.burnRequest || burn.burnRequest.status === 'CANCELLED') && (
+                            <button
+                              onClick={() => handleCreateBurnRequest(burn)}
+                              className="btn btn-error btn-sm gap-1"
+                            >
+                              <FaFire className="w-3 h-3" /> Burn
+                            </button>
+                          )}
+                          {canCancel(burn) && (
+                            <button
+                              onClick={() => handleCancelBurn(burn.burnRequest!.id)}
+                              className="btn btn-ghost btn-sm"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                          {(!burn.burnRequest || !['APPROVED', 'REFUNDED'].includes(burn.burnRequest.status)) && (
+                            <button
+                              onClick={() => setSelectedRefund(burn)}
+                              className="btn btn-primary btn-sm gap-1"
+                            >
+                              Refund
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <BurnTable 
+            title="Burn History"
+            burns={completedBurns}
+            decimals={decimals}
+            onCopyTxid={handleCopyTxid}
+            alwaysShow={true}
+          />
+        </div>
+
         {burnAddress && (
-          <div className="w-full sm:w-auto">
-            <div className="stat shadow-lg bg-base-100 px-4 sm:px-6 py-3 rounded-2xl relative max-w-[500px]">
-              <div className="absolute top-2 right-2 flex items-center gap-1">
-                <button
-                  onClick={() => handleCopyAddress(burnAddress)}
-                  className="btn btn-ghost btn-xs"
-                  title="Copy address"
-                >
-                  <FaCopy className="w-3 h-3" />
-                </button>
-                <a
-                  href={`https://whatsonchain.com/address/${burnAddress}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-ghost btn-xs"
-                  title="View on WhatsOnChain"
-                >
-                  <MdOutlineOpenInNew className="w-3 h-3" />
-                </a>
-                <button
-                  onClick={handleRefresh}
-                  disabled={loading}
-                  className="btn btn-ghost btn-xs"
-                  title="Refresh outputs"
-                >
-                  {loading ? (
-                    <FaSpinner className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <FaArrowsRotate className="w-3 h-3" />
-                  )}
-                </button>
+          <div className="lg:col-span-1">
+            <div className="bg-base-200 rounded-lg p-6 space-y-6">
+              <div className="flex justify-between items-start">
+                <div className="text-xs uppercase tracking-wider opacity-50">Burn Address</div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleCopyAddress(burnAddress)}
+                    className="btn btn-ghost btn-xs btn-square"
+                    title="Copy address"
+                  >
+                    <FaCopy className="w-3 h-3" />
+                  </button>
+                  <a
+                    href={`https://whatsonchain.com/address/${burnAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-ghost btn-xs btn-square"
+                    title="View on WhatsOnChain"
+                  >
+                    <MdOutlineOpenInNew className="w-3 h-3" />
+                  </a>
+                  <button
+                    onClick={handleRefresh}
+                    disabled={loading}
+                    className="btn btn-ghost btn-xs btn-square"
+                    title="Refresh outputs"
+                  >
+                    {loading ? (
+                      <FaSpinner className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <FaArrowsRotate className="w-3 h-3" />
+                    )}
+                  </button>
+                </div>
               </div>
-              <div className="stat-title text-xs uppercase tracking-wider opacity-50">Burn Address</div>
-              <div className="stat-value text-base font-mono mt-0.5 pr-24">
+
+              <div className="font-mono text-xs break-all">
                 {burnAddress}
+              </div>
+
+              <div className="divider my-2"></div>
+
+              <div>
+                <div className="text-xs uppercase tracking-wider opacity-50 mb-2">Current Balance</div>
+                <div className="text-2xl font-bold">
+                  {toToken(mneeBalance.toString(), decimals)} MNEE
+                </div>
               </div>
             </div>
           </div>
         )}
-      </div>
-
-      {error && (
-        <div className="alert alert-error mb-4">
-          <span>{error}</span>
-        </div>
-      )}
-
-      <div className="overflow-x-auto bg-base-100 rounded-lg shadow">
-        <table className="table w-full">
-          <thead>
-            <tr>
-              <th>Transaction</th>
-              <th>Amount</th>
-              <th>Date</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {activeBurns.map((burn) => (
-              <tr key={`${burn.txid}_${burn.vout}`} className="hover">
-                <td>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm">
-                      {burn.txid.slice(0, 8)}...{burn.txid.slice(-8)}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleCopyTxid(burn.txid)}
-                        className="btn btn-ghost btn-xs hover:bg-base-200"
-                      >
-                        <FaCopy className="w-3 h-3" />
-                      </button>
-                      <a
-                        href={`https://whatsonchain.com/tx/${burn.txid}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-ghost btn-xs hover:bg-base-200"
-                      >
-                        <MdOutlineOpenInNew className="w-3 h-3" />
-                      </a>
-                    </div>
-                  </div>
-                </td>
-                <td className="font-medium">
-                  {toToken(burn.data.bsv21.amt, decimals)}
-                </td>
-                <td className="text-sm text-base-content/70">
-                  {burn.burnRequest?.createdAt ? (
-                    formatDistanceToNow(new Date(burn.burnRequest.createdAt), { addSuffix: true })
-                  ) : (
-                    `Block ${burn.height}`
-                  )}
-                </td>
-                <td>
-                  {burn.burnRequest ? (
-                    <span className={`badge ${
-                      burn.burnRequest.status === 'APPROVED' ? 'badge-success' :
-                      burn.burnRequest.status === 'REFUNDED' ? 'badge-info' :
-                      burn.burnRequest.status === 'PENDING' ? 'badge-ghost' :
-                      burn.burnRequest.status === 'CANCELLED' ? 'badge-secondary' :
-                      'badge-warning'
-                    } badge-sm`}>
-                      {burn.burnRequest.status === 'CANCELLED' ? 'AVAILABLE' : burn.burnRequest.status}
-                    </span>
-                  ) : (
-                    <span className="badge badge-secondary badge-sm animate-pulse">NEW</span>
-                  )}
-                </td>
-                <td>
-                  <div className="flex items-center gap-2">
-                    {(!burn.burnRequest || burn.burnRequest.status === 'CANCELLED') && (
-                      <button
-                        onClick={() => handleCreateBurnRequest(burn)}
-                        className="btn btn-error btn-sm gap-1"
-                      >
-                        <FaFire className="w-3 h-3" /> Burn
-                      </button>
-                    )}
-                    {canCancel(burn) && (
-                      <button
-                        onClick={() => handleCancelBurn(burn.burnRequest!.id)}
-                        className="btn btn-ghost btn-sm"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                    {(!burn.burnRequest || !['APPROVED', 'REFUNDED'].includes(burn.burnRequest.status)) && (
-                      <button
-                        onClick={() => setSelectedRefund(burn)}
-                        className="btn btn-primary btn-sm gap-1"
-                      >
-                        Refund
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
 
       {selectedBurn && (

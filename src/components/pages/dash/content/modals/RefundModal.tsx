@@ -21,7 +21,7 @@ export const RefundModal = ({
   amount,
   decimals,
   utxo,
-  customerName = 'your',
+  customerName = 'the customer',
 }: RefundModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -73,7 +73,7 @@ export const RefundModal = ({
             <div className="flex flex-col items-start gap-1">
               <div className="font-semibold">Note</div>
               <p className="text-sm">
-                This will return the MNEE tokens back to {customerName}'s wallet. The transaction cannot be reversed once confirmed.
+                Once approved, this will return the MNEE tokens to the wallet address we have on file for {customerName}. The transaction cannot be reversed once confirmed.
               </p>
             </div>
           </div>

@@ -74,7 +74,12 @@ export async function POST(request: Request) {
       throw new Error('Failed to create mint request');
     }
 
-    return NextResponse.json({ mintRequest: result }, { status: 201 });
+    return NextResponse.json({ 
+      mintRequest: {
+        ...result,
+        amount: result.amount.toString()
+      }
+    }, { status: 201 });
   } catch (error) {
     console.error('Error processing mint request:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json({ 

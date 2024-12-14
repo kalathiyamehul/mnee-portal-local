@@ -1,5 +1,11 @@
+import { MNEEUtxo } from '@/types';
 import { Config } from '@prisma/client';
 import type { IconType } from 'react-icons';
+
+export interface BurnUtxo extends MNEEUtxo {
+  burnRequest?: BurnRequest;
+}
+
 
 export interface Fee {
 	min: number;
@@ -61,11 +67,19 @@ export interface BurnRequest {
 	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'REFUNDED';
 	requester: {
 		email: string;
+		name: string | null;
 	};
 	createdAt: string;
 	updatedAt: string;
-	txid: string;
-	vout: number;
+	outpoint: string;
+	approvals: Array<{
+		id: string;
+		approver: {
+			email: string;
+			name: string | null;
+		};
+	}>;
+	requiresApproval?: boolean;
 }
 
 export type Activity = {
@@ -74,7 +88,7 @@ export type Activity = {
 		email: string;
 		name: string | null;
 	};
-	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'DONE' | 'REJECTD';
+	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'DONE' | 'REFUNDED';
 	createdAt: string;
 	approvals: Array<{
 		id: string;
@@ -84,16 +98,18 @@ export type Activity = {
 		};
 	}>;
 	type: 'FREEZE' | 'BLACKLIST' | 'ACTION' | 'MINT' | 'BURN';
-	action?: string;
+	action?: 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT' | 'BURN';
 	address?: string;
 	txid?: string;
 	amount?: string;
+	outpoint?: string;
 	customer?: {
 		id: string;
 		name: string;
 		email: string;
 		address: string;
 	} | null;
+	requiresApproval?: boolean;
 };
 
 export interface AddressStatus {
