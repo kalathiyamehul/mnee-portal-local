@@ -8,7 +8,6 @@ import { getActivityIcon, getActivityDisplayText } from './utils';
 import { toast } from 'react-hot-toast';
 import { FreezeModal } from '../modals/FreezeModal';
 import { MintModal } from '../modals/MintModal';
-import { BurnModal } from '../modals/BurnModal';
 import type { Session } from 'next-auth';
 import { ActivityTab } from './ActivityTab';
 import { BurnsTab } from './BurnsTab';
@@ -33,7 +32,6 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	const [config, setConfig] = useState<ConfigWithFees | null>(null);
 	const [showFreezeModal, setShowFreezeModal] = useState(false);
 	const [showMintModal, setShowMintModal] = useState(false);
-	const [showBurnModal, setShowBurnModal] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabType>(defaultTab as TabType);
 	const { statusData, fetchStatus } = useSystemStatus();
 	const router = useRouter();
@@ -56,9 +54,6 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 				break;
 			case 'mint_modal':
 				setShowMintModal(true);
-				break;
-			case 'burn_modal':
-				setShowBurnModal(true);
 				break;
 		}
 	}, []);
@@ -452,7 +447,9 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 								activities={activities}
 							/>
 						)}
-						{activeTab === 'burns' && <BurnsTab showModal={showModal} />}
+						{activeTab === 'burns' && (
+							<BurnsTab />
+						)}
 						{activeTab === 'mints' && (
 							<MintsTab showModal={showModal} />
 						)}
@@ -470,13 +467,6 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 				<MintModal
 					onClose={() => setShowMintModal(false)}
 					onSuccess={fetchStatus}
-				/>
-			)}
-			{showBurnModal && (
-				<BurnModal
-					onClose={() => setShowBurnModal(false)}
-					onSuccess={fetchStatus}
-					amount={0}
 				/>
 			)}
 		</div>

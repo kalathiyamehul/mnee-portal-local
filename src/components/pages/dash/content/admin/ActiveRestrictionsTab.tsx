@@ -4,7 +4,6 @@ import type { MouseEvent } from 'react';
 import { FaSnowflake, FaBan } from 'react-icons/fa6';
 import { MdRemoveCircleOutline } from 'react-icons/md';
 import { formatDistanceToNow } from 'date-fns';
-import { wasAutoApproved } from './utils';
 import md5 from 'md5';
 
 interface ActiveRestrictionsTabProps {
@@ -32,12 +31,6 @@ export const ActiveRestrictionsTab = ({
   const restrictionActivities = activities.filter(
     activity => activity.type === 'FREEZE' || activity.type === 'BLACKLIST'
   ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-  const getStatusBadgeClass = (activity: Activity) => {
-    if (activity.status === 'PENDING') return 'badge-warning';
-    if (activity.status === 'CANCELLED') return 'badge-error';
-    return 'badge-success';
-  };
 
   const getActionBadgeClass = (activity: Activity) => {
     if (activity.type === 'BLACKLIST') {
@@ -133,7 +126,7 @@ export const ActiveRestrictionsTab = ({
                             (activity.action === 'FREEZE' ? 'Freeze' : 'Unfreeze')
                           }
                         </span>
-                        {(!wasAutoApproved(activity) || activity.status !== 'APPROVED') && (
+                        {activity.status !== 'APPROVED' && (
                           <span className={`badge badge-sm ${activity.status === 'PENDING' ? 'badge-warning' : activity.status === 'CANCELLED' ? 'badge-error' : 'badge-success'}`}>
                             {activity.status}
                           </span>

@@ -82,35 +82,50 @@ export interface BurnRequest {
 	requiresApproval?: boolean;
 }
 
-export type Activity = {
-	id: string;
-	requester: {
-		email: string;
-		name: string | null;
-	};
-	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'DONE' | 'REFUNDED';
-	createdAt: string;
-	approvals: Array<{
-		id: string;
-		approver: {
-			email: string;
-			name: string | null;
-		};
-	}>;
-	type: 'FREEZE' | 'BLACKLIST' | 'ACTION' | 'MINT' | 'BURN';
-	action?: 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT' | 'BURN';
-	address?: string;
-	txid?: string;
-	amount?: string;
-	outpoint?: string;
-	customer?: {
-		id: string;
-		name: string;
-		email: string;
-		address: string;
-	} | null;
-	requiresApproval?: boolean;
-};
+export type ActivityStatus = 
+  | "PENDING"
+  | "APPROVED"
+  | "CANCELLED"
+  | "DONE"
+  | "REFUNDED"
+  | "REJECTED";
+
+export interface Activity {
+  id: string;
+  type: "MINT" | "BURN" | "FREEZE" | "BLACKLIST" | "ACTION";
+  action?: 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT' | 'BURN';
+  status: ActivityStatus;
+  createdAt: string;
+  updatedAt: string;
+  amount?: string;
+  address?: string;
+  txid?: string;
+  outpoint?: string;
+  requester: {
+    name: string | null;
+    email: string;
+  };
+  requestedBy: string;
+  approvedBy?: string;
+  approver?: {
+    name: string | null;
+    email: string;
+  };
+  approvals: Array<{
+    id: string;
+    approver: {
+      email: string;
+      name: string | null;
+    };
+  }>;
+  customer?: {
+    id: string;
+    name: string;
+    email: string;
+    address: string;
+  } | null;
+  requiresApproval?: boolean;
+}
 
 export interface AddressStatus {
 	address: string;

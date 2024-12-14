@@ -60,10 +60,10 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 		}
 	}, [defaultShowTransfer, defaultAddress]);
 
-	const handleCloseTransferModal = () => {
+	const handleCloseTransferModal = useCallback(() => {
 		setShowTransferModal(false);
 		router.push('/dash/wallet');
-	};
+	}, [router]);
 
 	useEffect(() => {
 		if (!showTransferModal) return;
@@ -76,7 +76,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
 		window.addEventListener('keydown', handleEscape);
 		return () => window.removeEventListener('keydown', handleEscape);
-	}, [showTransferModal]);
+	}, [handleCloseTransferModal, showTransferModal]);
 
 	const connectWallet = async () => {
 		try {

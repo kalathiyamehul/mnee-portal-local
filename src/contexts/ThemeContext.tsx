@@ -23,7 +23,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       setTheme(savedTheme);
       document.documentElement.setAttribute("data-theme", savedTheme);
     }
-  }, []);
+  }, [theme]);
 
   const handleThemeChange = (newTheme: string) => {
     if (typeof window !== "undefined") {

@@ -6,9 +6,10 @@ import { P2PKH, PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
 import { fetchConfig, fetchTransaction } from "@/utils/api";
-import type { FundingUtxo, MintRequest } from "@/types/utxo";
+import type { MintRequest } from "@/types/utxo";
 import { MINT_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 import { signMint } from "@/templates/vault";
+import { getFundingUtxos } from "@/utils/utxo";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -131,7 +132,8 @@ export async function POST(request: Request) {
 	}
 }
 
-const mintMnee = async (amount: bigint, address: string) => {
+// Helper function to mint MNEE tokens
+async function mintMnee(amount: bigint, address: string) {
 	const config = await fetchConfig();
 
 	// create the cosign template
@@ -206,7 +208,6 @@ const mintMnee = async (amount: bigint, address: string) => {
 		const rawtx = tx.toHex();
 		// console.log("FULLY SIGNED TX", rawtx);
 
-		// throw new Error("Stopping broadcast");
 		// broadcast & ingest
 		const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
 			method: "POST",
@@ -219,8 +220,8 @@ const mintMnee = async (amount: bigint, address: string) => {
 		if (!broadcastResponse.ok) {
 			throw new Error("Failed to broadcast MNEE");
 		}
-    
-    // save the new tx id to the db
+		
+		// save the new tx id to the db
 		console.log("saving db config");
 		await prisma.config.update({
 			where: { id: 1 },
@@ -232,9 +233,4 @@ const mintMnee = async (amount: bigint, address: string) => {
 		console.error(error);
 		throw new Error("Failed to mint MNEE");
 	}
-};
-
-export const getFundingUtxos = async (fundingAddress: string) => {
-	const utxosResponse = await fetch(`${MNEE_API}/v1/utxos/${fundingAddress}`);
-	return (await utxosResponse.json()) as FundingUtxo[];
-};
+}

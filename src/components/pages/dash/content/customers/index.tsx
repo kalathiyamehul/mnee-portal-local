@@ -8,7 +8,6 @@ import { FaEdit, FaUserPlus, FaPaperPlane } from "react-icons/fa";
 import { MdOutlineOpenInNew } from "react-icons/md";
 import { formatDistanceToNow } from "date-fns";
 import md5 from "md5";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 interface Customer {

@@ -6,11 +6,11 @@ import {
 	type TransactionInput,
 	type TransactionOutput,
 } from "@bsv/sdk";
-import { getFundingUtxos } from "../approveMint/route";
 import { fetchTransaction } from "@/utils/api";
 import { MINT_WIF, BURN_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 import { prisma } from "@/lib/prisma";
 import type { IndexContext } from "@/types/indexContext";
+import { getFundingUtxos } from "@/utils/utxo";
 
 const DEFAULT_FEES = [
 	{ min: 0, max: 10000, fee: 50 },
