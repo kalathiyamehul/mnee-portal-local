@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
-import { FaSpinner } from 'react-icons/fa6';
 import type { Activity, AddressStatus, ConfigWithFees, Fee } from './types';
 import { getActivityIcon, getActivityDisplayText } from './utils';
 import { toast } from 'react-hot-toast';
@@ -412,11 +411,11 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 				</div>
 
 				{initialLoading ? (
-					<div className="flex justify-center items-center p-8">
-						<FaSpinner className="animate-spin text-2xl" />
+					<div className="flex justify-center items-center min-h-[calc(100vh-12rem)] animate-fade-in">
+						<div className="loading loading-spinner loading-lg"></div>
 					</div>
 				) : (
-					<div>
+					<div className="animate-fade-in">
 						{activeTab === 'activity' && (
 							<ActivityTab
 								activities={activities}

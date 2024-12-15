@@ -73,7 +73,11 @@ const DashboardHomeContent = () => {
 	}, []);
 
 	if (!metrics) {
-		return <div>Loading...</div>;
+		return (
+			<div className="flex justify-center items-center min-h-screen animate-fade-in">
+				<div className="loading loading-spinner loading-lg"></div>
+			</div>
+		);
 	}
 
 	// Format burns for the BurnTable component
@@ -138,7 +142,7 @@ const DashboardHomeContent = () => {
 	};
 
 	return (
-		<div className="p-4 space-y-8">
+		<div className="p-4 space-y-8 animate-fade-in">
 			<div className="stats shadow w-full">
 				<div 
 					className={getStatCardClass('customers')}

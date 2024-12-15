@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { FaSpinner, FaPlus, FaTrash, FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { FaPlus, FaTrash, FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
 import { toToken } from 'satoshi-token';
 import { Fee, ConfigWithFees } from './admin/types';
 import { Config } from '@prisma/client';
@@ -11,6 +11,7 @@ import { MdOutlineOpenInNew } from 'react-icons/md';
 import { FaCopy } from 'react-icons/fa6';
 import { toast } from 'react-hot-toast';
 import { ingestTxid } from '@/utils/api';
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
 
 interface EditFeesModalProps {
 	fees: Fee[];
@@ -310,6 +311,24 @@ const DashboardSettingsContent = () => {
 		icon: string;
 		amt: number;
 	} | null>(null);
+	const { statusData } = useSystemStatus();
+
+	// Calculate circulating supply from mints and burns
+	const circulatingSupply = useMemo(() => {
+		if (!statusData || !config) return 0n;
+
+		// Sum all approved mints
+		const totalMints = statusData.mintRequests
+			.filter(req => req.status === 'APPROVED')
+			.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
+
+		// Sum all approved burns
+		const totalBurns = statusData.burnRequests
+			.filter(req => req.status === 'APPROVED')
+			.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
+
+		return totalMints - totalBurns;
+	}, [statusData, config]);
 
 	const fetchBsvBalances = useCallback(async (addresses: string[]) => {
 		try {
@@ -404,8 +423,8 @@ const DashboardSettingsContent = () => {
 
 	if (loading) {
 		return (
-			<div className="flex justify-center items-center min-h-[200px]">
-				<FaSpinner className="animate-spin text-2xl" />
+			<div className="flex justify-center items-center min-h-screen animate-fade-in">
+				<div className="loading loading-spinner loading-lg"></div>
 			</div>
 		);
 	}
@@ -421,7 +440,7 @@ const DashboardSettingsContent = () => {
 	}
 
 	return (
-		<div className="p-4 space-y-6">
+		<div className="p-4 space-y-6 animate-fade-in">
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold">Settings</h1>
 				<ThemeSelector />
@@ -522,13 +541,13 @@ const DashboardSettingsContent = () => {
 
 									<div className="bg-base-300 rounded-lg p-4 space-y-2">
 										<div className="flex items-center gap-2">
-											<span className="font-semibold">Current Supply</span>
-											<div className="tooltip" data-tip="Number of tokens currently in circulation">
+											<span className="font-semibold">Circulating Supply</span>
+											<div className="tooltip" data-tip="Number of tokens currently in circulation (total mints minus total burns)">
 												<FaQuestionCircle className="text-base-content/60" />
 											</div>
 										</div>
 										<div className="font-mono">
-											{tokenDetails ? toToken(tokenDetails.amt.toString(), config.decimals) : '0'} MNEE
+											{config ? toToken(circulatingSupply.toString(), config.decimals) : '0'} MNEE
 										</div>
 									</div>
 								</div>
