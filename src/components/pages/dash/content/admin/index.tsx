@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
-import type { Activity, AddressStatus, ConfigWithFees, Fee } from './types';
+import type { Activity, AddressStatus, Fee } from './types';
 import { getActivityIcon, getActivityDisplayText } from './utils';
 import { toast } from 'react-hot-toast';
 import { FreezeModal } from '../modals/FreezeModal';
@@ -15,6 +15,7 @@ import { MintsTab } from './MintsTab';
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatDistanceToNow } from 'date-fns';
+import { Config } from '@prisma/client';
 
 type TabType = 'activity' | 'restrictions' | 'burns' | 'mints';
 
@@ -28,7 +29,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	const [initialLoading, setInitialLoading] = useState(true);
 	const [showOnlyPending, setShowOnlyPending] = useState(true);
 	const [activities, setActivities] = useState<Activity[]>([]);
-	const [config, setConfig] = useState<ConfigWithFees | null>(null);
+	const [config, setConfig] = useState<Config | null>(null);
 	const [showFreezeModal, setShowFreezeModal] = useState(false);
 	const [showMintModal, setShowMintModal] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabType>(defaultTab as TabType);

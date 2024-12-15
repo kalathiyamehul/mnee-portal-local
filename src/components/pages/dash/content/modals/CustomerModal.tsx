@@ -3,51 +3,44 @@
 import { useState } from "react";
 import { FaSpinner } from "react-icons/fa6";
 import { toast } from "react-hot-toast";
+import { useCustomer } from "@/contexts/CustomerContext";
 
 interface CustomerModalProps {
-  onClose: () => void;
-  onSuccess: () => Promise<void>;
   customer?: {
     id: string;
     name: string;
     email: string;
     address: string;
   };
+  onClose: () => void;
+  onSuccess: () => void;
 }
 
-export const CustomerModal = ({ onClose, onSuccess, customer }: CustomerModalProps) => {
-  const [name, setName] = useState(customer?.name || "");
-  const [email, setEmail] = useState(customer?.email || "");
-  const [address, setAddress] = useState(customer?.address || "");
+export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalProps) {
+  const { createCustomer, updateCustomer } = useCustomer();
   const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: customer?.name || "",
+    email: customer?.email || "",
+    address: customer?.address || "",
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !address) return;
+    setLoading(true);
 
     try {
-      setLoading(true);
-      const response = await fetch("/api/customers" + (customer ? `/${customer.id}` : ""), {
-        method: customer ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          address,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || `Failed to ${customer ? 'update' : 'create'} customer`);
+      if (customer) {
+        await updateCustomer(customer.id, formData);
+        toast.success("Customer updated successfully");
+      } else {
+        await createCustomer(formData);
+        toast.success("Customer created successfully");
       }
-
-      await onSuccess();
-      onClose();
-      toast.success(`Customer ${customer ? 'updated' : 'created'} successfully`);
+      onSuccess();
     } catch (error) {
-      console.error(`Error ${customer ? 'updating' : 'creating'} customer:`, error);
-      toast.error(error instanceof Error ? error.message : `Failed to ${customer ? 'update' : 'create'} customer`);
+      console.error("Error saving customer:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to save customer");
     } finally {
       setLoading(false);
     }
@@ -66,8 +59,8 @@ export const CustomerModal = ({ onClose, onSuccess, customer }: CustomerModalPro
               <input
                 type="text"
                 className="input input-bordered w-full max-w-md"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Enter customer name"
                 required
               />
@@ -80,8 +73,8 @@ export const CustomerModal = ({ onClose, onSuccess, customer }: CustomerModalPro
               <input
                 type="email"
                 className="input input-bordered w-full max-w-md"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 placeholder="Enter customer email"
                 required
               />
@@ -94,8 +87,8 @@ export const CustomerModal = ({ onClose, onSuccess, customer }: CustomerModalPro
               <input
                 type="text"
                 className="input input-bordered w-full max-w-md font-mono"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                value={formData.address}
+                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                 placeholder="Enter Bitcoin SV address"
                 required
               />
@@ -114,7 +107,7 @@ export const CustomerModal = ({ onClose, onSuccess, customer }: CustomerModalPro
             <button
               type="submit"
               className="btn btn-primary"
-              disabled={loading || !name || !email || !address}
+              disabled={loading}
             >
               {loading ? (
                 <>
@@ -128,6 +121,7 @@ export const CustomerModal = ({ onClose, onSuccess, customer }: CustomerModalPro
           </div>
         </form>
       </div>
+      <div className="modal-backdrop" onClick={onClose}></div>
     </dialog>
   );
-}; 
+} 

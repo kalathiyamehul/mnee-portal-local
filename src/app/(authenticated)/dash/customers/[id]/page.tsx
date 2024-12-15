@@ -1,3 +1,4 @@
+// src/app/(authenticated)/dash/customers/[id]/page.tsx
 import CustomerViewContent from "@/components/pages/dash/content/customers/view";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";

@@ -1,5 +1,6 @@
+import { Config } from '@prisma/client';
 import { ActivityList } from './ActivityList';
-import type { Activity, ConfigWithFees } from './types';
+import type { Activity } from './types';
 import type { IconType } from 'react-icons';
 
 interface ActivityTabProps {
@@ -7,7 +8,7 @@ interface ActivityTabProps {
   showOnlyPending: boolean;
   onShowOnlyPendingChange: (value: boolean) => void;
   filteredActivities: Activity[];
-  config: ConfigWithFees | null;
+  config: Config | null;
   loading: boolean;
   canCancel: (activity: Activity) => boolean;
   canApprove: (activity: Activity) => boolean;
@@ -40,7 +41,7 @@ export const ActivityTab = ({
         showOnlyPending={showOnlyPending}
         setShowOnlyPending={setShowOnlyPending}
         filteredActivities={filteredActivities}
-        config={config}
+        config={config as Config}
         loading={loading}
         canCancel={canCancel}
         canApprove={canApprove}

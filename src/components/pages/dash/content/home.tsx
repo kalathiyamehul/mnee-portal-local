@@ -1,14 +1,44 @@
 "use client";
 
-import { FaBitcoinSign, FaUsers, FaCircleExclamation, FaMoneyBillTransfer } from "react-icons/fa6";
-import { useEffect, useState } from "react";
+import { FaBitcoinSign, FaUsers, FaCircleExclamation, FaMoneyBillTransfer, FaArrowRight } from "react-icons/fa6";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MintTable } from "./admin/MintTable";
 import { BurnTable } from "./admin/BurnTable";
-import { DEFAULT_DECIMALS } from '@/lib/constants';
 import { toast } from 'react-hot-toast';
 import type { Activity, BurnUtxo } from './admin/types';
 import { TokenActivityChart } from "@/components/charts/TokenActivityChart";
+import { ActivityList } from './admin/ActivityList';
+import { getActivityIcon } from "./admin/utils";
+import { useSession } from "next-auth/react";
+import { Config } from "@prisma/client";
+
+// Utility functions
+const getActivityDisplayText = (activity: Activity) => {
+	switch (activity.type) {
+		case 'MINT':
+			return `Mint ${activity.amount} MNEE`;
+		case 'BURN':
+			return `Burn ${activity.amount} MNEE`;
+		case 'FREEZE':
+			return `Freeze Address ${activity.address}`;
+		case 'BLACKLIST':
+			return `Blacklist Address ${activity.address}`;
+		case 'ACTION':
+			return activity.action || 'Unknown Action';
+		default:
+			return 'Unknown Activity';
+	}
+};
+
+const requiresApproval = (activity: Activity) => {
+	return activity.type !== 'BLACKLIST';
+};
+
+const getApprovalCount = (activity: Activity) => {
+	if (activity.type === 'BLACKLIST') return 0;
+	return activity.approvals?.length || 0;
+};
 
 type ChartType = 'volume' | 'mints' | 'burns' | 'customers' | 'restrictions';
 
@@ -39,24 +69,87 @@ type DashboardMetrics = {
 	}>;
 };
 
-const DashboardHomeContent = () => {
+interface DashboardHomeContentProps {
+	initialConfig: Config;
+}
+
+const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
+	const { data: session } = useSession();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-	const [decimals, setDecimals] = useState(DEFAULT_DECIMALS);
+	const [loading, setLoading] = useState(false);
 
 	// Default to 'volume' if no chart is selected
 	const selectedChart = (searchParams.get('chart') || 'volume') as ChartType;
 
-	const fetchConfig = async () => {
+	const canCancel = useCallback((activity: Activity) => {
+		if (!session?.user?.email) return false;
+		return activity.status === 'PENDING' && activity.requester.email === session.user.email;
+	}, [session]);
+
+	const canApprove = useCallback((activity: Activity) => {
+		if (!session?.user?.email) return false;
+		if (activity.status !== 'PENDING') return false;
+		if (activity.requester.email === session.user.email) return false;
+		if (activity.type === 'BLACKLIST') return false;
+		return !activity.approvals?.some(approval => approval.approver.email === session.user.email);
+	}, [session]);
+
+	const handleCancel = async (id: string, type: Activity['type']) => {
 		try {
-			const response = await fetch('/api/config');
-			const config = await response.json();
-			if (config?.decimals) {
-				setDecimals(config.decimals);
-			}
+			setLoading(true);
+			const requestType = type.toLowerCase() + 'RequestId';
+			await fetch('/api/cancel', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ [requestType]: id }),
+			});
+			fetchMetrics();
+			toast.success('Request cancelled');
 		} catch (error) {
-			console.error('Error fetching config:', error);
+			console.error('Error cancelling request:', error);
+			toast.error('Failed to cancel request');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleApprove = async (id: string, type: Activity['type']) => {
+		try {
+			setLoading(true);
+			const endpoint = type === 'ACTION' ? 'approve' :
+				type === 'FREEZE' ? 'approveFreeze' :
+				type === 'BLACKLIST' ? 'approveBlacklist' :
+				type === 'MINT' ? 'approveMint' :
+				type === 'BURN' ? 'approveBurn' : null;
+
+			if (!endpoint) throw new Error('Invalid activity type');
+
+			const requestType = type === 'ACTION' ? 'actionRequestId' :
+				type === 'FREEZE' ? 'freezeRequestId' :
+				type === 'BLACKLIST' ? 'blacklistRequestId' :
+				type === 'MINT' ? 'mintRequestId' :
+				'burnRequestId';
+
+			const response = await fetch(`/api/${endpoint}`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ [requestType]: id }),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || 'Failed to approve request');
+			}
+
+			fetchMetrics();
+			toast.success('Request approved');
+		} catch (error) {
+			console.error('Error approving request:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to approve request');
+		} finally {
+			setLoading(false);
 		}
 	};
 
@@ -68,7 +161,6 @@ const DashboardHomeContent = () => {
 	};
 
 	useEffect(() => {
-		fetchConfig();
 		fetchMetrics();
 	}, []);
 
@@ -140,6 +232,22 @@ const DashboardHomeContent = () => {
 		}
 		router.push(`?${params.toString()}`);
 	};
+
+	const mappedBurns = metrics?.recentBurns.map(burn => ({
+		...burn,
+		type: 'BURN' as const,
+		action: 'BURN' as const,
+		address: burn.outpoint?.split('_')[0] || '',
+		amount: burn.amount.toString(),
+		updatedAt: burn.createdAt,
+		requestedBy: burn.requester.email,
+		requiresApproval: true,
+	} as Activity)) || [];
+
+	const pendingActivities = metrics?.recentMints
+		.concat(mappedBurns)
+		.filter(activity => activity.status === 'PENDING')
+		.slice(0, 5) || [];
 
 	return (
 		<div className="p-4 space-y-8 animate-fade-in">
@@ -216,17 +324,86 @@ const DashboardHomeContent = () => {
 			</div>
 
 			<div className="w-full">
-				<h2 className="text-xl font-semibold mb-4">
-					{selectedChart === 'volume' && 'Token Volume History'}
-					{selectedChart === 'mints' && 'Mint Transaction History'}
-					{selectedChart === 'burns' && 'Burn Transaction History'}
-					{selectedChart === 'customers' && 'Customer Growth'}
-					{selectedChart === 'restrictions' && 'Restrictions History'}
-				</h2>
+				<div className="flex justify-between items-center mb-4">
+					<h2 className="text-xl font-semibold">
+						{selectedChart === 'volume' && 'Token Volume History'}
+						{selectedChart === 'mints' && 'Mint Transaction History'}
+						{selectedChart === 'burns' && 'Burn Transaction History'}
+						{selectedChart === 'customers' && 'Customer Growth'}
+						{selectedChart === 'restrictions' && 'Restrictions History'}
+					</h2>
+					{selectedChart === 'volume' && (
+						<button
+							onClick={() => router.push('/dash/admin?tab=mints')}
+							className="btn btn-ghost btn-sm gap-2"
+						>
+							View Mints <FaArrowRight className="w-3 h-3" />
+						</button>
+					)}
+					{selectedChart === 'mints' && (
+						<button
+							onClick={() => router.push('/dash/admin?tab=mints')}
+							className="btn btn-ghost btn-sm gap-2"
+						>
+							View Mints <FaArrowRight className="w-3 h-3" />
+						</button>
+					)}
+					{selectedChart === 'burns' && (
+						<button
+							onClick={() => router.push('/dash/admin?tab=burns')}
+							className="btn btn-ghost btn-sm gap-2"
+						>
+							View Burns <FaArrowRight className="w-3 h-3" />
+						</button>
+					)}
+					{selectedChart === 'customers' && (
+						<button
+							onClick={() => router.push('/dash/customers')}
+							className="btn btn-ghost btn-sm gap-2"
+						>
+							View Customers <FaArrowRight className="w-3 h-3" />
+						</button>
+					)}
+					{selectedChart === 'restrictions' && (
+						<button
+							onClick={() => router.push('/dash/admin?tab=restrictions')}
+							className="btn btn-ghost btn-sm gap-2"
+						>
+							View Restrictions <FaArrowRight className="w-3 h-3" />
+						</button>
+					)}
+				</div>
 				<TokenActivityChart 
 					type={getChartType(selectedChart)}
 					highlight={selectedChart === 'burns' ? 'burns' : 'mints'}
 					height={350} 
+				/>
+			</div>
+
+			<div className="w-full">
+				<div className="flex justify-between items-center mb-4">
+					<h2 className="text-xl font-semibold">Pending Activities</h2>
+					<button
+						onClick={() => router.push('/dash/admin?tab=activity')}
+						className="btn btn-ghost btn-sm gap-2"
+					>
+						View Activity <FaArrowRight className="w-3 h-3" />
+					</button>
+				</div>
+				<ActivityList
+					showOnlyPending={true}
+					setShowOnlyPending={() => {}}
+					filteredActivities={pendingActivities}
+					config={initialConfig}
+					loading={loading}
+					canCancel={canCancel}
+					canApprove={canApprove}
+					handleCancel={handleCancel}
+					handleApprove={handleApprove}
+					getActivityIcon={getActivityIcon}
+					getActivityDisplayText={getActivityDisplayText}
+					requiresApproval={requiresApproval}
+					getApprovalCount={getApprovalCount}
 				/>
 			</div>
 
@@ -246,11 +423,11 @@ const DashboardHomeContent = () => {
 					<BurnTable 
 						title="Recent Burns"
 						burns={formattedBurns}
-						decimals={decimals}
+						decimals={initialConfig.decimals}
 						onCopyTxid={(txid) => {
 							navigator.clipboard.writeText(txid);
 							toast.success('Transaction ID copied to clipboard');
-						}}
+							}}
 						alwaysShow={true}
 						showViewAll={true}
 					/>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { FaPlus, FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
 import { toToken } from 'satoshi-token';
-import { Fee, ConfigWithFees } from './admin/types';
+import { Fee } from './admin/types';
 import { Config } from '@prisma/client';
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { useBalance } from '@/contexts/BalanceContext';
@@ -309,7 +309,7 @@ const TokenDetailsSection = ({
 	tokenDetails, 
 	circulatingSupply 
 }: { 
-	config: ConfigWithFees; 
+	config: Config; 
 	tokenDetails: { sym: string; icon: string; amt: number; } | null;
 	circulatingSupply: bigint;
 }) => {
@@ -468,7 +468,7 @@ const TokenDetailsSection = ({
 };
 
 const DashboardSettingsContent = () => {
-	const [config, setConfig] = useState<ConfigWithFees | null>(null);
+	const [config, setConfig] = useState<Config | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [showEditFeesModal, setShowEditFeesModal] = useState(false);
 	const [feeAddress, setFeeAddress] = useState("");
@@ -650,7 +650,7 @@ const DashboardSettingsContent = () => {
 									</tr>
 								</thead>
 								<tbody>
-									{config.fees?.map((fee, index) => (
+									{(config.fees as Fee[])?.map((fee, index) => (
 										<tr key={index}>
 											<td>
 												{toToken(fee.min, config.decimals)} MNEE - {fee.max === Number.MAX_SAFE_INTEGER ? '∞' : `${toToken(fee.max, config.decimals)} MNEE`}
@@ -770,7 +770,7 @@ const DashboardSettingsContent = () => {
 
 			{showEditFeesModal && (
 				<EditFeesModal
-					fees={config.fees || []}
+					fees={config.fees as Fee[] || []}
 					onSave={(newFees) => {
 						handleSave(newFees);
 						setShowEditFeesModal(false);

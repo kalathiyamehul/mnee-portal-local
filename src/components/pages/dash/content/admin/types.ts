@@ -14,9 +14,9 @@ export interface Fee {
 	[key: string]: number;
 }
 
-export type ConfigWithFees = Omit<Config, 'fees'> & {
-	fees: Fee[];
-}
+// export type ConfigWithFees = Omit<Config, 'fees'> & {
+// 	fees: Fee[];
+// }
 
 export interface BaseRequest {
 	id: string;
@@ -154,7 +154,7 @@ export interface ActivityListProps {
 	showOnlyPending: boolean;
 	setShowOnlyPending: (value: boolean) => void;
 	filteredActivities: Activity[];
-	config: ConfigWithFees | null;
+	config: Config;
 	loading: boolean;
 	canCancel: (activity: Activity) => boolean;
 	canApprove: (activity: Activity) => boolean;

@@ -1,13 +1,14 @@
 import { FaSpinner } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
 import { DEFAULT_DECIMALS } from '@/lib/constants';
-import type { Activity, ConfigWithFees } from './types';
+import type { Activity } from './types';
 import type { Session } from 'next-auth';
 import type { IconType } from 'react-icons';
+import { Config } from '@prisma/client';
 
 interface ActivityCardProps {
   activity: Activity;
-  config: ConfigWithFees | null;
+  config: Config | null;
   session: Session | null;
   loading: boolean;
   canCancel: (activity: Activity) => boolean;

@@ -1,84 +1,50 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useCallback, useEffect, useState } from "react";
-import { toast } from "react-hot-toast";
-import { CustomerModal } from "../modals/CustomerModal";
-import { FaEdit, FaUserPlus, FaPaperPlane } from "react-icons/fa";
-import { MdOutlineOpenInNew } from "react-icons/md";
-import { formatDistanceToNow } from "date-fns";
-import { useRouter } from "next/navigation";
-import { getGravatarUrl } from "@/utils/gravatar";
-
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  address: string;
-  createdAt: string;
-  createdBy: string;
-  creator: {
-    name: string | null;
-    email: string;
-  };
-}
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { CustomerModal } from '../modals/CustomerModal';
+import { formatDistanceToNow } from 'date-fns';
+import { FaUserPlus, FaEdit } from 'react-icons/fa';
+import { MdOutlineOpenInNew } from 'react-icons/md';
+import { useCustomer } from '@/contexts/CustomerContext';
+import { useBalance } from '@/contexts/BalanceContext';
+import { getGravatarUrl } from '@/utils/gravatar';
+import { getConfig } from '@/lib/config';
+import { toToken } from 'satoshi-token';
+import { Config, Customer } from '@prisma/client';
 
 export default function DashboardCustomersContent() {
-  const { data: session } = useSession();
-  const [loading, setLoading] = useState(true);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const router = useRouter();
+  const { customers, loading, error, fetchCustomers } = useCustomer();
+  const { balances, fetchBalances, isLoading: balancesLoading } = useBalance();
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const router = useRouter();
-
-  const fetchCustomers = useCallback(async () => {
-    if (!session?.user?.id) return;
-    
-    try {
-      const response = await fetch('/api/customers');
-      if (!response.ok) {
-        throw new Error('Failed to fetch customers');
-      }
-      const data = await response.json();
-      setCustomers(data);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-      toast.error('Failed to fetch customers');
-    } finally {
-      setLoading(false);
-    }
-  }, [session]);
+  const [config, setConfig] = useState<Config | null>(null);
 
   useEffect(() => {
-    if (session?.user?.id) {
-      fetchCustomers();
+    const init = async () => {
+      try {
+        const configData = await getConfig();
+        setConfig(configData);
+      } catch (error) {
+        console.error('Error loading config:', error);
+      }
+    };
+    init();
+  }, []);
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [fetchCustomers]);
+
+  useEffect(() => {
+    if (customers?.length && !balancesLoading) {
+      const addresses = customers.map(c => c.address);
+      fetchBalances(addresses);
     }
-  }, [session, fetchCustomers]);
+  }, [customers, fetchBalances, balancesLoading]);
 
-  const handleEdit = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setSelectedCustomer(null);
-  };
-
-  const handleCopyAddress = (address: string) => {
-    navigator.clipboard.writeText(address);
-    toast.success('Address copied to clipboard');
-  };
-
-  const handleSend = (address: string) => {
-    router.push(`/dash/wallet?showTransfer=true&address=${address}`);
-  };
-
-  const handleRowClick = (customerId: string) => {
-    router.push(`/dash/customers/${customerId}`);
-  };
-
-  if (loading) {
+  if (loading || !config) {
     return (
       <div className="flex justify-center items-center min-h-screen animate-fade-in">
         <div className="loading loading-spinner loading-lg"></div>
@@ -86,13 +52,27 @@ export default function DashboardCustomersContent() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="alert alert-error">{error.message}</div>
+      </div>
+    );
+  }
+
+  const handleEdit = (customer: Customer, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedCustomer(customer);
+    setShowModal(true);
+  };
+
   return (
     <div className="p-4 space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Customers</h1>
         <button
-          className="btn btn-primary btn-sm gap-2"
           onClick={() => setShowModal(true)}
+          className="btn btn-primary btn-sm gap-2"
         >
           <FaUserPlus className="w-4 h-4" />
           Add Customer
@@ -104,23 +84,17 @@ export default function DashboardCustomersContent() {
           <thead>
             <tr className="text-base-content/70 text-sm border-b border-base-200">
               <th className="bg-base-100">Customer</th>
-              <th className="bg-base-100">Address</th>
+              <th className="bg-base-100">MNEE Address</th>
               <th className="bg-base-100">Created By</th>
               <th className="bg-base-100 w-[180px]">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {customers.map((customer) => (
-              <tr 
-                key={customer.id} 
+            {customers?.map((customer) => (
+              <tr
+                key={customer.id}
                 className="hover border-l-4 border-l-transparent hover:border-l-primary cursor-pointer"
-                onClick={(e) => {
-                  // Don't navigate if clicking on action buttons
-                  if ((e.target as HTMLElement).closest('.actions')) {
-                    return;
-                  }
-                  handleRowClick(customer.id);
-                }}
+                onClick={() => router.push(`/dash/customers/${customer.id}`)}
               >
                 <td>
                   <div className="flex items-center gap-3">
@@ -139,26 +113,29 @@ export default function DashboardCustomersContent() {
                   </div>
                 </td>
                 <td>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCopyAddress(customer.address);
-                      }}
-                      className="font-mono text-sm hover:text-primary transition-colors"
-                    >
-                      {customer.address}
-                    </button>
-                    <a
-                      href={`https://whatsonchain.com/address/${customer.address}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-ghost btn-xs btn-square"
-                      title="View on WhatsOnChain"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MdOutlineOpenInNew className="w-3 h-3" />
-                    </a>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <div className="font-mono text-sm">
+                        {customer.address}
+                      </div>
+                      <a
+                        href={`https://whatsonchain.com/address/${customer.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-ghost btn-xs btn-square"
+                        onClick={(e) => e.stopPropagation()}
+                        title="View on WhatsOnChain"
+                      >
+                        <MdOutlineOpenInNew className="w-3 h-3" />
+                      </a>
+                    </div>
+                    <div className="text-sm text-base-content/70">
+                      Balance: {balances[customer.address] !== undefined ? (
+                        `${toToken(balances[customer.address].toString(), config.decimals)} MNEE`
+                      ) : (
+                        <span className="loading loading-spinner loading-xs"></span>
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td>
@@ -180,11 +157,19 @@ export default function DashboardCustomersContent() {
                   </div>
                 </td>
                 <td>
-                  <div className="flex gap-2 actions">
+                  <div className="flex gap-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleEdit(customer);
+                        handleEdit({
+                          id: customer.id,
+                          name: customer.name,
+                          email: customer.email,
+                          address: customer.address,
+                          createdBy: customer.creator.email,
+                          createdAt: new Date(customer.createdAt),
+                          updatedAt: new Date(customer.createdAt)
+                        }, e);
                       }}
                       className="btn btn-ghost btn-sm gap-2"
                       title="Edit customer"
@@ -195,19 +180,17 @@ export default function DashboardCustomersContent() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleSend(customer.address);
+                        router.push(`/dash/customers/${customer.id}`);
                       }}
-                      className="btn btn-ghost btn-sm gap-2"
-                      title="Send MNEE"
+                      className="btn btn-ghost btn-sm"
                     >
-                      <FaPaperPlane className="w-4 h-4" />
-                      Send
+                      View
                     </button>
                   </div>
                 </td>
               </tr>
             ))}
-            {customers.length === 0 && (
+            {!customers?.length && (
               <tr>
                 <td colSpan={4} className="text-center py-4 text-base-content/70">
                   No customers found
@@ -220,9 +203,16 @@ export default function DashboardCustomersContent() {
 
       {showModal && (
         <CustomerModal
-          onClose={handleCloseModal}
-          onSuccess={fetchCustomers}
           customer={selectedCustomer || undefined}
+          onClose={() => {
+            setShowModal(false);
+            setSelectedCustomer(null);
+          }}
+          onSuccess={() => {
+            setShowModal(false);
+            setSelectedCustomer(null);
+            fetchCustomers();
+          }}
         />
       )}
     </div>
