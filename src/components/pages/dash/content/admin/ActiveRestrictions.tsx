@@ -21,9 +21,6 @@ export const ActiveRestrictions = ({
   handleFreezeRequest,
   handleUnfreeze
 }: ActiveRestrictionsProps) => {
-  const handleExplore = (address: string) => {
-    window.open(`https://whatsonchain.com/address/${address}`, '_blank');
-  };
 
   return (
     <div className="overflow-x-auto">

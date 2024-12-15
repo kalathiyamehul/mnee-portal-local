@@ -64,10 +64,35 @@ export default async function Page({
   });
 
   const data = {
-    customer,
+    customer: {
+      ...customer,
+      createdAt: customer.createdAt.toISOString(),
+    },
     activity: {
-      mints: mintRequests,
-      burns: burnRequests,
+      mints: mintRequests.map(req => ({
+        id: req.id,
+        amount: req.amount.toString(),
+        status: req.status,
+        createdAt: req.createdAt.toISOString(),
+        txid: req.txid || null,
+        address: req.address,
+        requester: {
+          name: req.requester.name,
+          email: req.requester.email,
+        },
+      })),
+      burns: burnRequests.map(req => ({
+        id: req.id,
+        amount: req.amount.toString(),
+        status: req.status,
+        createdAt: req.createdAt.toISOString(),
+        txid: req.outpoint || null,
+        refundAddress: req.refundAddress || '',
+        requester: {
+          name: req.requester.name,
+          email: req.requester.email,
+        },
+      })),
     },
   };
 

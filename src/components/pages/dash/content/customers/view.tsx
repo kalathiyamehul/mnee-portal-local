@@ -56,7 +56,6 @@ interface CustomerActivity {
 export default function CustomerViewContent({ initialData }: { initialData: CustomerActivity }) {
   const router = useRouter();
   const { balances } = useBalance();
-  const [loading, setLoading] = useState(false);
   const [data] = useState<CustomerActivity>(initialData);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'mints' | 'burns'>('mints');
@@ -76,7 +75,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
     loadConfig();
   }, []);
 
-  if (loading || !config) {
+  if (!config) {
     return (
       <div className="flex justify-center items-center min-h-screen animate-fade-in">
         <div className="loading loading-spinner loading-lg"></div>
