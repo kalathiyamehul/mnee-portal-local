@@ -2,7 +2,7 @@ import { FaBan, FaSnowflake } from 'react-icons/fa6';
 import { MdRemoveCircleOutline } from 'react-icons/md';
 import type { AddressStatus } from './types';
 import type { MouseEvent } from 'react';
-import md5 from 'md5';
+import { getGravatarUrl } from "@/utils/gravatar";
 
 interface ActiveRestrictionsProps {
   restrictions: AddressStatus[];
@@ -21,12 +21,6 @@ export const ActiveRestrictions = ({
   handleFreezeRequest,
   handleUnfreeze
 }: ActiveRestrictionsProps) => {
-  const getGravatarUrl = (email: string | undefined) => {
-    if (!email) return 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&s=40';
-    const hash = md5(email.toLowerCase().trim());
-    return `https://www.gravatar.com/avatar/${hash}?d=mp&s=40`;
-  };
-
   const handleExplore = (address: string) => {
     window.open(`https://whatsonchain.com/address/${address}`, '_blank');
   };
@@ -63,14 +57,11 @@ export const ActiveRestrictions = ({
                 </div>
               </td>
               <td>
-                <div className="flex flex-col gap-1">
-                  <button 
-                    onClick={() => handleExplore(status.address)}
-                    className="font-mono text-sm link link-hover text-left"
-                  >
+                <div className="flex flex-col gap-2">
+                  <div className="font-mono text-sm">
                     {status.address}
-                  </button>
-                  <div className="flex items-center gap-2">
+                  </div>
+                  <div className="flex flex-wrap gap-2">
                     {status.isBlacklisted && (
                       <span className="badge badge-error badge-md gap-1">
                         <FaBan className="w-3 h-3" /> Blacklisted
@@ -89,7 +80,7 @@ export const ActiveRestrictions = ({
                 </div>
               </td>
               <td>
-                <div className="flex flex-wrap gap-1 sm:gap-2">
+                <div className="flex flex-wrap gap-2">
                   {!status.isBlacklisted && (
                     <button
                       type="button"

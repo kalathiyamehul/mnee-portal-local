@@ -2,7 +2,6 @@ import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { FaCheck, FaXmark, FaCopy } from "react-icons/fa6";
 import { useSession } from "next-auth/react";
-import md5 from "md5";
 import { toast } from "react-hot-toast";
 import type { Activity } from "./types";
 import { Session } from "next-auth";
@@ -11,6 +10,7 @@ import { toToken } from "satoshi-token";
 import { getConfig } from "@/lib/config";
 import { useEffect, useState } from "react";
 import type { Config } from "@/types";
+import { getGravatarUrl } from "@/utils/gravatar";
 
 const statusColors: Record<string, string> = {
 	PENDING: "badge-warning",
@@ -30,12 +30,6 @@ interface MintTableProps {
 	mode?: 'all' | 'active' | 'history';
 	showActions?: boolean;
 }
-
-const getGravatarUrl = (email: string | undefined) => {
-	if (!email) return 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&s=40';
-	const hash = md5(email.toLowerCase().trim());
-	return `https://www.gravatar.com/avatar/${hash}?d=mp&s=40`;
-};
 
 const getRowBorderClass = (status: string) => {
 	switch (status) {

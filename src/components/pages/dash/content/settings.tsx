@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { FaPlus, FaTrash, FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
+import { FaPlus, FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
 import { toToken } from 'satoshi-token';
 import { Fee, ConfigWithFees } from './admin/types';
 import { Config } from '@prisma/client';
@@ -402,8 +402,8 @@ const TokenDetailsSection = ({
 					{/* Total Supply */}
 					<div className="space-y-2">
 						<div className="flex items-center gap-2">
-							<span className="font-medium text-sm">Total Supply</span>
-							<div className="tooltip tooltip-right" data-tip="Maximum number of tokens that can exist">
+							<span className="font-medium text-sm">Maximum Supply</span>
+							<div className="tooltip tooltip-right" data-tip="Number of coins as per the deployment inscription.">
 								<FaQuestionCircle className="text-base-content/60 w-4 h-4" />
 							</div>
 						</div>
