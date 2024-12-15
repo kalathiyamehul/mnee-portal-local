@@ -1,4 +1,5 @@
 export type Config = {
+    id?: number;
     tokenId: string;
     decimals: number;
     approver: string;
@@ -8,6 +9,10 @@ export type Config = {
         max: number;
         fee: number;
     }[];
+    latestMinterTx: string;
+    mintAddress: string;
+    burnAddress: string;
+    fundAddress: string;
 };
 
 export type MNEEUtxo = {

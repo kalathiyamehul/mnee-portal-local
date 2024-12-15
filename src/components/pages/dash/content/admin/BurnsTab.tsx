@@ -14,7 +14,6 @@ import { useSession } from 'next-auth/react';
 import { useSystemStatus } from '@/contexts/SystemStatusContext';
 import { BurnTable } from './BurnTable';
 
-
 const getRowBorderClass = (status: string | undefined) => {
   switch (status) {
     case 'PENDING':
@@ -41,7 +40,6 @@ export const BurnsTab = ({}) => {
   const [decimals, setDecimals] = useState(8);
   const [selectedBurn, setSelectedBurn] = useState<BurnUtxo | null>(null);
   const [selectedRefund, setSelectedRefund] = useState<BurnUtxo | null>(null);
-  const [mneeBalance, setMneeBalance] = useState<number>(0);
 
   const fetchConfig = async () => {
     try {
@@ -51,8 +49,9 @@ export const BurnsTab = ({}) => {
         throw new Error('Burn address not configured');
       }
 
+      console.log('Config loaded:', { config, decimals: config.decimals });
       setBurnAddress(config.burnAddress);
-      setDecimals(config.decimals || DEFAULT_DECIMALS);
+      setDecimals(config.decimals ?? DEFAULT_DECIMALS);
       return config.burnAddress;
     } catch (err) {
       console.error('Error fetching config:', err);
@@ -64,15 +63,13 @@ export const BurnsTab = ({}) => {
   const fetchUtxos = useCallback(async (address: string) => {
     try {
       const fetchedUtxos = await fetchMneeUtxos([address]);
-      console.log('Burn UTXOs:', fetchedUtxos);
+      console.log('Burn UTXOs:', fetchedUtxos, 'Using decimals:', decimals);
       setUtxos(fetchedUtxos);
-      const total = fetchedUtxos.reduce((sum, utxo) => sum + Number(utxo.data.bsv21.amt), 0);
-      setMneeBalance(total);
     } catch (err) {
       console.error('Error fetching UTXOs:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch UTXOs');
     }
-  }, []);
+  }, [decimals]);
 
   const updateBurns = useCallback(() => {
     if (!utxos.length) return;
@@ -162,8 +159,9 @@ export const BurnsTab = ({}) => {
 
   // Update burns when status or UTXOs change
   useEffect(() => {
+    console.log('Updating burns with decimals:', decimals);
     updateBurns();
-  }, [updateBurns]);
+  }, [updateBurns, decimals]);
 
   // Split burns into pending/active and completed
   const activeBurns = burns.filter(burn => !burn.burnRequest || ['PENDING', 'CANCELLED'].includes(burn.burnRequest.status));
@@ -172,13 +170,7 @@ export const BurnsTab = ({}) => {
   return (
     <div className="p-4 space-y-8">
       <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold">Burn Requests</h2>
-          <div className="alert alert-info bg-base-200 text-base-content/70">
-            <FaCircleInfo className="w-4 h-4" />
-            <span>To burn MNEE, send tokens to the burn address</span>
-          </div>
-        </div>
+        <h2 className="text-2xl font-semibold">Burn Requests</h2>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -186,6 +178,11 @@ export const BurnsTab = ({}) => {
           {error && (
             <div className="alert alert-error">
               <span>{error}</span>
+            </div>
+          )}
+          {decimals === 0 && (
+            <div className="alert alert-warning">
+              <span>Warning: Token decimals not properly configured</span>
             </div>
           )}
 
@@ -231,7 +228,7 @@ export const BurnsTab = ({}) => {
                         </div>
                       </td>
                       <td className="font-medium">
-                        {toToken(burn.data.bsv21.amt, decimals)}
+                        {toToken(burn.data.bsv21.amt, decimals)} MNEE
                       </td>
                       <td className="text-sm text-base-content/70">
                         {burn.burnRequest?.createdAt ? (
@@ -273,10 +270,12 @@ export const BurnsTab = ({}) => {
                               Cancel
                             </button>
                           )}
-                          {(!burn.burnRequest || !['APPROVED', 'REFUNDED'].includes(burn.burnRequest.status)) && (
+                          {(!burn.burnRequest || !['APPROVED', 'REFUNDED'].includes(burn.burnRequest?.status)) && (
                             <button
                               onClick={() => setSelectedRefund(burn)}
                               className="btn btn-primary btn-sm gap-1"
+                              disabled={burn.burnRequest?.status === 'PENDING'}
+                              title={burn.burnRequest?.status === 'PENDING' ? 'Cancel burn request first' : undefined}
                             >
                               Refund
                             </button>
@@ -303,7 +302,13 @@ export const BurnsTab = ({}) => {
           <div className="lg:col-span-1">
             <div className="bg-base-200 rounded-lg p-6 space-y-6">
               <div className="flex justify-between items-start">
-                <div className="text-xs uppercase tracking-wider opacity-50">Burn Address</div>
+                <div>
+                  <div className="text-xs uppercase tracking-wider opacity-50">Burn Address</div>
+                  <div className="text-xs text-base-content/70 flex items-center gap-2 mt-1">
+                    <FaCircleInfo className="w-3 h-3" />
+                    <span>Send tokens to burn</span>
+                  </div>
+                </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => handleCopyAddress(burnAddress)}
@@ -345,7 +350,11 @@ export const BurnsTab = ({}) => {
               <div>
                 <div className="text-xs uppercase tracking-wider opacity-50 mb-2">Current Balance</div>
                 <div className="text-2xl font-bold">
-                  {toToken(mneeBalance.toString(), decimals)} MNEE
+                  {loading ? (
+                    <span className="loading loading-spinner loading-sm"></span>
+                  ) : (
+                    `${toToken(utxos.reduce((total, utxo) => total + Number(utxo.data.bsv21.amt), 0).toString(), decimals)} MNEE`
+                  )}
                 </div>
               </div>
             </div>
@@ -362,6 +371,7 @@ export const BurnsTab = ({}) => {
             txid: selectedBurn.txid,
             vout: selectedBurn.vout,
           }}
+          decimals={decimals}
         />
       )}
 

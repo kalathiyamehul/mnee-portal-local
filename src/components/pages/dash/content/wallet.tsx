@@ -30,6 +30,7 @@ import { FaSpinner } from "react-icons/fa";
 import { MNEE_API } from "@/env";
 import { DepositModal } from './modals/DepositModal';
 import { useRouter } from "next/navigation";
+import { useBalance } from '@/contexts/BalanceContext';
 
 const { toArray, toBase64 } = Utils;
 
@@ -41,14 +42,14 @@ interface DashboardWalletContentProps {
 export default function DashboardWalletContent({ defaultShowTransfer, defaultAddress }: DashboardWalletContentProps = {}) {
 	const wallet = useYoursWallet();
 	const [addresses, setAddresses] = useState<Addresses | null>(null);
-	const [mneeBalance, setMneeBalance] = useState<number>(0);
 	const [balance, setBalance] = useState<Balance | undefined>();
-	const [recipient, setRecipient] = useState<string>(defaultAddress || "");
-	const [amount, setAmount] = useState<string>("");
+	const { balances, fetchBalances, isLoading: balanceLoading } = useBalance();
 	const [config, setConfig] = useState<Config | null>(null);
 	const [showBsvDepositModal, setShowBsvDepositModal] = useState(false);
 	const [showMneeDepositModal, setShowMneeDepositModal] = useState(false);
 	const [showTransferModal, setShowTransferModal] = useState(defaultShowTransfer || false);
+	const [recipient, setRecipient] = useState(defaultAddress || "");
+	const [amount, setAmount] = useState("");
 	const router = useRouter();
 
 	useEffect(() => {
@@ -102,23 +103,6 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 		}
 	};
 
-	// {
-	//   "approver": "032a51b458edf08c6126705614a11921c10989fdad0be30badb0bae5bba74e7c36",
-	//   "fee_address": "1AUhxBh7bftDj9FEDBFSKLoAShTQBKaQ7b",
-	//   "fees": [
-	//     {
-	//       "minAmt": 0,
-	//       "maxAmt": 10000,
-	//       "fee": 50
-	//     },
-	//     {
-	//       "minAmt": 10001,
-	//       "maxAmt": 18446744073709552000,
-	//       "fee": 1000
-	//     }
-	//   ]
-	// }
-
 	const fetchBalance = useCallback(async (addresses: string[]) => {
 		try {
 			console.log({ addresses });
@@ -134,34 +118,18 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 		}
 	}, [wallet]);
 
-	const fetchMneeBalance = useCallback(async (addresses: string[]) => {
-		try {
-			console.log({ addresses });
-			const utxos = await fetchMneeUtxos(addresses);
-			const balance = utxos.reduce((amt, o) => {
-				return amt + o.data.bsv21.amt || 0;
-			}, 0);
-
-			setMneeBalance(balance);
-		} catch (error) {
-			console.error("Error fetching MNEE balance:", error);
-			toast.error("Failed to fetch MNEE balance: " + (error instanceof Error ? error.message : "Unknown error"));
+	useEffect(() => {
+		const fire = async () => {
+			if (!addresses) {
+				return;
+			}
+			await fetchBalance(Object.values(addresses));
+			await fetchBalances(Object.values(addresses));
 		}
-	}, []);
-
-  useEffect(() => {
-    const fire = async () => {
-      if (!addresses) {
-        return;
-      }
-      await fetchBalance(Object.values(addresses));
-      await fetchMneeBalance(Object.values(addresses));
-    }
-    if (addresses) {
-    fire()
-    }
-  }, [addresses, fetchBalance, fetchMneeBalance]);
-  
+		if (addresses) {
+			fire()
+		}
+	}, [addresses, fetchBalance, fetchBalances]);
 
 	useEffect(() => {
 		const init = async () => {
@@ -394,7 +362,6 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 			}
 		},
 		onSuccess: async (data) => {
-			// Actions to perform on successful mutation
 			const { rawtx } = data;
 
 			console.log("onSuccess", rawtx);
@@ -403,7 +370,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 				throw new Error("Wallet not connected");
 			}
 			// update utxos
-			await fetchMneeBalance(Object.values(addresses));
+			await fetchBalances(Object.values(addresses));
 
 			setRecipient("");
 			setAmount("");
@@ -411,7 +378,6 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 			toast.success("Transfer complete");
 		},
 		onError: (error) => {
-			// Actions to perform on mutation error
 			console.error("Transfer error:", error);
 			
 			// Handle specific error messages with more user-friendly text
@@ -450,7 +416,8 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 				return;
 			}
 
-			if (numAmount > toToken(mneeBalance, config.decimals)) {
+			const currentBalance = addresses?.ordAddress ? balances[addresses.ordAddress] || 0 : 0;
+			if (numAmount > toToken(currentBalance, config.decimals)) {
 				toast.error("Insufficient MNEE balance");
 				return;
 			}
@@ -466,10 +433,10 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 			console.error("Error in transfer:", error);
 			toast.error("Transfer failed: " + (error instanceof Error ? error.message : "Unknown error"));
 		}
-	}, [mneeBalance, transferMNEE, amount, recipient, config]);
+	}, [addresses, balances, transferMNEE, amount, recipient, config]);
 
 	const canTransfer = useCallback(() => {
-		if (!config || !balance) return false;
+		if (!config || !balance || !addresses) return false;
 		
 		// Need some BSV for transaction fees
 		if (balance.bsv <= 0) return false;
@@ -479,14 +446,15 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 		if (!amount || numAmount <= 0 || isNaN(numAmount)) return false;
 		
 		// Check MNEE balance
-		const mneeTokens = toToken(mneeBalance, config.decimals);
+		const currentBalance = addresses.ordAddress ? balances[addresses.ordAddress] || 0 : 0;
+		const mneeTokens = toToken(currentBalance, config.decimals);
 		if (numAmount > mneeTokens) return false;
 
 		// Check recipient
 		if (!recipient || !recipient.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/)) return false;
 
 		return true;
-	}, [amount, balance, config, mneeBalance, recipient]);
+	}, [amount, balance, config, balances, addresses, recipient]);
 
 	return (
 		<div className="p-4 space-y-4">
@@ -522,7 +490,13 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
 						<div className="stat">
 							<div className="stat-title">MNEE Balance</div>
-							<div className="stat-value">{config ? toToken(mneeBalance, config.decimals) : 0} MNEE</div>
+							<div className="stat-value">
+								{balanceLoading ? (
+									<span className="loading loading-spinner loading-sm"></span>
+								) : (
+									`${config ? toToken(balances[addresses.ordAddress] || 0, config.decimals) : 0} MNEE`
+								)}
+							</div>
 							<div className="stat-actions flex gap-2">
 								<button 
 									className="btn btn-sm btn-primary"
@@ -565,7 +539,10 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 						<dialog id="transfer_modal" className="modal modal-open">
 							<div className="modal-box max-w-sm">
 								<h3 className="text-lg font-bold mb-6">Transfer MNEE</h3>
-								<form onSubmit={handleTransfer}>
+								<form onSubmit={(e) => {
+									e.preventDefault();
+									handleTransfer();
+								}}>
 									<div className="space-y-4">
 										<label className="form-control w-full">
 											<div className="label">
@@ -615,7 +592,10 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 										<button
 											type="button"
 											className="btn btn-ghost"
-											onClick={handleCloseTransferModal}
+											onClick={() => {
+												setShowTransferModal(false);
+												router.push('/dash/wallet');
+											}}
 										>
 											Cancel
 										</button>
@@ -636,7 +616,10 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 									</div>
 								</form>
 							</div>
-							<form method="dialog" className="modal-backdrop" onClick={handleCloseTransferModal}>
+							<form method="dialog" className="modal-backdrop" onClick={() => {
+								setShowTransferModal(false);
+								router.push('/dash/wallet');
+							}}>
 								<button>close</button>
 							</form>
 						</dialog>
@@ -646,10 +629,10 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 						<div className="text-sm text-error mt-2">
 							{!balance || balance.bsv <= 0 ? (
 								"Insufficient BSV for transaction fees"
-							) : Number(amount) > (config ? toToken(mneeBalance, config.decimals) : 0) ? (
+							) : Number(amount) > (config && addresses ? toToken(balances[addresses.ordAddress] || 0, config.decimals) : 0) ? (
 								<>
 									Insufficient MNEE balance (
-									{config ? `${toToken(mneeBalance, config.decimals)} MNEE available` : '0 MNEE available'}
+									{config && addresses ? `${toToken(balances[addresses.ordAddress] || 0, config.decimals)} MNEE available` : '0 MNEE available'}
 									, trying to send {amount} MNEE)
 								</>
 							) : !recipient || !recipient.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/) ? (

@@ -11,9 +11,10 @@ interface BurnModalProps {
     txid: string;
     vout: number;
   };
+  decimals: number;
 }
 
-export const BurnModal = ({ onClose, onSuccess, amount, utxo }: BurnModalProps) => {
+export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleBurn = async () => {
@@ -74,7 +75,7 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo }: BurnModalProps) 
         <div className="py-4 space-y-4">
           <div className="bg-base-200 p-4 rounded-lg">
             <div className="text-sm opacity-70 mb-1">Amount to burn</div>
-            <div className="text-2xl font-bold">{toToken(amount, 8)} MNEE</div>
+            <div className="text-2xl font-bold">{toToken(amount, decimals)} MNEE</div>
             <div className="text-xs opacity-50 mt-1 break-all">
               UTXO: {utxo.txid}:{utxo.vout}
             </div>

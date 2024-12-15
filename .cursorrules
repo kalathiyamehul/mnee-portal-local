@@ -1,0 +1,71 @@
+# Project Structure
+- Next.js 15+ app router structure with authenticated and unauthenticated layouts
+- TypeScript for type safety with strict type checking
+- TailwindCSS with DaisyUI v5 for styling (business theme default)
+- Prisma with PostgreSQL for database operations
+- React Query for data fetching and caching
+- Yours Wallet for BSV interactions
+
+# API and Data Handling
+- All API routes in app/api with proper auth middleware
+- Use proper error handling with try/catch and typed responses
+- Convert BigInt to string in API responses (especially for token amounts)
+- Status endpoint is source of truth for system state and supply calculation
+- Supply calculation must use mints/burns from status response
+- Proper decimal handling using getConfig() for MNEE amounts
+- Consistent date formatting across all tables
+
+# Component Guidelines
+- Components in src/components organized by type (charts, modals, pages)
+- Pages in src/components/pages/dash/content
+- Shared utilities in src/lib and src/utils
+- Use 'use client' directive for interactive components
+- Maintain mobile responsiveness with proper padding and grid layouts
+- Prefer server components unless client interactivity needed
+
+# State Management
+- Global providers in app/providers.tsx:
+  - ThemeContext for DaisyUI theme management
+  - SystemStatusContext for pause state
+  - BalanceContext for MNEE balances
+  - QueryClient for React Query
+  - YoursProvider for wallet integration
+- Keep toast notifications in root layout with consistent styling
+- Use React Query for server state management
+
+# UI/UX Preferences
+- Consistent table styling with status-based row coloring
+- Clickable addresses with WhatsOnChain links and tooltips
+- Compact button designs with text labels next to icons
+- Loading states that preserve layout (especially charts)
+- Modal close on outside click
+- Input validation for decimal places based on token config
+- K/M notation for large numbers in charts and tables
+- Clear status indicators with action-oriented text
+
+# Authentication
+- NextAuth.js with email/password strategy
+- Maintain auth checks in API routes and middleware
+- Handle admin vs regular user permissions
+- Proper session management in authenticated layout
+
+# Code Style
+- Use TypeScript interfaces over types
+- Avoid any types - define proper interfaces
+- Proper null checking and error handling
+- Consistent naming (blacklist not block, freeze not pause)
+- Keep components focused and modular
+- Use descriptive variable names
+
+# Data Models
+- Proper relations between User, Customer, and Request models
+- Status tracking with ActionStatus enum
+- Consistent timestamp handling (createdAt, updatedAt)
+- BigInt for token amounts
+- Proper indexing on frequently queried fields
+
+# Performance
+- Implement proper polling intervals with React Query
+- Optimize re-renders with proper dependency arrays
+- Handle loading states gracefully
+- Proper error boundaries and fallbacks
