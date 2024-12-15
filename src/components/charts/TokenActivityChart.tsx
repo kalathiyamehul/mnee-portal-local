@@ -23,6 +23,8 @@ interface ChartDataPoint {
   totalCustomers?: number;
   restrictionCount?: number;
   totalRestrictions?: number;
+  netSupply?: number;
+  cumulativeSupply?: number;
 }
 
 interface ChartAreaConfig {
@@ -99,7 +101,20 @@ export const TokenActivityChart = ({
         ]);
 
         setDecimals(configData.decimals || 8);
-        setData(chartData.chartData);
+        
+        // Calculate both net supply and cumulative supply for each data point
+        let cumulativeSupply = 0;
+        const dataWithSupply = chartData.chartData.map((point: ChartDataPoint) => {
+          const netSupply = (point.mintVolume || 0) - (point.burnVolume || 0);
+          cumulativeSupply += netSupply;
+          return {
+            ...point,
+            netSupply,
+            cumulativeSupply
+          };
+        });
+        
+        setData(dataWithSupply);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error(error instanceof Error ? error.message : "Failed to fetch data");
@@ -114,7 +129,7 @@ export const TokenActivityChart = ({
 
   if (loading) {
     return (
-      <div className={`bg-base-200 rounded-lg p-4 ${className}`}>
+      <div className={`rounded-lg p-4 ${className}`}>
         <div className="flex items-center justify-center" style={{ height: `${height}px` }}>
           <div className="loading loading-spinner loading-lg" />
         </div>
@@ -124,7 +139,7 @@ export const TokenActivityChart = ({
 
   if (!data.length) {
     return (
-      <div className={`bg-base-200 rounded-lg p-4 ${className}`}>
+      <div className={`rounded-lg p-4 ${className}`}>
         <div className="flex items-center justify-center" style={{ height: `${height}px` }}>
           <div className="text-base-content/70 text-center">
             <p>No data available for this period</p>
@@ -163,6 +178,20 @@ export const TokenActivityChart = ({
               stroke: accentColor,
               fill: accentColor,
               fillOpacity: 0.2
+            },
+            {
+              dataKey: 'netSupply',
+              name: 'Daily Net',
+              stroke: secondaryColor,
+              fill: 'none',
+              fillOpacity: 0
+            },
+            {
+              dataKey: 'cumulativeSupply',
+              name: 'Total Supply',
+              stroke: getColorFromTheme(['--color-success', '--su']),
+              fill: 'none',
+              fillOpacity: 0
             }
           ],
           tooltipSuffix: ' MNEE'
@@ -302,7 +331,7 @@ export const TokenActivityChart = ({
 
   return (
     <div className={className}>
-      <div className="bg-base-200 rounded-lg p-4">
+      <div className="rounded-lg p-4">
         <ResponsiveContainer width="100%" height={height}>
           <AreaChart
             data={data}

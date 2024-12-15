@@ -86,7 +86,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
   const { customer, activity } = data;
 
   return (
-    <div className="p-4 space-y-6 animate-fade-in">
+    <div className="px-8 p-4 space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-4">
         <button

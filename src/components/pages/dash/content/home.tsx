@@ -326,7 +326,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 			<div className="w-full">
 				<div className="flex justify-between items-center mb-4">
 					<h2 className="text-xl font-semibold">
-						{selectedChart === 'volume' && 'Token Volume History'}
+						{selectedChart === 'volume' && 'Mint Volume'}
 						{selectedChart === 'mints' && 'Mint Transaction History'}
 						{selectedChart === 'burns' && 'Burn Transaction History'}
 						{selectedChart === 'customers' && 'Customer Growth'}
