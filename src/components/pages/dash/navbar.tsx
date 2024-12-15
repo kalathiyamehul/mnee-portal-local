@@ -20,7 +20,7 @@ const Navbar = () => {
 					</svg>
 				</button>
 			</div>
-			<div className="flex-1">
+			<div className="flex-1 px-8">
 				<SystemStatus
 					isPaused={isPaused}
 					onPauseToggle={handlePauseToggle}

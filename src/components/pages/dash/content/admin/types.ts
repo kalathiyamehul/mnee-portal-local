@@ -164,6 +164,8 @@ export interface ActivityListProps {
 	getActivityDisplayText: (activity: Activity) => string;
 	requiresApproval: (activity: Activity) => boolean;
 	getApprovalCount: (activity: Activity) => number;
+	showPendingSwitch?: boolean;
+	showRequester?: boolean;
 }
 
 export interface SystemStatusProps {

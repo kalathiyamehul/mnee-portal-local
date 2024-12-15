@@ -198,7 +198,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 			},
 			idx: 0,
 			script: '',
-			outpoint: burn.outpoint,
+			outpoint: burn.id,
 			satoshis: 0,
 			owners: []
 		};
@@ -263,7 +263,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 					<div className="stat-value text-primary">
 						{metrics.totalCustomers}
 					</div>
-					<div className="stat-desc text-base-content/60">Active platform users</div>
+					<div className="stat-desc text-base-content/60">Active users</div>
 				</div>
 
 				<div 
@@ -319,7 +319,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 					<div className="stat-value text-primary">
 						{metrics.activeBlacklists}
 					</div>
-					<div className="stat-desc text-base-content/60">Blacklisted or frozen addresses</div>
+					<div className="stat-desc text-base-content/60">Restricted addresses</div>
 				</div>
 			</div>
 
@@ -404,6 +404,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 					getActivityDisplayText={getActivityDisplayText}
 					requiresApproval={requiresApproval}
 					getApprovalCount={getApprovalCount}
+					showPendingSwitch={false}
 				/>
 			</div>
 
@@ -415,6 +416,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 						limit={5} 
 						showViewAll={true} 
 						onUpdate={fetchMetrics}
+						showRequester={false}
 						mode="all"
 					/>
 				</div>
@@ -427,9 +429,10 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 						onCopyTxid={(txid) => {
 							navigator.clipboard.writeText(txid);
 							toast.success('Transaction ID copied to clipboard');
-							}}
+						}}
 						alwaysShow={true}
 						showViewAll={true}
+						showRequester={false}
 					/>
 				</div>
 			</div>

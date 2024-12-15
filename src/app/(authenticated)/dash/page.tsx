@@ -1,4 +1,5 @@
-import DashboardHomeContent from "@/components/pages/dash/content/home";
+import Dashboard from '@/components/pages/dash';
+import { DashPages } from '@/types/dashboard';
 import { getConfig } from "@/lib/config";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
@@ -15,5 +16,5 @@ export default async function Page() {
     throw new Error("Config not found");
   }
 
-  return <DashboardHomeContent initialConfig={config} />;
+  return <Dashboard page={DashPages.HOME} config={config} />;
 }

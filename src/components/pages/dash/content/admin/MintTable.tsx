@@ -1,6 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
-import { FaCheck, FaXmark, FaCopy } from "react-icons/fa6";
+import { FaCopy } from "react-icons/fa6";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import type { Activity } from "./types";
@@ -29,6 +29,7 @@ interface MintTableProps {
 	alwaysShow?: boolean;
 	mode?: 'all' | 'active' | 'history';
 	showActions?: boolean;
+	showRequester?: boolean;
 }
 
 const getRowBorderClass = (status: string) => {
@@ -50,12 +51,14 @@ const MintTableContent = ({
 	mints, 
 	session, 
 	onUpdate,
-	showActions 
+	showActions,
+	showRequester 
 }: { 
 	mints: Activity[], 
 	session: Session | null, 
 	onUpdate: (() => void) | undefined,
-	showActions: boolean 
+	showActions: boolean,
+	showRequester: boolean 
 }) => {
 	const [config, setConfig] = useState<Config | null>(null);
 
@@ -144,7 +147,7 @@ const MintTableContent = ({
 			<table className="table w-full">
 				<thead>
 					<tr>
-						<th>Requester</th>
+						{showRequester && <th>Requester</th>}
 						<th>Customer</th>
 						<th>Address</th>
 						<th>Amount</th>
@@ -154,26 +157,28 @@ const MintTableContent = ({
 				<tbody>
 					{mints.map((mint) => (
 						<tr key={mint.id} className={`hover ${getRowBorderClass(mint.status)}`}>
-							<td>
-								<div className="flex items-center gap-3">
-									<div className="avatar">
-										<div className="mask mask-squircle w-10 h-10">
-											<img
-												src={getGravatarUrl(mint.requester.email)}
-												alt="Requester avatar"
-											/>
+							{showRequester && (
+								<td>
+									<div className="flex items-center gap-3">
+										<div className="avatar">
+											<div className="mask mask-squircle w-10 h-10">
+												<img
+													src={getGravatarUrl(mint.requester.email)}
+													alt="Requester avatar"
+												/>
+											</div>
+										</div>
+										<div>
+											<div className="font-medium">
+												{mint.requester.name || mint.requester.email}
+											</div>
+											<div className="text-sm opacity-50">
+												{formatDistanceToNow(new Date(mint.createdAt), { addSuffix: true })}
+											</div>
 										</div>
 									</div>
-									<div>
-										<div className="font-medium">
-											{mint.requester.name || mint.requester.email}
-										</div>
-										<div className="text-sm opacity-50">
-											{formatDistanceToNow(new Date(mint.createdAt), { addSuffix: true })}
-										</div>
-									</div>
-								</div>
-							</td>
+								</td>
+							)}
 							<td>
 								<div className="flex items-center gap-3">
 									<div className="avatar">
@@ -248,22 +253,20 @@ const MintTableContent = ({
 							{showActions && (
 								<td>
 									{mint.status === "PENDING" && session?.user && (
-										<div className="flex gap-2">
+										<div className="flex gap-2 justify-end">
 											{mint.requester.email === session.user.email ? (
 												<button
 													onClick={() => handleCancel(mint.id)}
-													className="btn btn-ghost btn-sm text-error"
-													title="Cancel"
+													className="btn btn-ghost btn-xs"
 												>
-													<FaXmark />
+													Cancel
 												</button>
 											) : (
 												<button
 													onClick={() => handleApprove(mint.id)}
-													className="btn btn-ghost btn-sm text-success"
-													title="Approve"
+													className="btn btn-primary btn-xs"
 												>
-													<FaCheck />
+													Approve
 												</button>
 											)}
 										</div>
@@ -286,7 +289,8 @@ export const MintTable = ({
 	onUpdate, 
 	alwaysShow = false,
 	mode = 'all',
-	showActions = true
+	showActions = true,
+	showRequester = true
 }: MintTableProps) => {
 	const { data: session } = useSession();
 
@@ -325,6 +329,7 @@ export const MintTable = ({
 					session={session} 
 					onUpdate={onUpdate}
 					showActions={showActions}
+					showRequester={showRequester}
 				/>
 			</div>
 		</div>

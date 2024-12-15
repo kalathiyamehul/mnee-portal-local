@@ -7,14 +7,8 @@ import DashboardAdminContent from "./content/admin"
 import DashboardSettingsContent from './content/settings';
 import DashboardCustomersContent from "./content/customers";
 import { Config } from "@prisma/client"
-
-export enum DashPage {
-    ADMIN = "admin",
-    CUSTOMERS = "customers",
-    HOME = "home",
-    WALLET = "wallet",
-    SETTINGS = "settings",
-}
+import type { DashPage } from "@/types/dashboard"
+import { DashPages } from "@/types/dashboard"
 
 export type DashboardProps = {
     page: DashPage;
@@ -25,19 +19,23 @@ export type DashboardProps = {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab, defaultShowTransfer, defaultAddress, config }) => {
+    console.log('Dashboard page prop:', page);
+    console.log('Dashboard page type:', typeof page);
+
     const dashContent = useMemo(() => {
         switch (page) {
-            case DashPage.HOME:
+            case DashPages.HOME:
                 return <DashboardHomeContent initialConfig={config as Config} />
-            case DashPage.ADMIN:
+            case DashPages.ADMIN:
                 return <DashboardAdminContent defaultTab={defaultTab} />
-            case DashPage.WALLET:
+            case DashPages.WALLET:
                 return <DashboardWalletContent defaultShowTransfer={defaultShowTransfer} defaultAddress={defaultAddress} />
-            case DashPage.SETTINGS:
+            case DashPages.SETTINGS:
                 return <DashboardSettingsContent />
-            case DashPage.CUSTOMERS:
+            case DashPages.CUSTOMERS:
                 return <DashboardCustomersContent />
             default:
+                console.log('Hit default case with page:', page);
                 return <div>Not Found</div>
         }
     }, [config, page, defaultTab, defaultShowTransfer, defaultAddress])
