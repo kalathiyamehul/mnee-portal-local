@@ -17,13 +17,17 @@ import { Config } from "@prisma/client";
 const getActivityDisplayText = (activity: Activity) => {
 	switch (activity.type) {
 		case 'MINT':
-			return `Mint ${activity.amount} MNEE`;
+			return `Mint to ${activity.address || 'customer'}`;
 		case 'BURN':
-			return `Burn ${activity.amount} MNEE`;
+			return `Burn from ${activity.address || 'customer'}`;
 		case 'FREEZE':
-			return `Freeze Address ${activity.address}`;
+			return activity.action === 'UNFREEZE' 
+				? `Unfreeze Address ${activity.address}`
+				: `Freeze Address ${activity.address}`;
 		case 'BLACKLIST':
-			return `Blacklist Address ${activity.address}`;
+			return activity.action === 'UNBLACKLIST'
+				? `Unblacklist Address ${activity.address}`
+				: `Blacklist Address ${activity.address}`;
 		case 'ACTION':
 			return activity.action || 'Unknown Action';
 		default:
@@ -405,6 +409,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 					requiresApproval={requiresApproval}
 					getApprovalCount={getApprovalCount}
 					showPendingSwitch={false}
+					showRequester={true}
 				/>
 			</div>
 

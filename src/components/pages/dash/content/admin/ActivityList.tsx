@@ -1,8 +1,10 @@
-import { FaSpinner } from 'react-icons/fa6';
+"use client";
+
 import { toToken } from 'satoshi-token';
 import { DEFAULT_DECIMALS } from '@/lib/constants';
-import type { ActivityListProps } from './types';
+import type { Activity, ActivityListProps } from './types';
 import { formatDistanceToNow } from 'date-fns';
+import { getGravatarUrl } from "@/utils/gravatar";
 
 export const ActivityList = ({
   showOnlyPending,
@@ -36,8 +38,23 @@ export const ActivityList = ({
     }
   };
 
+  const getRowBorderClass = (activity: Activity) => {
+    switch (activity.status) {
+      case 'PENDING':
+        return 'border-l-4 border-l-warning';
+      case 'APPROVED':
+      case 'DONE':
+        return 'border-l-4 border-l-success';
+      case 'REJECTED':
+      case 'CANCELLED':
+        return 'border-l-4 border-l-error';
+      default:
+        return '';
+    }
+  };
+
   return (
-    <div>
+    <div className="space-y-4">
       {showPendingSwitch && (
         <div className="flex flex-wrap items-center gap-2 mb-4 justify-end">
           <label className="label cursor-pointer gap-2 px-2">
@@ -47,71 +64,55 @@ export const ActivityList = ({
               className="toggle toggle-primary toggle-sm sm:toggle-md"
               checked={showOnlyPending}
               onChange={(e) => setShowOnlyPending(e.target.checked)}
+              disabled={loading}
             />
           </label>
         </div>
       )}
 
       <div className="overflow-x-auto">
-        <table className="table table-zebra w-full">
-          <thead>
-            <tr className="text-base-content/70 text-sm border-b border-base-200">
-              <th className="bg-base-100">Activity</th>
-              <th className="bg-base-100">Details</th>
-              <th className="bg-base-100">Status</th>
-              {showRequester && <th className="bg-base-100">Requested By</th>}
-              <th className="bg-base-100 w-[180px]">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+        {loading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="loading loading-spinner loading-lg"></div>
+          </div>
+        ) : (
+          <table className="table w-full">
+            <thead>
               <tr>
-                <td colSpan={showRequester ? 5 : 4} className="text-center">
-                  <FaSpinner className="animate-spin inline-block" />
-                </td>
+                <th>Activity</th>
+                <th>Details</th>
+                {showRequester && <th>Requested By</th>}
+                <th>Status</th>
+                <th className="w-[100px]">Actions</th>
               </tr>
-            ) : filteredActivities.length === 0 ? (
-              <tr>
-                <td colSpan={showRequester ? 5 : 4} className="text-center">
-                  No activities found
-                </td>
-              </tr>
-            ) : (
-              filteredActivities.map((activity) => {
+            </thead>
+            <tbody>
+              {filteredActivities.map((activity) => {
                 const Icon = getActivityIcon(activity);
                 const displayText = getActivityDisplayText(activity);
                 const needsApproval = requiresApproval(activity);
                 const approvalCount = getApprovalCount(activity);
-                const otherApprovals = activity.type === 'BLACKLIST' ? [] : 
-                  activity.approvals?.filter(
-                    approval => approval.approver.email !== activity.requester.email
-                  ) || [];
+                const otherApprovals = activity.approvals?.filter(
+                  approval => approval.approver.email !== activity.requester.email
+                ) || [];
 
                 return (
-                  <tr
-                    key={activity.id}
-                    className={`hover border-l-4 ${
-                      activity.status === 'PENDING' ? 'border-l-warning' :
-                      activity.status === 'APPROVED' || activity.status === 'DONE' ? 'border-l-success' :
-                      'border-l-error'
-                    }`}
-                  >
+                  <tr key={activity.id} className={getRowBorderClass(activity)}>
                     <td>
                       <div className="flex items-center gap-2">
                         <Icon className={activity.type === 'BURN' ? 'text-red-500 w-4 h-4' : 'w-4 h-4'} />
                         <div className="flex flex-col gap-1">
-                          <span>{activity.type}</span>
+                          <div>{displayText}</div>
                           {(activity.type === 'MINT' || activity.type === 'BURN') && (
                             <div className="text-sm font-mono">
-                              <span className="opacity-70">Amount:</span> {toToken(activity.amount as string, config?.decimals || DEFAULT_DECIMALS)} MNEE
+                              {toToken(activity.amount as string, config?.decimals || DEFAULT_DECIMALS)} MNEE
                             </div>
                           )}
                         </div>
                       </div>
                     </td>
                     <td>
-                      <div className="space-y-1">
-                        <div>{displayText}</div>
+                      <div className="flex flex-col gap-1">
                         {activity.customer && (
                           <>
                             <div className="text-sm">
@@ -127,23 +128,19 @@ export const ActivityList = ({
                         )}
                       </div>
                     </td>
-                    <td>
-                      <div className="flex flex-col gap-1">
-                        <span className={`badge ${getStatusBadgeClass(activity.status)}`}>
-                          {activity.status}
-                        </span>
-                        {activity.status === 'PENDING' && needsApproval && (
-                          <span className="text-xs opacity-70">
-                            {approvalCount}/2 Approvals
-                          </span>
-                        )}
-                      </div>
-                    </td>
                     {showRequester && (
                       <td>
-                        <div className="space-y-1">
-                          <div className="text-sm">
-                            {activity.requester.name || activity.requester.email}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <div className="avatar">
+                              <div className="mask mask-squircle w-6 h-6">
+                                <img
+                                  src={getGravatarUrl(activity.requester.email)}
+                                  alt="Requester avatar"
+                                />
+                              </div>
+                            </div>
+                            <span className="text-sm">{activity.requester.name || activity.requester.email}</span>
                           </div>
                           {otherApprovals.length > 0 && (
                             <div className="text-xs opacity-70">
@@ -161,6 +158,18 @@ export const ActivityList = ({
                         </div>
                       </td>
                     )}
+                    <td>
+                      <div className="flex flex-col gap-1">
+                        <span className={`badge ${getStatusBadgeClass(activity.status)}`}>
+                          {activity.status}
+                        </span>
+                        {activity.status === 'PENDING' && needsApproval && (
+                          <span className="text-xs opacity-70">
+                            {approvalCount}/2 Approvals
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td>
                       <div className="flex gap-2 justify-end">
                         {canCancel(activity) && (
@@ -183,10 +192,10 @@ export const ActivityList = ({
                     </td>
                   </tr>
                 );
-              })
-            )}
-          </tbody>
-        </table>
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );

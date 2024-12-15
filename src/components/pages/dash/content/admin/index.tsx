@@ -423,6 +423,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 								showOnlyPending={showOnlyPending}
 								onShowOnlyPendingChange={setShowOnlyPending}
 								filteredActivities={filteredActivities}
+								loading={loading}
 								canCancel={canCancel}
 								canApprove={canApprove}
 								onCancel={handleCancel}
@@ -430,7 +431,6 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 								requiresApproval={requiresApproval}
 								getApprovalCount={getApprovalCount}
 								config={config}
-								loading={loading}
 								getActivityIcon={getActivityIcon}
 								getActivityDisplayText={getActivityDisplayText}
 							/>
