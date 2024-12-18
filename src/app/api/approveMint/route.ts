@@ -18,8 +18,11 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
+	let mintRequestId: string | undefined;
+
 	try {
-		const { mintRequestId } = await request.json();
+		const { mintRequestId: requestId } = await request.json();
+		mintRequestId = requestId;
 		const result = await prisma.$transaction(async (tx) => {
 			// Verify the approving user exists
 			const approvingUser = await tx.user.findUnique({
@@ -102,13 +105,13 @@ export async function POST(request: Request) {
 
 					return { approvalCount, status: "DONE", minterTx: rawtx };
 				} catch (error) {
-					// If minting fails, keep the request in APPROVED state but propagate a cleaner error
+					// If minting fails, propagate the error
 					console.error("Error during minting:", error);
-					throw new Error(
-						error instanceof Error 
-							? error.message.replace(/^Error: /, '') // Remove "Error: " prefix
-							: "Transaction submission failed"
-					);
+					const errorMessage = error instanceof Error 
+						? error.message.replace(/^Error:\s*/, '') // Remove "Error: " prefix
+						: "Transaction submission failed";
+					
+					throw new Error(errorMessage);
 				}
 			}
 
@@ -124,10 +127,27 @@ export async function POST(request: Request) {
 			minterTx: result.minterTx,
 		});
 	} catch (error) {
-		console.error("Error processing approval:", error);
+		console.log("Error processing approval:", error);
+
+		// If we have a mintRequestId, update the request status to failed
+		if (mintRequestId) {
+			try {
+				await prisma.mintRequest.update({
+					where: { id: mintRequestId },
+					data: { 
+						status: "failed",
+						updatedAt: new Date(),
+					},
+				});
+			} catch (updateError) {
+				console.error("Failed to update mint request status:", updateError);
+			}
+		}
+
 		return NextResponse.json({ 
 			success: false,
-			error: error instanceof Error ? error.message : "Failed to process approval"
+			error: error instanceof Error ? error.message : "Failed to process approval",
+			requestId: mintRequestId || null
 		}, { status: 500 });
 	}
 }
@@ -189,7 +209,7 @@ async function mintMnee(amount: bigint, address: string) {
 		const { minter_tx } = (await mintResponse.json()) as { minter_tx: string };
 
 		const tx = Transaction.fromHex(minter_tx);
-		console.log("UNSIGNED TX", tx.toHex());
+		// console.log("UNSIGNED TX", tx.toHex());
 
 		// iterate over the inputs and set script template to p2pkh
 		for (const input of tx.inputs) {
@@ -202,7 +222,7 @@ async function mintMnee(amount: bigint, address: string) {
 		// set the source transaction to the latest minter tx
 		tx.inputs[0].sourceTransaction = Transaction.fromHex(latest_minter_tx);
 		signMint(tx, 0, pk);
-		console.log("PARTIALLY SIGNED TX", tx.toHex());
+		// console.log("PARTIALLY SIGNED TX", tx.toHex());
 		await tx.sign();
 
 		const rawtx = tx.toHex();
@@ -223,14 +243,30 @@ async function mintMnee(amount: bigint, address: string) {
 		
 		// save the new tx id to the db
 		console.log("saving db config");
-		await prisma.config.update({
-			where: { id: 1 },
-			data: { latestMinterTx: rawtx },
-		});
-		console.log("saved db config");
+		try {
+			await prisma.config.update({
+				where: { id: 1 },
+				data: { latestMinterTx: rawtx },
+			});
+			console.log("saved db config");
+		} catch (configError) {
+			console.error("Failed to update config with latest minter tx:", configError);
+			// Don't throw here - the mint was successful, we just couldn't update the config
+			// This will be handled in the next mint attempt
+		}
+
 		return { rawtx };
 	} catch (error) {
-		console.error("Error returned: ", error);
-		throw new Error("Failed to mint MNEE");
+		console.error("Error during mint process:", error);
+		// Provide more specific error messages based on where the error occurred
+		if (error instanceof Error) {
+			if (error.message.includes("broadcast")) {
+				throw new Error("Failed to broadcast transaction to the network");
+			}
+      if (error.message.includes("sign")) {
+				throw new Error("Failed to sign transaction");
+			}
+		}
+		throw new Error(`Failed to mint MNEE: ${error instanceof Error ? error.message : "Unknown error"}`);
 	}
 }

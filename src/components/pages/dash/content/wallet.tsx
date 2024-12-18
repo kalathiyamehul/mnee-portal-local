@@ -31,6 +31,7 @@ import { MNEE_API } from "@/env";
 import { DepositModal } from './modals/DepositModal';
 import { useRouter } from "next/navigation";
 import { useBalance } from '@/contexts/BalanceContext';
+import { FetchStatus } from "@/types/common";
 
 const { toArray, toBase64 } = Utils;
 
@@ -99,7 +100,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 			}
 		} catch (error) {
 			console.error("Error connecting wallet:", error);
-			toast.error("Failed to connect wallet: " + (error instanceof Error ? error.message : "Unknown error"));
+			toast.error(`Failed to connect wallet: ${error instanceof Error ? error.message : "Unknown error"}`);
 		}
 	};
 
@@ -114,7 +115,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 			setBalance(balance);
 		} catch (error) {
 			console.error("Error fetching balance:", error);
-			toast.error("Failed to fetch BSV balance: " + (error instanceof Error ? error.message : "Unknown error"));
+			toast.error(`Failed to fetch BSV balance: ${error instanceof Error ? error.message : "Unknown error"}`);
 		}
 	}, [wallet]);
 
@@ -480,6 +481,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 							<div className="stat-value">{balance?.bsv || 0} BSV</div>
 							<div className="stat-actions">
 								<button 
+									type="button"
 									className="btn btn-sm btn-primary"
 									onClick={() => setShowBsvDepositModal(true)}
 								>
@@ -491,20 +493,22 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 						<div className="stat">
 							<div className="stat-title">MNEE Balance</div>
 							<div className="stat-value">
-								{balancesLoading ? (
-									<span className="loading loading-spinner loading-sm"></span>
+								{balancesLoading === FetchStatus.LOADING ? (
+									<span className="loading loading-spinner loading-sm" />
 								) : (
 									`${config ? toToken(balances[addresses.ordAddress] || 0, config.decimals) : 0} MNEE`
 								)}
 							</div>
 							<div className="stat-actions flex gap-2">
 								<button 
+									type="button"
 									className="btn btn-sm btn-primary"
 									onClick={() => setShowMneeDepositModal(true)}
 								>
 									Deposit
 								</button>
 								<button 
+									type="button"
 									className="btn btn-sm"
 									onClick={() => {
 										router.push('/dash/wallet?showTransfer=true');
