@@ -138,8 +138,12 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       return;
     }
 
+    const fire = async () => {
+      await fetchBalances(Object.values(addresses));
+    };
+    
     if (balancesLoading === FetchStatus.IDLE) {
-      fetchBalances(Object.values(addresses));
+      fire();
     }
   }, [wallet, addresses, fetchBalances, balancesLoading]);
 
@@ -428,14 +432,15 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
         return;
       }
 
-      const currentBalance = addresses?.ordAddress ? balances[addresses.ordAddress] || 0 : 0;
-      if (numAmount > toToken(currentBalance, config.decimals)) {
+      // Calculate total MNEE balance across all addresses
+      const totalBalance = addresses ? Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0) : 0;
+      if (numAmount > toToken(totalBalance, config.decimals)) {
         toast.error("Insufficient MNEE balance");
         return;
       }
 
       // Validate recipient address format
-      if (!recipient.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/)) {
+      if (!RegExp(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/).exec(recipient)) {
         toast.error("Invalid recipient address format");
         return;
       }
@@ -457,13 +462,13 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
     const numAmount = Number(amount);
     if (!amount || numAmount <= 0 || Number.isNaN(numAmount)) return false;
 
-    // Check MNEE balance
-    const currentBalance = addresses.ordAddress ? balances[addresses.ordAddress] || 0 : 0;
-    const mneeTokens = toToken(currentBalance, config.decimals);
+    // Check total MNEE balance across all addresses
+    const totalBalance = Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0);
+    const mneeTokens = toToken(totalBalance, config.decimals);
     if (numAmount > mneeTokens) return false;
 
     // Check recipient
-    if (!recipient || !recipient.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/)) return false;
+    if (!recipient || !RegExp(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/).exec(recipient)) return false;
 
     return true;
   }, [amount, balance, config, balances, addresses, recipient]);
@@ -507,7 +512,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
                 {balancesLoading === FetchStatus.LOADING ? (
                   <span className="loading loading-spinner loading-sm" />
                 ) : (
-                  `${config ? toToken(balances[addresses.ordAddress] || 0, config.decimals) : 0} MNEE`
+                  `${config ? toToken(Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0), config.decimals) : 0} MNEE`
                 )}
               </div>
               <div className="stat-actions flex gap-2">
