@@ -39,8 +39,8 @@ export default function DashboardCustomersContent() {
   }, [fetchCustomers]);
 
   useEffect(() => {
-    if (customers?.length && balancesLoading === FetchStatus.IDLE) {
-      const addresses = customers.map(c => c.address);
+    const addresses = customers?.map(c => c.address).filter(Boolean);
+    if (addresses?.length && balancesLoading === FetchStatus.IDLE) {
       fetchBalances(addresses);
     }
   }, [customers, fetchBalances, balancesLoading]);
