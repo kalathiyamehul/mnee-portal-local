@@ -105,41 +105,42 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
     }
   };
 
+  // Effect for BSV balance
   useEffect(() => {
-
     let mounted = true;
 
-    const fetchBalanceData = async () => {
-      if (!addresses) {
-        return;
-      }
-
-      // Skip if already loading
-      if (balancesLoading === FetchStatus.LOADING || !wallet.isReady) {
+    const fetchBsvBalance = async () => {
+      if (!addresses || !wallet.isReady) {
         return;
       }
 
       try {
-
         const balance = await wallet.getBalance();
         if (!balance || !mounted) return;
         setBalance(balance);
-        // Fetch MNEE balances
-        await fetchBalances(Object.values(addresses));
       } catch (error) {
         if (!mounted) return;
-        console.error("Error fetching balance:", error);
+        console.error("Error fetching BSV balance:", error);
         toast.error(`Failed to fetch BSV balance: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
     };
 
-    if (addresses && wallet.isReady && balancesLoading === FetchStatus.IDLE) {
-      fetchBalanceData();
-    }
+    fetchBsvBalance();
 
     return () => {
       mounted = false;
     };
+  }, [wallet, addresses]);
+
+  // Effect for MNEE balance
+  useEffect(() => {
+    if (!addresses || !wallet.isReady || balancesLoading === FetchStatus.LOADING) {
+      return;
+    }
+
+    if (balancesLoading === FetchStatus.IDLE) {
+      fetchBalances(Object.values(addresses));
+    }
   }, [wallet, addresses, fetchBalances, balancesLoading]);
 
   useEffect(() => {
