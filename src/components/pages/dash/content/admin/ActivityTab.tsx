@@ -1,4 +1,4 @@
-import { Config } from '@prisma/client';
+import type { Config } from '@prisma/client';
 import { ActivityList } from './ActivityList';
 import type { Activity } from './types';
 import type { IconType } from 'react-icons';

@@ -91,7 +91,7 @@ const EditFeesModal = ({ fees, onSave, onClose, editIndex }: EditFeesModalProps)
 		return (
 			<dialog id="edit_fees_modal" className="modal modal-open">
 				<div className="modal-box flex justify-center items-center">
-					<span className="loading loading-spinner loading-lg"></span>
+					<span className="loading loading-spinner loading-lg" />
 				</div>
 			</dialog>
 		);
@@ -252,6 +252,7 @@ const AddressCard = ({ title, address, tooltip, source, balance, isLoading, deci
 					{address}
 				</div>
 				<button
+					type="button"
 					onClick={() => {
 						navigator.clipboard.writeText(address);
 						toast.success('Address copied to clipboard');
@@ -329,6 +330,7 @@ const TokenDetailsSection = ({
 							</div>
 							<div className="flex items-center gap-1">
 								<button
+									type="button"
 									onClick={() => {
 										navigator.clipboard.writeText(config.tokenId);
 										toast.success('Token ID copied to clipboard');
@@ -420,6 +422,7 @@ const TokenDetailsSection = ({
 							{tokenDetails?.icon && (
 								<div className="flex items-center gap-1">
 									<button
+										type="button"
 										onClick={() => {
 											navigator.clipboard.writeText(tokenDetails.icon);
 											toast.success('Icon location copied to clipboard');
@@ -600,7 +603,7 @@ const DashboardSettingsContent = () => {
 	if (loading) {
 		return (
 			<div className="flex justify-center items-center min-h-screen animate-fade-in">
-				<div className="loading loading-spinner loading-lg"></div>
+				<div className="loading loading-spinner loading-lg" />
 			</div>
 		);
 	}
@@ -639,6 +642,7 @@ const DashboardSettingsContent = () => {
 						<div className="flex justify-between items-center">
 							<h3 className="text-lg font-bold">Fee Structure</h3>
 							<button
+								type="button" 
 								className="btn btn-primary btn-sm gap-2"
 								onClick={() => setShowEditFeesModal(true)}
 							>
@@ -663,6 +667,7 @@ const DashboardSettingsContent = () => {
 											<td>{toToken(fee.fee, config.decimals)} MNEE</td>
 											<td>
 												<button
+													type="button"
 													className="btn btn-ghost btn-xs"
 													onClick={() => {
 														setEditingFeeIndex(index);
@@ -704,6 +709,7 @@ const DashboardSettingsContent = () => {
 							</div>
 							<div className="flex gap-2 justify-end">
 								<button
+									type="button"
 									className="btn btn-sm"
 									onClick={() => {
 										setFeeAddress(config?.feeAddress || "");
@@ -713,6 +719,7 @@ const DashboardSettingsContent = () => {
 									Cancel
 								</button>
 								<button
+									type="button"
 									className="btn btn-primary btn-sm"
 									onClick={() => handleSave()}
 									disabled={loading}

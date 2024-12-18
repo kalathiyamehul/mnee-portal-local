@@ -72,7 +72,7 @@ export const TokenActivityChart = ({
       if (val) {
         if (val.startsWith("oklch(") && opacity !== 1) {
           const insertPos = val.lastIndexOf(")");
-          return val.slice(0, insertPos) + ` / ${opacity})`;
+          return `${val.slice(0, insertPos)} / ${opacity})`;
         }
         return opacity !== 1 ? `${val.slice(0, -1)} / ${opacity})` : val;
       }
