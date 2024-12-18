@@ -70,7 +70,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       toast.error("Failed to fetch MNEE balances");
       setBalancesLoading(FetchStatus.ERROR);
     }
-  }, []);
+  }, [balancesLoading]);
 
   // Fetch burn address from config and its balance
   useEffect(() => {

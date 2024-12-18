@@ -1,8 +1,9 @@
 import { FaBan, FaSnowflake } from 'react-icons/fa6';
 import { MdRemoveCircleOutline } from 'react-icons/md';
-import type { AddressStatus } from './types';
+import type { Activity, AddressStatus } from './types';
 import type { MouseEvent } from 'react';
 import { getGravatarUrl } from "@/utils/gravatar";
+import type { Session } from 'next-auth';
 
 interface ActiveRestrictionsProps {
   restrictions: AddressStatus[];
