@@ -68,7 +68,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
 
     // Clean up interval on unmount
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchStatus]);
 
   const value = useMemo(() => ({ 
     statusData, 
