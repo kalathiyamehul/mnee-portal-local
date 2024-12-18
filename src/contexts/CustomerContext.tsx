@@ -82,7 +82,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
 
   const updateCustomer = useCallback(async (id: string, data: { name: string; email: string; address: string }) => {
     const response = await fetch(`/api/customers/${id}`, {
-      method: "PUT",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });

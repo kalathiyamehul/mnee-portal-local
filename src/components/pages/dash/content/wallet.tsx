@@ -104,33 +104,38 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 		}
 	};
 
-	const fetchBalance = useCallback(async (addresses: string[]) => {
-		try {
-			console.log({ addresses });
-			const balance = await wallet.getBalance();
-			if (!balance) {
-				throw new Error("Failed to fetch wallet balance");
-			}
-
-			setBalance(balance);
-		} catch (error) {
-			console.error("Error fetching balance:", error);
-			toast.error(`Failed to fetch BSV balance: ${error instanceof Error ? error.message : "Unknown error"}`);
-		}
-	}, [wallet]);
-
 	useEffect(() => {
-		const fire = async () => {
-			if (!addresses) {
-				return;
+		if (!addresses) {
+			return;
+		}
+		
+		let mounted = true;
+		
+		const fetchBalanceData = async () => {
+			try {
+				console.log('Fetching BSV balance for addresses:', addresses);
+				const balance = await wallet.getBalance();
+				if (!balance || !mounted) return;
+				
+				console.log('Received BSV balance:', balance);
+				setBalance(balance);
+				
+				// Fetch MNEE balances
+				console.log('Fetching MNEE balances for addresses:', Object.values(addresses));
+				await fetchBalances(Object.values(addresses));
+			} catch (error) {
+				if (!mounted) return;
+				console.error("Error fetching balance:", error);
+				toast.error(`Failed to fetch BSV balance: ${error instanceof Error ? error.message : "Unknown error"}`);
 			}
-			await fetchBalance(Object.values(addresses));
-			await fetchBalances(Object.values(addresses));
-		}
-		if (addresses) {
-			fire()
-		}
-	}, [addresses, fetchBalance, fetchBalances]);
+		};
+
+		fetchBalanceData();
+		
+		return () => {
+			mounted = false;
+		};
+	}, [addresses, wallet, fetchBalances]);
 
 	useEffect(() => {
 		const init = async () => {

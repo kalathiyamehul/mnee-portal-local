@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { fetchMneeUtxos , fetchConfig } from '@/utils/api';
 import { toast } from 'react-hot-toast';
 import { FetchStatus } from '@/types/common';
@@ -18,12 +18,15 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
   const [balances, setBalances] = useState<{ [address: string]: number }>({});
   const [balancesLoading, setBalancesLoading] = useState<FetchStatus>(FetchStatus.IDLE);
   const [burnAddress, setBurnAddress] = useState<string | null>(null);
+  const isLoadingRef = useRef(false);
 
   const fetchBalance = useCallback(async (address: string) => {
     try {
       setBalancesLoading(FetchStatus.LOADING);
       const utxos = await fetchMneeUtxos([address]);
       const balance = utxos.reduce((amt, o) => amt + (o.data.bsv21.amt || 0), 0);
+      
+      console.log('Fetched balance for address:', { address, balance });
       
       setBalances(prev => ({
         ...prev,
@@ -39,10 +42,17 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
 
   const fetchBalances = useCallback(async (addresses: string[]) => {
     // Skip if already loading
-    if (balancesLoading === FetchStatus.LOADING) return;
+    if (isLoadingRef.current) {
+      console.log('Skipping balance fetch - already loading');
+      return;
+    }
+    
+    console.log('Fetching balances for addresses:', addresses);
     
     try {
+      isLoadingRef.current = true;
       setBalancesLoading(FetchStatus.LOADING);
+      
       const utxos = await fetchMneeUtxos(addresses);
       
       const newBalances = addresses.reduce((acc, address) => {
@@ -50,6 +60,8 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
         const balance = addressUtxos.reduce((amt, o) => amt + (o.data.bsv21.amt || 0), 0);
         return { ...acc, [address]: balance };
       }, {});
+
+      console.log('Fetched balances:', newBalances);
 
       setBalances(prev => ({
         ...prev,
@@ -60,8 +72,10 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       console.error("Error fetching MNEE balances:", error);
       toast.error("Failed to fetch MNEE balances");
       setBalancesLoading(FetchStatus.ERROR);
+    } finally {
+      isLoadingRef.current = false;
     }
-  }, [balancesLoading]);
+  }, []);
 
   // Fetch burn address from config and its balance
   useEffect(() => {
@@ -69,6 +83,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       try {
         const config = await fetchConfig();
         if (config?.burnAddress && config.burnAddress !== burnAddress) {
+          console.log('Setting burn address:', config.burnAddress);
           setBurnAddress(config.burnAddress);
           await fetchBalance(config.burnAddress);
         }
@@ -80,7 +95,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
   }, [burnAddress, fetchBalance]);
 
   return (
-    <BalanceContext.Provider value={{ balances, fetchBalance, fetchBalances, balancesLoading: balancesLoading }}>
+    <BalanceContext.Provider value={{ balances, fetchBalance, fetchBalances, balancesLoading }}>
       {children}
     </BalanceContext.Provider>
   );
