@@ -18,12 +18,30 @@ export async function POST(request: Request) {
   }
 
   // Check if system is paused
-  const config = await prisma.config.findUnique({
-    where: { id: 1 },
-    select: { isPaused: true }
+  const pauseRequest = await prisma.actionRequest.findFirst({
+    where: {
+      action: 'PAUSE',
+      status: 'APPROVED',
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
   });
 
-  if (config?.isPaused) {
+  const resumeRequest = await prisma.actionRequest.findFirst({
+    where: {
+      action: 'RESUME',
+      status: 'APPROVED',
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+
+  // System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
+  const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
+
+  if (isPaused) {
     return NextResponse.json(
       { error: "System is paused. Cannot create mint requests at this time." },
       { status: 423 }
