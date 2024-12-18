@@ -11,6 +11,9 @@ interface ActiveRestrictionsProps {
   handleBlacklist: (e: MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
   handleFreezeRequest: (e: MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
   handleUnfreeze: (address: string) => Promise<void>;
+  activities: Activity[];
+  handleCancel: (id: string, type: Activity["type"]) => Promise<void>;
+  session: Session;
 }
 
 export const ActiveRestrictions = ({
@@ -19,8 +22,14 @@ export const ActiveRestrictions = ({
   handleUnblacklist,
   handleBlacklist,
   handleFreezeRequest,
-  handleUnfreeze
+  handleUnfreeze,
+  activities,
+  handleCancel,
+  session
 }: ActiveRestrictionsProps) => {
+  const canCancel = (activity: Activity) => {
+    return activity.status === 'PENDING' && activity.requester.email === session?.user?.email;
+  };
 
   return (
     <div className="overflow-x-auto">
@@ -117,6 +126,31 @@ export const ActiveRestrictions = ({
                     >
                       <FaSnowflake className="w-3 h-3 mr-1" /> Unfreeze
                     </button>
+                  )}
+                  {status.hasPendingFreeze && (
+                    <>
+                      {/* Find the pending freeze request for this address */}
+                      {activities
+                        .filter(activity => 
+                          activity.type === 'FREEZE' && 
+                          activity.address === status.address && 
+                          activity.status === 'PENDING'
+                        )
+                        .map(activity => (
+                          canCancel(activity) && (
+                            <button
+                              key={activity.id}
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => handleCancel(activity.id, activity.type)}
+                              disabled={loading}
+                            >
+                              Cancel
+                            </button>
+                          )
+                        ))
+                      }
+                    </>
                   )}
                 </div>
               </td>

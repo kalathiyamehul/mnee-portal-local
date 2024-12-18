@@ -36,7 +36,8 @@ export const ActiveRestrictionsTab = ({
 }: ActiveRestrictionsTabProps) => {
   // Filter activities to only show restriction-related ones
   const restrictionActivities = activities.filter(
-    activity => activity.type === 'FREEZE' || activity.type === 'BLACKLIST'
+    activity => (activity.type === 'FREEZE' || activity.type === 'BLACKLIST') &&
+    activity.status !== 'PENDING' // Exclude pending requests from history
   ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const getActionBadgeClass = (activity: Activity) => {
@@ -93,6 +94,9 @@ export const ActiveRestrictionsTab = ({
         handleBlacklist={handleBlacklist}
         handleFreezeRequest={handleFreezeRequest}
         handleUnfreeze={handleUnfreeze}
+        activities={activities}
+        handleCancel={handleCancel}
+        session={session}
       />
 
       <div className="divider" />

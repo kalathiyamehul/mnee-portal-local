@@ -124,6 +124,15 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 			const isFrozen = latestFreezeAction?.status === 'APPROVED' && latestFreezeAction?.action === 'FREEZE';
 			const isBlacklisted = latestBlacklistAction?.status === 'APPROVED' && latestBlacklistAction?.action === 'BLACKLIST';
 
+			console.log('Computing status for address:', {
+				address,
+				latestFreezeAction,
+				latestBlacklistAction,
+				pendingFreeze,
+				isFrozen,
+				isBlacklisted
+			});
+
 			// Get the most recent action to determine the requester
 			const mostRecentAction = [latestFreezeAction, latestBlacklistAction, pendingFreeze]
 				.filter((action): action is (typeof latestFreezeAction | typeof latestBlacklistAction | typeof pendingFreeze) & { createdAt: string } => 
@@ -153,6 +162,9 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		}
 		return addressMap;
 	}, new Map<string, AddressStatus>());
+
+	// Log the final restrictions
+	console.log('Final active restrictions:', Array.from(activeRestrictions.values()));
 
 	// Then filter activities based on showOnlyPending and exclude ones that are pending in active restrictions
 	const filteredActivities = activities.filter(activity => {
@@ -207,6 +219,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 
 	const handleApprove = async (id: string, type: Activity['type']) => {
 		try {
+			console.log('Initiating approval for:', { id, type });
 			setLoading(true);
 			const endpoint = type === 'ACTION' ? 'approve' :
 				type === 'FREEZE' ? 'approveFreeze' :
@@ -233,6 +246,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 				throw new Error(error.error || 'Failed to approve request');
 			}
 
+			console.log('Approval successful, fetching updated status');
 			await fetchStatus();
 			toast.success('Request approved');
 		} catch (error) {
@@ -280,7 +294,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		}
 	};
 
-	const handleFreezeRequest = async (e: React.MouseEvent, address: string) => {
+	const handleFreezeRequest = async (e: React.MouseEvent<HTMLButtonElement>, address: string) => {
 		e.preventDefault();
 		try {
 			setLoading(true);
@@ -295,7 +309,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 
 			const data = await response.json();
 			if (!response.ok) {
-				throw new Error(data.message || data.error || 'Failed to freeze address');
+				throw new Error(data.error || 'Failed to freeze address');
 			}
 
 			await fetchStatus();
@@ -310,6 +324,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 
 	const handleUnfreeze = async (address: string) => {
 		try {
+			console.log('Initiating unfreeze for address:', address);
 			setLoading(true);
 			const response = await fetch('/api/freeze', {
 				method: 'POST',
@@ -322,9 +337,10 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 
 			const data = await response.json();
 			if (!response.ok) {
-				throw new Error(data.message || data.error || 'Failed to unfreeze address');
+				throw new Error(data.error || 'Failed to unfreeze address');
 			}
 
+			console.log('Unfreeze request successful, fetching updated status');
 			await fetchStatus();
 			toast.success('Unfreeze request created');
 		} catch (error) {

@@ -11,7 +11,7 @@ import { TokenActivityChart } from "@/components/charts/TokenActivityChart";
 import { ActivityList } from './admin/ActivityList';
 import { getActivityIcon } from "./admin/utils";
 import { useSession } from "next-auth/react";
-import { Config } from "@prisma/client";
+import type { Config } from "@prisma/client";
 
 // Utility functions
 const getActivityDisplayText = (activity: Activity) => {
@@ -338,6 +338,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 					</h2>
 					{selectedChart === 'volume' && (
 						<button
+              type="button"
 							onClick={() => router.push('/dash/admin?tab=mints')}
 							className="btn btn-ghost btn-sm gap-2"
 						>
@@ -346,6 +347,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 					)}
 					{selectedChart === 'mints' && (
 						<button
+              type="button"
 							onClick={() => router.push('/dash/admin?tab=mints')}
 							className="btn btn-ghost btn-sm gap-2"
 						>
@@ -354,6 +356,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 					)}
 					{selectedChart === 'burns' && (
 						<button
+              type="button"
 							onClick={() => router.push('/dash/admin?tab=burns')}
 							className="btn btn-ghost btn-sm gap-2"
 						>
@@ -362,6 +365,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 					)}
 					{selectedChart === 'customers' && (
 						<button
+              type="button"
 							onClick={() => router.push('/dash/customers')}
 							className="btn btn-ghost btn-sm gap-2"
 						>
@@ -370,6 +374,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 					)}
 					{selectedChart === 'restrictions' && (
 						<button
+              type="button"
 							onClick={() => router.push('/dash/admin?tab=restrictions')}
 							className="btn btn-ghost btn-sm gap-2"
 						>
@@ -388,6 +393,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 				<div className="flex justify-between items-center mb-4">
 					<h2 className="text-xl font-semibold">Pending Activities</h2>
 					<button
+            type="button"
 						onClick={() => router.push('/dash/admin?tab=activity')}
 						className="btn btn-ghost btn-sm gap-2"
 					>
