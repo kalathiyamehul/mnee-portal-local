@@ -11,7 +11,7 @@ export default async function SettingsPage() {
 		redirect("/login");
 	}
 
-	const config = await getConfig();
+	const config = await getConfig(true);
 	if (!config) {
 		throw new Error("Config not found");
 	}

@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { FaPlus, FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
+import { FaPlus,  FaCopy, FaCircleInfo } from "react-icons/fa6";
+import { FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
 import { toToken } from 'satoshi-token';
 import { Fee } from './admin/types';
 import { Config } from '@prisma/client';
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { useBalance } from '@/contexts/BalanceContext';
 import { MdOutlineOpenInNew } from 'react-icons/md';
-import { FaCopy } from 'react-icons/fa6';
 import { toast } from 'react-hot-toast';
-import { ingestTxid } from '@/utils/api';
+import { fetchMneeUtxos, ingestTxid } from '@/utils/api';
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import { MNEEUtxo } from "@/types";
 
 interface EditFeesModalProps {
 	fees: Fee[];
@@ -213,18 +214,7 @@ const EditFeesModal = ({ fees, onSave, onClose, editIndex }: EditFeesModalProps)
 	);
 };
 
-const AddressCard = ({ 
-	title, 
-	address, 
-	tooltip, 
-	source, 
-	balance,
-	isLoading,
-	decimals,
-	showBalance = true,
-	onEdit,
-	type = 'mnee'
-}: { 
+interface AddressCardProps {
 	title: string;
 	address: string;
 	tooltip: string;
@@ -232,73 +222,62 @@ const AddressCard = ({
 	balance?: number;
 	isLoading?: boolean;
 	decimals?: number;
-	showBalance?: boolean;
-	onEdit?: () => void;
 	type?: 'bsv' | 'mnee';
-}) => {
-	const handleCopy = () => {
-		navigator.clipboard.writeText(address);
-		toast.success('Address copied to clipboard');
-	};
+}
 
+const AddressCard = ({ title, address, tooltip, source, balance, isLoading, decimals = 8, type = 'bsv' }: AddressCardProps) => {
 	return (
-		<div className="space-y-3">
-			<div className="flex items-center justify-between">
+		<div className="bg-base-100 rounded-lg p-4 space-y-4 border-b border-base-content/10">
+			<div className="flex justify-between items-center">
 				<div className="flex items-center gap-2">
-					<span className="font-semibold">{title}</span>
+					<div className="text-xs uppercase tracking-wider opacity-50">{title}</div>
 					<div className="tooltip" data-tip={tooltip}>
-						<FaQuestionCircle className="text-base-content/60" />
+						<FaCircleInfo className="w-3 h-3 text-base-content/70" />
 					</div>
 				</div>
-				{onEdit && (
-					<button
-						className="btn btn-ghost btn-sm"
-						onClick={onEdit}
-					>
-						<FaPencilAlt />
-					</button>
-				)}
+				<a
+					href={`https://whatsonchain.com/address/${address}`}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="btn btn-ghost btn-xs btn-square"
+					title="View on WhatsOnChain"
+				>
+					<MdOutlineOpenInNew className="w-3 h-3" />
+				</a>
 			</div>
 
 			<div className="flex items-center gap-2">
 				<div className="font-mono text-xs break-all flex-1">
-					{address || 'Not set'}
+					{address}
 				</div>
-				<div className="flex items-center gap-1 shrink-0">
-					<button
-						onClick={handleCopy}
-						className="btn btn-ghost btn-xs btn-square"
-						title="Copy address"
-					>
-						<FaCopy className="w-3 h-3" />
-					</button>
-					<a
-						href={`https://whatsonchain.com/address/${address}`}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="btn btn-ghost btn-xs btn-square"
-						title="View on WhatsOnChain"
-					>
-						<MdOutlineOpenInNew className="w-3 h-3" />
-					</a>
+				<button
+					onClick={() => {
+						navigator.clipboard.writeText(address);
+						toast.success('Address copied to clipboard');
+					}}
+					className="btn btn-ghost btn-xs btn-square flex-none"
+					title="Copy address"
+				>
+					<FaCopy className="w-3 h-3" />
+				</button>
+			</div>
+
+			<div className="flex justify-between items-center">
+				<div className="text-xs uppercase tracking-wider opacity-50">Balance</div>
+				<div className="text-lg font-bold">
+					{isLoading ? (
+						<span className="loading loading-spinner loading-sm"></span>
+					) : (
+						type === 'mnee' ? 
+							`${toToken(balance || 0, decimals)} MNEE` :
+							`${balance || 0} BSV`
+					)}
 				</div>
 			</div>
 
-			{showBalance && (
-				<div className="flex justify-between items-center text-sm">
-					<span className="text-base-content/70">Balance:</span>
-					<span className="font-medium">
-						{isLoading ? (
-							<span className="loading loading-spinner loading-xs"></span>
-						) : (
-							`${type === 'mnee' ? toToken((balance || 0).toString(), decimals || 8) : (balance || 0)} ${type.toUpperCase()}`
-						)}
-					</span>
-				</div>
-			)}
-
-			<div className="text-xs text-base-content/60">
-				From {source}
+			<div className="text-xs text-base-content/70">
+				<span>Source: </span>
+				<span className="font-mono">{source}</span>
 			</div>
 		</div>
 	);
@@ -340,7 +319,7 @@ const TokenDetailsSection = ({
 						<div className="flex items-center gap-2">
 							<span className="font-medium text-sm">Token ID</span>
 							<div className="tooltip tooltip-right" data-tip="Unique identifier for your token on the blockchain">
-								<FaQuestionCircle className="text-base-content/60 w-4 h-4" />
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
 							</div>
 						</div>
 						<div className="flex items-center gap-2">
@@ -375,7 +354,7 @@ const TokenDetailsSection = ({
 						<div className="flex items-center gap-2">
 							<span className="font-medium text-sm">Symbol</span>
 							<div className="tooltip tooltip-right" data-tip="The token's ticker symbol">
-								<FaQuestionCircle className="text-base-content/60 w-4 h-4" />
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
 							</div>
 						</div>
 						<div className="font-mono text-sm">
@@ -388,7 +367,7 @@ const TokenDetailsSection = ({
 						<div className="flex items-center gap-2">
 							<span className="font-medium text-sm">Decimals</span>
 							<div className="tooltip tooltip-right" data-tip="Number of decimal places your token supports">
-								<FaQuestionCircle className="text-base-content/60 w-4 h-4" />
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
 							</div>
 						</div>
 						<div className="font-mono text-sm">
@@ -404,7 +383,7 @@ const TokenDetailsSection = ({
 						<div className="flex items-center gap-2">
 							<span className="font-medium text-sm">Maximum Supply</span>
 							<div className="tooltip tooltip-right" data-tip="Number of coins as per the deployment inscription.">
-								<FaQuestionCircle className="text-base-content/60 w-4 h-4" />
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
 							</div>
 						</div>
 						<div className="font-mono text-sm">
@@ -417,7 +396,7 @@ const TokenDetailsSection = ({
 						<div className="flex items-center gap-2">
 							<span className="font-medium text-sm">Circulating Supply</span>
 							<div className="tooltip tooltip-right" data-tip="Number of tokens currently in circulation (total mints minus total burns)">
-								<FaQuestionCircle className="text-base-content/60 w-4 h-4" />
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
 							</div>
 						</div>
 						<div className="font-mono text-sm">
@@ -430,7 +409,7 @@ const TokenDetailsSection = ({
 						<div className="flex items-center gap-2">
 							<span className="font-medium text-sm">Icon Location</span>
 							<div className="tooltip tooltip-right" data-tip="The ordfs.network location of the token's icon">
-								<FaQuestionCircle className="text-base-content/60 w-4 h-4" />
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
 							</div>
 						</div>
 						<div className="flex items-center gap-2">
@@ -483,6 +462,26 @@ const DashboardSettingsContent = () => {
 	} | null>(null);
 	const { statusData } = useSystemStatus();
 	const [editingFeeIndex, setEditingFeeIndex] = useState<number | undefined>();
+	const [burnUtxos, setBurnUtxos] = useState<MNEEUtxo[]>([]);
+	const [burnLoading, setBurnLoading] = useState(false);
+
+	// Calculate burn balance from UTXOs
+	const burnBalance = useMemo(() => {
+		return burnUtxos.reduce((total, utxo) => total + Number(utxo.data.bsv21.amt), 0);
+	}, [burnUtxos]);
+
+	// Fetch burn UTXOs
+	const fetchBurnUtxos = useCallback(async (address: string) => {
+		try {
+			setBurnLoading(true);
+			const utxos = await fetchMneeUtxos([address]);
+			setBurnUtxos(utxos);
+		} catch (error) {
+			console.error('Error fetching burn UTXOs:', error);
+		} finally {
+			setBurnLoading(false);
+		}
+	}, []);
 
 	// Calculate circulating supply from mints and burns
 	const circulatingSupply = useMemo(() => {
@@ -546,6 +545,11 @@ const DashboardSettingsContent = () => {
 				}
 				fetchBsvBalances(addressesToCheck);
 
+				// Fetch burn UTXOs
+				if (data.burnAddress) {
+					fetchBurnUtxos(data.burnAddress);
+				}
+
 				// Fetch token details from the blockchain
 				const [txid] = data.tokenId.split('_');
 				const indexContext = await ingestTxid(txid);
@@ -563,7 +567,7 @@ const DashboardSettingsContent = () => {
 		};
 
 		fetchConfig();
-	}, [fetchBsvBalances]);
+	}, [fetchBsvBalances, fetchBurnUtxos]);
 
 	const handleSave = async (newFees?: Fee[]) => {
 		try {
@@ -676,7 +680,7 @@ const DashboardSettingsContent = () => {
 				</div>
 
 				{/* Right Column - System Addresses */}
-				<div className="space-y-8 w-full lg:w-96 bg-base-200 p-4 rounded-lg">
+				<div className="space-y-4 w-full lg:w-96 border-l pl-8 border-base-200">
 					<h3 className="text-lg font-bold">System Addresses</h3>
 					{/* Fee Address */}
 					{isEditing ? (
@@ -701,7 +705,7 @@ const DashboardSettingsContent = () => {
 								<button
 									className="btn btn-sm"
 									onClick={() => {
-										setFeeAddress(config.feeAddress);
+										setFeeAddress(config?.feeAddress || "");
 										setIsEditing(false);
 									}}
 								>
@@ -719,13 +723,12 @@ const DashboardSettingsContent = () => {
 					) : (
 						<AddressCard
 							title="Fee Address"
-							address={config.feeAddress}
+							address={config?.feeAddress || ""}
 							tooltip="Address where transaction fees are collected (MNEE)"
 							source="Configuration"
-							balance={balances[config.feeAddress]}
+							balance={balances[config?.feeAddress || ""]}
 							isLoading={balanceLoading}
-							decimals={config.decimals}
-							onEdit={() => setIsEditing(true)}
+							decimals={config?.decimals}
 							type="mnee"
 						/>
 					)}
@@ -733,10 +736,10 @@ const DashboardSettingsContent = () => {
 					{/* Minter Address */}
 					<AddressCard
 						title="Minter Address"
-						address={config.mintAddress}
+						address={config?.mintAddress || ""}
 						tooltip="Address that will pay for minting/burning tokens (BSV)"
 						source="MINT_WIF environment variable"
-						balance={bsvBalances[config.mintAddress]}
+						balance={bsvBalances[config?.mintAddress || ""]}
 						isLoading={bsvLoading}
 						type="bsv"
 					/>
@@ -744,17 +747,17 @@ const DashboardSettingsContent = () => {
 					{/* Burn Address */}
 					<AddressCard
 						title="Burn Address"
-						address={config.burnAddress}
+						address={config?.burnAddress || ""}
 						tooltip="Address to send burned tokens (MNEE)"
 						source="BURN_WIF environment variable"
-						balance={balances[config.burnAddress]}
-						isLoading={balanceLoading}
-						decimals={config.decimals}
+						balance={burnBalance}
+						isLoading={burnLoading}
+						decimals={config?.decimals}
 						type="mnee"
 					/>
 
 					{/* Cosigner Address */}
-					{config.fundAddress && (
+					{config?.fundAddress && (
 						<AddressCard
 							title="Cosigner Address"
 							address={config.fundAddress}

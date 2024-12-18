@@ -76,8 +76,8 @@ export async function POST(request: Request) {
         });
 
         if (updatedBurnRequest?.approvals.length === 1) {
-            // Get config for token details
-            const config = await getConfig();
+            // Get latest config
+            const config = await getConfig(true);
             if (!config) {
                 throw new Error("Token configuration not found");
             }
