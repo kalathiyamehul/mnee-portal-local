@@ -189,7 +189,7 @@ async function mintMnee(amount: bigint, address: string) {
 		const { minter_tx } = (await mintResponse.json()) as { minter_tx: string };
 
 		const tx = Transaction.fromHex(minter_tx);
-		// console.log("UNSIGNED TX", tx.toHex());
+		console.log("UNSIGNED TX", tx.toHex());
 
 		// iterate over the inputs and set script template to p2pkh
 		for (const input of tx.inputs) {
@@ -202,11 +202,11 @@ async function mintMnee(amount: bigint, address: string) {
 		// set the source transaction to the latest minter tx
 		tx.inputs[0].sourceTransaction = Transaction.fromHex(latest_minter_tx);
 		signMint(tx, 0, pk);
-		// console.log("PARTIALLY SIGNED TX", tx.toHex());
+		console.log("PARTIALLY SIGNED TX", tx.toHex());
 		await tx.sign();
 
 		const rawtx = tx.toHex();
-		// console.log("FULLY SIGNED TX", rawtx);
+		console.log("FULLY SIGNED TX", rawtx);
 
 		// broadcast & ingest
 		const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
