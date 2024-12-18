@@ -25,8 +25,6 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       const utxos = await fetchMneeUtxos([address]);
       const balance = utxos.reduce((amt, o) => amt + (o.data.bsv21.amt || 0), 0);
       
-      console.log('Fetched balance for address:', { address, balance });
-      
       setBalances(prev => ({
         ...prev,
         [address]: balance
@@ -42,11 +40,8 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
   const fetchBalances = useCallback(async (addresses: string[]) => {
     // Skip if already loading
     if (balancesLoading === FetchStatus.LOADING) {
-      console.log('Skipping balance fetch - already loading');
       return;
     }
-    
-    console.log('Fetching balances for addresses:', addresses);
     
     try {
       setBalancesLoading(FetchStatus.LOADING);
@@ -57,8 +52,6 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
         const balance = addressUtxos.reduce((amt, o) => amt + (o.data.bsv21.amt || 0), 0);
         return { ...acc, [address]: balance };
       }, {});
-
-      console.log('Fetched balances:', newBalances);
 
       setBalances(prev => ({
         ...prev,
@@ -78,7 +71,6 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       try {
         const config = await fetchConfig();
         if (config?.burnAddress && config.burnAddress !== burnAddress) {
-          console.log('Setting burn address:', config.burnAddress);
           setBurnAddress(config.burnAddress);
           await fetchBalance(config.burnAddress);
         }

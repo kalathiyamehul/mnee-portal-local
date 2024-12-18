@@ -19,9 +19,6 @@ export type DashboardProps = {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab, defaultShowTransfer, defaultAddress, config }) => {
-    console.log('Dashboard page prop:', page);
-    console.log('Dashboard page type:', typeof page);
-
     const dashContent = useMemo(() => {
         switch (page) {
             case DashPages.HOME:
@@ -35,7 +32,6 @@ const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab, defaultShowTran
             case DashPages.CUSTOMERS:
                 return <DashboardCustomersContent />
             default:
-                console.log('Hit default case with page:', page);
                 return <div>Not Found</div>
         }
     }, [config, page, defaultTab, defaultShowTransfer, defaultAddress])
