@@ -43,7 +43,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 	const wallet = useYoursWallet();
 	const [addresses, setAddresses] = useState<Addresses | null>(null);
 	const [balance, setBalance] = useState<Balance | undefined>();
-	const { balances, fetchBalances, isLoading: balanceLoading } = useBalance();
+	const { balances, fetchBalances, balancesLoading } = useBalance();
 	const [config, setConfig] = useState<Config | null>(null);
 	const [showBsvDepositModal, setShowBsvDepositModal] = useState(false);
 	const [showMneeDepositModal, setShowMneeDepositModal] = useState(false);
@@ -491,7 +491,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 						<div className="stat">
 							<div className="stat-title">MNEE Balance</div>
 							<div className="stat-value">
-								{balanceLoading ? (
+								{balancesLoading ? (
 									<span className="loading loading-spinner loading-sm"></span>
 								) : (
 									`${config ? toToken(balances[addresses.ordAddress] || 0, config.decimals) : 0} MNEE`

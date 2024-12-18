@@ -55,7 +55,7 @@ interface CustomerActivity {
 
 export default function CustomerViewContent({ initialData }: { initialData: CustomerActivity }) {
   const router = useRouter();
-  const { balances } = useBalance();
+  const { balances, balancesLoading } = useBalance();
   const [data] = useState<CustomerActivity>(initialData);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'mints' | 'burns'>('mints');
@@ -148,9 +148,9 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
           <div className="space-y-2">
             <div className="text-sm text-base-content/70">Balance</div>
             <div className="font-mono text-sm">
-              {balances ? 
-                `${toToken((balances[customer.address] || 0).toString(), config.decimals)} MNEE` :
-                <span className="loading loading-spinner loading-xs"></span>
+              {balancesLoading ? 
+                <span className="loading loading-spinner loading-xs"></span> :
+                `${toToken((balances[customer.address] || 0).toString(), config.decimals)} MNEE`
               }
             </div>
           </div>

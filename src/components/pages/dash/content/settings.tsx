@@ -4,15 +4,16 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { FaPlus,  FaCopy, FaCircleInfo } from "react-icons/fa6";
 import { FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
 import { toToken } from 'satoshi-token';
-import { Fee } from './admin/types';
-import { Config } from '@prisma/client';
+import type { Fee } from './admin/types';
+import type { Config } from '@prisma/client';
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { useBalance } from '@/contexts/BalanceContext';
 import { MdOutlineOpenInNew } from 'react-icons/md';
 import { toast } from 'react-hot-toast';
 import { fetchMneeUtxos, ingestTxid } from '@/utils/api';
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
-import { MNEEUtxo } from "@/types";
+import type { MNEEUtxo } from "@/types";
+import { FetchStatus } from "@/types/common";
 
 interface EditFeesModalProps {
 	fees: Fee[];
@@ -452,7 +453,7 @@ const DashboardSettingsContent = () => {
 	const [showEditFeesModal, setShowEditFeesModal] = useState(false);
 	const [feeAddress, setFeeAddress] = useState("");
 	const [isEditing, setIsEditing] = useState(false);
-	const { balances, isLoading: balanceLoading } = useBalance();
+	const { balances, balancesLoading } = useBalance();
 	const [bsvBalances, setBsvBalances] = useState<{ [key: string]: number }>({});
 	const [bsvLoading, setBsvLoading] = useState(false);
 	const [tokenDetails, setTokenDetails] = useState<{
@@ -727,7 +728,7 @@ const DashboardSettingsContent = () => {
 							tooltip="Address where transaction fees are collected (MNEE)"
 							source="Configuration"
 							balance={balances[config?.feeAddress || ""]}
-							isLoading={balanceLoading}
+							isLoading={balancesLoading === FetchStatus.LOADING}
 							decimals={config?.decimals}
 							type="mnee"
 						/>

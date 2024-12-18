@@ -17,7 +17,7 @@ import { FetchStatus } from '@/types/common';
 export default function DashboardCustomersContent() {
   const router = useRouter();
   const { customers, loading, error, fetchCustomers } = useCustomer();
-  const { balances, fetchBalances, fetchStatus } = useBalance();
+  const { balances, fetchBalances, balancesLoading } = useBalance();
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
@@ -39,11 +39,11 @@ export default function DashboardCustomersContent() {
   }, [fetchCustomers]);
 
   useEffect(() => {
-    if (customers?.length && fetchStatus === FetchStatus.IDLE) {
+    if (customers?.length && balancesLoading === FetchStatus.IDLE) {
       const addresses = customers.map(c => c.address);
       fetchBalances(addresses);
     }
-  }, [customers, fetchBalances, fetchStatus]);
+  }, [customers, fetchBalances, balancesLoading]);
 
   if (loading || !config) {
     return (
