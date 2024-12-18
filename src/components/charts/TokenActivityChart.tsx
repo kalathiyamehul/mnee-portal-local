@@ -154,12 +154,6 @@ export const TokenActivityChart = ({
   const secondaryColor = getColorFromTheme(['--color-secondary', '--s']);
   const accentColor = getColorFromTheme(['--color-accent', '--a']);
 
-  console.log('Theme colors:', {
-    primary: primaryColor,
-    secondary: secondaryColor,
-    accent: accentColor
-  });
-
   const getChartConfig = (): ChartConfig => {
     switch (type) {
       case 'volume':

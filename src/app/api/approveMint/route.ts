@@ -127,7 +127,7 @@ export async function POST(request: Request) {
 			minterTx: result.minterTx,
 		});
 	} catch (error) {
-		console.log("Error processing approval:", error);
+		console.error("Error processing approval:", error);
 
 		// If we have a mintRequestId, update the request status to failed
 		if (mintRequestId) {
@@ -189,8 +189,6 @@ async function mintMnee(amount: bigint, address: string) {
 		change_addr,
 	};
 
-	console.log("Minting MNEE", amount, address, mintRequest);
-
 	// mint the MNEE
 	const mintResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/mint`, {
 		method: "POST",
@@ -209,7 +207,6 @@ async function mintMnee(amount: bigint, address: string) {
 		const { minter_tx } = (await mintResponse.json()) as { minter_tx: string };
 
 		const tx = Transaction.fromHex(minter_tx);
-		// console.log("UNSIGNED TX", tx.toHex());
 
 		// iterate over the inputs and set script template to p2pkh
 		for (const input of tx.inputs) {
@@ -222,11 +219,9 @@ async function mintMnee(amount: bigint, address: string) {
 		// set the source transaction to the latest minter tx
 		tx.inputs[0].sourceTransaction = Transaction.fromHex(latest_minter_tx);
 		signMint(tx, 0, pk);
-		// console.log("PARTIALLY SIGNED TX", tx.toHex());
 		await tx.sign();
 
 		const rawtx = tx.toHex();
-		console.log("FULLY SIGNED TX", rawtx);
 
 		// broadcast & ingest
 		const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
@@ -242,13 +237,11 @@ async function mintMnee(amount: bigint, address: string) {
 		}
 		
 		// save the new tx id to the db
-		console.log("saving db config");
 		try {
 			await prisma.config.update({
 				where: { id: 1 },
 				data: { latestMinterTx: rawtx },
 			});
-			console.log("saved db config");
 		} catch (configError) {
 			console.error("Failed to update config with latest minter tx:", configError);
 			// Don't throw here - the mint was successful, we just couldn't update the config

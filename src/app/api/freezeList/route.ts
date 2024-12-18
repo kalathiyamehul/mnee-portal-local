@@ -7,8 +7,6 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const includePending = searchParams.get('includePending') === 'true';
   
-  console.log('includePending:', includePending);
-
   const freezeRequests = await prisma.freezeRequest.findMany({
     where: {
       action: 'FREEZE' as FreezeRequestAction,
@@ -31,8 +29,6 @@ export async function GET(request: Request) {
       createdAt: 'desc'
     }
   });
-
-  console.log('Found freeze requests:', freezeRequests);
 
   return NextResponse.json({ activeFreezes: freezeRequests });
 }

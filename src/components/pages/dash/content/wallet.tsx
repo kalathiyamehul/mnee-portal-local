@@ -116,21 +116,17 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
     const fetchBalanceData = async () => {
       // Skip if already loading
       if (isLoading) {
-        console.log('Skipping balance fetch - already loading');
         return;
       }
 
       try {
         isLoading = true;
-        console.log('Fetching BSV balance for addresses:', addresses);
         const balance = await wallet.getBalance();
         if (!balance || !mounted) return;
 
-        console.log('Received BSV balance:', balance);
         setBalance(balance);
 
         // Fetch MNEE balances
-        console.log('Fetching MNEE balances for addresses:', Object.values(addresses));
         await fetchBalances(Object.values(addresses));
       } catch (error) {
         if (!mounted) return;
@@ -146,7 +142,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
     return () => {
       mounted = false;
     };
-  }, [addresses]);
+  }, [addresses, fetchBalances]);
 
   useEffect(() => {
     const init = async () => {
@@ -176,8 +172,6 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
         throw new Error("Config not fetched");
       }
       const tokenSatAmt = toTokenSat(amount, config.decimals);
-
-      console.log({ recipient, amount, tokenSatAmt, config });
 
       const utxos = await fetchMneeUtxos(Object.values(addresses));
 
@@ -340,7 +334,6 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
           tx.inputs[sigResponse.inputIndex].unlockingScript = signedScript;
         }
 
-        console.log({ tx: tx.toHex() });
         // Submit the transaction
         const response = await fetch(`${MNEE_API}/v1/transfer`, {
           method: "POST",
@@ -381,8 +374,10 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
     },
     onSuccess: async (data) => {
       const { rawtx } = data;
-
-      console.log("onSuccess", rawtx);
+      const tx = Transaction.fromHex(rawtx);
+      if (!rawtx || !tx) {
+        throw new Error("Something went wrong");
+      }
       const addresses = await wallet.getAddresses();
       if (!addresses) {
         throw new Error("Wallet not connected");
@@ -461,7 +456,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
     // If amount is not set or invalid
     const numAmount = Number(amount);
-    if (!amount || numAmount <= 0 || isNaN(numAmount)) return false;
+    if (!amount || numAmount <= 0 || Number.isNaN(numAmount)) return false;
 
     // Check MNEE balance
     const currentBalance = addresses.ordAddress ? balances[addresses.ordAddress] || 0 : 0;
