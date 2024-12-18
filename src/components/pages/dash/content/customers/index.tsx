@@ -12,11 +12,12 @@ import { getGravatarUrl } from '@/utils/gravatar';
 import { getConfig } from '@/lib/config';
 import { toToken } from 'satoshi-token';
 import { Config, Customer } from '@prisma/client';
+import { FetchStatus } from '@/types/common';
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
   const { customers, loading, error, fetchCustomers } = useCustomer();
-  const { balances, fetchBalances, isLoading: balancesLoading } = useBalance();
+  const { balances, fetchBalances, fetchStatus } = useBalance();
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
@@ -38,11 +39,11 @@ export default function DashboardCustomersContent() {
   }, [fetchCustomers]);
 
   useEffect(() => {
-    if (customers?.length && !balancesLoading) {
+    if (customers?.length && fetchStatus === FetchStatus.IDLE) {
       const addresses = customers.map(c => c.address);
       fetchBalances(addresses);
     }
-  }, [customers, fetchBalances, balancesLoading]);
+  }, [customers, fetchBalances, fetchStatus]);
 
   if (loading || !config) {
     return (
