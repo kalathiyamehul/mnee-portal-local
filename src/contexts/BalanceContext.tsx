@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode, useMemo } from 'react';
 import { fetchMneeUtxos , fetchConfig } from '@/utils/api';
 import { toast } from 'react-hot-toast';
 import { FetchStatus } from '@/types/common';
@@ -81,8 +81,15 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
     init();
   }, [burnAddress, fetchBalance]);
 
+  const value = useMemo(() => ({
+    balances,
+    fetchBalance,
+    fetchBalances,
+    balancesLoading
+  }), [balances, fetchBalance, fetchBalances, balancesLoading]);
+
   return (
-    <BalanceContext.Provider value={{ balances, fetchBalance, fetchBalances, balancesLoading }}>
+    <BalanceContext.Provider value={value}>
       {children}
     </BalanceContext.Provider>
   );

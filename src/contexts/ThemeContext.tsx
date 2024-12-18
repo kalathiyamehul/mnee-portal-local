@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 interface ThemeContextType {
   theme: string;
@@ -25,16 +25,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [theme]);
 
-  const handleThemeChange = (newTheme: string) => {
+  const handleThemeChange = useCallback((newTheme: string) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("theme", newTheme);
       document.documentElement.setAttribute("data-theme", newTheme);
     }
     setTheme(newTheme);
-  };
+  }, []);
+
+  const value = useMemo(() => ({ theme, setTheme: handleThemeChange }), [theme, handleThemeChange]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme: handleThemeChange }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

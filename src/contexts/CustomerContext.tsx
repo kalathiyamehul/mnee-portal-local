@@ -1,7 +1,7 @@
 "use client";
 
 // biome-ignore lint/style/useImportType: <explanation>
-import { createContext, useContext, useCallback, useState, ReactNode } from 'react';
+import { createContext, useContext, useCallback, useState, ReactNode, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 
 interface Customer {
@@ -99,16 +99,18 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     return updatedCustomer;
   }, []);
 
+  const value = useMemo(() => ({
+    customers,
+    loading,
+    error,
+    fetchCustomers,
+    getCustomer,
+    createCustomer,
+    updateCustomer,
+  }), [customers, loading, error, fetchCustomers, getCustomer, createCustomer, updateCustomer]);
+  
   return (
-    <CustomerContext.Provider value={{
-      customers,
-      loading,
-      error,
-      fetchCustomers,
-      getCustomer,
-      createCustomer,
-      updateCustomer,
-    }}>
+    <CustomerContext.Provider value={value}>
       {children}
     </CustomerContext.Provider>
   );

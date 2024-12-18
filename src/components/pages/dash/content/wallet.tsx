@@ -142,7 +142,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
     return () => {
       mounted = false;
     };
-  }, [addresses]);
+  }, [addresses, fetchBalances]);
 
   useEffect(() => {
     const init = async () => {
@@ -456,7 +456,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
     // If amount is not set or invalid
     const numAmount = Number(amount);
-    if (!amount || numAmount <= 0 || isNaN(numAmount)) return false;
+    if (!amount || numAmount <= 0 || Number.isNaN(numAmount)) return false;
 
     // Check MNEE balance
     const currentBalance = addresses.ordAddress ? balances[addresses.ordAddress] || 0 : 0;

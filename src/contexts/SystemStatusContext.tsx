@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Activity } from "@/components/pages/dash/content/admin/types";
 
 interface SystemStatusData {
@@ -28,7 +28,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
   const [statusData, setStatusData] = useState<SystemStatusData | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
 
-  const fetchStatus = async () => {
+  const fetchStatus = useCallback(async () => {
     try {
       const response = await fetch('/api/status?includePending=true');
       const data = await response.json();
@@ -36,9 +36,9 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error('Error fetching system status:', error);
     }
-  };
+  }, []);
 
-  const handlePauseToggle = async () => {
+  const handlePauseToggle = useCallback(async () => {
     if (!statusData) return;
 
     const response = await fetch('/api/pause', {
@@ -53,7 +53,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     }
 
     await fetchStatus();
-  };
+  }, [statusData, fetchStatus]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -70,15 +70,17 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     return () => clearInterval(interval);
   }, []);
 
+  const value = useMemo(() => ({ 
+    statusData, 
+    initialLoading, 
+    fetchStatus, 
+    handlePauseToggle,
+    isPaused: statusData?.isPaused || false,
+    hasPendingPause: statusData?.hasPendingPause || false,
+  }), [statusData, initialLoading, fetchStatus, handlePauseToggle]);
+
   return (
-    <SystemStatusContext.Provider value={{ 
-      statusData, 
-      initialLoading, 
-      fetchStatus, 
-      handlePauseToggle,
-      isPaused: statusData?.isPaused || false,
-      hasPendingPause: statusData?.hasPendingPause || false,
-    }}>
+    <SystemStatusContext.Provider value={value}>
       {children}
     </SystemStatusContext.Provider>
   );
