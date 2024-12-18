@@ -1,3 +1,5 @@
+"use client"
+
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { fetchMneeUtxos , fetchConfig } from '@/utils/api';
 import { toast } from 'react-hot-toast';

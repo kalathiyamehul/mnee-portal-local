@@ -1,5 +1,6 @@
-'use client';
+"use client";
 
+// biome-ignore lint/style/useImportType: <explanation>
 import { createContext, useContext, useCallback, useState, ReactNode } from 'react';
 import { toast } from 'react-hot-toast';
 

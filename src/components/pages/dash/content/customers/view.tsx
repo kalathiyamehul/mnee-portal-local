@@ -78,7 +78,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
   if (!config) {
     return (
       <div className="flex justify-center items-center min-h-screen animate-fade-in">
-        <div className="loading loading-spinner loading-lg"></div>
+        <div className="loading loading-spinner loading-lg" />
       </div>
     );
   }
