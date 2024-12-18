@@ -176,7 +176,14 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       }
       const tokenSatAmt = toTokenSat(amount, config.decimals);
 
+      // Fetch UTXOs from all addresses to ensure we capture the total available balance
       const utxos = await fetchMneeUtxos(Object.values(addresses));
+
+      // Validate that we have enough UTXOs before proceeding
+      const totalUtxoAmount = utxos.reduce((sum, utxo) => sum + (utxo.data.bsv21.amt || 0), 0);
+      if (totalUtxoAmount < tokenSatAmt) {
+        throw new Error("Insufficient MNEE balance");
+      }
 
       const fee = config.fees.find(
         (fee) => tokenSatAmt >= fee.min && tokenSatAmt <= fee.max,
@@ -188,6 +195,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       // Build the transaction using the UTXOs, recipient, and amount
       const tx = new Transaction(1, [], [], 0);
 
+      // Track total tokens from UTXOs and which addresses we need to sign for
       let tokensIn = 0;
       const signingAddresses: string[] = [];
       while (tokensIn < tokenSatAmt + fee) {
@@ -658,10 +666,10 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
             <div className="text-sm text-error mt-2">
               {!balance || balance.bsv <= 0 ? (
                 "Insufficient BSV for transaction fees"
-              ) : Number(amount) > (config && addresses ? toToken(balances[addresses.ordAddress] || 0, config.decimals) : 0) ? (
+              ) : Number(amount) > (config && addresses ? toToken(Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0), config.decimals) : 0) ? (
                 <>
                   Insufficient MNEE balance (
-                  {config && addresses ? `${toToken(balances[addresses.ordAddress] || 0, config.decimals)} MNEE available` : '0 MNEE available'}
+                  {config && addresses ? `${toToken(Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0), config.decimals)} MNEE available` : '0 MNEE available'}
                   , trying to send {amount} MNEE)
                 </>
               ) : !recipient || !recipient.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/) ? (

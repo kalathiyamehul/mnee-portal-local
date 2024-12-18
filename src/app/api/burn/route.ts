@@ -29,6 +29,21 @@ export async function POST(request: Request) {
             );
         }
 
+        // Check for existing burn requests for this outpoint
+        const existingRequest = await prisma.burnRequest.findFirst({
+            where: {
+                outpoint,
+                status: { in: ['PENDING', 'APPROVED'] }
+            }
+        });
+
+        if (existingRequest) {
+            return NextResponse.json(
+                { error: "A burn request for this outpoint already exists" },
+                { status: 400 }
+            );
+        }
+
         // Create burn request
         const burnRequestData = {
             amount,

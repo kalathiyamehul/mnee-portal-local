@@ -67,6 +67,19 @@ export async function POST(request: Request) {
 				throw new Error("You have already approved this request");
 			}
 
+			// Check if the target address is blacklisted
+			const blacklistEntry = await tx.blacklist.findFirst({
+				where: {
+					address: mintRequest.address,
+					status: "APPROVED",
+					action: "BLACKLIST"
+				}
+			});
+
+			if (blacklistEntry) {
+				throw new Error("Cannot approve mint: the target address is blacklisted");
+			}
+
 			// Create a new approval
 			await tx.actionApproval.create({
 				data: {

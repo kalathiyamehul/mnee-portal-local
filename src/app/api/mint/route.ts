@@ -17,6 +17,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Check if system is paused
+  const config = await prisma.config.findUnique({
+    where: { id: 1 },
+    select: { isPaused: true }
+  });
+
+  if (config?.isPaused) {
+    return NextResponse.json(
+      { error: "System is paused. Cannot create mint requests at this time." },
+      { status: 423 }
+    );
+  }
+
   try {
     const body: MintRequestParams = await request.json();
     
