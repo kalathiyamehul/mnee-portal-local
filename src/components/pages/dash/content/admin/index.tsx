@@ -378,6 +378,11 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		}
 	};
 
+  if (!session) {
+    return <div>Loading...</div>;
+  }
+  
+  
 	return (
 		<div className="p-4 space-y-4">
 			<div className="flex flex-col gap-4">
@@ -436,7 +441,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 							/>
 						)}
 						{activeTab === 'restrictions' && (
-							<ActiveRestrictionsTab 
+							<ActiveRestrictionsTab
 								restrictions={filteredRestrictions}
 								loading={loading}
 								handleUnblacklist={handleUnblacklist}
@@ -445,6 +450,9 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 								handleUnfreeze={handleUnfreeze}
 								showModal={showModal}
 								activities={activities}
+								handleCancel={handleCancel}
+								handleApprove={handleApprove}
+								session={session}
 							/>
 						)}
 						{activeTab === 'burns' && (

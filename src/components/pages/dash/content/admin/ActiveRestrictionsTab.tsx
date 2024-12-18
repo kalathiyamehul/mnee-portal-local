@@ -5,6 +5,7 @@ import { FaSnowflake, FaBan } from 'react-icons/fa6';
 import { MdRemoveCircleOutline } from 'react-icons/md';
 import { formatDistanceToNow } from 'date-fns';
 import md5 from 'md5';
+import type { Session } from 'next-auth';
 
 interface ActiveRestrictionsTabProps {
   restrictions: AddressStatus[];
@@ -15,6 +16,9 @@ interface ActiveRestrictionsTabProps {
   handleUnfreeze: (address: string) => Promise<void>;
   showModal: (id: string) => void;
   activities: Activity[];
+  handleCancel: (id: string, type: Activity["type"]) => Promise<void>;
+  handleApprove: (id: string, type: Activity["type"]) => Promise<void>;
+  session: Session;
 }
 
 export const ActiveRestrictionsTab = ({
@@ -26,6 +30,9 @@ export const ActiveRestrictionsTab = ({
   handleUnfreeze,
   showModal,
   activities,
+  handleCancel,
+  handleApprove,
+  session,
 }: ActiveRestrictionsTabProps) => {
   // Filter activities to only show restriction-related ones
   const restrictionActivities = activities.filter(
@@ -53,6 +60,17 @@ export const ActiveRestrictionsTab = ({
 
   const handleExplore = (address: string) => {
     window.open(`https://whatsonchain.com/address/${address}`, '_blank');
+  };
+
+  const canCancel = (activity: Activity) => {
+    return activity.status === 'PENDING' && activity.requester.email === session?.user?.email;
+  };
+
+  const canApprove = (activity: Activity) => {
+    if (activity.status !== 'PENDING') return false;
+    if (activity.requester.email === session?.user?.email) return false;
+    if (activity.type === 'BLACKLIST') return false; // blacklist auto-approves
+    return !activity.approvals?.some(a => a.approver.email === session?.user?.email);
   };
 
   return (
@@ -114,6 +132,7 @@ export const ActiveRestrictionsTab = ({
                   <td>
                     <div className="flex flex-col gap-1">
                       <button 
+                        type="button"
                         onClick={() => activity.address && handleExplore(activity.address)}
                         className="font-mono text-sm link link-hover text-left"
                       >
@@ -136,6 +155,30 @@ export const ActiveRestrictionsTab = ({
                   </td>
                   <td>
                     <div className="flex flex-wrap gap-1 sm:gap-2">
+                      {activity.status === 'PENDING' && (
+                        <>
+                          {canCancel(activity) && (
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm"
+                              onClick={() => handleCancel(activity.id, activity.type)}
+                              disabled={loading}
+                            >
+                              Cancel
+                            </button>
+                          )}
+                          {canApprove(activity) && (
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-sm"
+                              onClick={() => handleApprove(activity.id, activity.type)}
+                              disabled={loading}
+                            >
+                              Approve
+                            </button>
+                          )}
+                        </>
+                      )}
                       {activity.type === 'BLACKLIST' && activity.status === 'APPROVED' && (
                         restrictions.find(r => r.address === activity.address)?.isBlacklisted ? (
                           <button
