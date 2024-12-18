@@ -227,10 +227,10 @@ async function mintMnee(amount: bigint, address: string) {
 			where: { id: 1 },
 			data: { latestMinterTx: rawtx },
 		});
-
+		console.log("saved db config");
 		return { rawtx };
 	} catch (error) {
-		console.error(error);
+		console.error("Error returned: ", error);
 		throw new Error("Failed to mint MNEE");
 	}
 }

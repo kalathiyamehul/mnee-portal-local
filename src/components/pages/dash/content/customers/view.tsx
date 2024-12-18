@@ -10,7 +10,7 @@ import { CustomerModal } from "../modals/CustomerModal";
 import { toToken } from "satoshi-token";
 import { useBalance } from "@/contexts/BalanceContext";
 import { getConfig } from "@/lib/config";
-import { Config } from "@prisma/client";
+import type { Config } from "@prisma/client";
 import { getGravatarUrl } from "@/utils/gravatar";
 
 interface CustomerActivity {
@@ -90,6 +90,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
       {/* Header */}
       <div className="flex items-center gap-4">
         <button
+          type="button"
           onClick={() => router.back()}
           className="btn btn-ghost btn-sm"
         >
@@ -116,6 +117,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
             </div>
           </div>
           <button
+            type="button"
             onClick={() => setShowModal(true)}
             className="btn btn-ghost btn-sm gap-2"
           >
@@ -124,7 +126,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
           </button>
         </div>
 
-        <div className="divider"></div>
+        <div className="divider" />
 
         <div className="grid grid-cols-2 gap-8">
           <div className="space-y-2">
@@ -149,7 +151,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
             <div className="text-sm text-base-content/70">Balance</div>
             <div className="font-mono text-sm">
               {balancesLoading ? 
-                <span className="loading loading-spinner loading-xs"></span> :
+                <span className="loading loading-spinner loading-xs" /> :
                 `${toToken((balances[customer.address] || 0).toString(), config.decimals)} MNEE`
               }
             </div>
@@ -183,12 +185,14 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
       <div className="space-y-4">
         <div className="tabs tabs-boxed">
           <button
+            type="button"
             className={`tab ${activeTab === 'mints' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('mints')}
           >
             Mints ({activity.mints.length})
           </button>
           <button
+            type="button"
             className={`tab ${activeTab === 'burns' ? 'tab-active' : ''}`}
             onClick={() => setActiveTab('burns')}
           >
