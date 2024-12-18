@@ -135,7 +135,7 @@ export async function POST(request: Request) {
 				await prisma.mintRequest.update({
 					where: { id: mintRequestId },
 					data: { 
-						status: "failed",
+						status: "FAILED",
 						updatedAt: new Date(),
 					},
 				});
