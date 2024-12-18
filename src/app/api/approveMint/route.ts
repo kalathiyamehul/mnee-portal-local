@@ -6,9 +6,10 @@ import { P2PKH, PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
 import { fetchConfig, fetchTransaction } from "@/utils/api";
-import type { FundingUtxo, MintRequest } from "@/types/utxo";
+import type { MintRequest } from "@/types/utxo";
 import { MINT_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 import { signMint } from "@/templates/vault";
+import { getFundingUtxos } from "@/utils/utxo";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -17,8 +18,11 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
+	let mintRequestId: string | undefined;
+
 	try {
-		const { mintRequestId } = await request.json();
+		const { mintRequestId: requestId } = await request.json();
+		mintRequestId = requestId;
 		const result = await prisma.$transaction(async (tx) => {
 			// Verify the approving user exists
 			const approvingUser = await tx.user.findUnique({
@@ -101,13 +105,13 @@ export async function POST(request: Request) {
 
 					return { approvalCount, status: "DONE", minterTx: rawtx };
 				} catch (error) {
-					// If minting fails, keep the request in APPROVED state but propagate a cleaner error
+					// If minting fails, propagate the error
 					console.error("Error during minting:", error);
-					throw new Error(
-						error instanceof Error 
-							? error.message.replace(/^Error: /, '') // Remove "Error: " prefix
-							: "Transaction submission failed"
-					);
+					const errorMessage = error instanceof Error 
+						? error.message.replace(/^Error:\s*/, '') // Remove "Error: " prefix
+						: "Transaction submission failed";
+					
+					throw new Error(errorMessage);
 				}
 			}
 
@@ -123,15 +127,33 @@ export async function POST(request: Request) {
 			minterTx: result.minterTx,
 		});
 	} catch (error) {
-		console.error("Error processing approval:", error);
+		console.log("Error processing approval:", error);
+
+		// If we have a mintRequestId, update the request status to failed
+		if (mintRequestId) {
+			try {
+				await prisma.mintRequest.update({
+					where: { id: mintRequestId },
+					data: { 
+						status: "FAILED",
+						updatedAt: new Date(),
+					},
+				});
+			} catch (updateError) {
+				console.error("Failed to update mint request status:", updateError);
+			}
+		}
+
 		return NextResponse.json({ 
 			success: false,
-			error: error instanceof Error ? error.message : "Failed to process approval"
+			error: error instanceof Error ? error.message : "Failed to process approval",
+			requestId: mintRequestId || null
 		}, { status: 500 });
 	}
 }
 
-const mintMnee = async (amount: number, address: string) => {
+// Helper function to mint MNEE tokens
+async function mintMnee(amount: bigint, address: string) {
 	const config = await fetchConfig();
 
 	// create the cosign template
@@ -159,7 +181,7 @@ const mintMnee = async (amount: number, address: string) => {
 	const change_addr = fundingAddress;
 
 	const mintRequest: MintRequest = {
-		amount,
+		amount: Number(amount),
 		token_ls,
 		latest_minter_tx,
 		funding_utxos,
@@ -204,9 +226,8 @@ const mintMnee = async (amount: number, address: string) => {
 		await tx.sign();
 
 		const rawtx = tx.toHex();
-		// console.log("FULLY SIGNED TX", rawtx);
+		console.log("FULLY SIGNED TX", rawtx);
 
-		// throw new Error("Stopping broadcast");
 		// broadcast & ingest
 		const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
 			method: "POST",
@@ -219,22 +240,33 @@ const mintMnee = async (amount: number, address: string) => {
 		if (!broadcastResponse.ok) {
 			throw new Error("Failed to broadcast MNEE");
 		}
-    
-    // save the new tx id to the db
+		
+		// save the new tx id to the db
 		console.log("saving db config");
-		await prisma.config.update({
-			where: { id: 1 },
-			data: { latestMinterTx: rawtx },
-		});
+		try {
+			await prisma.config.update({
+				where: { id: 1 },
+				data: { latestMinterTx: rawtx },
+			});
+			console.log("saved db config");
+		} catch (configError) {
+			console.error("Failed to update config with latest minter tx:", configError);
+			// Don't throw here - the mint was successful, we just couldn't update the config
+			// This will be handled in the next mint attempt
+		}
 
 		return { rawtx };
 	} catch (error) {
-		console.error(error);
-		throw new Error("Failed to mint MNEE");
+		console.error("Error during mint process:", error);
+		// Provide more specific error messages based on where the error occurred
+		if (error instanceof Error) {
+			if (error.message.includes("broadcast")) {
+				throw new Error("Failed to broadcast transaction to the network");
+			}
+      if (error.message.includes("sign")) {
+				throw new Error("Failed to sign transaction");
+			}
+		}
+		throw new Error(`Failed to mint MNEE: ${error instanceof Error ? error.message : "Unknown error"}`);
 	}
-};
-
-export const getFundingUtxos = async (fundingAddress: string) => {
-	const utxosResponse = await fetch(`${MNEE_API}/v1/utxos/${fundingAddress}`);
-	return (await utxosResponse.json()) as FundingUtxo[];
-};
+}

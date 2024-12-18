@@ -1,42 +1,49 @@
+"use client"
+
 import { useMemo } from "react"
 import DashboardHomeContent from "./content/home"
 import DashboardWalletContent from "./content/wallet"
 import DashboardAdminContent from "./content/admin"
 import DashboardSettingsContent from './content/settings';
-
-export enum DashPage {
-    ADMIN = "admin",
-    HOME = "home",
-    WALLET = "wallet",
-    SETTINGS = "settings",
-}
+import DashboardCustomersContent from "./content/customers";
+import { Config } from "@prisma/client"
+import type { DashPage } from "@/types/dashboard"
+import { DashPages } from "@/types/dashboard"
 
 export type DashboardProps = {
     page: DashPage;
     defaultTab?: string;
+    defaultShowTransfer?: boolean;
+    defaultAddress?: string;
+    config?: Config;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab }) => {
+const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab, defaultShowTransfer, defaultAddress, config }) => {
+    console.log('Dashboard page prop:', page);
+    console.log('Dashboard page type:', typeof page);
+
     const dashContent = useMemo(() => {
         switch (page) {
-            case DashPage.HOME:
-                return <DashboardHomeContent />
-            case DashPage.ADMIN:
+            case DashPages.HOME:
+                return <DashboardHomeContent initialConfig={config as Config} />
+            case DashPages.ADMIN:
                 return <DashboardAdminContent defaultTab={defaultTab} />
-            case DashPage.WALLET:
-                return <DashboardWalletContent />
-            case DashPage.SETTINGS:
+            case DashPages.WALLET:
+                return <DashboardWalletContent defaultShowTransfer={defaultShowTransfer} defaultAddress={defaultAddress} />
+            case DashPages.SETTINGS:
                 return <DashboardSettingsContent />
+            case DashPages.CUSTOMERS:
+                return <DashboardCustomersContent />
             default:
+                console.log('Hit default case with page:', page);
                 return <div>Not Found</div>
         }
-    }, [page, defaultTab])
+    }, [config, page, defaultTab, defaultShowTransfer, defaultAddress])
 
-    return <div className="container px-6 py-8 mx-auto">
-        <h3 className="text-3xl font-medium text-gray-700">Dashboard : {page}</h3>
-
+    return <div className="container px-6 py-2 mx-auto">
         {dashContent}
     </div>
 }
 
 export default Dashboard;
+

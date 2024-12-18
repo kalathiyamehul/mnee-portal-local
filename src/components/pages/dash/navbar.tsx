@@ -1,29 +1,32 @@
 "use client";
 
-import type { Session } from "next-auth";
+import { SystemStatus } from "./content/admin/SystemStatus";
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
 
-type NavbarProps = {
-	session: Session;
-};
+const Navbar = () => {
+	const { isPaused, hasPendingPause, handlePauseToggle } = useSystemStatus();
 
-const Navbar: React.FC<NavbarProps> = ({ session }) => {
+	const handleMenuClick = () => {
+		const toggle = document.getElementById('sidebar-toggle') as HTMLInputElement;
+		if (toggle) toggle.checked = !toggle.checked;
+	};
+
 	return (
-		<div className="w-full navbar bg-base-300">
-			<div className="flex-none lg:hidden">
-				<label htmlFor="sidebar-toggle" className="btn btn-square btn-ghost">
-					{/* biome-ignore lint/a11y/noSvgWithoutTitle: <explanation> */}
-					<svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
-						<path
-							d="M4 6H20M4 12H20M4 18H11"
-							stroke="currentColor"
-							strokeWidth="2"
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
+		<div className="navbar bg-base-100">
+			<div className="flex-none md:hidden">
+				<button className="btn btn-square btn-ghost" onClick={handleMenuClick}>
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="inline-block w-5 h-5 stroke-current">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
 					</svg>
-				</label>
+				</button>
 			</div>
-			<div className="flex-1 px-2 mx-2 text-sm">{session.user.email}</div>
+			<div className="flex-1 px-8">
+				<SystemStatus
+					isPaused={isPaused}
+					onPauseToggle={handlePauseToggle}
+					hasPendingPause={hasPendingPause}
+				/>
+			</div>
 		</div>
 	);
 };

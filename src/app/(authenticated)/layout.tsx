@@ -9,7 +9,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from 'next/navigation';
 import Navbar from '@/components/pages/dash/navbar';
 import { getConfig } from "@/lib/config";
-import { Toaster } from "react-hot-toast";
+import { SystemStatusProvider } from '@/contexts/SystemStatusContext';
 
 const geistMono = localFont({
   src: "../fonts/GeistMonoVF.woff",
@@ -44,30 +44,21 @@ export default async function AuthenticatedLayout({
   return (
     <div className={`drawer drawer-mobile lg:drawer-open min-h-screen h-full ${geistMono.className}`}>
       <input id="sidebar-toggle" type="checkbox" className="drawer-toggle" />
-      <div className="drawer-content flex flex-col">
-        {/* Navbar */}
-        <Navbar session={session} />
-        {/* Main content */}
-        <main className="flex-1">
-          {children}
-        </main>
-      </div>
-      <div className="drawer-side h-screen">
-        <label htmlFor="sidebar-toggle" className="drawer-overlay" aria-label="Toggle sidebar" />
-        {/* Use the Sidebar component */}
-        <Sidebar />
-        <Toaster 
-          position="bottom-right"
-          toastOptions={{
-            // className: 'bg-primary text-primary-content',
-            style: {
-              borderRadius: '10px',
-              background: '#333',
-              color: '#fff',
-            },
-          }}
-        />
-      </div>
+      <SystemStatusProvider>
+        <div className="drawer-content flex flex-col">
+          {/* Navbar */}
+          <Navbar />
+          {/* Main content */}
+          <main className="flex-1">
+            {children}
+          </main>
+        </div>
+        <div className="drawer-side h-screen">
+          <label htmlFor="sidebar-toggle" className="drawer-overlay" aria-label="Toggle sidebar" />
+          {/* Use the Sidebar component */}
+          <Sidebar />
+        </div>
+      </SystemStatusProvider>
     </div>
   );
 }

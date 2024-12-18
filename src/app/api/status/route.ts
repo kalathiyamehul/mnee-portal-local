@@ -52,14 +52,60 @@ export async function GET(request: Request) {
         }),
         prisma.mintRequest.findMany({
           where: whereCondition,
-          include: includeOptions,
+          select: {
+            id: true,
+            address: true,
+            amount: true,
+            status: true,
+            txid: true,
+            requiresApproval: true,
+            createdAt: true,
+            customerId: true,
+            requester: {
+              select: { name: true, email: true }
+            },
+            approvals: {
+              include: {
+                approver: { select: { name: true, email: true } }
+              }
+            },
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                address: true
+              }
+            }
+          },
           orderBy: { createdAt: 'desc' }
-        }),
+        }).then(requests => requests.map(r => ({
+          ...r,
+          amount: Number(r.amount)
+        }))),
         prisma.burnRequest.findMany({
           where: whereCondition,
-          include: includeOptions,
+          select: {
+            id: true,
+            amount: true,
+            status: true,
+            requiresApproval: true,
+            createdAt: true,
+            outpoint: true,
+            requester: {
+              select: { name: true, email: true }
+            },
+            approvals: {
+              include: {
+                approver: { select: { name: true, email: true } }
+              }
+            }
+          },
           orderBy: { createdAt: 'desc' }
-        })
+        }).then(requests => requests.map(r => ({
+          ...r,
+          amount: Number(r.amount)
+        })))
       ]);
 
       // Get system pause status
@@ -71,10 +117,19 @@ export async function GET(request: Request) {
         orderBy: { createdAt: 'desc' },
       });
 
+      const pendingPauseRequest = await prisma.actionRequest.findFirst({
+        where: {
+          action: 'PAUSE',
+          status: 'PENDING',
+        },
+      });
+
       const isPaused = latestPauseAction?.action === 'PAUSE';
+      const hasPendingPause = !!pendingPauseRequest;
 
       return NextResponse.json({
         isPaused,
+        hasPendingPause,
         freezeRequests,
         blacklists,
         systemRequests,
@@ -124,17 +179,63 @@ export async function GET(request: Request) {
       case 'mint':
         const mintRequests = await prisma.mintRequest.findMany({
           where: whereCondition,
-          include: includeOptions,
+          select: {
+            id: true,
+            address: true,
+            amount: true,
+            status: true,
+            txid: true,
+            requiresApproval: true,
+            createdAt: true,
+            customerId: true,
+            requester: {
+              select: { name: true, email: true }
+            },
+            approvals: {
+              include: {
+                approver: { select: { name: true, email: true } }
+              }
+            },
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                address: true
+              }
+            }
+          },
           orderBy: { createdAt: 'desc' }
-        });
+        }).then(requests => requests.map(r => ({
+          ...r,
+          amount: Number(r.amount)
+        })));
         return NextResponse.json({ mintRequests });
 
       case 'burn':
         const burnRequests = await prisma.burnRequest.findMany({
           where: whereCondition,
-          include: includeOptions,
+          select: {
+            id: true,
+            amount: true,
+            status: true,
+            requiresApproval: true,
+            createdAt: true,
+            outpoint: true,
+            requester: {
+              select: { name: true, email: true }
+            },
+            approvals: {
+              include: {
+                approver: { select: { name: true, email: true } }
+              }
+            }
+          },
           orderBy: { createdAt: 'desc' }
-        });
+        }).then(requests => requests.map(r => ({
+          ...r,
+          amount: Number(r.amount)
+        })));
         return NextResponse.json({ burnRequests });
 
       default:

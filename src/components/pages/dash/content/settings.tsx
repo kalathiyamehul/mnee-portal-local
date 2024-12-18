@@ -1,98 +1,200 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { FaSpinner, FaPlus, FaTrash, FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { FaPlus,  FaCopy, FaCircleInfo } from "react-icons/fa6";
+import { FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
 import { toToken } from 'satoshi-token';
-import { Fee, ConfigWithFees } from './admin/types';
-import { Config } from '@prisma/client';
+import type { Fee } from './admin/types';
+import type { Config } from '@prisma/client';
+import { ThemeSelector } from "@/components/ThemeSelector";
+import { useBalance } from '@/contexts/BalanceContext';
+import { MdOutlineOpenInNew } from 'react-icons/md';
+import { toast } from 'react-hot-toast';
+import { fetchMneeUtxos, ingestTxid } from '@/utils/api';
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import type { MNEEUtxo } from "@/types";
+import { FetchStatus } from "@/types/common";
 
 interface EditFeesModalProps {
 	fees: Fee[];
 	onSave: (fees: Fee[]) => void;
 	onClose: () => void;
+	editIndex?: number;
 }
 
-const EditFeesModal = ({ fees: initialFees, onSave, onClose }: EditFeesModalProps) => {
-	const [fees, setFees] = useState<Fee[]>(initialFees);
-	const [newFee, setNewFee] = useState<Fee>({ min: 0, max: 0, fee: 0 });
-
-	const handleAddFee = () => {
-		if (newFee.min >= 0 && newFee.max > newFee.min && newFee.fee >= 0) {
-			setFees([...fees, newFee]);
-			setNewFee({ min: 0, max: 0, fee: 0 });
+const EditFeesModal = ({ fees, onSave, onClose, editIndex }: EditFeesModalProps) => {
+	const [fee, setFee] = useState<Fee>(() => {
+		if (editIndex !== undefined && fees[editIndex]) {
+			return { ...fees[editIndex] };
 		}
+		return { min: 0, max: Number.MAX_SAFE_INTEGER, fee: 0 };
+	});
+	const [config, setConfig] = useState<Config | null>(null);
+	const [error, setError] = useState<string | null>(null);
+
+	// Fetch config to get decimals
+	useEffect(() => {
+		const fetchConfig = async () => {
+			const response = await fetch('/api/config');
+			const data = await response.json();
+			setConfig(data);
+		};
+		fetchConfig();
+	}, []);
+
+	const validateFeeRange = (newFee: Fee) => {
+		// Skip validation for the fee being edited
+		const otherFees = editIndex !== undefined ? 
+			fees.filter((_, i) => i !== editIndex) : 
+			fees;
+
+		// Check for overlaps with existing fees
+		for (const existingFee of otherFees) {
+			if (
+				(newFee.min >= existingFee.min && newFee.min < existingFee.max) ||
+				(newFee.max > existingFee.min && newFee.max <= existingFee.max) ||
+				(newFee.min <= existingFee.min && newFee.max >= existingFee.max)
+			) {
+				return `Fee range overlaps with existing range ${existingFee.min}-${existingFee.max}`;
+			}
+		}
+
+		// Validate min/max relationship
+		if (newFee.min >= newFee.max) {
+			return 'Minimum value must be less than maximum value';
+		}
+
+		return null;
 	};
 
-	const handleRemoveFee = (index: number) => {
-		setFees(fees.filter((_, i) => i !== index));
+	const handleSave = () => {
+		const validationError = validateFeeRange(fee);
+		if (validationError) {
+			setError(validationError);
+			return;
+		}
+
+		let newFees: Fee[];
+		if (editIndex !== undefined) {
+			newFees = fees.map((f, i) => i === editIndex ? fee : f);
+		} else {
+			newFees = [...fees, fee];
+		}
+
+		// Sort fees by min value
+		newFees.sort((a, b) => a.min - b.min);
+		onSave(newFees);
+		onClose();
 	};
+
+	if (!config) {
+		return (
+			<dialog id="edit_fees_modal" className="modal modal-open">
+				<div className="modal-box flex justify-center items-center">
+					<span className="loading loading-spinner loading-lg" />
+				</div>
+			</dialog>
+		);
+	}
 
 	return (
-		<dialog id="edit_fees_modal" className="modal modal-open">
+		<dialog id="edit_fees_modal" className="modal modal-open" onClick={(e) => {
+			if (e.target === e.currentTarget) {
+				onClose();
+			}
+		}}>
 			<div className="modal-box">
-				<h3 className="font-bold text-lg mb-4">Edit Fee Structure</h3>
-				
-				{/* Existing Fees */}
-				<div className="mb-4">
-					<h4 className="text-md mb-2">Current Fees</h4>
-					{fees.map((fee, index) => (
-						<div key={index} className="flex items-center mb-2 bg-base-300 p-2 rounded">
-							<div className="flex-1">
-								<span className="mr-4">Min: {fee.min}</span>
-								<span className="mr-4">Max: {fee.max}</span>
-								<span>Fee: {fee.fee}</span>
-							</div>
-							<button
-								type="button"
-								onClick={() => handleRemoveFee(index)}
-								className="btn btn-ghost btn-sm text-error"
-							>
-								<FaTrash />
-							</button>
-						</div>
-					))}
-				</div>
+				<h3 className="font-bold text-lg mb-4">
+					{editIndex !== undefined ? 'Edit Fee' : 'Add Fee'}
+				</h3>
 
-				{/* Add New Fee */}
+				{error && (
+					<div className="alert alert-error mb-4">
+						<span>{error}</span>
+					</div>
+				)}
+				
 				<div className="form-control">
-					<h4 className="text-md mb-2">Add New Fee</h4>
-					<div className="grid grid-cols-3 gap-2">
+					<div className="grid grid-cols-3 gap-3">
 						<div>
-							<label className="label">Min Amount</label>
-							<input
-								type="number"
-								className="input input-bordered w-full"
-								value={newFee.min}
-								onChange={(e) => setNewFee({ ...newFee, min: Number(e.target.value) })}
-							/>
+							<label className="label">
+								<span className="label-text">Min</span>
+							</label>
+							<label className="input input-bordered flex items-center gap-2">
+								<input
+									type="text"
+									className="grow"
+									value={fee.min === 0 ? '' : toToken(fee.min.toString(), config.decimals)}
+									placeholder="0"
+									onChange={(e) => {
+										const value = e.target.value;
+										if (value === '') {
+											setFee({ ...fee, min: 0 });
+											return;
+										}
+										const tokenAmount = Number(value);
+										if (isNaN(tokenAmount)) return;
+										const satAmount = Math.floor(tokenAmount * Math.pow(10, config.decimals));
+										setFee({ ...fee, min: satAmount });
+										setError(null);
+									}}
+								/>
+								<span className="badge badge-ghost">MNEE</span>
+							</label>
 						</div>
 						<div>
-							<label className="label">Max Amount</label>
-							<input
-								type="number"
-								className="input input-bordered w-full"
-								value={newFee.max}
-								onChange={(e) => setNewFee({ ...newFee, max: Number(e.target.value) })}
-							/>
+							<label className="label">
+								<span className="label-text">Max</span>
+							</label>
+							<label className="input input-bordered flex items-center gap-2">
+								<input
+									type="text"
+									className="grow"
+									value={fee.max === Number.MAX_SAFE_INTEGER ? '' : toToken(fee.max.toString(), config.decimals)}
+									placeholder="∞"
+									onChange={(e) => {
+										const value = e.target.value;
+										if (value === '') {
+											setFee({ ...fee, max: Number.MAX_SAFE_INTEGER });
+											return;
+										}
+										const tokenAmount = Number(value);
+										if (isNaN(tokenAmount)) return;
+										const satAmount = Math.floor(tokenAmount * Math.pow(10, config.decimals));
+										setFee({ ...fee, max: satAmount });
+										setError(null);
+									}}
+								/>
+								<span className="badge badge-ghost">MNEE</span>
+							</label>
 						</div>
 						<div>
-							<label className="label">Fee</label>
-							<input
-								type="number"
-								className="input input-bordered w-full"
-								value={newFee.fee}
-								onChange={(e) => setNewFee({ ...newFee, fee: Number(e.target.value) })}
-							/>
+							<label className="label">
+								<span className="label-text">Fee</span>
+							</label>
+							<label className="input input-bordered flex items-center gap-2">
+								<input
+									type="text"
+									className="grow"
+									value={fee.fee === 0 ? '' : toToken(fee.fee.toString(), config.decimals)}
+									placeholder="0"
+									onChange={(e) => {
+										const value = e.target.value;
+										if (value === '') {
+											setFee({ ...fee, fee: 0 });
+											return;
+										}
+										const tokenAmount = Number(value);
+										if (isNaN(tokenAmount)) return;
+										const satAmount = Math.floor(tokenAmount * Math.pow(10, config.decimals));
+										setFee({ ...fee, fee: satAmount });
+										setError(null);
+									}}
+								/>
+								<span className="badge badge-ghost">MNEE</span>
+							</label>
 						</div>
 					</div>
-					<button
-						type="button"
-						onClick={handleAddFee}
-						className="btn btn-primary mt-4"
-						disabled={newFee.min >= newFee.max}
-					>
-						<FaPlus className="mr-2" /> Add Fee
-					</button>
 				</div>
 
 				<div className="modal-action">
@@ -102,12 +204,10 @@ const EditFeesModal = ({ fees: initialFees, onSave, onClose }: EditFeesModalProp
 					<button
 						type="button"
 						className="btn btn-primary"
-						onClick={() => {
-							onSave(fees);
-							onClose();
-						}}
+						onClick={handleSave}
+						disabled={fee.min >= fee.max}
 					>
-						Save Changes
+						{editIndex !== undefined ? 'Save Changes' : 'Add Fee'}
 					</button>
 				</div>
 			</div>
@@ -115,12 +215,321 @@ const EditFeesModal = ({ fees: initialFees, onSave, onClose }: EditFeesModalProp
 	);
 };
 
+interface AddressCardProps {
+	title: string;
+	address: string;
+	tooltip: string;
+	source: string;
+	balance?: number;
+	isLoading?: boolean;
+	decimals?: number;
+	type?: 'bsv' | 'mnee';
+}
+
+const AddressCard = ({ title, address, tooltip, source, balance, isLoading, decimals = 8, type = 'bsv' }: AddressCardProps) => {
+	return (
+		<div className="bg-base-100 rounded-lg p-4 space-y-4 border-b border-base-content/10">
+			<div className="flex justify-between items-center">
+				<div className="flex items-center gap-2">
+					<div className="text-xs uppercase tracking-wider opacity-50">{title}</div>
+					<div className="tooltip" data-tip={tooltip}>
+						<FaCircleInfo className="w-3 h-3 text-base-content/70" />
+					</div>
+				</div>
+				<a
+					href={`https://whatsonchain.com/address/${address}`}
+					target="_blank"
+					rel="noopener noreferrer"
+					className="btn btn-ghost btn-xs btn-square"
+					title="View on WhatsOnChain"
+				>
+					<MdOutlineOpenInNew className="w-3 h-3" />
+				</a>
+			</div>
+
+			<div className="flex items-center gap-2">
+				<div className="font-mono text-xs break-all flex-1">
+					{address}
+				</div>
+				<button
+					type="button"
+					onClick={() => {
+						navigator.clipboard.writeText(address);
+						toast.success('Address copied to clipboard');
+					}}
+					className="btn btn-ghost btn-xs btn-square flex-none"
+					title="Copy address"
+				>
+					<FaCopy className="w-3 h-3" />
+				</button>
+			</div>
+
+			<div className="flex justify-between items-center">
+				<div className="text-xs uppercase tracking-wider opacity-50">Balance</div>
+				<div className="text-lg font-bold">
+					{isLoading ? (
+						<span className="loading loading-spinner loading-sm"></span>
+					) : (
+						type === 'mnee' ? 
+							`${toToken(balance || 0, decimals)} MNEE` :
+							`${balance || 0} BSV`
+					)}
+				</div>
+			</div>
+
+			<div className="text-xs text-base-content/70">
+				<span>Source: </span>
+				<span className="font-mono">{source}</span>
+			</div>
+		</div>
+	);
+};
+
+const TokenDetailsSection = ({ 
+	config, 
+	tokenDetails, 
+	circulatingSupply 
+}: { 
+	config: Config; 
+	tokenDetails: { sym: string; icon: string; amt: number; } | null;
+	circulatingSupply: bigint;
+}) => {
+	return (
+		<div className="space-y-6">
+			<div className="flex justify-between items-center">
+				<h3 className="text-lg font-bold">Token Details</h3>
+			</div>
+
+			{tokenDetails?.icon && (
+				<div className="flex justify-center mb-6">
+					<img 
+						src={`https://ordfs.network/${tokenDetails.icon}`}
+						alt="Token Icon" 
+						className="w-24 h-24 rounded-lg"
+						onError={(e) => {
+							(e.target as HTMLImageElement).style.display = 'none';
+						}}
+					/>
+				</div>
+			)}
+
+			<div className="grid grid-cols-2 gap-x-8">
+				{/* Left Column */}
+				<div className="space-y-4">
+					{/* Token ID */}
+					<div className="space-y-2">
+						<div className="flex items-center gap-2">
+							<span className="font-medium text-sm">Token ID</span>
+							<div className="tooltip tooltip-right" data-tip="Unique identifier for your token on the blockchain">
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
+							</div>
+						</div>
+						<div className="flex items-center gap-2">
+							<div className="font-mono text-xs">
+								{config.tokenId.slice(0, 8)}...{config.tokenId.slice(-8)}
+							</div>
+							<div className="flex items-center gap-1">
+								<button
+									type="button"
+									onClick={() => {
+										navigator.clipboard.writeText(config.tokenId);
+										toast.success('Token ID copied to clipboard');
+									}}
+									className="btn btn-ghost btn-xs btn-square"
+								>
+									<FaCopy className="w-3 h-3" />
+								</button>
+								<a
+									href={`https://whatsonchain.com/tx/${config.tokenId.split('_')[0]}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="btn btn-ghost btn-xs btn-square"
+									title="View on WhatsOnChain"
+								>
+									<MdOutlineOpenInNew className="w-3 h-3" />
+								</a>
+							</div>
+						</div>
+					</div>
+
+					{/* Symbol */}
+					<div className="space-y-2">
+						<div className="flex items-center gap-2">
+							<span className="font-medium text-sm">Symbol</span>
+							<div className="tooltip tooltip-right" data-tip="The token's ticker symbol">
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
+							</div>
+						</div>
+						<div className="font-mono text-sm">
+							{tokenDetails?.sym || 'MNEE'}
+						</div>
+					</div>
+
+					{/* Decimals */}
+					<div className="space-y-2">
+						<div className="flex items-center gap-2">
+							<span className="font-medium text-sm">Decimals</span>
+							<div className="tooltip tooltip-right" data-tip="Number of decimal places your token supports">
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
+							</div>
+						</div>
+						<div className="font-mono text-sm">
+							{config.decimals}
+						</div>
+					</div>
+				</div>
+
+				{/* Right Column */}
+				<div className="space-y-4">
+					{/* Total Supply */}
+					<div className="space-y-2">
+						<div className="flex items-center gap-2">
+							<span className="font-medium text-sm">Maximum Supply</span>
+							<div className="tooltip tooltip-right" data-tip="Number of coins as per the deployment inscription.">
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
+							</div>
+						</div>
+						<div className="font-mono text-sm">
+							{tokenDetails ? toToken(tokenDetails.amt.toString(), config.decimals) : '0'} MNEE
+						</div>
+					</div>
+
+					{/* Circulating Supply */}
+					<div className="space-y-2">
+						<div className="flex items-center gap-2">
+							<span className="font-medium text-sm">Circulating Supply</span>
+							<div className="tooltip tooltip-right" data-tip="Number of tokens currently in circulation (total mints minus total burns)">
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
+							</div>
+						</div>
+						<div className="font-mono text-sm">
+							{toToken(circulatingSupply.toString(), config.decimals)} MNEE
+						</div>
+					</div>
+
+					{/* Icon Field */}
+					<div className="space-y-2">
+						<div className="flex items-center gap-2">
+							<span className="font-medium text-sm">Icon Location</span>
+							<div className="tooltip tooltip-right" data-tip="The ordfs.network location of the token's icon">
+								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
+							</div>
+						</div>
+						<div className="flex items-center gap-2">
+							<div className="font-mono text-xs">
+								{tokenDetails?.icon || 'Not set'}
+							</div>
+							{tokenDetails?.icon && (
+								<div className="flex items-center gap-1">
+									<button
+										type="button"
+										onClick={() => {
+											navigator.clipboard.writeText(tokenDetails.icon);
+											toast.success('Icon location copied to clipboard');
+										}}
+										className="btn btn-ghost btn-xs btn-square"
+									>
+										<FaCopy className="w-3 h-3" />
+									</button>
+									<a
+										href={`https://ordfs.network/${tokenDetails.icon}`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="btn btn-ghost btn-xs btn-square"
+										title="View on ordfs.network"
+									>
+										<MdOutlineOpenInNew className="w-3 h-3" />
+									</a>
+								</div>
+							)}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+};
+
 const DashboardSettingsContent = () => {
-	const [config, setConfig] = useState<ConfigWithFees | null>(null);
+	const [config, setConfig] = useState<Config | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [showEditFeesModal, setShowEditFeesModal] = useState(false);
 	const [feeAddress, setFeeAddress] = useState("");
 	const [isEditing, setIsEditing] = useState(false);
+	const { balances, balancesLoading } = useBalance();
+	const [bsvBalances, setBsvBalances] = useState<{ [key: string]: number }>({});
+	const [bsvLoading, setBsvLoading] = useState(false);
+	const [tokenDetails, setTokenDetails] = useState<{
+		sym: string;
+		icon: string;
+		amt: number;
+	} | null>(null);
+	const { statusData } = useSystemStatus();
+	const [editingFeeIndex, setEditingFeeIndex] = useState<number | undefined>();
+	const [burnUtxos, setBurnUtxos] = useState<MNEEUtxo[]>([]);
+	const [burnLoading, setBurnLoading] = useState(false);
+
+	// Calculate burn balance from UTXOs
+	const burnBalance = useMemo(() => {
+		return burnUtxos.reduce((total, utxo) => total + Number(utxo.data.bsv21.amt), 0);
+	}, [burnUtxos]);
+
+	// Fetch burn UTXOs
+	const fetchBurnUtxos = useCallback(async (address: string) => {
+		try {
+			setBurnLoading(true);
+			const utxos = await fetchMneeUtxos([address]);
+			setBurnUtxos(utxos);
+		} catch (error) {
+			console.error('Error fetching burn UTXOs:', error);
+		} finally {
+			setBurnLoading(false);
+		}
+	}, []);
+
+	// Calculate circulating supply from mints and burns
+	const circulatingSupply = useMemo(() => {
+		if (!statusData || !config) return 0n;
+
+		// Sum all approved mints
+		const totalMints = statusData.mintRequests
+			.filter(req => req.status === 'APPROVED')
+			.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
+
+		// Sum all approved burns
+		const totalBurns = statusData.burnRequests
+			.filter(req => req.status === 'APPROVED')
+			.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
+
+		return totalMints - totalBurns;
+	}, [statusData, config]);
+
+	const fetchBsvBalances = useCallback(async (addresses: string[]) => {
+		try {
+			setBsvLoading(true);
+			const balances: { [key: string]: number } = {};
+			
+			for (const address of addresses) {
+				try {
+					const response = await fetch(`https://api.whatsonchain.com/v1/bsv/main/address/${address}/balance`);
+					if (!response.ok) {
+						throw new Error('Failed to fetch balance');
+					}
+					const data = await response.json();
+					// Convert satoshis to BSV
+					balances[address] = data.confirmed / 1e8;
+				} catch (error) {
+					console.error(`Error fetching BSV balance for ${address}:`, error);
+				}
+			}
+			
+			setBsvBalances(balances);
+		} catch (error) {
+			console.error("Error fetching BSV balances:", error);
+		} finally {
+			setBsvLoading(false);
+		}
+	}, []);
 
 	useEffect(() => {
 		const fetchConfig = async () => {
@@ -132,6 +541,28 @@ const DashboardSettingsContent = () => {
 					fees: data.fees as Fee[]
 				});
 				setFeeAddress(data.feeAddress || "");
+
+				// Fetch BSV balances for minter and cosigner addresses
+				const addressesToCheck = [data.mintAddress];
+				if (data.fundAddress) {
+					addressesToCheck.push(data.fundAddress);
+				}
+				fetchBsvBalances(addressesToCheck);
+
+				// Fetch burn UTXOs
+				if (data.burnAddress) {
+					fetchBurnUtxos(data.burnAddress);
+				}
+
+				// Fetch token details from the blockchain
+				const [txid] = data.tokenId.split('_');
+				const indexContext = await ingestTxid(txid);
+				const tokenData = indexContext.txos[0].data.bsv21;
+				setTokenDetails({
+					sym: tokenData.sym,
+					icon: tokenData.icon,
+					amt: tokenData.amt,
+				});
 			} catch (error) {
 				console.error('Error fetching config:', error);
 			} finally {
@@ -140,7 +571,7 @@ const DashboardSettingsContent = () => {
 		};
 
 		fetchConfig();
-	}, []);
+	}, [fetchBsvBalances, fetchBurnUtxos]);
 
 	const handleSave = async (newFees?: Fee[]) => {
 		try {
@@ -171,8 +602,8 @@ const DashboardSettingsContent = () => {
 
 	if (loading) {
 		return (
-			<div className="flex justify-center items-center min-h-[200px]">
-				<FaSpinner className="animate-spin text-2xl" />
+			<div className="flex justify-center items-center min-h-screen animate-fade-in">
+				<div className="loading loading-spinner loading-lg" />
 			</div>
 		);
 	}
@@ -188,161 +619,64 @@ const DashboardSettingsContent = () => {
 	}
 
 	return (
-		<div className="p-4 space-y-6">
-			<h2 className="text-2xl font-bold mb-6">Settings</h2>
+		<div className="p-4 space-y-8 animate-fade-in">
+			<div className="flex justify-between items-center">
+				<h1 className="text-2xl font-bold">Settings</h1>
+				<ThemeSelector />
+			</div>
 
-			<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-				{/* Token Details */}
-				<div className="card bg-base-200">
-					<div className="card-body">
-						<h3 className="card-title text-lg">Token Details</h3>
-						<div className="space-y-2">
-							<div>
-								<div className="flex items-center gap-2">
-									<span className="font-semibold">Token ID:</span>
-									<div className="tooltip" data-tip="Unique identifier for your token on the blockchain">
-										<FaQuestionCircle className="text-base-content/60" />
-									</div>
-								</div>
-								<div className="font-mono text-sm break-all bg-base-300 p-2 rounded mt-1">
-									{config.tokenId}
-								</div>
-							</div>
-							<div>
-								<div className="flex items-center gap-2">
-									<span className="font-semibold">Decimals:</span>
-									<div className="tooltip" data-tip="Number of decimal places your token supports">
-										<FaQuestionCircle className="text-base-content/60" />
-									</div>
-								</div>
-								<div className="font-mono bg-base-300 p-2 rounded mt-1">
-									{config.decimals}
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
+			<div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-12">
+				{/* Left Column - Token Details and Fee Structure */}
+				<div className="space-y-12">
+					{/* Token Details */}
+					{config && (
+						<TokenDetailsSection 
+							config={config} 
+							tokenDetails={tokenDetails}
+							circulatingSupply={circulatingSupply}
+						/>
+					)}
 
-				{/* Addresses */}
-				<div className="card bg-base-200">
-					<div className="card-body">
-						<h3 className="card-title text-lg">Addresses</h3>
-						<div className="space-y-2">
-							<div>
-								<div className="flex items-center gap-2">
-									<span className="font-semibold">Fee Address:</span>
-									<div className="tooltip" data-tip="Address where transaction fees are collected (MNEE)">
-										<FaQuestionCircle className="text-base-content/60" />
-									</div>
-								</div>
-								{isEditing ? (
-									<div className="flex gap-2 mt-1">
-										<input
-											type="text"
-											className="input input-bordered w-full"
-											value={feeAddress}
-											onChange={(e) => setFeeAddress(e.target.value)}
-										/>
-										<button
-											className="btn btn-primary"
-											onClick={() => handleSave()}
-											disabled={loading}
-										>
-											Save
-										</button>
-										<button
-											className="btn"
-											onClick={() => {
-												setFeeAddress(config.feeAddress);
-												setIsEditing(false);
-											}}
-										>
-											Cancel
-										</button>
-									</div>
-								) : (
-									<div className="flex items-center gap-2">
-										<div className="font-mono text-sm break-all bg-base-300 p-2 rounded mt-1 flex-1">
-											{config.feeAddress}
-										</div>
-										<button
-											className="btn btn-ghost btn-sm"
-											onClick={() => setIsEditing(true)}
-										>
-											<FaPencilAlt />
-										</button>
-									</div>
-								)}
-							</div>
-							<div>
-								<div className="flex items-center gap-2">
-									<span className="font-semibold">Minter Funding Address:</span>
-									<div className="tooltip" data-tip="Address that will pay for minting/burning tokens (BSV)">
-										<FaQuestionCircle className="text-base-content/60" />
-									</div>
-								</div>
-								<div className="font-mono text-sm break-all bg-base-300 p-2 rounded mt-1">
-									{config.mintAddress}
-								</div>
-								<p className="text-xs text-base-content/70 mt-1">From MINT_WIF environment variable</p>
-							</div>
-							{config.fundAddress && (
-								<div>
-									<div className="flex items-center gap-2">
-										<span className="font-semibold">Cosigner Funding Address:</span>
-										<div className="tooltip" data-tip="Address of the key that signs and funds MNEE transfers (BSV).">
-											<FaQuestionCircle className="text-base-content/60" />
-										</div>
-									</div>
-									<div className="font-mono text-sm break-all bg-base-300 p-2 rounded mt-1">
-										{config.fundAddress}
-									</div>
-                  <p className="text-xs text-base-content/70 mt-1">From APPROVER_WIF environment variable on the cosigner</p>
-								</div>
-							)}
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">Burn Address:</span>
-                  <div className="tooltip" data-tip="Address to send burned tokens (MNEE)">
-                    <FaQuestionCircle className="text-base-content/60" />
-                  </div>
-                </div>
-                <div className="font-mono text-sm break-all bg-base-300 p-2 rounded mt-1">
-                  {config.burnAddress || 'Not set'}
-                </div>
-                <p className="text-xs text-base-content/70 mt-1">From BURN_WIF environment variable</p>
-              </div>
-						</div>
-					</div>
-				</div>
-
-				{/* Fee Structure */}
-				<div className="card bg-base-200">
-					<div className="card-body">
-						<div className="flex justify-between items-center mb-4">
-							<h3 className="card-title text-lg">Fee Structure</h3>
+					{/* Fee Structure */}
+					<div className="space-y-6">
+						<div className="flex justify-between items-center">
+							<h3 className="text-lg font-bold">Fee Structure</h3>
 							<button
-								className="btn btn-primary btn-sm"
+								type="button" 
+								className="btn btn-primary btn-sm gap-2"
 								onClick={() => setShowEditFeesModal(true)}
 							>
-								<FaPencilAlt className="mr-2" /> Edit Fees
+								<FaPlus /> Add Fee
 							</button>
 						</div>
 						<div className="overflow-x-auto">
-							<table className="table table-compact w-full">
+							<table className="table w-full">
 								<thead>
 									<tr>
 										<th>Range</th>
 										<th>Fee</th>
+										<th className="w-20"></th>
 									</tr>
 								</thead>
 								<tbody>
-									{config.fees?.map((fee, index) => (
+									{(config.fees as Fee[])?.map((fee, index) => (
 										<tr key={index}>
 											<td>
-												{toToken(fee.min, config.decimals)} - {fee.max === Number.MAX_SAFE_INTEGER ? '∞' : toToken(fee.max, config.decimals)}
+												{toToken(fee.min, config.decimals)} MNEE - {fee.max === Number.MAX_SAFE_INTEGER ? '∞' : `${toToken(fee.max, config.decimals)} MNEE`}
 											</td>
-											<td>{toToken(fee.fee, config.decimals)}</td>
+											<td>{toToken(fee.fee, config.decimals)} MNEE</td>
+											<td>
+												<button
+													type="button"
+													className="btn btn-ghost btn-xs"
+													onClick={() => {
+														setEditingFeeIndex(index);
+														setShowEditFeesModal(true);
+													}}
+												>
+													<FaPencilAlt />
+												</button>
+											</td>
 										</tr>
 									))}
 								</tbody>
@@ -350,16 +684,114 @@ const DashboardSettingsContent = () => {
 						</div>
 					</div>
 				</div>
+
+				{/* Right Column - System Addresses */}
+				<div className="space-y-4 w-full lg:w-96 border-l pl-8 border-base-200">
+					<h3 className="text-lg font-bold">System Addresses</h3>
+					{/* Fee Address */}
+					{isEditing ? (
+						<div className="space-y-3">
+							<div className="flex items-center justify-between">
+								<div className="flex items-center gap-2">
+									<span className="font-semibold">Fee Address</span>
+									<div className="tooltip" data-tip="Address where transaction fees are collected (MNEE)">
+										<FaQuestionCircle className="text-base-content/60" />
+									</div>
+								</div>
+							</div>
+							<div className="flex gap-2">
+								<input
+									type="text"
+									className="input input-bordered w-full"
+									value={feeAddress}
+									onChange={(e) => setFeeAddress(e.target.value)}
+								/>
+							</div>
+							<div className="flex gap-2 justify-end">
+								<button
+									type="button"
+									className="btn btn-sm"
+									onClick={() => {
+										setFeeAddress(config?.feeAddress || "");
+										setIsEditing(false);
+									}}
+								>
+									Cancel
+								</button>
+								<button
+									type="button"
+									className="btn btn-primary btn-sm"
+									onClick={() => handleSave()}
+									disabled={loading}
+								>
+									Save
+								</button>
+							</div>
+						</div>
+					) : (
+						<AddressCard
+							title="Fee Address"
+							address={config?.feeAddress || ""}
+							tooltip="Address where transaction fees are collected (MNEE)"
+							source="Configuration"
+							balance={balances[config?.feeAddress || ""]}
+							isLoading={balancesLoading === FetchStatus.LOADING}
+							decimals={config?.decimals}
+							type="mnee"
+						/>
+					)}
+
+					{/* Minter Address */}
+					<AddressCard
+						title="Minter Address"
+						address={config?.mintAddress || ""}
+						tooltip="Address that will pay for minting/burning tokens (BSV)"
+						source="MINT_WIF environment variable"
+						balance={bsvBalances[config?.mintAddress || ""]}
+						isLoading={bsvLoading}
+						type="bsv"
+					/>
+
+					{/* Burn Address */}
+					<AddressCard
+						title="Burn Address"
+						address={config?.burnAddress || ""}
+						tooltip="Address to send burned tokens (MNEE)"
+						source="BURN_WIF environment variable"
+						balance={burnBalance}
+						isLoading={burnLoading}
+						decimals={config?.decimals}
+						type="mnee"
+					/>
+
+					{/* Cosigner Address */}
+					{config?.fundAddress && (
+						<AddressCard
+							title="Cosigner Address"
+							address={config.fundAddress}
+							tooltip="Address of the key that signs and funds MNEE transfers (BSV)"
+							source="APPROVER_WIF environment variable on the cosigner"
+							balance={bsvBalances[config.fundAddress]}
+							isLoading={bsvLoading}
+							type="bsv"
+						/>
+					)}
+				</div>
 			</div>
 
 			{showEditFeesModal && (
 				<EditFeesModal
-					fees={config.fees || []}
+					fees={config.fees as Fee[] || []}
 					onSave={(newFees) => {
 						handleSave(newFees);
 						setShowEditFeesModal(false);
+						setEditingFeeIndex(undefined);
 					}}
-					onClose={() => setShowEditFeesModal(false)}
+					onClose={() => {
+						setShowEditFeesModal(false);
+						setEditingFeeIndex(undefined);
+					}}
+					editIndex={editingFeeIndex}
 				/>
 			)}
 		</div>

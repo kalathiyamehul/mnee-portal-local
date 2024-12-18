@@ -6,114 +6,146 @@ import { authOptions } from "@/lib/authOptions";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
+	console.log('Session:', { userId: session?.user?.id });
 
 	if (!session?.user?.id) {
+		console.log('Unauthorized: No session or user ID');
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	const { freezeRequestId } = await request.json();
+	const body = await request.json();
+	console.log('Request body:', body);
+	const { freezeRequestId } = body;
+
+	if (!freezeRequestId) {
+		console.log('Missing freezeRequestId in request body');
+		return NextResponse.json({ error: "Missing freezeRequestId" }, { status: 400 });
+	}
 
 	// Use a transaction to ensure data consistency
-	const result = await prisma.$transaction(async (tx) => {
-		// Verify the approving user exists
-		const approvingUser = await tx.user.findUnique({
-			where: { id: session.user.id },
-		});
-
-		if (!approvingUser) {
-			throw new Error("Approving user not found");
-		}
-
-		// Fetch the freeze request
-		const freezeRequest = await tx.freezeRequest.findUnique({
-			where: { id: freezeRequestId },
-			include: {
-				requester: true,
-				approvals: true,
-			},
-		});
-
-		if (!freezeRequest) {
-			throw new Error("Freeze request not found");
-		}
-
-		if (freezeRequest.status !== "PENDING") {
-			throw new Error("Request is not pending");
-		}
-
-		// Prevent self-approval
-		if (freezeRequest.requestedBy === session.user.id) {
-			throw new Error("Cannot approve your own request");
-		}
-
-		// Check if the user has already approved
-		const existingApproval = await tx.freezeApproval.findFirst({
-			where: {
-				freezeRequestId,
-				approvedBy: session.user.id,
-			},
-		});
-
-		if (existingApproval) {
-			throw new Error("You have already approved this request");
-		}
-
-		// Create a new approval
-		await tx.freezeApproval.create({
-			data: {
-				freezeRequestId,
-				approvedBy: session.user.id,
-			},
-		});
-
-		// Get updated approval count
-		const approvalCount = await tx.freezeApproval.count({
-			where: { freezeRequestId },
-		});
-
-		// If we now have 2 approvals (including the initial one), update the status
-		if (approvalCount >= 2) {
-			const updatedRequest = await tx.freezeRequest.update({
+	try {
+		const result = await prisma.$transaction(async (tx) => {
+			// Get the freeze request
+			console.log('Finding freeze request:', { freezeRequestId });
+			const freezeRequest = await tx.freezeRequest.findUnique({
 				where: { id: freezeRequestId },
-				data: {
-					status: "APPROVED",
-					updatedAt: new Date(),
+				include: {
+					approvals: true,
+					requester: {
+						select: {
+							id: true,
+							email: true,
+						},
+					},
 				},
 			});
 
-			// If there's a callback URL, trigger it
-			if (freezeRequest.callbackUrl) {
-				try {
-					const callbackResponse = await fetch(freezeRequest.callbackUrl, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({
-							freezeRequestId: updatedRequest.id,
-							address: updatedRequest.address,
-							action: updatedRequest.action,
-							status: updatedRequest.status,
-						}),
-					});
+			console.log('Found freeze request:', freezeRequest);
 
-					console.log("Callback response:", await callbackResponse.json());
-				} catch (error) {
-					console.error("Error calling callback URL:", error);
-				}
+			if (!freezeRequest) {
+				console.log('Freeze request not found');
+				throw new Error("Freeze request not found");
 			}
 
-			return { approvalCount, status: "APPROVED" };
-		}
+			if (freezeRequest.status !== 'PENDING') {
+				console.log('Invalid status:', { status: freezeRequest.status });
+				throw new Error("This request is no longer pending");
+			}
 
-		return { approvalCount, status: "PENDING" };
-	});
+			if (freezeRequest.requester.id === session.user.id) {
+				console.log('Self-approval attempt:', { 
+					requesterId: freezeRequest.requester.id, 
+					approverId: session.user.id 
+				});
+				throw new Error("You cannot approve your own request");
+			}
 
-	return NextResponse.json({
-		success: true,
-		message:
-			result.status === "APPROVED" ? "Request approved" : "Approval recorded",
-		approvalCount: result.approvalCount,
-		status: result.status,
-	});
+			// Check if user has already approved
+			const hasApproved = freezeRequest.approvals.some(
+				(approval) => approval.approvedBy === session.user.id
+			);
+
+			console.log('Approval check:', { 
+				hasApproved,
+				approvals: freezeRequest.approvals,
+				currentUserId: session.user.id
+			});
+
+			if (hasApproved) {
+				console.log('Already approved by user');
+				throw new Error("You have already approved this request");
+			}
+
+			// Create the approval
+			console.log('Creating approval:', { 
+				freezeRequestId,
+				approvedBy: session.user.id 
+			});
+			const approval = await tx.freezeApproval.create({
+				data: {
+					freezeRequestId,
+					approvedBy: session.user.id,
+				},
+				include: {
+					approver: {
+						select: {
+							name: true,
+							email: true,
+						},
+					},
+				},
+			});
+
+			console.log('Created approval:', approval);
+
+			// Check if we have enough approvals
+			const updatedApprovals = await tx.freezeApproval.count({
+				where: { freezeRequestId },
+			});
+
+			console.log('Total approvals:', updatedApprovals);
+
+			// If we have 2 or more approvals (including the requester), mark as approved
+			if (updatedApprovals >= 2) {
+				console.log('Updating request to APPROVED');
+				const updatedRequest = await tx.freezeRequest.update({
+					where: { id: freezeRequestId },
+					data: { status: 'APPROVED' },
+					include: {
+						requester: {
+							select: {
+								name: true,
+								email: true,
+							},
+						},
+						approvals: {
+							include: {
+								approver: {
+									select: {
+										name: true,
+										email: true,
+									},
+								},
+							},
+						},
+					},
+				});
+
+				console.log('Updated request:', updatedRequest);
+				return updatedRequest;
+			}
+
+			return freezeRequest;
+		});
+
+		return NextResponse.json(result);
+	} catch (error) {
+		console.error('Error in freeze approval:', error);
+		const errorMessage = error instanceof Error ? error.message : "Failed to approve freeze request";
+		console.log('Returning error:', errorMessage);
+		return NextResponse.json(
+			{ error: errorMessage },
+			{ status: 500 }
+		);
+	}
 }

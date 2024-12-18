@@ -1,120 +1,98 @@
-// src/components/pages/dash/sidebar.tsx
 "use client";
 
-import type React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { signOut, useSession } from "next-auth/react";
-import { MdOutlineOpenInNew } from "react-icons/md";
+import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { FaGear, FaSliders, FaWallet } from "react-icons/fa6";
-import { FaSignOutAlt } from "react-icons/fa";
-import { useEffect, useState } from "react";
+import { FaGear, FaSliders } from "react-icons/fa6";
+import { FaWallet, FaSignOutAlt, FaUsers } from "react-icons/fa";
 import { TbActivityHeartbeat } from "react-icons/tb";
+import { motion } from "framer-motion";
+import { getGravatarUrl } from "@/utils/gravatar";
+
+const menuItems = [
+  { name: "Dashboard", href: "/dash", icon: TbActivityHeartbeat },
+  { name: "Wallet", href: "/dash/wallet", icon: FaWallet },
+  { name: "Customers", href: "/dash/customers", icon: FaUsers },
+  { name: "Admin", href: "/dash/admin", icon: FaGear },
+  { name: "Config", href: "/dash/settings", icon: FaSliders },
+];
 
 const Sidebar: React.FC = () => {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const [hasConfig, setHasConfig] = useState(false);
-
-  // Determine the active page based on the pathname
-  const getActivePage = () => {
-    if (pathname.endsWith("/dash")) return "dash";
-    if (pathname.startsWith("/dash/wallet")) return "wallet";
-    if (pathname.startsWith("/dash/admin")) return "admin";
-    if (pathname.startsWith("/dash/settings")) return "settings";
-    return "";
-  };
-
-  useEffect(() => {
-    const checkConfig = async () => {
-      try {
-        const response = await fetch('/api/config');
-        const data = await response.json();
-        setHasConfig(!!data?.tokenId);
-      } catch (error) {
-        console.error('Error checking config:', error);
-        setHasConfig(false);
-      }
-    };
-
-    checkConfig();
-  }, []);
-
-  const activePage = getActivePage();
+  const [hoveredPath, setHoveredPath] = useState(pathname);
 
   return (
-    <aside className="w-64 bg-base-100 h-full">
-      {/* Sidebar content */}
-      <div className="flex flex-col h-full">
-        {/* Logo and title */}
-        <div className="flex items-center justify-center mt-8">
-          <div className="flex items-center">
-            <span className="mx-2 text-2xl font-semibold text-base-content">
-              MNEE
-            </span>
+    <div className="bg-base-200 w-56 min-h-full text-base-content flex flex-col">
+      <div className="sticky top-0 flex flex-col flex-1">
+        <div className="text-4xl font-black text-center py-6 italic">MNEE</div>
+        <nav className="flex-1">
+          <ul className="menu px-2 py-2 w-full [&_li>*]:!bg-transparent [&_li>*:hover]:!bg-transparent [&_li>*:focus]:!bg-transparent [&_li>.active]:!bg-transparent [&_li>*]:!outline-none [&_li>*]:!shadow-none">
+            {menuItems.map((item) => {
+              const isActive = item.href === pathname;
+              
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    className={`
+                      relative group flex items-center gap-2 px-3 py-2 rounded-lg
+                      ${isActive ? "font-medium" : "text-base-content/70"}
+                    `}
+                    onMouseOver={() => setHoveredPath(item.href)}
+                    onMouseLeave={() => setHoveredPath(pathname)}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span className="text-sm">{item.name}</span>
+                    {item.href === hoveredPath && (
+                      <motion.div
+                        className="absolute inset-0 bg-base-content/10 rounded-lg -z-10"
+                        layoutId="sidebar"
+                        aria-hidden="true"
+                        transition={{
+                          type: "spring",
+                          bounce: 0.15,
+                          stiffness: 100,
+                          damping: 15,
+                          duration: 0.5
+                        }}
+                      />
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+        <div className="mt-auto border-t border-base-300">
+          <div className="p-4">
+            <div className="flex items-center gap-3 px-4 py-2 rounded-lg text-base-content/70 hover:bg-base-300/30 transition-colors duration-300">
+              <div className="avatar">
+                <div className="mask mask-squircle w-10 h-10">
+                  <img
+                    src={getGravatarUrl(session?.user?.email ?? "")}
+                    alt="User avatar"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="truncate text-sm font-medium text-base-content">
+                  {session?.user?.email}
+                </div>
+              </div>
+            </div>
+            <Link 
+              href="/logout" 
+              className="flex items-center gap-3 px-4 py-2 mt-2 rounded-lg text-base-content/70 hover:text-base-content hover:bg-base-300/30 transition-colors duration-300"
+            >
+              <FaSignOutAlt className="w-4 h-4" />
+              <span>Sign Out</span>
+            </Link>
           </div>
         </div>
-        <nav className="mt-6 p-2 flex-1">
-          <Link
-            href="/dash"
-            className={`flex items-center px-6 py-2 text-sm font-medium rounded-lg ${activePage === "dash"
-                ? "bg-secondary text-secondary-content"
-                : "hover:bg-secondary hover:text-secondary-content"
-              }`}
-          >
-            <TbActivityHeartbeat className="mr-2" /> Dashboard
-          </Link>
-          <Link
-            href="/dash/wallet"
-            className={`flex items-center px-6 py-2 mt-2 text-sm font-medium rounded-lg ${activePage === "wallet"
-                ? "bg-secondary text-secondary-content"
-                : "hover:bg-secondary hover:text-secondary-content"
-              }`}
-          >
-            <FaWallet className="mr-2" /> Wallet
-          </Link>
-          <Link
-            href="/dash/admin"
-            className={`flex items-center px-6 py-2 mt-2 text-sm font-medium rounded-lg ${activePage === "admin"
-                ? "bg-secondary text-secondary-content"
-                : "hover:bg-secondary hover:text-secondary-content"
-              }`}
-          >
-            <FaGear className="mr-2" /> Admin
-          </Link>
-
-          {hasConfig && (
-            <Link
-              href="/dash/settings"
-              className={`flex items-center px-6 py-2 mt-2 text-sm font-medium rounded-lg ${activePage === "settings"
-                  ? "bg-secondary text-secondary-content"
-                  : "hover:bg-secondary hover:text-secondary-content"
-                }`}
-            >
-              <FaSliders className="mr-2" /> Config
-            </Link>
-          )}
-          {/* Sign Out */}
-          <button
-            type="button"
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className={`${!session ? "bg-red-500" : "text-base-content"} cursor-pointer w-full flex items-center px-6 py-2 mt-2 text-sm font-medium hover:bg-secondary hover:text-secondary-content rounded-lg`}
-          >
-            <FaSignOutAlt className="mr-2" /> Sign Out
-          </button>
-
-          <div className="divider" />
-          <Link
-            className="flex items-center px-6 py-2 mt-2 text-sm font-medium hover:bg-secondary hover:text-secondary-content rounded-lg"
-            href={`${process.env.NEXT_PUBLIC_MNEE_API}/v1/docs`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <MdOutlineOpenInNew className="mr-2" /> Cosigner Docs
-          </Link>
-        </nav>
       </div>
-    </aside>
+    </div>
   );
 };
 

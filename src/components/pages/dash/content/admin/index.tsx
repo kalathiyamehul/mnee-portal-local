@@ -2,21 +2,20 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useSession } from "next-auth/react";
-import { useRouter } from 'next/navigation';
-import { FaSpinner } from 'react-icons/fa6';
-import type { Activity, ConfigWithFees, Fee, StatusResponse, AddressStatus } from './types';
+import type { Activity, AddressStatus, Fee } from './types';
 import { getActivityIcon, getActivityDisplayText } from './utils';
 import { toast } from 'react-hot-toast';
 import { FreezeModal } from '../modals/FreezeModal';
 import { MintModal } from '../modals/MintModal';
-import { BurnModal } from '../modals/BurnModal';
 import type { Session } from 'next-auth';
 import { ActivityTab } from './ActivityTab';
 import { BurnsTab } from './BurnsTab';
 import { ActiveRestrictionsTab } from './ActiveRestrictionsTab';
-import { SystemStatus } from './SystemStatus';
-
-const POLL_INTERVAL = 5000; // 5 seconds
+import { MintsTab } from './MintsTab';
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import { useRouter, useSearchParams } from "next/navigation";
+import { formatDistanceToNow } from 'date-fns';
+import { Config } from '@prisma/client';
 
 type TabType = 'activity' | 'restrictions' | 'burns' | 'mints';
 
@@ -25,51 +24,55 @@ interface AdminPageProps {
 }
 
 export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
-	const router = useRouter();
 	const { data: session } = useSession() as { data: Session | null };
 	const [loading, setLoading] = useState(true);
 	const [initialLoading, setInitialLoading] = useState(true);
-	const [isPaused, setIsPaused] = useState(false);
 	const [showOnlyPending, setShowOnlyPending] = useState(true);
 	const [activities, setActivities] = useState<Activity[]>([]);
-	const [config, setConfig] = useState<ConfigWithFees | null>(null);
+	const [config, setConfig] = useState<Config | null>(null);
 	const [showFreezeModal, setShowFreezeModal] = useState(false);
 	const [showMintModal, setShowMintModal] = useState(false);
-	const [showBurnModal, setShowBurnModal] = useState(false);
 	const [activeTab, setActiveTab] = useState<TabType>(defaultTab as TabType);
+	const { statusData, fetchStatus } = useSystemStatus();
+	const router = useRouter();
+	const searchParams = useSearchParams();
 
-	const fetchStatus = useCallback(async () => {
-		try {
-			const response = await fetch('/api/status?includePending=true');
-			const data = await response.json() as StatusResponse;
-			
-			if (!response.ok) throw new Error(data.error || 'Failed to fetch status');
+	useEffect(() => {
+		setActiveTab(defaultTab as TabType);
+	}, [defaultTab]);
 
-			const allActivities: Activity[] = [
-				...data.freezeRequests.map(req => ({ ...req, type: 'FREEZE' as const })),
-				...data.blacklists.map(req => ({ ...req, type: 'BLACKLIST' as const })),
-				...data.systemRequests.map(req => ({ ...req, type: 'ACTION' as const })),
-				...data.mintRequests.map(req => ({ ...req, type: 'MINT' as const, action: 'MINT' as const })),
-				...data.burnRequests.map(req => ({ ...req, type: 'BURN' as const, action: 'BURN' as const })),
-			].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+	const handleTabChange = (tab: TabType) => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set('tab', tab);
+		router.push(`/dash/admin?${params.toString()}`);
+	};
 
-			setActivities(allActivities);
-			setIsPaused(data.isPaused);
-		} catch (error) {
-			console.error('Error fetching status:', error);
-			toast.error('Failed to fetch status');
-		} finally {
-			setLoading(false);
-			setInitialLoading(false);
+	const showModal = useCallback((id: string) => {
+		switch (id) {
+			case 'freeze_modal':
+				setShowFreezeModal(true);
+				break;
+			case 'mint_modal':
+				setShowMintModal(true);
+				break;
 		}
 	}, []);
 
-	// Set up polling
 	useEffect(() => {
-		fetchStatus();
-		const interval = setInterval(fetchStatus, POLL_INTERVAL);
-		return () => clearInterval(interval);
-	}, [fetchStatus]);
+		if (statusData) {
+			const allActivities: Activity[] = [
+				...statusData.freezeRequests.map(req => ({ ...req, type: 'FREEZE' as const })),
+				...statusData.blacklists.map(req => ({ ...req, type: 'BLACKLIST' as const })),
+				...statusData.systemRequests.map(req => ({ ...req, type: 'ACTION' as const })),
+				...statusData.mintRequests.map(req => ({ ...req, type: 'MINT' as const, action: 'MINT' as const })),
+				...statusData.burnRequests.map(req => ({ ...req, type: 'BURN' as const, action: 'BURN' as const })),
+			].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+			setActivities(allActivities);
+			setLoading(false);
+			setInitialLoading(false);
+		}
+	}, [statusData]);
 
 	useEffect(() => {
 		const fetchConfig = async () => {
@@ -90,21 +93,15 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		fetchConfig();
 	}, []);
 
-	// Filter activities based on showOnlyPending
-	const filteredActivities = activities.filter(activity => 
-		!showOnlyPending || activity.status === 'PENDING'
-	);
-
-	// Compute active restrictions from activities
+	// Compute active restrictions from activities first
 	const activeRestrictions = activities.reduce((addressMap, activity) => {
-		if ((activity.type === 'FREEZE' || activity.type === 'BLACKLIST') && activity.status === 'APPROVED') {
-			const address = activity.address;
+		if ((activity.type === 'FREEZE' || activity.type === 'BLACKLIST')) {
+			const address = activity.address as string;
 
-			// Get all approved actions for this address
+			// Get all actions for this address
 			const addressActions = activities.filter(a => 
 				(a.type === 'FREEZE' || a.type === 'BLACKLIST') &&
-				a.address === address && 
-				a.status === 'APPROVED'
+				a.address === address
 			);
 
 			// Get latest freeze action
@@ -117,52 +114,76 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 				.filter(a => a.type === 'BLACKLIST')
 				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
-			// Determine current status
-			const isFrozen = latestFreezeAction?.action === 'FREEZE';
-			const isBlacklisted = latestBlacklistAction?.action === 'BLACKLIST';
+			// Get pending actions
+			const pendingFreeze = addressActions.find(a => 
+				a.type === 'FREEZE' && 
+				a.status === 'PENDING'
+			);
 
-			// Only add to map if there are active restrictions
-			if (isFrozen || isBlacklisted) {
+			// Determine current status
+			const isFrozen = latestFreezeAction?.status === 'APPROVED' && latestFreezeAction?.action === 'FREEZE';
+			const isBlacklisted = latestBlacklistAction?.status === 'APPROVED' && latestBlacklistAction?.action === 'BLACKLIST';
+
+			console.log('Computing status for address:', {
+				address,
+				latestFreezeAction,
+				latestBlacklistAction,
+				pendingFreeze,
+				isFrozen,
+				isBlacklisted
+			});
+
+			// Get the most recent action to determine the requester
+			const mostRecentAction = [latestFreezeAction, latestBlacklistAction, pendingFreeze]
+				.filter((action): action is (typeof latestFreezeAction | typeof latestBlacklistAction | typeof pendingFreeze) & { createdAt: string } => 
+					action !== undefined && action !== null && 'createdAt' in action
+				)
+				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+			// Only add to map if there are active restrictions or pending actions
+			if (isFrozen || isBlacklisted || pendingFreeze) {
 				addressMap.set(address, {
 					address,
 					isBlacklisted,
 					isFrozen,
-					lastUpdate: new Date(Math.max(
-						latestFreezeAction ? new Date(latestFreezeAction.createdAt).getTime() : 0,
-						latestBlacklistAction ? new Date(latestBlacklistAction.createdAt).getTime() : 0
-					)).toISOString()
+					hasPendingFreeze: !!pendingFreeze,
+					pendingFreezeAction: pendingFreeze?.action === 'FREEZE' || pendingFreeze?.action === 'UNFREEZE' 
+						? pendingFreeze.action 
+						: undefined,
+					requester: mostRecentAction?.requester || pendingFreeze?.requester || latestFreezeAction?.requester || latestBlacklistAction?.requester,
+					lastUpdate: mostRecentAction 
+						? formatDistanceToNow(new Date(mostRecentAction.createdAt), { addSuffix: true })
+						: 'Unknown'
 				});
 			} else {
-				// If neither frozen nor blacklisted, remove from map
+				// If neither frozen nor blacklisted and no pending actions, remove from map
 				addressMap.delete(address);
 			}
 		}
 		return addressMap;
-	}, new Map<string, AddressStatus & { lastUpdate: string }>());
+	}, new Map<string, AddressStatus>());
 
-	// No need for additional filtering since we only add addresses with active restrictions
-	const filteredRestrictions = Array.from(activeRestrictions.values());
+	// Log the final restrictions
+	console.log('Final active restrictions:', Array.from(activeRestrictions.values()));
 
-  console.log({filteredRestrictions})
-	const handlePauseToggle = async () => {
-		try {
-			setLoading(true);
-			const action = isPaused ? 'RESUME' : 'PAUSE';
-			
-			await fetch('/api/pause', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ action }),
-			});
-			
-			await fetchStatus();
-		} catch (error) {
-			console.error('Error toggling pause:', error);
-			toast.error('Failed to toggle pause');
-		} finally {
-			setLoading(false);
+	// Then filter activities based on showOnlyPending and exclude ones that are pending in active restrictions
+	const filteredActivities = activities.filter(activity => {
+		// If it's not a freeze or blacklist action, apply normal pending filter
+		if (activity.type !== 'FREEZE' && activity.type !== 'BLACKLIST') {
+			return !showOnlyPending || activity.status === 'PENDING';
 		}
-	};
+
+		// For freeze/blacklist actions, check if they're pending and in active restrictions
+		const addressStatus = activeRestrictions.get(activity.address as string);
+		const isPendingInActiveRestrictions = 
+			(activity.type === 'FREEZE' && addressStatus?.hasPendingFreeze);
+
+		// Only show in history if not pending in active restrictions
+		return (!showOnlyPending || activity.status === 'PENDING') && !isPendingInActiveRestrictions;
+	});
+
+	// Convert active restrictions to array for component
+	const filteredRestrictions = Array.from(activeRestrictions.values());
 
 	const canCancel = useCallback((activity: Activity) => {
 		if (!session?.user?.email) return false;
@@ -198,6 +219,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 
 	const handleApprove = async (id: string, type: Activity['type']) => {
 		try {
+			console.log('Initiating approval for:', { id, type });
 			setLoading(true);
 			const endpoint = type === 'ACTION' ? 'approve' :
 				type === 'FREEZE' ? 'approveFreeze' :
@@ -224,6 +246,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 				throw new Error(error.error || 'Failed to approve request');
 			}
 
+			console.log('Approval successful, fetching updated status');
 			await fetchStatus();
 			toast.success('Request approved');
 		} catch (error) {
@@ -243,210 +266,231 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		return activity.approvals?.length || 0;
 	}, []);
 
-	const handleModalClose = () => {
-		setShowFreezeModal(false);
-		setShowMintModal(false);
-		setShowBurnModal(false);
-	};
+	const handleUnblacklist = async (e: React.MouseEvent, address: string) => {
+		e.preventDefault();
+		try {
+			setLoading(true);
+			const response = await fetch('/api/blacklist', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					address,
+					action: 'UNBLACKLIST',
+				}),
+			});
 
-	const handleModalSuccess = async () => {
-		await fetchStatus();
-		handleModalClose();
-		// Redirect to activity tab after burn request creation
-		handleTabChange('activity');
-	};
+			const data = await response.json();
+			if (!response.ok) {
+				throw new Error(data.message || data.error || 'Failed to unblacklist address');
+			}
 
-	// Function to show modals
-	const showModal = (id: string) => {
-		switch (id) {
-			case 'freeze_modal':
-				setShowFreezeModal(true);
-				break;
-			case 'mint_modal':
-				setShowMintModal(true);
-				break;
-			case 'burn_modal':
-				setShowBurnModal(true);
-				break;
+			await fetchStatus();
+			toast.success('Address unblacklisted');
+		} catch (error) {
+			console.error('Error unblacklisting address:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to unblacklist address');
+		} finally {
+			setLoading(false);
 		}
 	};
 
-	const handleTabChange = (tab: TabType) => {
-		setActiveTab(tab);
-		router.push(`/dash/admin?tab=${tab}`);
+	const handleFreezeRequest = async (e: React.MouseEvent<HTMLButtonElement>, address: string) => {
+		e.preventDefault();
+		try {
+			setLoading(true);
+			const response = await fetch('/api/freeze', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					address,
+					action: 'FREEZE',
+				}),
+			});
+
+			const data = await response.json();
+			if (!response.ok) {
+				throw new Error(data.error || 'Failed to freeze address');
+			}
+
+			await fetchStatus();
+			toast.success('Freeze request created');
+		} catch (error) {
+			console.error('Error freezing address:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to freeze address');
+		} finally {
+			setLoading(false);
+		}
 	};
 
-	if (initialLoading) {
-		return (
-			<div className="flex justify-center items-center h-screen">
-				<FaSpinner className="animate-spin text-4xl" />
-			</div>
-		);
-	}
+	const handleUnfreeze = async (address: string) => {
+		try {
+			console.log('Initiating unfreeze for address:', address);
+			setLoading(true);
+			const response = await fetch('/api/freeze', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					address,
+					action: 'UNFREEZE',
+				}),
+			});
 
+			const data = await response.json();
+			if (!response.ok) {
+				throw new Error(data.error || 'Failed to unfreeze address');
+			}
+
+			console.log('Unfreeze request successful, fetching updated status');
+			await fetchStatus();
+			toast.success('Unfreeze request created');
+		} catch (error) {
+			console.error('Error unfreezing address:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to unfreeze address');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleBlacklist = async (e: React.MouseEvent, address: string) => {
+		e.preventDefault();
+		try {
+			setLoading(true);
+			const response = await fetch('/api/blacklist', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					address,
+					action: 'BLACKLIST',
+				}),
+			});
+
+			const data = await response.json();
+			if (!response.ok) {
+				throw new Error(data.message || data.error || 'Failed to blacklist address');
+			}
+
+			await fetchStatus();
+			toast.success('Address blacklisted');
+		} catch (error) {
+			console.error('Error blacklisting address:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to blacklist address');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const getTabTitle = (tab: TabType): string => {
+		switch (tab) {
+			case 'activity':
+				return 'Admin : Activity';
+			case 'restrictions':
+				return 'Admin : Restrictions';
+			case 'burns':
+				return 'Admin : Burns';
+			case 'mints':
+				return 'Admin : Mints';
+			default:
+				return 'Admin : Activity';
+		}
+	};
+
+  if (!session) {
+    return <div>Loading...</div>;
+  }
+  
+  
 	return (
-		<div className="space-y-6">
-			<SystemStatus isPaused={isPaused} onPauseToggle={handlePauseToggle} />
-			
-			<div className="w-full">
-				<div role="tablist" className="tabs tabs-bordered">
-					<button
-						role="tab"
-						className={`tab ${activeTab === 'activity' ? 'tab-active' : ''}`}
-						onClick={() => handleTabChange('activity')}
-					>
-						Activity
-					</button>
-					<button
-						role="tab"
-						className={`tab ${activeTab === 'restrictions' ? 'tab-active' : ''}`}
-						onClick={() => handleTabChange('restrictions')}
-					>
-						Restrictions
-					</button>
-					<button
-						role="tab"
-						className={`tab ${activeTab === 'mints' ? 'tab-active' : ''}`}
-						onClick={() => handleTabChange('mints')}
-					>
-						Mints
-					</button>
-					<button
-						role="tab"
-						className={`tab ${activeTab === 'burns' ? 'tab-active' : ''}`}
-						onClick={() => handleTabChange('burns')}
-					>
-						Burns
-					</button>
+		<div className="p-4 space-y-4">
+			<div className="flex flex-col gap-4">
+				<div>
+					<h2 className="text-xl sm:text-2xl font-bold">{getTabTitle(activeTab)}</h2>
+					<div className="tabs tabs-boxed mt-4">
+						<a
+							className={`tab ${activeTab === 'activity' ? 'tab-active' : ''}`}
+							onClick={() => handleTabChange('activity')}
+						>
+							Activity
+						</a>
+						<a
+							className={`tab ${activeTab === 'restrictions' ? 'tab-active' : ''}`}
+							onClick={() => handleTabChange('restrictions')}
+						>
+							Restrictions
+						</a>
+						<a
+							className={`tab ${activeTab === 'burns' ? 'tab-active' : ''}`}
+							onClick={() => handleTabChange('burns')}
+						>
+							Burns
+						</a>
+						<a
+							className={`tab ${activeTab === 'mints' ? 'tab-active' : ''}`}
+							onClick={() => handleTabChange('mints')}
+						>
+							Mints
+						</a>
+					</div>
 				</div>
 
-				{activeTab === 'activity' && (
-					<ActivityTab
-						showOnlyPending={showOnlyPending}
-						setShowOnlyPending={setShowOnlyPending}
-						filteredActivities={filteredActivities}
-						config={config}
-						loading={loading}
-						canCancel={canCancel}
-						canApprove={canApprove}
-						handleCancel={handleCancel}
-						handleApprove={handleApprove}
-						getActivityIcon={getActivityIcon}
-						getActivityDisplayText={getActivityDisplayText}
-						requiresApproval={requiresApproval}
-						getApprovalCount={getApprovalCount}
-						showModal={showModal}
-					/>
+				{initialLoading ? (
+					<div className="flex justify-center items-center min-h-[calc(100vh-12rem)] animate-fade-in">
+						<div className="loading loading-spinner loading-lg"></div>
+					</div>
+				) : (
+					<div className="animate-fade-in">
+						{activeTab === 'activity' && (
+							<ActivityTab
+								activities={activities}
+								showOnlyPending={showOnlyPending}
+								onShowOnlyPendingChange={setShowOnlyPending}
+								filteredActivities={filteredActivities}
+								loading={loading}
+								canCancel={canCancel}
+								canApprove={canApprove}
+								onCancel={handleCancel}
+								onApprove={handleApprove}
+								requiresApproval={requiresApproval}
+								getApprovalCount={getApprovalCount}
+								config={config}
+								getActivityIcon={getActivityIcon}
+								getActivityDisplayText={getActivityDisplayText}
+							/>
+						)}
+						{activeTab === 'restrictions' && (
+							<ActiveRestrictionsTab
+								restrictions={filteredRestrictions}
+								loading={loading}
+								handleUnblacklist={handleUnblacklist}
+								handleBlacklist={handleBlacklist}
+								handleFreezeRequest={handleFreezeRequest}
+								handleUnfreeze={handleUnfreeze}
+								showModal={showModal}
+								activities={activities}
+								handleCancel={handleCancel}
+								handleApprove={handleApprove}
+								session={session}
+							/>
+						)}
+						{activeTab === 'burns' && (
+							<BurnsTab />
+						)}
+						{activeTab === 'mints' && (
+							<MintsTab showModal={showModal} />
+						)}
+					</div>
 				)}
-
-				{activeTab === 'restrictions' && (
-					<ActiveRestrictionsTab
-						restrictions={filteredRestrictions}
-						loading={loading}
-						handleUnblacklist={async (e, address) => {
-							e.preventDefault();
-							try {
-								setLoading(true);
-								const response = await fetch('/api/blacklist', {
-									method: 'POST',
-									headers: { 'Content-Type': 'application/json' },
-									body: JSON.stringify({
-										address,
-										action: 'UNBLACKLIST',
-									}),
-								});
-
-								const data = await response.json();
-								if (!response.ok) {
-									throw new Error(data.message || data.error || 'Failed to unblacklist address');
-								}
-
-								await fetchStatus();
-								toast.success('Address unblacklisted');
-							} catch (error) {
-								console.error('Error unblacklisting address:', error);
-								toast.error(error instanceof Error ? error.message : 'Failed to unblacklist address');
-							} finally {
-								setLoading(false);
-							}
-						}}
-						handleFreezeRequest={async (e, address) => {
-							e.preventDefault();
-							try {
-								setLoading(true);
-								const response = await fetch('/api/freeze', {
-									method: 'POST',
-									headers: { 'Content-Type': 'application/json' },
-									body: JSON.stringify({
-										address,
-										action: 'FREEZE',
-									}),
-								});
-
-								const data = await response.json();
-								if (!response.ok) {
-									throw new Error(data.message || data.error || 'Failed to freeze address');
-								}
-
-								await fetchStatus();
-								toast.success('Freeze request created');
-							} catch (error) {
-								console.error('Error freezing address:', error);
-								toast.error(error instanceof Error ? error.message : 'Failed to freeze address');
-							} finally {
-								setLoading(false);
-							}
-						}}
-						handleUnfreeze={async (address) => {
-							try {
-								setLoading(true);
-								const response = await fetch('/api/freeze', {
-									method: 'POST',
-									headers: { 'Content-Type': 'application/json' },
-									body: JSON.stringify({
-										address,
-										action: 'UNFREEZE',
-									}),
-								});
-
-								const data = await response.json();
-								if (!response.ok) {
-									throw new Error(data.message || data.error || 'Failed to unfreeze address');
-								}
-
-								await fetchStatus();
-								toast.success('Unfreeze request created');
-							} catch (error) {
-								console.error('Error unfreezing address:', error);
-								toast.error(error instanceof Error ? error.message : 'Failed to unfreeze address');
-							} finally {
-								setLoading(false);
-							}
-						}}
-					/>
-				)}
-
-				{activeTab === 'burns' && <BurnsTab />}
 			</div>
 
 			{showFreezeModal && (
 				<FreezeModal
-					onClose={handleModalClose}
-					onSuccess={handleModalSuccess}
+					onClose={() => setShowFreezeModal(false)}
+					onSuccess={fetchStatus}
 				/>
 			)}
-
 			{showMintModal && (
 				<MintModal
-					onClose={handleModalClose}
-					onSuccess={handleModalSuccess}
-				/>
-			)}
-
-			{showBurnModal && (
-				<BurnModal
-					onClose={handleModalClose}
-					onSuccess={handleModalSuccess}
+					onClose={() => setShowMintModal(false)}
+					onSuccess={fetchStatus}
 				/>
 			)}
 		</div>

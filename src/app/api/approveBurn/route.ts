@@ -7,7 +7,7 @@ import { MINT_WIF, MNEE_API } from "@/env";
 import { fetchTransaction } from "@/utils/api";
 import { getConfig } from "@/lib/config";
 import { OrdP2PKH } from "js-1sat-ord";
-import { FundingUtxo } from "@/types/utxo";
+import type { FundingUtxo } from "@/types/utxo";
 
 // get funding UTXOs
 async function getFundingUtxos(address: string) {
@@ -76,8 +76,8 @@ export async function POST(request: Request) {
         });
 
         if (updatedBurnRequest?.approvals.length === 1) {
-            // Get config for token details
-            const config = await getConfig();
+            // Get latest config
+            const config = await getConfig(true);
             if (!config) {
                 throw new Error("Token configuration not found");
             }
