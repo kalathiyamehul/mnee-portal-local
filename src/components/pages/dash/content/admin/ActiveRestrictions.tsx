@@ -94,7 +94,7 @@ export const ActiveRestrictions = ({
                       onClick={(e) => handleBlacklist(e, status.address)}
                       disabled={loading}
                     >
-                      <FaBan className="w-3 h-3 mr-1" /> Block
+                      <FaBan className="w-3 h-3 mr-1" /> Blacklist
                     </button>
                   )}
                   {status.isBlacklisted && (

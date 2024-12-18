@@ -107,8 +107,21 @@ export async function POST(request: Request) {
       stack: error.stack
     } : error);
     
+    // Extract the relevant error message
+    let message = "Failed to process freeze request";
+    if (error instanceof Error) {
+      // If it's a Prisma error, it will contain the word "prisma" in lowercase
+      if (error.message.toLowerCase().includes('prisma')) {
+        // Extract just the last line which usually contains the actual error
+        const lines = error.message.split('\n');
+        message = lines[lines.length - 1].trim();
+      } else {
+        message = error.message;
+      }
+    }
+    
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to process freeze request" },
+      { message },
       { status: 500 }
     );
   }
