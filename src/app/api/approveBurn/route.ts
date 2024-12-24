@@ -170,7 +170,7 @@ export async function POST(request: Request) {
         sourceTXID: txid,
         sourceOutputIndex: vout,
         sourceTransaction,
-        unlockingScriptTemplate: new CosignTemplate().userUnlock(pk),
+        unlockingScriptTemplate: new CosignTemplate().userUnlock(pk, "all", true),
       });
 
       // Add burn output
