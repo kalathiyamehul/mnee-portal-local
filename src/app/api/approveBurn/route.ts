@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import { MINT_WIF, MNEE_API } from "@/env";
-import { fetchTransaction } from "@/utils/api";
+import { fetchConfig, fetchTransaction } from "@/utils/api";
 import { getConfig } from "@/lib/config";
 import { applyInscription } from "js-1sat-ord";
 import type { Inscription } from "js-1sat-ord";
@@ -119,13 +119,17 @@ export async function POST(request: Request) {
     if (updatedBurnRequest?.approvals.length === 1) {
       console.log("Sufficient approvals received, proceeding with burn");
       
+      // Use fetch config to get the approver from the remote service
+      const remoteConfig = await fetchConfig();
+      console.log("Remote config:", remoteConfig);
+
       // Get latest config
-      const config = await getConfig(true) as Config & { approver: string };
-      console.log("Retrieved config:", config);
+      // const config = await getConfig(true) as Config;
+      // console.log("Retrieved config:", config);
       
-      if (!config) {
-        console.log("Token configuration not found");
-        throw new Error("Token configuration not found");
+      if (!remoteConfig) {
+        console.log("Remot Token configuration not found");
+        throw new Error("Remote Token configuration not found");
       }
 
       if (!burnRequest.outpoint) {
@@ -174,18 +178,18 @@ export async function POST(request: Request) {
       const burnInscriptionData = {
         p: "bsv-20",
         op: "burn",
-        id: config.tokenId,
+        id: remoteConfig.tokenId,
         amt: burnRequest.amount.toString(),
       };
       console.log("Burn inscription data:", burnInscriptionData);
       
       const burnDataB64 = Buffer.from(JSON.stringify(burnInscriptionData)).toString("base64");
-      console.log("Adding burn output to transaction");
+      console.log("Adding burn output to transaction", { remoteConfig });
       burnTx.addOutput({
         lockingScript: applyInscription(
           new CosignTemplate().lock(
-            config.burnAddress,
-            PublicKey.fromString(config.approver),
+            remoteConfig.burnAddress,
+            PublicKey.fromString(remoteConfig.approver),
           ),
           {
             dataB64: burnDataB64,
