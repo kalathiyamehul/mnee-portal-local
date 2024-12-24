@@ -50,6 +50,34 @@ export async function POST(request: Request) {
 				throw new Error("Request is not pending");
 			}
 
+			// Check if system is paused
+			const pauseRequest = await tx.actionRequest.findFirst({
+				where: {
+					action: 'PAUSE',
+					status: 'APPROVED',
+				},
+				orderBy: {
+					createdAt: 'desc'
+				}
+			});
+
+			const resumeRequest = await tx.actionRequest.findFirst({
+				where: {
+					action: 'RESUME',
+					status: 'APPROVED',
+				},
+				orderBy: {
+					createdAt: 'desc'
+				}
+			});
+
+			// System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
+			const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
+
+			if (isPaused) {
+				throw new Error("System is paused. Cannot approve mint requests at this time.");
+			}
+
 			// Prevent self-approval
 			if (mintRequest.requestedBy === session.user.id) {
 				throw new Error("Cannot approve your own request");
@@ -65,6 +93,19 @@ export async function POST(request: Request) {
 
 			if (existingApproval) {
 				throw new Error("You have already approved this request");
+			}
+
+			// Check if the target address is blacklisted
+			const blacklistEntry = await tx.blacklist.findFirst({
+				where: {
+					address: mintRequest.address,
+					status: "APPROVED",
+					action: "BLACKLIST"
+				}
+			});
+
+			if (blacklistEntry) {
+				throw new Error("Cannot approve mint: the target address is blacklisted");
 			}
 
 			// Create a new approval

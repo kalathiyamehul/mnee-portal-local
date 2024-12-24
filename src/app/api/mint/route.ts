@@ -17,6 +17,37 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Check if system is paused
+  const pauseRequest = await prisma.actionRequest.findFirst({
+    where: {
+      action: 'PAUSE',
+      status: 'APPROVED',
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+
+  const resumeRequest = await prisma.actionRequest.findFirst({
+    where: {
+      action: 'RESUME',
+      status: 'APPROVED',
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
+  });
+
+  // System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
+  const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
+
+  if (isPaused) {
+    return NextResponse.json(
+      { error: "System is paused. Cannot create mint requests at this time." },
+      { status: 423 }
+    );
+  }
+
   try {
     const body: MintRequestParams = await request.json();
     

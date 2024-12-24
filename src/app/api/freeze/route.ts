@@ -43,6 +43,37 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if system is paused
+    const pauseRequest = await prisma.actionRequest.findFirst({
+      where: {
+        action: 'PAUSE',
+        status: 'APPROVED',
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    const resumeRequest = await prisma.actionRequest.findFirst({
+      where: {
+        action: 'RESUME',
+        status: 'APPROVED',
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    // System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
+    const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
+
+    if (isPaused) {
+      return NextResponse.json(
+        { error: "System is paused. Cannot create freeze requests at this time." },
+        { status: 400 }
+      );
+    }
+
     // Create the freeze request and initial approval in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create the freeze request
