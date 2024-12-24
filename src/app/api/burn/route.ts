@@ -44,6 +44,37 @@ export async function POST(request: Request) {
             );
         }
 
+        // Check if system is paused
+        const pauseRequest = await prisma.actionRequest.findFirst({
+            where: {
+                action: 'PAUSE',
+                status: 'APPROVED',
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        const resumeRequest = await prisma.actionRequest.findFirst({
+            where: {
+                action: 'RESUME',
+                status: 'APPROVED',
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        // System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
+        const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
+
+        if (isPaused) {
+            return NextResponse.json(
+                { error: "System is paused. Cannot create burn requests at this time." },
+                { status: 400 }
+            );
+        }
+
         // Create burn request
         const burnRequestData = {
             amount,

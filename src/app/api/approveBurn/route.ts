@@ -47,6 +47,34 @@ export async function POST(request: Request) {
             throw new Error("Burn request is not pending");
         }
 
+        // Check if system is paused
+        const pauseRequest = await tx.actionRequest.findFirst({
+            where: {
+                action: 'PAUSE',
+                status: 'APPROVED',
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        const resumeRequest = await tx.actionRequest.findFirst({
+            where: {
+                action: 'RESUME',
+                status: 'APPROVED',
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+
+        // System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
+        const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
+
+        if (isPaused) {
+            throw new Error("System is paused. Cannot approve burn requests at this time.");
+        }
+
         // Check if user has already approved
         const hasApproved = burnRequest.approvals.some(
             (approval) => approval.approvedBy === session.user.id
@@ -86,6 +114,8 @@ export async function POST(request: Request) {
             const pk = PrivateKey.fromWif(MINT_WIF);
             const burnTx = new Transaction();
 
+            // TODO: Add burn inscription
+            
             // const burnConfig = {
             //   ordinals: [{
             //     txid: burnRequest.txid,
