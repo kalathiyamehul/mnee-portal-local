@@ -3,206 +3,208 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
-import { MINT_WIF, MNEE_API } from "@/env";
-import { fetchTransaction } from "@/utils/api";
-import { getConfig } from "@/lib/config";
+import { BURN_WIF, MNEE_API } from "@/env";
+import { fetchConfig, fetchTransaction } from "@/utils/api";
 import { applyInscription } from "js-1sat-ord";
 import type { Inscription } from "js-1sat-ord";
 import CosignTemplate from "@/templates/cosign";
-import type { Config } from "@prisma/client";
+import { Utils } from "@bsv/sdk";
+const { toArray } = Utils;
 
 export async function POST(request: Request) {
-  const session = await getServerSession(authOptions);
+  try {
+    const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { burnRequestId } = await request.json();
-
-  const result = await prisma.$transaction(async (tx) => {
-    // Check if burn request exists and is pending
-    const burnRequest = await tx.burnRequest.findUnique({
-      where: { id: burnRequestId },
-      include: {
-        approvals: true,
-        requester: true,
-      },
-    });
-
-    if (!burnRequest) {
-      throw new Error("Burn request not found");
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (burnRequest.status !== "PENDING") {
-      throw new Error("Burn request is not pending");
-    }
+    const { burnRequestId } = await request.json();
 
-    // Check if system is paused
-    const pauseRequest = await tx.actionRequest.findFirst({
-      where: {
-        action: 'PAUSE',
-        status: 'APPROVED',
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    const resumeRequest = await tx.actionRequest.findFirst({
-      where: {
-        action: 'RESUME',
-        status: 'APPROVED',
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    // System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
-    const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
-
-    if (isPaused) {
-      throw new Error("System is paused. Cannot approve burn requests at this time.");
-    }
-
-    // Check if user has already approved
-    const hasApproved = burnRequest.approvals.some(
-      (approval) => approval.approvedBy === session.user.id
-    );
-
-    if (hasApproved) {
-      throw new Error("You have already approved this request");
-    }
-
-    // Prevent self-approval
-    if (burnRequest.requestedBy === session.user.id) {
-      throw new Error("You cannot approve your own request");
-    }
-
-    // Create approval
-    await tx.burnApproval.create({
-      data: {
-        burnRequestId,
-        approvedBy: session.user.id,
-      },
-    });
-
-    // Update burn request status if enough approvals
-    const updatedBurnRequest = await tx.burnRequest.findUnique({
-      where: { id: burnRequestId },
-      include: { approvals: true },
-    });
-
-    if (updatedBurnRequest?.approvals.length === 1) {
-      // Get latest config
-      const config = await getConfig(true) as Config & { approver: string };
-      if (!config) {
-        throw new Error("Token configuration not found");
-      }
-
-      if (!burnRequest.outpoint) {
-        throw new Error("Burn request outpoint not found");
-      }
-
-      // Parse outpoint to get txid and vout
-      const [txid, voutStr] = burnRequest.outpoint.split('_');
-      const vout = Number.parseInt(voutStr, 10);
-
-      if (!txid || Number.isNaN(vout)) {
-        throw new Error("Invalid burn request outpoint");
-      }
-
-      // Fetch the specific UTXO we want to burn
-      const sourceTransaction = await fetchTransaction(txid);
-      if (!sourceTransaction) {
-        throw new Error("Failed to fetch source transaction");
-      }
-
-      // Add funding input and change output for transaction fees
-      const pk = PrivateKey.fromWif(MINT_WIF);
-
-      // Build the burn transaction
-      const burnTx = new Transaction();
-
-      // Add the input UTXO we want to burn
-      burnTx.addInput({
-        sourceTXID: txid,
-        sourceOutputIndex: vout,
-        sourceTransaction,
-        unlockingScriptTemplate: new CosignTemplate().userUnlock(pk),
-      });
-
-      // Add burn output
-      const burnInscriptionData = {
-        p: "bsv-20",
-        op: "burn",
-        id: config.tokenId,
-        amt: burnRequest.amount.toString(),
-      };
-      const burnDataB64 = Buffer.from(JSON.stringify(burnInscriptionData)).toString("base64");
-      burnTx.addOutput({
-        lockingScript: applyInscription(
-          new CosignTemplate().lock(
-            config.burnAddress,
-            PublicKey.fromString(config.approver),
-          ),
-          {
-            dataB64: burnDataB64,
-            contentType: "application/bsv-20",
-          } as Inscription,
-        ),
-        satoshis: 1,
-      });
-
-      await burnTx.sign();
-
-      // Cosigner needs to sign off
-      // `${NEXT_PUBLIC_MNEE_API}/v1/transfer`
-      const cosignResponse = await fetch(`${MNEE_API}/v1/transfer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rawtx: Buffer.from(burnTx.toHex(), "hex").toString("base64"),
-        }),
-      });
-
-      if (!cosignResponse.ok) {
-        throw new Error("Failed to cosign burn transaction");
-      }
-
-      // const cosignResponseJson = await cosignResponse.json();
-      const cosignResponseJson = (await cosignResponse.json()) as { rawtx: string };
-      const cosignTx = Transaction.fromHex(cosignResponseJson.rawtx);
-      if (!cosignTx) {
-        throw new Error("Failed to parse cosigned transaction");
-      }
-
-      // Update burn request status and save burn tx
-      await tx.burnRequest.update({
+    const result = await prisma.$transaction(async (tx) => {
+      const burnRequest = await tx.burnRequest.findUnique({
         where: { id: burnRequestId },
-        data: {
-          status: "APPROVED",
-          updatedAt: new Date(),
+        include: {
+          approvals: true,
+          requester: true,
         },
       });
 
-      // Update config with latest minter tx
-      await tx.config.update({
-        where: { id: 1 },
-        data: { latestMinterTx: cosignTx.toHex() },
+      if (!burnRequest) {
+        throw new Error("Burn request not found");
+      }
+
+      if (burnRequest.status !== "PENDING") {
+        throw new Error("Burn request is not pending");
+      }
+
+      const pauseRequest = await tx.actionRequest.findFirst({
+        where: {
+          action: 'PAUSE',
+          status: 'APPROVED',
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
       });
 
-      return { status: "APPROVED", burnTx: cosignTx.toHex() };
-    }
+      const resumeRequest = await tx.actionRequest.findFirst({
+        where: {
+          action: 'RESUME',
+          status: 'APPROVED',
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
 
-    return { status: "PENDING" };
-  });
+      const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
 
-  return NextResponse.json({
-    success: true,
-    message: result.status === "APPROVED" ? "Burn request approved" : "Approval recorded",
-    status: result.status,
-    burnTx: result.burnTx,
-  });
+      if (isPaused) {
+        throw new Error("System is paused. Cannot approve burn requests at this time.");
+      }
+
+      const hasApproved = burnRequest.approvals.some(
+        (approval) => approval.approvedBy === session.user.id
+      );
+
+      if (hasApproved) {
+        throw new Error("You have already approved this request");
+      }
+
+      if (burnRequest.requestedBy === session.user.id) {
+        throw new Error("You cannot approve your own request");
+      }
+
+      await tx.burnApproval.create({
+        data: {
+          burnRequestId,
+          approvedBy: session.user.id,
+        },
+      });
+
+      const updatedBurnRequest = await tx.burnRequest.findUnique({
+        where: { id: burnRequestId },
+        include: { approvals: true },
+      });
+
+      if (updatedBurnRequest?.approvals.length === 1) {
+        const remoteConfig = await fetchConfig();
+
+        if (!remoteConfig) {
+          throw new Error("Remote Token configuration not found");
+        }
+
+        if (!burnRequest.outpoint) {
+          throw new Error("Burn request outpoint not found");
+        }
+
+        const [txid, voutStr] = burnRequest.outpoint.split('_');
+        const vout = Number.parseInt(voutStr, 10);
+
+        if (!txid || Number.isNaN(vout)) {
+          throw new Error("Invalid burn request outpoint");
+        }
+
+        const sourceTransaction = await fetchTransaction(txid);
+        if (!sourceTransaction) {
+          throw new Error("Failed to fetch source transaction");
+        }
+
+        const pk = PrivateKey.fromWif(BURN_WIF);
+        const burnTx = new Transaction();
+
+        burnTx.addInput({
+          sourceTXID: txid,
+          sourceOutputIndex: vout,
+          sourceTransaction,
+          unlockingScriptTemplate: new CosignTemplate().userUnlock(pk, "all", true),
+        });
+
+        const burnInscriptionData = {
+          p: "bsv-20",
+          op: "burn",
+          id: remoteConfig.tokenId,
+          amt: burnRequest.amount.toString(),
+        };
+        
+        const burnDataB64 = Buffer.from(JSON.stringify(burnInscriptionData)).toString("base64");
+        burnTx.addOutput({
+          lockingScript: applyInscription(
+            new CosignTemplate().lock(
+              remoteConfig.burnAddress,
+              PublicKey.fromString(remoteConfig.approver),
+            ),
+            {
+              dataB64: burnDataB64,
+              contentType: "application/bsv-20",
+            } as Inscription,
+          ),
+          satoshis: 1,
+        });
+
+        await burnTx.sign();
+
+        const cosignResponse = await fetch(`${MNEE_API}/v1/transfer`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rawtx: Buffer.from(burnTx.toHex(), "hex").toString("base64"),
+          }),
+        });
+
+        if (!cosignResponse.ok) {
+          const errorText = await cosignResponse.text();
+          try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.message) {
+              if (errorJson.message.includes("OP_EQUALVERIFY failed")) {
+                throw new Error("Transaction verification failed. Please try again.");
+              }
+              throw new Error(errorJson.message);
+            }
+          } catch {
+            throw new Error("Failed to cosign burn transaction. Please try again.");
+          }
+        }
+
+        const cosignResponseJson = (await cosignResponse.json()) as { rawtx: string };
+        const cosignTx = Transaction.fromBinary(toArray(cosignResponseJson.rawtx, 'base64'));
+        if (!cosignTx) {
+          throw new Error("Failed to parse cosigned transaction");
+        }
+
+        await tx.burnRequest.update({
+          where: { id: burnRequestId },
+          data: {
+            status: "APPROVED",
+            updatedAt: new Date(),
+          },
+        });
+
+        await tx.config.update({
+          where: { id: 1 },
+          data: { latestMinterTx: cosignTx.toHex() },
+        });
+
+        return { status: "APPROVED", burnTx: cosignTx.toHex() };
+      }
+
+      return { status: "PENDING" };
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: result.status === "APPROVED" ? "Burn request approved" : "Approval recorded",
+      status: result.status,
+      burnTx: result.burnTx,
+    });
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : "An unexpected error occurred",
+    }, { 
+      status: 400
+    });
+  }
 } 
