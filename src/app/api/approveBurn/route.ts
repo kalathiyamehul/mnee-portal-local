@@ -157,8 +157,9 @@ export async function POST(request: Request) {
 
       await burnTx.sign();
 
-      // Broadcast transaction
-      const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
+      // Cosigner needs to sign off
+      // `${NEXT_PUBLIC_MNEE_API}/v1/transfer`
+      const cosignResponse = await fetch(`${MNEE_API}/v1/transfer`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -166,8 +167,15 @@ export async function POST(request: Request) {
         }),
       });
 
-      if (!broadcastResponse.ok) {
-        throw new Error("Failed to broadcast burn transaction");
+      if (!cosignResponse.ok) {
+        throw new Error("Failed to cosign burn transaction");
+      }
+
+      // const cosignResponseJson = await cosignResponse.json();
+      const cosignResponseJson = (await cosignResponse.json()) as { rawtx: string };
+      const cosignTx = Transaction.fromHex(cosignResponseJson.rawtx);
+      if (!cosignTx) {
+        throw new Error("Failed to parse cosigned transaction");
       }
 
       // Update burn request status and save burn tx
@@ -182,10 +190,10 @@ export async function POST(request: Request) {
       // Update config with latest minter tx
       await tx.config.update({
         where: { id: 1 },
-        data: { latestMinterTx: burnTx.toHex() },
+        data: { latestMinterTx: cosignTx.toHex() },
       });
 
-      return { status: "APPROVED", burnTx: burnTx.toHex() };
+      return { status: "APPROVED", burnTx: cosignTx.toHex() };
     }
 
     return { status: "PENDING" };
