@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { FaPlus,  FaCopy, FaCircleInfo } from "react-icons/fa6";
 import { FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
-import { toToken } from 'satoshi-token';
+import { toToken, toTokenSat } from 'satoshi-token';
 import type { Fee } from './admin/types';
 import type { Config } from '@prisma/client';
 import { ThemeSelector } from "@/components/ThemeSelector";
@@ -133,8 +133,8 @@ const EditFeesModal = ({ fees, onSave, onClose, editIndex }: EditFeesModalProps)
 											return;
 										}
 										const tokenAmount = Number(value);
-										if (isNaN(tokenAmount)) return;
-										const satAmount = Math.floor(tokenAmount * Math.pow(10, config.decimals));
+										if (Number.isNaN(tokenAmount)) return;
+										const satAmount = toTokenSat(tokenAmount,  config.decimals);
 										setFee({ ...fee, min: satAmount });
 										setError(null);
 									}}
@@ -159,8 +159,8 @@ const EditFeesModal = ({ fees, onSave, onClose, editIndex }: EditFeesModalProps)
 											return;
 										}
 										const tokenAmount = Number(value);
-										if (isNaN(tokenAmount)) return;
-										const satAmount = Math.floor(tokenAmount * Math.pow(10, config.decimals));
+										if (Number.isNaN(tokenAmount)) return;
+										const satAmount = toTokenSat(tokenAmount, config.decimals);
 										setFee({ ...fee, max: satAmount });
 										setError(null);
 									}}
@@ -185,8 +185,8 @@ const EditFeesModal = ({ fees, onSave, onClose, editIndex }: EditFeesModalProps)
 											return;
 										}
 										const tokenAmount = Number(value);
-										if (isNaN(tokenAmount)) return;
-										const satAmount = Math.floor(tokenAmount * Math.pow(10, config.decimals));
+										if (Number.isNaN(tokenAmount)) return;
+										const satAmount = toTokenSat(tokenAmount , config.decimals);
 										setFee({ ...fee, fee: satAmount });
 										setError(null);
 									}}
