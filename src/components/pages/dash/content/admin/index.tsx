@@ -249,7 +249,8 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	}, []);
 
 	const getApprovalCount = useCallback((activity: Activity) => {
-		return activity.approvals?.length || 0;
+		// All requests start with the requester's approval
+		return (activity.approvals?.length || 0) + 1;
 	}, []);
 
 	const handleUnblacklist = async (e: React.MouseEvent, address: string) => {
