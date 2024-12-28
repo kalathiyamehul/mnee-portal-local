@@ -96,7 +96,7 @@ export async function POST(request: Request) {
 			}
 
 			// Check if the target address is blacklisted
-			const blacklistEntry = await tx.blacklist.findFirst({
+			const blacklistEntry = await tx.blacklistRequest.findFirst({
 				where: {
 					address: mintRequest.address,
 					status: "APPROVED",

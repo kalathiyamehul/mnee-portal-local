@@ -62,7 +62,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		if (statusData) {
 			const allActivities: Activity[] = [
 				...statusData.freezeRequests.map(req => ({ ...req, type: 'FREEZE' as const })),
-				...statusData.blacklists.map(req => ({ ...req, type: 'BLACKLIST' as const })),
+				...statusData.blacklistRequests.map(req => ({ ...req, type: 'BLACKLIST' as const })),
 				...statusData.systemRequests.map(req => ({ ...req, type: 'ACTION' as const })),
 				...statusData.mintRequests.map(req => ({ ...req, type: 'MINT' as const, action: 'MINT' as const })),
 				...statusData.burnRequests.map(req => ({ ...req, type: 'BURN' as const, action: 'BURN' as const })),

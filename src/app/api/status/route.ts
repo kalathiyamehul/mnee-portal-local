@@ -22,20 +22,21 @@ export async function GET(request: Request) {
   try {
     // If no type is specified, return all activities
     if (!type) {
-      const [allFreezeRequests, blacklists, systemRequests, mintRequests, burnRequests] = await Promise.all([
+      const [allFreezeRequests, blacklistRequests, systemRequests, mintRequests, burnRequests] = await Promise.all([
         prisma.freezeRequest.findMany({
           where: whereCondition,
           include: includeOptions,
           orderBy: { createdAt: 'desc' }
         }),
-        prisma.blacklist.findMany({
+        prisma.blacklistRequest.findMany({
           where: whereCondition,
           select: {
             id: true,
             address: true,
-            createdAt: true,
             status: true,
             action: true,
+            createdAt: true,
+            updatedAt: true,
             requester: {
               select: {
                 name: true,
@@ -43,7 +44,8 @@ export async function GET(request: Request) {
               },
             },
             approvals: {
-              include: {
+              select: {
+                id: true,
                 approver: {
                   select: {
                     name: true,
@@ -62,60 +64,20 @@ export async function GET(request: Request) {
         }),
         prisma.mintRequest.findMany({
           where: whereCondition,
-          select: {
-            id: true,
-            address: true,
-            amount: true,
-            status: true,
-            txid: true,
-            requiresApproval: true,
-            createdAt: true,
-            customerId: true,
-            requester: {
-              select: { name: true, email: true }
-            },
-            approvals: {
-              include: {
-                approver: { select: { name: true, email: true } }
-              }
-            },
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                address: true
-              }
-            }
-          },
+          include: includeOptions,
           orderBy: { createdAt: 'desc' }
         }).then(requests => requests.map(r => ({
           ...r,
-          amount: Number(r.amount)
+          amount: r.amount.toString()
         }))),
         prisma.burnRequest.findMany({
           where: whereCondition,
-          select: {
-            id: true,
-            amount: true,
-            status: true,
-            requiresApproval: true,
-            createdAt: true,
-            outpoint: true,
-            requester: {
-              select: { name: true, email: true }
-            },
-            approvals: {
-              include: {
-                approver: { select: { name: true, email: true } }
-              }
-            }
-          },
+          include: includeOptions,
           orderBy: { createdAt: 'desc' }
         }).then(requests => requests.map(r => ({
           ...r,
-          amount: Number(r.amount)
-        })))
+          amount: r.amount.toString()
+        }))),
       ]);
 
       // Group freeze requests by address and get most recent approved action
@@ -159,14 +121,14 @@ export async function GET(request: Request) {
         isPaused,
         hasPendingPause,
         freezeRequests,
-        blacklists,
+        blacklistRequests,
         systemRequests,
         mintRequests,
-        burnRequests
+        burnRequests,
       });
     }
 
-    // Handle specific type requests
+    // If type is specified, return only that type
     switch (type) {
       case 'freeze': {
         const freezeRequests = await prisma.freezeRequest.findMany({
@@ -176,16 +138,16 @@ export async function GET(request: Request) {
         });
         return NextResponse.json({ freezeRequests });
       }
-
       case 'blacklist': {
-        const blacklists = await prisma.blacklist.findMany({
+        const blacklistRequests = await prisma.blacklistRequest.findMany({
           where: whereCondition,
           select: {
             id: true,
             address: true,
-            createdAt: true,
             status: true,
             action: true,
+            createdAt: true,
+            updatedAt: true,
             requester: {
               select: {
                 name: true,
@@ -193,7 +155,8 @@ export async function GET(request: Request) {
               },
             },
             approvals: {
-              include: {
+              select: {
+                id: true,
                 approver: {
                   select: {
                     name: true,
@@ -205,9 +168,8 @@ export async function GET(request: Request) {
           },
           orderBy: { createdAt: 'desc' }
         });
-        return NextResponse.json({ blacklists });
+        return NextResponse.json({ blacklistRequests });
       }
-
       case 'system': {
         const systemRequests = await prisma.actionRequest.findMany({
           where: whereCondition,
@@ -216,71 +178,28 @@ export async function GET(request: Request) {
         });
         return NextResponse.json({ systemRequests });
       }
-
       case 'mint': {
         const mintRequests = await prisma.mintRequest.findMany({
           where: whereCondition,
-          select: {
-            id: true,
-            address: true,
-            amount: true,
-            status: true,
-            txid: true,
-            requiresApproval: true,
-            createdAt: true,
-            customerId: true,
-            requester: {
-              select: { name: true, email: true }
-            },
-            approvals: {
-              include: {
-                approver: { select: { name: true, email: true } }
-              }
-            },
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                address: true
-              }
-            }
-          },
+          include: includeOptions,
           orderBy: { createdAt: 'desc' }
         }).then(requests => requests.map(r => ({
           ...r,
-          amount: Number(r.amount)
+          amount: r.amount.toString()
         })));
         return NextResponse.json({ mintRequests });
       }
-
       case 'burn': {
         const burnRequests = await prisma.burnRequest.findMany({
           where: whereCondition,
-          select: {
-            id: true,
-            amount: true,
-            status: true,
-            requiresApproval: true,
-            createdAt: true,
-            outpoint: true,
-            requester: {
-              select: { name: true, email: true }
-            },
-            approvals: {
-              include: {
-                approver: { select: { name: true, email: true } }
-              }
-            }
-          },
+          include: includeOptions,
           orderBy: { createdAt: 'desc' }
         }).then(requests => requests.map(r => ({
           ...r,
-          amount: Number(r.amount)
+          amount: r.amount.toString()
         })));
         return NextResponse.json({ burnRequests });
       }
-
       default:
         return NextResponse.json(
           { error: 'Invalid type parameter' },
@@ -290,7 +209,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('Error fetching requests:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch requests' },
+      { error: 'Failed to fetch requests', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

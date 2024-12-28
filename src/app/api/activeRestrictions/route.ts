@@ -49,15 +49,12 @@ export async function GET() {
       .filter(freeze => freeze.action === 'FREEZE');
 
     // Get active blacklists
-    const activeBlacklists = await prisma.blacklist.findMany({
+    const activeBlacklistRequests = await prisma.blacklistRequest.findMany({
       where: {
         status: 'APPROVED',
         action: 'BLACKLIST',
       },
-      select: {
-        id: true,
-        address: true,
-        createdAt: true,
+      include: {
         requester: {
           select: {
             name: true,
@@ -75,9 +72,6 @@ export async function GET() {
           },
         },
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
     });
 
     return NextResponse.json({
@@ -88,12 +82,12 @@ export async function GET() {
         requester: freeze.requester,
         approvers: freeze.approvals.map(a => a.approver),
       })),
-      activeBlacklists: activeBlacklists.map(blacklist => ({
-        id: blacklist.id,
-        address: blacklist.address,
-        createdAt: blacklist.createdAt,
-        requester: blacklist.requester,
-        approvers: blacklist.approvals.map(a => a.approver),
+      activeBlacklists: activeBlacklistRequests.map(blacklistRequest => ({
+        id: blacklistRequest.id,
+        address: blacklistRequest.address,
+        createdAt: blacklistRequest.createdAt,
+        requester: blacklistRequest.requester,
+        approvers: blacklistRequest.approvals.map(a => a.approver),
       })),
     });
   } catch (error) {

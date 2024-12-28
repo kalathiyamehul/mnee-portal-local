@@ -10,17 +10,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { blacklistId } = await request.json();
+  const { blacklistRequestId } = await request.json();
 
-  if (!blacklistId) {
-    return NextResponse.json({ error: 'Blacklist ID is required' }, { status: 400 });
+  if (!blacklistRequestId) {
+    return NextResponse.json({ error: 'Blacklist request ID is required' }, { status: 400 });
   }
 
   try {
     const result = await prisma.$transaction(async (tx) => {
       // Get the blacklist request
-      const blacklistRequest = await tx.blacklist.findUnique({
-        where: { id: blacklistId },
+      const blacklistRequest = await tx.blacklistRequest.findUnique({
+        where: { id: blacklistRequestId },
         include: {
           approvals: true,
           requester: {
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       // Check if user has already approved
       const existingApproval = await tx.blacklistApproval.findFirst({
         where: {
-          blacklistId,
+          blacklistRequestId,
           approvedBy: session.user.id,
         },
       });
@@ -57,39 +57,37 @@ export async function POST(request: Request) {
         throw new Error('You have already approved this request');
       }
 
-      // Create a new approval
+      // Create approval
       await tx.blacklistApproval.create({
         data: {
-          blacklistId,
+          blacklistRequestId,
           approvedBy: session.user.id,
         },
       });
 
-      // Get updated approval count
-      const approvalCount = await tx.blacklistApproval.count({
-        where: { blacklistId },
+      // Get updated approvals count
+      const approvals = await tx.blacklistApproval.count({
+        where: { blacklistRequestId },
       });
 
-      // If we now have 2 approvals (including the initial one), update the status
-      if (approvalCount >= 2) {
-        await tx.blacklist.update({
-          where: { id: blacklistId },
-          data: {
+      // Update status if we have enough approvals
+      if (approvals >= 2) {
+        await tx.blacklistRequest.update({
+          where: { id: blacklistRequestId },
+          data: { 
             status: 'APPROVED',
             updatedAt: new Date(),
           },
         });
-
-        return { approvalCount, status: 'APPROVED' };
       }
 
-      return { approvalCount, status: 'PENDING' };
+      return { approvals, status: approvals >= 2 ? 'APPROVED' : 'PENDING' };
     });
 
     return NextResponse.json({
       success: true,
       message: result.status === 'APPROVED' ? 'Request approved' : 'Approval recorded',
-      approvalCount: result.approvalCount,
+      approvalCount: result.approvals,
       status: result.status,
     });
   } catch (error) {

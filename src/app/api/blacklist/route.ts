@@ -29,20 +29,20 @@ export async function POST(request: Request) {
 
   try {
     // Check for existing pending request
-    const existingRequest = await prisma.blacklist.findFirst({
+    const existingRequest = await prisma.blacklistRequest.findFirst({
       where: {
         address,
-        action: action as BlacklistAction,
         status: 'PENDING',
+        action: action as BlacklistAction,
       },
     });
 
     if (existingRequest) {
-      throw new Error('A request is already pending for this address and action');
+      throw new Error('A pending request already exists for this address');
     }
 
-    // Get the latest approved status for this address
-    const latestStatus = await prisma.blacklist.findFirst({
+    // Get latest status for this address
+    const latestStatus = await prisma.blacklistRequest.findFirst({
       where: {
         address,
         status: 'APPROVED',
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // Validate based on action type
+    // Prevent unblacklist if not currently blacklisted
     if (action === 'UNBLACKLIST' && (!latestStatus || latestStatus.action !== 'BLACKLIST')) {
       throw new Error('Address is not currently blacklisted');
     }
@@ -60,27 +60,27 @@ export async function POST(request: Request) {
     // Create the blacklist request with PENDING status
     const result = await prisma.$transaction(async (tx) => {
       // Create the blacklist request
-      const blacklist = await tx.blacklist.create({
+      const blacklistRequest = await tx.blacklistRequest.create({
         data: {
           address,
+          status: 'PENDING',
           action: action as BlacklistAction,
           requestedBy: session.user.id,
-          status: 'PENDING',
         },
       });
 
       // Create initial approval from requester
       await tx.blacklistApproval.create({
         data: {
-          blacklistId: blacklist.id,
+          blacklistRequestId: blacklistRequest.id,
           approvedBy: session.user.id,
         },
       });
 
-      return blacklist;
+      return blacklistRequest;
     });
 
-    return NextResponse.json({ blacklist: result }, { status: 201 });
+    return NextResponse.json({ blacklistRequest: result }, { status: 201 });
   } catch (error) {
     console.error('Error creating blacklist:', error);
     return NextResponse.json(

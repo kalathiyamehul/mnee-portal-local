@@ -7,7 +7,7 @@ interface SystemStatusData {
   isPaused: boolean;
   hasPendingPause: boolean;
   freezeRequests: Activity[];
-  blacklists: Activity[];
+  blacklistRequests: Activity[];
   systemRequests: Activity[];
   mintRequests: Activity[];
   burnRequests: Activity[];
@@ -32,7 +32,15 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     try {
       const response = await fetch('/api/status?includePending=true');
       const data = await response.json();
-      setStatusData(data);
+      setStatusData({
+        isPaused: data.isPaused || false,
+        hasPendingPause: data.hasPendingPause || false,
+        freezeRequests: data.freezeRequests || [],
+        blacklistRequests: data.blacklistRequests || [],
+        systemRequests: data.systemRequests || [],
+        mintRequests: data.mintRequests || [],
+        burnRequests: data.burnRequests || []
+      });
     } catch (error) {
       console.error('Error fetching system status:', error);
     }
