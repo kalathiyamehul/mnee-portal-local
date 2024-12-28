@@ -6,6 +6,7 @@ import type { Activity } from "@/components/pages/dash/content/admin/types";
 interface SystemStatusData {
   isPaused: boolean;
   hasPendingPause: boolean;
+  hasPendingResume: boolean;
   freezeRequests: Activity[];
   blacklistRequests: Activity[];
   systemRequests: Activity[];
@@ -20,6 +21,7 @@ interface SystemStatusContextType {
   handlePauseToggle: () => Promise<void>;
   isPaused: boolean;
   hasPendingPause: boolean;
+  hasPendingResume: boolean;
 }
 
 const SystemStatusContext = createContext<SystemStatusContextType | null>(null);
@@ -35,6 +37,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
       setStatusData({
         isPaused: data.isPaused || false,
         hasPendingPause: data.hasPendingPause || false,
+        hasPendingResume: data.hasPendingResume || false,
         freezeRequests: data.freezeRequests || [],
         blacklistRequests: data.blacklistRequests || [],
         systemRequests: data.systemRequests || [],
@@ -85,6 +88,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     handlePauseToggle,
     isPaused: statusData?.isPaused || false,
     hasPendingPause: statusData?.hasPendingPause || false,
+    hasPendingResume: statusData?.hasPendingResume || false,
   }), [statusData, initialLoading, fetchStatus, handlePauseToggle]);
 
   return (

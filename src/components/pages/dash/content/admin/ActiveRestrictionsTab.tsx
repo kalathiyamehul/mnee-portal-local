@@ -4,7 +4,6 @@ import type { MouseEvent } from 'react';
 import { FaSnowflake, FaBan } from 'react-icons/fa6';
 import { MdRemoveCircleOutline } from 'react-icons/md';
 import { formatDistanceToNow } from 'date-fns';
-import md5 from 'md5';
 import type { Session } from 'next-auth';
 import { getGravatarUrl } from '@/utils/gravatar';
 

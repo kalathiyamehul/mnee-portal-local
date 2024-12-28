@@ -47,12 +47,20 @@ export async function POST(request: Request) {
 				throw new Error("System is paused. Cannot approve mint requests at this time.");
 			}
 
-			// Check if user has already approved
-			const hasApproved = mintRequest.approvals.some(
-				(approval) => approval.approvedBy === session.user.id
-			);
+			// Prevent self-approval
+			if (mintRequest.requestedBy === session.user.id) {
+				throw new Error("Cannot approve your own request");
+			}
 
-			if (hasApproved) {
+			// Check if the user has already approved
+			const existingApproval = await tx.actionApproval.findFirst({
+				where: {
+					mintRequestId,
+					approvedBy: session.user.id,
+				},
+			});
+
+			if (existingApproval) {
 				throw new Error("You have already approved this request");
 			}
 
