@@ -16,23 +16,23 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
   const [isLoading, setIsLoading] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const pendingPause = statusData?.systemRequests?.find(req => 
+  const pendingAction = statusData?.systemRequests?.find(req => 
     req.status === 'PENDING' && 
-    req.action === 'PAUSE'
+    (req.action === 'PAUSE' || req.action === 'RESUME')
   );
 
-  const isRequester = pendingPause?.requester.email === session?.user?.email;
-  const canApprove = pendingPause && !isRequester && 
-    !pendingPause.approvals.some(approval => approval.approver.email === session?.user?.email);
+  const isRequester = pendingAction?.requester.email === session?.user?.email;
+  const canApprove = pendingAction && !isRequester && 
+    !pendingAction.approvals.some(approval => approval.approver.email === session?.user?.email);
 
   const handleApprovePause = async () => {
-    if (!pendingPause) return;
+    if (!pendingAction) return;
     
     try {
-      const response = await fetch("/api/approvePause", {
+      const response = await fetch("/api/approveSystem", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actionRequestId: pendingPause.id }),
+        body: JSON.stringify({ actionRequestId: pendingAction.id }),
       });
 
       if (!response.ok) {
@@ -49,14 +49,14 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
   };
 
   const handleCancelPause = async () => {
-    if (!pendingPause) return;
+    if (!pendingAction) return;
     
     setIsCancelling(true);
     try {
       const response = await fetch("/api/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ actionRequestId: pendingPause.id }),
+        body: JSON.stringify({ actionRequestId: pendingAction.id }),
       });
 
       if (!response.ok) {
@@ -95,11 +95,12 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
             <div className={`w-3 h-3 rounded-full ${hasPendingPause ? 'bg-warning' : isPaused ? 'bg-error' : 'bg-success'}`} />
             <span className="font-medium">
               System is {isPaused ? 'Paused' : 'Active'}
-              {hasPendingPause && ' (Pause Requested)'}
+              {hasPendingPause && ` (${pendingAction?.action === 'PAUSE' ? 'Pause' : 'Resume'} Requested)`}
             </span>
           </div>
           {canApprove && (
             <button
+              type="button"
               onClick={handleApprovePause}
               className="btn btn-success btn-sm gap-2"
             >
@@ -108,8 +109,9 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
             </button>
           )}
         </div>
-        {isRequester && pendingPause ? (
+        {isRequester && pendingAction ? (
           <button
+            type="button"
             onClick={handleCancelPause}
             className="btn btn-error btn-sm gap-2"
             disabled={isCancelling}

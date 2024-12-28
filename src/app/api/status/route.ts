@@ -107,15 +107,15 @@ export async function GET(request: Request) {
         orderBy: { createdAt: 'desc' },
       });
 
-      const pendingPauseRequest = await prisma.actionRequest.findFirst({
+      const pendingActionRequest = await prisma.actionRequest.findFirst({
         where: {
-          action: 'PAUSE',
+          action: { in: ['PAUSE', 'RESUME'] },
           status: 'PENDING',
         },
       });
 
       const isPaused = latestPauseAction?.action === 'PAUSE';
-      const hasPendingPause = !!pendingPauseRequest;
+      const hasPendingPause = !!pendingActionRequest;
 
       return NextResponse.json({
         isPaused,
