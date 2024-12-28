@@ -242,13 +242,13 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 			setLoading(false);
 		}
 	};
-
-	const requiresApproval = useCallback((activity: Activity) => {
-		return activity.type !== 'BLACKLIST';
+	const requiresApproval = useCallback((_activity: Activity) => {
+    // For now, all actions require approval
+    console.log('requiresApproval', _activity);
+		return true;
 	}, []);
 
 	const getApprovalCount = useCallback((activity: Activity) => {
-		if (activity.type === 'BLACKLIST') return 0;
 		return activity.approvals?.length || 0;
 	}, []);
 
@@ -270,7 +270,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 			}
 
 			await fetchStatus();
-			toast.success('Address unblacklisted');
+			toast.success('Address unblacklist requested');
 		} catch (error) {
 			console.error('Error unblacklisting address:', error);
 			toast.error(error instanceof Error ? error.message : 'Failed to unblacklist address');
@@ -352,7 +352,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 			}
 
 			await fetchStatus();
-			toast.success('Address blacklisted');
+			toast.success('Address blacklist requested');
 		} catch (error) {
 			console.error('Error blacklisting address:', error);
 			toast.error(error instanceof Error ? error.message : 'Failed to blacklist address');
@@ -387,30 +387,34 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 				<div>
 					<h2 className="text-xl sm:text-2xl font-bold">{getTabTitle(activeTab)}</h2>
 					<div className="tabs tabs-boxed mt-4">
-						<a
+						<button
+							type="button"
 							className={`tab ${activeTab === 'activity' ? 'tab-active' : ''}`}
 							onClick={() => handleTabChange('activity')}
 						>
 							Activity
-						</a>
-						<a
+						</button>
+						<button
+							type="button"
 							className={`tab ${activeTab === 'restrictions' ? 'tab-active' : ''}`}
 							onClick={() => handleTabChange('restrictions')}
 						>
 							Restrictions
-						</a>
-						<a
+						</button>
+						<button
+							type="button"
 							className={`tab ${activeTab === 'burns' ? 'tab-active' : ''}`}
 							onClick={() => handleTabChange('burns')}
 						>
 							Burns
-						</a>
-						<a
+						</button>
+						<button
+							type="button"
 							className={`tab ${activeTab === 'mints' ? 'tab-active' : ''}`}
 							onClick={() => handleTabChange('mints')}
 						>
 							Mints
-						</a>
+						</button>
 					</div>
 				</div>
 

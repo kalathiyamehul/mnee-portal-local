@@ -11,7 +11,7 @@ import { useBalance } from '@/contexts/BalanceContext';
 import { MdOutlineOpenInNew } from 'react-icons/md';
 import { toast } from 'react-hot-toast';
 import { fetchMneeUtxos, ingestTxid } from '@/utils/api';
-import { useSystemStatus } from "@/contexts/SystemStatusContext";
+// import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import type { MNEEUtxo } from "@/types";
 import { FetchStatus } from "@/types/common";
 
@@ -449,7 +449,7 @@ const DashboardSettingsContent = () => {
 		icon: string;
 		amt: number;
 	} | null>(null);
-	const { statusData } = useSystemStatus();
+	// const { statusData } = useSystemStatus();
 	const [editingFeeIndex, setEditingFeeIndex] = useState<number | undefined>();
 	const [burnUtxos, setBurnUtxos] = useState<MNEEUtxo[]>([]);
 	const [burnLoading, setBurnLoading] = useState(false);

@@ -256,6 +256,7 @@ const MintTableContent = ({
 										<div className="flex gap-2 justify-end">
 											{mint.requester.email === session.user.email ? (
 												<button
+													type="button"
 													onClick={() => handleCancel(mint.id)}
 													className="btn btn-ghost btn-xs"
 												>
@@ -263,6 +264,7 @@ const MintTableContent = ({
 												</button>
 											) : (
 												<button
+													type="button"
 													onClick={() => handleApprove(mint.id)}
 													className="btn btn-primary btn-xs"
 												>

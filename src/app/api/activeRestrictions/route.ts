@@ -51,6 +51,16 @@ export async function GET() {
             email: true,
           },
         },
+        approvals: {
+          include: {
+            approver: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -70,6 +80,7 @@ export async function GET() {
         address: blacklist.address,
         createdAt: blacklist.createdAt,
         requester: blacklist.requester,
+        approvers: blacklist.approvals.map(a => a.approver),
       })),
     });
   } catch (error) {

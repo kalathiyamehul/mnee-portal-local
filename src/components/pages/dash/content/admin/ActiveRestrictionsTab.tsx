@@ -70,7 +70,6 @@ export const ActiveRestrictionsTab = ({
   const canApprove = (activity: Activity) => {
     if (activity.status !== 'PENDING') return false;
     if (activity.requester.email === session?.user?.email) return false;
-    if (activity.type === 'BLACKLIST') return false; // blacklist auto-approves
     return !activity.approvals?.some(a => a.approver.email === session?.user?.email);
   };
 

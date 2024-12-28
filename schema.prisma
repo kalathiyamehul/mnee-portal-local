@@ -27,6 +27,7 @@ model User {
   burnRequests      BurnRequest[]      @relation("UserBurnRequests")
   burnApprovals     BurnApproval[]     @relation("UserBurnApprovals")
   customers         Customer[]         @relation("UserCustomers")
+  blacklistApprovals BlacklistApproval[] @relation("UserBlacklistApprovals")
 
   @@map("user")
 }
@@ -68,17 +69,32 @@ model FreezeRequest {
 model Blacklist {
   id          String         @id @default(uuid())
   address     String
-  status      ActionStatus   @default(APPROVED)
+  status      ActionStatus   @default(PENDING)
   action      BlacklistAction
   requestedBy String        @map("requested_by")
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
+  requiresApproval Boolean   @default(true) @map("requires_approval")
 
   // Relations
   requester User               @relation("UserBlacklists", fields: [requestedBy], references: [id])
+  approvals BlacklistApproval[]
 
   @@index([address, status, createdAt])
   @@map("blacklist")
+}
+
+model BlacklistApproval {
+  id              String   @id @default(uuid())
+  blacklistId     String   @map("blacklist_id")
+  approvedBy      String   @map("approved_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  blacklist Blacklist @relation(fields: [blacklistId], references: [id])
+  approver  User     @relation("UserBlacklistApprovals", fields: [approvedBy], references: [id])
+
+  @@map("blacklist_approval")
 }
 
 model MintRequest {

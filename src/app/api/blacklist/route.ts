@@ -57,17 +57,30 @@ export async function POST(request: Request) {
       throw new Error('Address is not currently blacklisted');
     }
 
-    // Create the blacklist entry (auto-approved)
-    const blacklist = await prisma.blacklist.create({
-      data: {
-        address,
-        action: action as BlacklistAction,
-        requestedBy: session.user.id,
-        status: 'APPROVED',
-      },
+    // Create the blacklist request with PENDING status
+    const result = await prisma.$transaction(async (tx) => {
+      // Create the blacklist request
+      const blacklist = await tx.blacklist.create({
+        data: {
+          address,
+          action: action as BlacklistAction,
+          requestedBy: session.user.id,
+          status: 'PENDING',
+        },
+      });
+
+      // Create initial approval from requester
+      await tx.blacklistApproval.create({
+        data: {
+          blacklistId: blacklist.id,
+          approvedBy: session.user.id,
+        },
+      });
+
+      return blacklist;
     });
 
-    return NextResponse.json({ blacklist }, { status: 201 });
+    return NextResponse.json({ blacklist: result }, { status: 201 });
   } catch (error) {
     console.error('Error creating blacklist:', error);
     return NextResponse.json(

@@ -42,6 +42,16 @@ export async function GET(request: Request) {
                 email: true,
               },
             },
+            approvals: {
+              include: {
+                approver: {
+                  select: {
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
           },
           orderBy: { createdAt: 'desc' }
         }),
@@ -161,6 +171,16 @@ export async function GET(request: Request) {
               select: {
                 name: true,
                 email: true,
+              },
+            },
+            approvals: {
+              include: {
+                approver: {
+                  select: {
+                    name: true,
+                    email: true,
+                  },
+                },
               },
             },
           },
