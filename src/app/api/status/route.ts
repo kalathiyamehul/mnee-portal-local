@@ -17,7 +17,11 @@ export async function GET() {
       isSystemPaused(prisma),
       prisma.mintRequest.findMany({
         include: {
-          approvals: true,
+          approvals: {
+            include: {
+              approver: true,
+            },
+          },
           customer: true,
           requester: true,
         },
@@ -27,7 +31,11 @@ export async function GET() {
       }),
       prisma.burnRequest.findMany({
         include: {
-          approvals: true,
+          approvals: {
+            include: {
+              approver: true,
+            },
+          },
           requester: true,
         },
         orderBy: {
@@ -36,7 +44,11 @@ export async function GET() {
       }),
       prisma.freezeRequest.findMany({
         include: {
-          approvals: true,
+          approvals: {
+            include: {
+              approver: true,
+            },
+          },
           requester: true,
         },
         orderBy: {
@@ -45,7 +57,11 @@ export async function GET() {
       }),
       prisma.blacklistRequest.findMany({
         include: {
-          approvals: true,
+          approvals: {
+            include: {
+              approver: true,
+            },
+          },
           requester: true,
         },
         orderBy: {
@@ -60,8 +76,12 @@ export async function GET() {
           ]
         },
         include: {
+          approvals: {
+            include: {
+              approver: true,
+            },
+          },
           requester: true,
-          approvals: true,
         },
         orderBy: {
           createdAt: 'desc',
