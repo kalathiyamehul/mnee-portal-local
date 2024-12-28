@@ -52,7 +52,7 @@ export const ActiveRestrictions = ({
     if (activity.status !== 'PENDING') return false;
     if (activity.requester.email === session.user.email) return false;
     if (activity.type === 'BLACKLIST') return false;
-    return !activity.approvals?.some(approval => approval.approver.email === session.user.email);
+    return !activity.approvals?.some(approval => approval.approver?.email === session.user.email);
   };
 
   return (

@@ -187,7 +187,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		if (!session?.user?.email) return false;
 		if (activity.status !== 'PENDING') return false;
 		if (activity.requester.email === session.user.email) return false;
-		return !activity.approvals?.some(approval => approval.approver.email === session.user.email);
+		return !activity.approvals?.some(approval => approval.approver?.email === session.user.email);
 	}, [session]);
 
 	const handleCancel = async (id: string, type: Activity['type']) => {

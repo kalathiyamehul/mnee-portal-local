@@ -2,14 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { P2PKH, PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
-import CosignTemplate from "@/templates/cosign";
-import { getConfig } from "@/lib/config";
-import { fetchConfig, fetchTransaction } from "@/utils/api";
-import type { MintRequest } from "@/types/utxo";
-import { MINT_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
-import { signMint } from "@/templates/vault";
-import { getFundingUtxos } from "@/utils/utxo";
+import { isSystemPaused } from "@/lib/systemStatus";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -18,11 +11,9 @@ export async function POST(request: Request) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
-	let mintRequestId: string | undefined;
+	const { mintRequestId } = await request.json();
 
 	try {
-		const { mintRequestId: requestId } = await request.json();
-		mintRequestId = requestId;
 		const result = await prisma.$transaction(async (tx) => {
 			// Verify the approving user exists
 			const approvingUser = await tx.user.findUnique({
@@ -51,274 +42,57 @@ export async function POST(request: Request) {
 			}
 
 			// Check if system is paused
-			const pauseRequest = await tx.actionRequest.findFirst({
-				where: {
-					action: 'PAUSE',
-					status: 'APPROVED',
-				},
-				orderBy: {
-					createdAt: 'desc'
-				}
-			});
-
-			const resumeRequest = await tx.actionRequest.findFirst({
-				where: {
-					action: 'RESUME',
-					status: 'APPROVED',
-				},
-				orderBy: {
-					createdAt: 'desc'
-				}
-			});
-
-			// System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
-			const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
-
+			const isPaused = await isSystemPaused(tx);
 			if (isPaused) {
 				throw new Error("System is paused. Cannot approve mint requests at this time.");
 			}
 
-			// Prevent self-approval
-			if (mintRequest.requestedBy === session.user.id) {
-				throw new Error("Cannot approve your own request");
+			// Check if user has already approved
+			const hasApproved = mintRequest.approvals.some(
+				(approval) => approval.approvedBy === session.user.id
+			);
+
+			if (hasApproved) {
+				throw new Error("You have already approved this request");
 			}
 
-			// Check if the user has already approved
-			const existingApproval = await tx.actionApproval.findFirst({
-				where: {
+			// Create approval
+			await tx.actionApproval.create({
+				data: {
 					mintRequestId,
 					approvedBy: session.user.id,
 				},
 			});
 
-			if (existingApproval) {
-				throw new Error("You have already approved this request");
-			}
-
-			// Check if the target address is blacklisted
-			const blacklistRequest = await tx.blacklistRequest.findFirst({
-				where: {
-					address: mintRequest.address,
-					status: 'APPROVED',
-					action: 'BLACKLIST',
-				},
-				orderBy: {
-					createdAt: 'desc',
-				},
-			});
-
-			if (blacklistRequest) {
-				throw new Error("Cannot approve mint: the target address is blacklisted");
-			}
-
-			// Check if the target address is frozen
-			const freezeRequest = await tx.freezeRequest.findFirst({
-				where: {
-					address: mintRequest.address,
-					status: 'APPROVED',
-				},
-				orderBy: {
-					createdAt: 'desc',
-				},
-			});
-
-			if (freezeRequest?.action === 'FREEZE') {
-				throw new Error("Cannot approve mint: the target address is frozen");
-			}
-
-			// Create a new approval
-			await tx.actionApproval.create({
-				data: {
-					mintRequestId,
-						approvedBy: session.user.id,
-				},
-			});
-
-			// Get updated approval count
-			const approvalCount = await tx.actionApproval.count({
+			// Check if we have enough approvals
+			const approvalsCount = await tx.actionApproval.count({
 				where: { mintRequestId },
 			});
 
-			// If we now have 2 approvals (including the initial one), update the status
-			if (approvalCount >= 2) {
+			if (approvalsCount >= 2) {
+				// Update request status to APPROVED
 				await tx.mintRequest.update({
 					where: { id: mintRequestId },
-					data: {
-						status: "APPROVED",
-						updatedAt: new Date(),
-					},
+					data: { status: "APPROVED" },
 				});
 
-				try {
-					const { rawtx } = await mintMnee(mintRequest.amount, mintRequest.address);
-
-					// update the request status and txid
-					await tx.mintRequest.update({
-						where: { id: mintRequestId },
-						data: { 
-							status: "DONE", 
-							updatedAt: new Date(),
-							txid: Transaction.fromHex(rawtx).id('hex'),
-						},
-					});
-
-					return { approvalCount, status: "DONE", minterTx: rawtx };
-				} catch (error) {
-					// If minting fails, propagate the error
-					console.error("Error during minting:", error);
-					const errorMessage = error instanceof Error 
-						? error.message.replace(/^Error:\s*/, '') // Remove "Error: " prefix
-						: "Transaction submission failed";
-					
-					throw new Error(errorMessage);
-				}
+				return { status: "APPROVED", approvalsCount };
 			}
 
-			return { approvalCount, status: "PENDING" };
+			return { status: "PENDING", approvalsCount };
 		});
 
 		return NextResponse.json({
 			success: true,
-			message:
-				result.status === "APPROVED" ? "Request approved" : "Approval recorded",
-			approvalCount: result.approvalCount,
+			message: result.status === "APPROVED" ? "Request approved" : "Approval recorded",
 			status: result.status,
-			minterTx: result.minterTx,
+			approvalsCount: result.approvalsCount,
 		});
 	} catch (error) {
-		console.error("Error processing approval:", error);
-
-		// If we have a mintRequestId, update the request status to failed
-		if (mintRequestId) {
-			try {
-				await prisma.mintRequest.update({
-					where: { id: mintRequestId },
-					data: { 
-						status: "FAILED",
-						updatedAt: new Date(),
-					},
-				});
-			} catch (updateError) {
-				console.error("Failed to update mint request status:", updateError);
-			}
-		}
-
-		return NextResponse.json({ 
-			success: false,
-			error: error instanceof Error ? error.message : "Failed to process approval",
-			requestId: mintRequestId || null
-		}, { status: 500 });
-	}
-}
-
-// Helper function to mint MNEE tokens
-async function mintMnee(amount: bigint, address: string) {
-	const config = await fetchConfig();
-
-	// create the cosign template
-	const template = new CosignTemplate().lock(
-		address,
-		PublicKey.fromString(config.approver),
-	);
-
-	const token_ls = template.toHex();
-
-	// look up latest_minter_tx
-	const dbConfig = await getConfig();
-	const latest_minter_tx = dbConfig?.latestMinterTx;
-
-	if (!latest_minter_tx) {
-		throw new Error("Latest minter tx not found");
-	}
-
-	// MNEE contract config
-	const pk = PrivateKey.fromWif(MINT_WIF);
-	const fundingAddress = pk.toAddress();
-	const funding_utxos = await getFundingUtxos(fundingAddress);
-
-	const fee_per_kb = 10;
-	const change_addr = fundingAddress;
-
-	const mintRequest: MintRequest = {
-		amount: Number(amount),
-		token_ls,
-		latest_minter_tx,
-		funding_utxos,
-		fee_per_kb,
-		change_addr,
-	};
-
-	// mint the MNEE
-	const mintResponse = await fetch(`${MNEE_ORDINALS_SERVICE}/mint`, {
-		method: "POST",
-		headers: {"Content-Type": "application/json"},
-		body: JSON.stringify(mintRequest),
-	});
-
-	if (!mintResponse.ok) {
-		const st = await mintResponse.text();
-		throw new Error(
-			`Failed to mint MNEE ${mintResponse.status}. Script template: ${st}`,
+		console.error("Error approving mint request:", error);
+		return NextResponse.json(
+			{ error: error instanceof Error ? error.message : "Failed to approve mint request" },
+			{ status: 400 }
 		);
-	}
-
-	try {
-		const { minter_tx } = (await mintResponse.json()) as { minter_tx: string };
-
-		const tx = Transaction.fromHex(minter_tx);
-
-		// iterate over the inputs and set script template to p2pkh
-		for (const input of tx.inputs) {
-			if (!input.unlockingScript?.chunks.length) {
-				input.sourceTransaction = await fetchTransaction(input.sourceTXID || '');
-				input.unlockingScriptTemplate = new P2PKH().unlock(pk);
-			}
-		}
-
-		// set the source transaction to the latest minter tx
-		tx.inputs[0].sourceTransaction = Transaction.fromHex(latest_minter_tx);
-		signMint(tx, 0, pk);
-		await tx.sign();
-
-		const rawtx = tx.toHex();
-
-		// broadcast & ingest
-		const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
-			method: "POST",
-			headers: {"Content-Type": "application/json"},
-			body: JSON.stringify({
-				rawtx: Buffer.from(rawtx, "hex").toString("base64"),
-			}),
-		});
-
-		if (!broadcastResponse.ok) {
-			throw new Error("Failed to broadcast MNEE");
-		}
-		
-		// save the new tx id to the db
-		try {
-			await prisma.config.update({
-				where: { id: 1 },
-				data: { latestMinterTx: rawtx },
-			});
-		} catch (configError) {
-			console.error("Failed to update config with latest minter tx:", configError);
-			// Don't throw here - the mint was successful, we just couldn't update the config
-			// This will be handled in the next mint attempt
-		}
-
-		return { rawtx };
-	} catch (error) {
-		console.error("Error during mint process:", error);
-		// Provide more specific error messages based on where the error occurred
-		if (error instanceof Error) {
-			if (error.message.includes("broadcast")) {
-				throw new Error("Failed to broadcast transaction to the network");
-			}
-      if (error.message.includes("sign")) {
-				throw new Error("Failed to sign transaction");
-			}
-		}
-		throw new Error(`Failed to mint MNEE: ${error instanceof Error ? error.message : "Unknown error"}`);
 	}
 }

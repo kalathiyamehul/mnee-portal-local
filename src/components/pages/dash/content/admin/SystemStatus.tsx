@@ -7,10 +7,11 @@ import { useState } from "react";
 interface SystemStatusProps {
   isPaused: boolean;
   hasPendingPause: boolean;
+  hasPendingResume: boolean;
   onPauseToggle: () => Promise<void>;
 }
 
-export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: SystemStatusProps) => {
+export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPauseToggle }: SystemStatusProps) => {
   const { data: session } = useSession();
   const { statusData, fetchStatus } = useSystemStatus();
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +24,7 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
 
   const isRequester = pendingAction?.requester.email === session?.user?.email;
   const canApprove = pendingAction && !isRequester && 
-    !pendingAction.approvals.some(approval => approval.approver.email === session?.user?.email);
+    !pendingAction.approvals.some(approval => approval.approver?.email === session?.user?.email);
 
   const handleApprovePause = async () => {
     if (!pendingAction) return;
@@ -41,10 +42,10 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
       }
 
       await fetchStatus();
-      toast.success("Pause request approved");
+      toast.success("Request approved");
     } catch (error) {
-      console.error("Failed to approve pause request:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to approve pause request");
+      console.error("Failed to approve request:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to approve request");
     }
   };
 
@@ -61,14 +62,14 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to cancel pause request");
+        throw new Error(error.error || "Failed to cancel request");
       }
 
       await fetchStatus();
-      toast.success("Pause request cancelled");
+      toast.success("Request cancelled");
     } catch (error) {
-      console.error("Failed to cancel pause request:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to cancel pause request");
+      console.error("Failed to cancel request:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to cancel request");
     } finally {
       setIsCancelling(false);
     }
@@ -78,25 +79,33 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
     setIsLoading(true);
     try {
       await onPauseToggle();
-      toast.success(isPaused ? 'System resumed requested' : 'Pause request created');
+      toast.success(isPaused ? 'Resume request created' : 'Pause request created');
     } catch (error) {
       console.error('Error toggling system pause:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to toggle system pause');
+      toast.error(error instanceof Error ? error.message : 'Failed to toggle system state');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const getStatusText = () => {
+    if (isPaused) {
+      if (hasPendingResume) return "System is Paused (Resume Requested)";
+      return "System is Paused";
+    }
+    if (hasPendingPause) return "System is Active (Pause Requested)";
+    return "System is Active";
+  };
+
+  const hasPendingAction = hasPendingPause || hasPendingResume;
 
   return (
     <div className="bg-base-200 rounded-lg p-4 w-full">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${hasPendingPause ? 'bg-warning' : isPaused ? 'bg-error' : 'bg-success'}`} />
-            <span className="font-medium">
-              System is {isPaused ? 'Paused' : 'Active'}
-              {hasPendingPause && ` (${pendingAction?.action === 'PAUSE' ? 'Pause' : 'Resume'} Requested)`}
-            </span>
+            <div className={`w-3 h-3 rounded-full ${hasPendingAction ? 'bg-warning' : isPaused ? 'bg-error' : 'bg-success'}`} />
+            <span className="font-medium">{getStatusText()}</span>
           </div>
           {canApprove && (
             <button
@@ -128,10 +137,10 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
             <label className="cursor-pointer relative">
               <input
                 type="checkbox"
-                className={`toggle ${hasPendingPause ? 'toggle-warning' : (isPaused ? 'toggle-error' : 'toggle-success')} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`toggle ${hasPendingAction ? 'toggle-warning' : (isPaused ? 'toggle-error' : 'toggle-success')} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 checked={!isPaused}
                 onChange={handleToggle}
-                disabled={hasPendingPause || isLoading}
+                disabled={hasPendingAction || isLoading}
               />
               {isLoading && (
                 <FaSpinner className="animate-spin w-3 h-3 absolute right-0 top-1/2 -translate-y-1/2 -translate-x-[200%] text-base-content/70" />
