@@ -288,11 +288,9 @@ const AddressCard = ({ title, address, tooltip, source, balance, isLoading, deci
 const TokenDetailsSection = ({ 
 	config, 
 	tokenDetails, 
-	circulatingSupply 
 }: { 
 	config: Config; 
 	tokenDetails: { sym: string; icon: string; amt: number; } | null;
-	circulatingSupply: bigint;
 }) => {
 	return (
 		<div className="space-y-6">
@@ -394,19 +392,6 @@ const TokenDetailsSection = ({
 						</div>
 					</div>
 
-					{/* Circulating Supply */}
-					<div className="space-y-2">
-						<div className="flex items-center gap-2">
-							<span className="font-medium text-sm">Circulating Supply</span>
-							<div className="tooltip tooltip-right" data-tip="Number of tokens currently in circulation (total mints minus total burns)">
-								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
-							</div>
-						</div>
-						<div className="font-mono text-sm">
-							{toToken(circulatingSupply.toString(), config.decimals)} MNEE
-						</div>
-					</div>
-
 					{/* Icon Field */}
 					<div className="space-y-2">
 						<div className="flex items-center gap-2">
@@ -488,21 +473,21 @@ const DashboardSettingsContent = () => {
 	}, []);
 
 	// Calculate circulating supply from mints and burns
-	const circulatingSupply = useMemo(() => {
-		if (!statusData || !config) return 0n;
+	// const circulatingSupply = useMemo(() => {
+	// 	if (!statusData || !config) return 0n;
 
-		// Sum all approved mints
-		const totalMints = statusData.mintRequests
-			.filter(req => req.status === 'APPROVED')
-			.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
+	// 	// Sum all approved mints
+	// 	const totalMints = statusData.mintRequests
+	// 		.filter(req => req.status === 'APPROVED')
+	// 		.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
 
-		// Sum all approved burns
-		const totalBurns = statusData.burnRequests
-			.filter(req => req.status === 'APPROVED')
-			.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
+	// 	// Sum all approved burns
+	// 	const totalBurns = statusData.burnRequests
+	// 		.filter(req => req.status === 'APPROVED')
+	// 		.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
 
-		return totalMints - totalBurns;
-	}, [statusData, config]);
+	// 	return totalMints - totalBurns;
+	// }, [statusData, config]);
 
 	const fetchBsvBalances = useCallback(async (addresses: string[]) => {
 		try {
@@ -629,11 +614,10 @@ const DashboardSettingsContent = () => {
 				{/* Left Column - Token Details and Fee Structure */}
 				<div className="space-y-12">
 					{/* Token Details */}
-					{config && (
+					{config && tokenDetails && (
 						<TokenDetailsSection 
 							config={config} 
 							tokenDetails={tokenDetails}
-							circulatingSupply={circulatingSupply}
 						/>
 					)}
 
