@@ -78,7 +78,7 @@ export const SystemStatus = ({ isPaused, hasPendingPause, onPauseToggle }: Syste
     setIsLoading(true);
     try {
       await onPauseToggle();
-      toast.success(isPaused ? 'System resumed successfully' : 'Pause request created');
+      toast.success(isPaused ? 'System resumed requested' : 'Pause request created');
     } catch (error) {
       console.error('Error toggling system pause:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to toggle system pause');

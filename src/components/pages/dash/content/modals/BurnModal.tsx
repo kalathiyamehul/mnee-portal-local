@@ -24,7 +24,7 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
       
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       const payload = {
-        amount: amount.toString(),
+        amount,
         outpoint,
       };
       

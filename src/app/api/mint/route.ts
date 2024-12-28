@@ -65,6 +65,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
+    // Check if address is blacklisted
+    const blacklistRequest = await prisma.blacklistRequest.findFirst({
+      where: {
+        address: customer.address,
+        status: 'APPROVED',
+        action: 'BLACKLIST'
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    if (blacklistRequest) {
+      return NextResponse.json({ error: 'Cannot mint to blacklisted address' }, { status: 400 });
+    }
+
+    // Check if address is frozen
+    const freezeRequest = await prisma.freezeRequest.findFirst({
+      where: {
+        address: customer.address,
+        status: 'APPROVED'
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    if (freezeRequest?.action === 'FREEZE') {
+      return NextResponse.json({ error: 'Cannot mint to frozen address' }, { status: 400 });
+    }
+
     const config = await getConfig();
     if (!config) {
       return NextResponse.json({ error: 'Service not configured' }, { status: 500 });

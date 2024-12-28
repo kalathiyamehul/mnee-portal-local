@@ -77,7 +77,7 @@ export async function POST(request: Request) {
 
         // Create burn request
         const burnRequestData = {
-            amount: BigInt(amount),
+            amount,
             requestedBy: session.user.id,
             outpoint,
             status: 'PENDING' as const,

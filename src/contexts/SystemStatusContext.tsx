@@ -52,7 +52,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     const response = await fetch('/api/pause', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: statusData.isPaused ? 'UNPAUSE' : 'PAUSE' }),
+      body: JSON.stringify({ action: statusData.isPaused ? 'RESUME' : 'PAUSE' }),
     });
 
     if (!response.ok) {

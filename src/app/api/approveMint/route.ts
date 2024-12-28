@@ -96,23 +96,41 @@ export async function POST(request: Request) {
 			}
 
 			// Check if the target address is blacklisted
-			const blacklistEntry = await tx.blacklistRequest.findFirst({
+			const blacklistRequest = await tx.blacklistRequest.findFirst({
 				where: {
 					address: mintRequest.address,
-					status: "APPROVED",
-					action: "BLACKLIST"
-				}
+					status: 'APPROVED',
+					action: 'BLACKLIST',
+				},
+				orderBy: {
+					createdAt: 'desc',
+				},
 			});
 
-			if (blacklistEntry) {
+			if (blacklistRequest) {
 				throw new Error("Cannot approve mint: the target address is blacklisted");
+			}
+
+			// Check if the target address is frozen
+			const freezeRequest = await tx.freezeRequest.findFirst({
+				where: {
+					address: mintRequest.address,
+					status: 'APPROVED',
+				},
+				orderBy: {
+					createdAt: 'desc',
+				},
+			});
+
+			if (freezeRequest?.action === 'FREEZE') {
+				throw new Error("Cannot approve mint: the target address is frozen");
 			}
 
 			// Create a new approval
 			await tx.actionApproval.create({
 				data: {
 					mintRequestId,
-					approvedBy: session.user.id,
+						approvedBy: session.user.id,
 				},
 			});
 
