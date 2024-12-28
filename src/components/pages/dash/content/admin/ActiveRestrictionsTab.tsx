@@ -95,6 +95,7 @@ export const ActiveRestrictionsTab = ({
         handleUnfreeze={handleUnfreeze}
         activities={activities}
         handleCancel={handleCancel}
+        handleApprove={handleApprove}
         session={session}
       />
 

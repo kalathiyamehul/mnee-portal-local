@@ -4,14 +4,14 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     // Get active freezes
-    const activeFreezes = await prisma.freezeRequest.findMany({
+    const allApprovedFreezes = await prisma.freezeRequest.findMany({
       where: {
         status: 'APPROVED',
-        action: 'FREEZE',
       },
       select: {
         id: true,
         address: true,
+        action: true,
         createdAt: true,
         requester: {
           select: {
@@ -34,6 +34,19 @@ export async function GET() {
         createdAt: 'desc',
       },
     });
+
+    // Group by address and get most recent approved action
+    const addressMap = new Map<string, typeof allApprovedFreezes[0]>();
+    for (const freeze of allApprovedFreezes) {
+      const existing = addressMap.get(freeze.address);
+      if (!existing || freeze.createdAt > existing.createdAt) {
+        addressMap.set(freeze.address, freeze);
+      }
+    }
+
+    // Only include addresses where most recent action is FREEZE
+    const activeFreezes = Array.from(addressMap.values())
+      .filter(freeze => freeze.action === 'FREEZE');
 
     // Get active blacklists
     const activeBlacklists = await prisma.blacklist.findMany({

@@ -15,7 +15,7 @@ import { MintsTab } from './MintsTab';
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatDistanceToNow } from 'date-fns';
-import { Config } from '@prisma/client';
+import type { Config } from '@prisma/client';
 
 type TabType = 'activity' | 'restrictions' | 'burns' | 'mints';
 
@@ -106,42 +106,57 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 
 			// Get latest freeze action
 			const latestFreezeAction = addressActions
-				.filter(a => a.type === 'FREEZE')
+				.filter(a => a.type === 'FREEZE' && a.status === 'APPROVED')
 				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
 			// Get latest blacklist action
 			const latestBlacklistAction = addressActions
-				.filter(a => a.type === 'BLACKLIST')
+				.filter(a => a.type === 'BLACKLIST' && a.status === 'APPROVED')
 				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+
+			// Determine current status
+			const isFrozen = latestFreezeAction?.action === 'FREEZE';
+			const isBlacklisted = latestBlacklistAction?.action === 'BLACKLIST';
 
 			// Get pending actions
 			const pendingFreeze = addressActions.find(a => 
 				a.type === 'FREEZE' && 
-				a.status === 'PENDING'
+				a.status === 'PENDING' &&
+				// Only consider FREEZE requests if not frozen, or UNFREEZE requests if frozen
+				((a.action === 'FREEZE' && !isFrozen) ||
+				 (a.action === 'UNFREEZE' && isFrozen))
 			);
 
-			// Determine current status
-			const isFrozen = latestFreezeAction?.status === 'APPROVED' && latestFreezeAction?.action === 'FREEZE';
-			const isBlacklisted = latestBlacklistAction?.status === 'APPROVED' && latestBlacklistAction?.action === 'BLACKLIST';
+			const pendingBlacklist = addressActions.find(a => 
+				a.type === 'BLACKLIST' && 
+				a.status === 'PENDING' &&
+				// Only consider BLACKLIST requests if not blacklisted, or UNBLACKLIST requests if blacklisted
+				((a.action === 'BLACKLIST' && !isBlacklisted) ||
+				 (a.action === 'UNBLACKLIST' && isBlacklisted))
+			);
 
 			// Get the most recent action to determine the requester
-			const mostRecentAction = [latestFreezeAction, latestBlacklistAction, pendingFreeze]
-				.filter((action): action is (typeof latestFreezeAction | typeof latestBlacklistAction | typeof pendingFreeze) & { createdAt: string } => 
+			const mostRecentAction = [latestFreezeAction, latestBlacklistAction, pendingFreeze, pendingBlacklist]
+				.filter((action): action is (typeof latestFreezeAction | typeof latestBlacklistAction | typeof pendingFreeze | typeof pendingBlacklist) & { createdAt: string } => 
 					action !== undefined && action !== null && 'createdAt' in action
 				)
 				.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
 
 			// Only add to map if there are active restrictions or pending actions
-			if (isFrozen || isBlacklisted || pendingFreeze) {
+			if (isFrozen || isBlacklisted || pendingFreeze || pendingBlacklist) {
 				addressMap.set(address, {
 					address,
 					isBlacklisted,
 					isFrozen,
 					hasPendingFreeze: !!pendingFreeze,
+					hasPendingBlacklist: !!pendingBlacklist,
 					pendingFreezeAction: pendingFreeze?.action === 'FREEZE' || pendingFreeze?.action === 'UNFREEZE' 
 						? pendingFreeze.action 
 						: undefined,
-					requester: mostRecentAction?.requester || pendingFreeze?.requester || latestFreezeAction?.requester || latestBlacklistAction?.requester,
+					pendingBlacklistAction: pendingBlacklist?.action === 'BLACKLIST' || pendingBlacklist?.action === 'UNBLACKLIST'
+						? pendingBlacklist.action
+						: undefined,
+					requester: mostRecentAction?.requester || pendingFreeze?.requester || pendingBlacklist?.requester || latestFreezeAction?.requester || latestBlacklistAction?.requester,
 					lastUpdate: mostRecentAction 
 						? formatDistanceToNow(new Date(mostRecentAction.createdAt), { addSuffix: true })
 						: 'Unknown'
@@ -154,20 +169,10 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		return addressMap;
 	}, new Map<string, AddressStatus>());
 
-	// Then filter activities based on showOnlyPending and exclude ones that are pending in active restrictions
+	// Then filter activities based on showOnlyPending
 	const filteredActivities = activities.filter(activity => {
-		// If it's not a freeze or blacklist action, apply normal pending filter
-		if (activity.type !== 'FREEZE' && activity.type !== 'BLACKLIST') {
-			return !showOnlyPending || activity.status === 'PENDING';
-		}
-
-		// For freeze/blacklist actions, check if they're pending and in active restrictions
-		const addressStatus = activeRestrictions.get(activity.address as string);
-		const isPendingInActiveRestrictions = 
-			(activity.type === 'FREEZE' && addressStatus?.hasPendingFreeze);
-
-		// Only show in history if not pending in active restrictions
-		return (!showOnlyPending || activity.status === 'PENDING') && !isPendingInActiveRestrictions;
+		// Show all activities that match the pending filter
+		return !showOnlyPending || activity.status === 'PENDING';
 	});
 
 	// Convert active restrictions to array for component
@@ -182,14 +187,13 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 		if (!session?.user?.email) return false;
 		if (activity.status !== 'PENDING') return false;
 		if (activity.requester.email === session.user.email) return false;
-		if (activity.type === 'BLACKLIST') return false;
 		return !activity.approvals?.some(approval => approval.approver.email === session.user.email);
 	}, [session]);
 
 	const handleCancel = async (id: string, type: Activity['type']) => {
 		try {
 			setLoading(true);
-			const requestType = type.toLowerCase() + 'RequestId';
+			const requestType = `${type.toLowerCase()}RequestId`;
 			await fetch('/api/cancel', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -249,8 +253,12 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	}, []);
 
 	const getApprovalCount = useCallback((activity: Activity) => {
-		// All requests start with the requester's approval
-		return (activity.approvals?.length || 0) + 1;
+		// For burn requests, we need to add 1 to account for the requester's approval
+		if (activity.type === 'BURN') {
+			return (activity.approvals?.length || 0) + 1;
+		}
+		// For other requests, the requester's approval is already included
+		return activity.approvals?.length || 0;
 	}, []);
 
 	const handleUnblacklist = async (e: React.MouseEvent, address: string) => {
