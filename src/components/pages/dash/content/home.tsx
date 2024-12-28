@@ -103,7 +103,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 	const handleCancel = async (id: string, type: Activity['type']) => {
 		try {
 			setLoading(true);
-			const requestType = type.toLowerCase() + 'RequestId';
+			const requestType = `${type.toLowerCase()}RequestId`;
 			await fetch('/api/cancel', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },

@@ -115,7 +115,7 @@ const MintTableContent = ({
 			}
 
 			if (data.success) {
-				toast.success(data.message);
+				toast.success("Mint request cancelled");
 				onUpdate?.();
 			} else {
 				throw new Error(data.error || "Failed to cancel mint request");

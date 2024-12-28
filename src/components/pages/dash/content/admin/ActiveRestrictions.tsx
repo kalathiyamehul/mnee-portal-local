@@ -29,7 +29,8 @@ export const ActiveRestrictions = ({
   session
 }: ActiveRestrictionsProps) => {
   const canCancel = (activity: Activity) => {
-    return activity.status === 'PENDING' && activity.requester.email === session?.user?.email;
+    if (!session?.user?.email) return false;
+    return activity.status === 'PENDING' && activity.requester.email === session.user.email;
   };
 
   return (
