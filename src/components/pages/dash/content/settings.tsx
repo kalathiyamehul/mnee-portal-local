@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { FaPlus,  FaCopy, FaCircleInfo } from "react-icons/fa6";
 import { FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
-import { toToken } from 'satoshi-token';
+import { toToken, toTokenSat } from 'satoshi-token';
 import type { Fee } from './admin/types';
 import type { Config } from '@prisma/client';
 import { ThemeSelector } from "@/components/ThemeSelector";
@@ -11,7 +11,7 @@ import { useBalance } from '@/contexts/BalanceContext';
 import { MdOutlineOpenInNew } from 'react-icons/md';
 import { toast } from 'react-hot-toast';
 import { fetchMneeUtxos, ingestTxid } from '@/utils/api';
-import { useSystemStatus } from "@/contexts/SystemStatusContext";
+// import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import type { MNEEUtxo } from "@/types";
 import { FetchStatus } from "@/types/common";
 
@@ -133,8 +133,8 @@ const EditFeesModal = ({ fees, onSave, onClose, editIndex }: EditFeesModalProps)
 											return;
 										}
 										const tokenAmount = Number(value);
-										if (isNaN(tokenAmount)) return;
-										const satAmount = Math.floor(tokenAmount * Math.pow(10, config.decimals));
+										if (Number.isNaN(tokenAmount)) return;
+										const satAmount = toTokenSat(tokenAmount,  config.decimals);
 										setFee({ ...fee, min: satAmount });
 										setError(null);
 									}}
@@ -159,8 +159,8 @@ const EditFeesModal = ({ fees, onSave, onClose, editIndex }: EditFeesModalProps)
 											return;
 										}
 										const tokenAmount = Number(value);
-										if (isNaN(tokenAmount)) return;
-										const satAmount = Math.floor(tokenAmount * Math.pow(10, config.decimals));
+										if (Number.isNaN(tokenAmount)) return;
+										const satAmount = toTokenSat(tokenAmount, config.decimals);
 										setFee({ ...fee, max: satAmount });
 										setError(null);
 									}}
@@ -185,8 +185,8 @@ const EditFeesModal = ({ fees, onSave, onClose, editIndex }: EditFeesModalProps)
 											return;
 										}
 										const tokenAmount = Number(value);
-										if (isNaN(tokenAmount)) return;
-										const satAmount = Math.floor(tokenAmount * Math.pow(10, config.decimals));
+										if (Number.isNaN(tokenAmount)) return;
+										const satAmount = toTokenSat(tokenAmount , config.decimals);
 										setFee({ ...fee, fee: satAmount });
 										setError(null);
 									}}
@@ -288,11 +288,9 @@ const AddressCard = ({ title, address, tooltip, source, balance, isLoading, deci
 const TokenDetailsSection = ({ 
 	config, 
 	tokenDetails, 
-	circulatingSupply 
 }: { 
 	config: Config; 
 	tokenDetails: { sym: string; icon: string; amt: number; } | null;
-	circulatingSupply: bigint;
 }) => {
 	return (
 		<div className="space-y-6">
@@ -394,19 +392,6 @@ const TokenDetailsSection = ({
 						</div>
 					</div>
 
-					{/* Circulating Supply */}
-					<div className="space-y-2">
-						<div className="flex items-center gap-2">
-							<span className="font-medium text-sm">Circulating Supply</span>
-							<div className="tooltip tooltip-right" data-tip="Number of tokens currently in circulation (total mints minus total burns)">
-								<FaCircleInfo className="w-3 h-3 text-base-content/70" />
-							</div>
-						</div>
-						<div className="font-mono text-sm">
-							{toToken(circulatingSupply.toString(), config.decimals)} MNEE
-						</div>
-					</div>
-
 					{/* Icon Field */}
 					<div className="space-y-2">
 						<div className="flex items-center gap-2">
@@ -464,7 +449,7 @@ const DashboardSettingsContent = () => {
 		icon: string;
 		amt: number;
 	} | null>(null);
-	const { statusData } = useSystemStatus();
+	// const { statusData } = useSystemStatus();
 	const [editingFeeIndex, setEditingFeeIndex] = useState<number | undefined>();
 	const [burnUtxos, setBurnUtxos] = useState<MNEEUtxo[]>([]);
 	const [burnLoading, setBurnLoading] = useState(false);
@@ -488,21 +473,21 @@ const DashboardSettingsContent = () => {
 	}, []);
 
 	// Calculate circulating supply from mints and burns
-	const circulatingSupply = useMemo(() => {
-		if (!statusData || !config) return 0n;
+	// const circulatingSupply = useMemo(() => {
+	// 	if (!statusData || !config) return 0n;
 
-		// Sum all approved mints
-		const totalMints = statusData.mintRequests
-			.filter(req => req.status === 'APPROVED')
-			.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
+	// 	// Sum all approved mints
+	// 	const totalMints = statusData.mintRequests
+	// 		.filter(req => req.status === 'APPROVED')
+	// 		.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
 
-		// Sum all approved burns
-		const totalBurns = statusData.burnRequests
-			.filter(req => req.status === 'APPROVED')
-			.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
+	// 	// Sum all approved burns
+	// 	const totalBurns = statusData.burnRequests
+	// 		.filter(req => req.status === 'APPROVED')
+	// 		.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
 
-		return totalMints - totalBurns;
-	}, [statusData, config]);
+	// 	return totalMints - totalBurns;
+	// }, [statusData, config]);
 
 	const fetchBsvBalances = useCallback(async (addresses: string[]) => {
 		try {
@@ -629,11 +614,10 @@ const DashboardSettingsContent = () => {
 				{/* Left Column - Token Details and Fee Structure */}
 				<div className="space-y-12">
 					{/* Token Details */}
-					{config && (
+					{config && tokenDetails && (
 						<TokenDetailsSection 
 							config={config} 
 							tokenDetails={tokenDetails}
-							circulatingSupply={circulatingSupply}
 						/>
 					)}
 

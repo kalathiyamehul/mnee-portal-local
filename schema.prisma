@@ -22,11 +22,12 @@ model User {
   actionApprovals   ActionApproval[]   @relation("UserActionApprovals")
   freezeRequests    FreezeRequest[]    @relation("UserFreezeRequests")
   freezeApprovals   FreezeApproval[]   @relation("UserFreezeApprovals")
-  blacklists        Blacklist[]        @relation("UserBlacklists")
+  blacklistRequests BlacklistRequest[] @relation("UserBlacklistRequests")
   mintRequests      MintRequest[]      @relation("UserMintRequests")
   burnRequests      BurnRequest[]      @relation("UserBurnRequests")
   burnApprovals     BurnApproval[]     @relation("UserBurnApprovals")
   customers         Customer[]         @relation("UserCustomers")
+  blacklistApprovals BlacklistApproval[] @relation("UserBlacklistApprovals")
 
   @@map("user")
 }
@@ -65,20 +66,35 @@ model FreezeRequest {
   @@map("freeze_request")
 }
 
-model Blacklist {
+model BlacklistRequest {
   id          String         @id @default(uuid())
   address     String
-  status      ActionStatus   @default(APPROVED)
+  status      ActionStatus   @default(PENDING)
   action      BlacklistAction
   requestedBy String        @map("requested_by")
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
+  requiresApproval Boolean   @default(true) @map("requires_approval")
 
   // Relations
-  requester User               @relation("UserBlacklists", fields: [requestedBy], references: [id])
+  requester User               @relation("UserBlacklistRequests", fields: [requestedBy], references: [id])
+  approvals BlacklistApproval[]
 
   @@index([address, status, createdAt])
-  @@map("blacklist")
+  @@map("blacklist_request")
+}
+
+model BlacklistApproval {
+  id                  String    @id @default(uuid())
+  blacklistRequestId  String    @map("blacklist_request_id")
+  approvedBy          String    @map("approved_by")
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  blacklistRequest    BlacklistRequest @relation(fields: [blacklistRequestId], references: [id])
+  approver            User      @relation("UserBlacklistApprovals", fields: [approvedBy], references: [id])
+
+  @@map("blacklist_approval")
 }
 
 model MintRequest {

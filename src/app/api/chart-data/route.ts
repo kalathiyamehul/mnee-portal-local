@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type');
-  const days = parseInt(searchParams.get('days') || '30');
+  const days = Number.parseInt(searchParams.get('days') || '30');
 
   if (!type) {
     return NextResponse.json({ error: 'Type parameter is required' }, { status: 400 });
@@ -128,7 +128,7 @@ export async function GET(request: Request) {
       }
 
       case 'restrictions': {
-        const restrictions = await prisma.blacklist.findMany({
+        const restrictions = await prisma.blacklistRequest.findMany({
           where: {
             createdAt: {
               gte: startDate,

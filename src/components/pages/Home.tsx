@@ -9,9 +9,11 @@ const Home = () => {
 					<Link href="/login" className="btn btn-primary">
 						Login
 					</Link>
+					{/* Signup functionality temporarily disabled
 					<Link href="/login" className="btn btn-primary">
 						Signup
 					</Link>
+					*/}
 				</div>
 			</div>
 		</div>

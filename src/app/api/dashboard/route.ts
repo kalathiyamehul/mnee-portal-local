@@ -64,7 +64,7 @@ export async function GET() {
 
       // Active restrictions (blacklists + freezes)
       Promise.all([
-        prisma.blacklist.count({
+        prisma.blacklistRequest.count({
           where: {
             status: "APPROVED",
             action: "BLACKLIST"

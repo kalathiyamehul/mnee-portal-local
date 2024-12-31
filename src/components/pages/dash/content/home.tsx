@@ -97,13 +97,13 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 		if (activity.status !== 'PENDING') return false;
 		if (activity.requester.email === session.user.email) return false;
 		if (activity.type === 'BLACKLIST') return false;
-		return !activity.approvals?.some(approval => approval.approver.email === session.user.email);
+		return !activity.approvals?.some(approval => approval.approver?.email === session.user.email);
 	}, [session]);
 
 	const handleCancel = async (id: string, type: Activity['type']) => {
 		try {
 			setLoading(true);
-			const requestType = type.toLowerCase() + 'RequestId';
+			const requestType = `${type.toLowerCase()}RequestId`;
 			await fetch('/api/cancel', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
