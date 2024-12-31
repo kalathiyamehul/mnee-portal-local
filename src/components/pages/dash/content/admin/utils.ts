@@ -37,16 +37,16 @@ export const wasAutoApproved = (activity: Activity): boolean => {
 export const getActivityDisplayText = (activity: Activity): string => {
   switch (activity.type) {
     case 'BURN':
-      return `Burn tokens`;
+      return "Burn tokens";
     case 'MINT':
       if ('customer' in activity && activity.customer) {
         return `Mint to ${activity.customer.address}`;
       }
       return `Mint to ${activity.address}`;
     case 'FREEZE':
-      return `${activity.action} ${activity.address}`;
+      return "Freeze address";
     case 'BLACKLIST':
-      return `${activity.action} ${activity.address}`;
+      return "Blacklist address";
     case 'ACTION':
       return activity.action as string;
   }

@@ -36,7 +36,7 @@ export const ActivityCard = ({
 }: Omit<ActivityCardProps, 'session'>) => {
   const otherApprovals = activity.type === 'BLACKLIST' ? [] : 
     activity.approvals?.filter(
-      approval => approval.approver.email !== activity.requester.email
+      approval => approval.approver?.email !== activity.requester.email
     ) || [];
 
   const Icon = getActivityIcon(activity);
@@ -126,7 +126,7 @@ export const ActivityCard = ({
             </div>
             {otherApprovals.length > 0 && (
               <div className="text-xs opacity-70">
-                Approved by: {otherApprovals.map(a => a.approver.name || a.approver.email).join(', ')}
+                Approved by: {otherApprovals.map(a => a.approver?.name || a.approver?.email).join(', ')}
               </div>
             )}
           </div>

@@ -10,6 +10,7 @@ import type { MintRequest } from "@/types/utxo";
 import { MINT_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 import { signMint } from "@/templates/vault";
 import { getFundingUtxos } from "@/utils/utxo";
+import { isSystemPaused } from "@/lib/systemStatus";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -51,29 +52,7 @@ export async function POST(request: Request) {
 			}
 
 			// Check if system is paused
-			const pauseRequest = await tx.actionRequest.findFirst({
-				where: {
-					action: 'PAUSE',
-					status: 'APPROVED',
-				},
-				orderBy: {
-					createdAt: 'desc'
-				}
-			});
-
-			const resumeRequest = await tx.actionRequest.findFirst({
-				where: {
-					action: 'RESUME',
-					status: 'APPROVED',
-				},
-				orderBy: {
-					createdAt: 'desc'
-				}
-			});
-
-			// System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
-			const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
-
+			const isPaused = await isSystemPaused(tx);
 			if (isPaused) {
 				throw new Error("System is paused. Cannot approve mint requests at this time.");
 			}
@@ -96,19 +75,37 @@ export async function POST(request: Request) {
 			}
 
 			// Check if the target address is blacklisted
-			const blacklistEntry = await tx.blacklist.findFirst({
+			const blacklistRequest = await tx.blacklistRequest.findFirst({
 				where: {
 					address: mintRequest.address,
-					status: "APPROVED",
-					action: "BLACKLIST"
-				}
+					status: 'APPROVED',
+					action: 'BLACKLIST',
+				},
+				orderBy: {
+					createdAt: 'desc',
+				},
 			});
 
-			if (blacklistEntry) {
+			if (blacklistRequest) {
 				throw new Error("Cannot approve mint: the target address is blacklisted");
 			}
 
-			// Create a new approval
+			// Check if the target address is frozen
+			const freezeRequest = await tx.freezeRequest.findFirst({
+				where: {
+					address: mintRequest.address,
+					status: 'APPROVED',
+				},
+				orderBy: {
+					createdAt: 'desc',
+				},
+			});
+
+			if (freezeRequest?.action === 'FREEZE') {
+				throw new Error("Cannot approve mint: the target address is frozen");
+			}
+
+			// Create approval
 			await tx.actionApproval.create({
 				data: {
 					mintRequestId,
@@ -116,19 +113,16 @@ export async function POST(request: Request) {
 				},
 			});
 
-			// Get updated approval count
-			const approvalCount = await tx.actionApproval.count({
+			// Check if we have enough approvals
+			const approvalsCount = await tx.actionApproval.count({
 				where: { mintRequestId },
 			});
 
-			// If we now have 2 approvals (including the initial one), update the status
-			if (approvalCount >= 2) {
+			if (approvalsCount >= 2) {
+				// Update request status to APPROVED
 				await tx.mintRequest.update({
 					where: { id: mintRequestId },
-					data: {
-						status: "APPROVED",
-						updatedAt: new Date(),
-					},
+					data: { status: "APPROVED" },
 				});
 
 				try {
@@ -144,7 +138,7 @@ export async function POST(request: Request) {
 						},
 					});
 
-					return { approvalCount, status: "DONE", minterTx: rawtx };
+					return { status: "DONE", approvalsCount, minterTx: rawtx };
 				} catch (error) {
 					// If minting fails, propagate the error
 					console.error("Error during minting:", error);
@@ -156,15 +150,14 @@ export async function POST(request: Request) {
 				}
 			}
 
-			return { approvalCount, status: "PENDING" };
+			return { status: "PENDING", approvalsCount };
 		});
 
 		return NextResponse.json({
 			success: true,
-			message:
-				result.status === "APPROVED" ? "Request approved" : "Approval recorded",
-			approvalCount: result.approvalCount,
+			message: result.status === "APPROVED" ? "Request approved" : "Approval recorded",
 			status: result.status,
+			approvalsCount: result.approvalsCount,
 			minterTx: result.minterTx,
 		});
 	} catch (error) {
@@ -297,7 +290,7 @@ async function mintMnee(amount: bigint, address: string) {
 			if (error.message.includes("broadcast")) {
 				throw new Error("Failed to broadcast transaction to the network");
 			}
-      if (error.message.includes("sign")) {
+			if (error.message.includes("sign")) {
 				throw new Error("Failed to sign transaction");
 			}
 		}

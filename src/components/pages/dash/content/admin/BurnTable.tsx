@@ -97,7 +97,7 @@ export const BurnTable = ({
 													</div>
 													{burn.burnRequest.approvals?.length > 0 && (
 														<div className="text-xs text-base-content/70">
-															Approved by: {burn.burnRequest.approvals.map(a => a.approver.name || a.approver.email).join(', ')}
+															Approved by: {burn.burnRequest.approvals.map(a => a.approver?.name || a.approver?.email).join(', ')}
 														</div>
 													)}
 												</div>

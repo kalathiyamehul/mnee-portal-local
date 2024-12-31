@@ -36,9 +36,37 @@ export async function POST(request: Request) {
       },
     });
 
-    if (pendingRequest) {
+    if (pendingRequest && pendingRequest.action === action) {
       return NextResponse.json(
-        { error: "There is already a pending freeze request for this address" },
+        { error: `There is already a pending ${action.toLowerCase()} request for this address` },
+        { status: 400 }
+      );
+    }
+
+    // Get all approved freeze/unfreeze requests for this address
+    const approvedRequests = await prisma.freezeRequest.findMany({
+      where: {
+        address,
+        status: 'APPROVED',
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    // The current state is determined by the most recent approved action
+    const isFrozen = approvedRequests[0]?.action === 'FREEZE';
+
+    if (action === 'FREEZE' && isFrozen) {
+      return NextResponse.json(
+        { error: "This address is already frozen" },
+        { status: 400 }
+      );
+    }
+
+    if (action === 'UNFREEZE' && !isFrozen) {
+      return NextResponse.json(
+        { error: "This address is not frozen" },
         { status: 400 }
       );
     }

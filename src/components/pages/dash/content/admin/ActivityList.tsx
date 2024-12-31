@@ -93,7 +93,7 @@ export const ActivityList = ({
                 const needsApproval = requiresApproval(activity);
                 const approvalCount = getApprovalCount(activity);
                 const otherApprovals = activity.approvals?.filter(
-                  approval => approval.approver.email !== activity.requester.email
+                  approval => approval.approver?.email !== activity.requester.email
                 ) || [];
 
                 return (
@@ -144,7 +144,7 @@ export const ActivityList = ({
                           </div>
                           {otherApprovals.length > 0 && (
                             <div className="text-xs opacity-70">
-                              Approved by: {otherApprovals.map(a => a.approver.name || a.approver.email).join(', ')}
+                              Approved by: {otherApprovals.map(a => a.approver?.name || a.approver?.email).join(', ')}
                             </div>
                           )}
                           <div className="text-xs opacity-70">

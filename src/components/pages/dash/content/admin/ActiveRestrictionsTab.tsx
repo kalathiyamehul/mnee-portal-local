@@ -4,8 +4,8 @@ import type { MouseEvent } from 'react';
 import { FaSnowflake, FaBan } from 'react-icons/fa6';
 import { MdRemoveCircleOutline } from 'react-icons/md';
 import { formatDistanceToNow } from 'date-fns';
-import md5 from 'md5';
 import type { Session } from 'next-auth';
+import { getGravatarUrl } from '@/utils/gravatar';
 
 interface ActiveRestrictionsTabProps {
   restrictions: AddressStatus[];
@@ -54,11 +54,6 @@ export const ActiveRestrictionsTab = ({
     return 'border-l-4 border-l-info';
   };
 
-  const getGravatarUrl = (email: string) => {
-    const hash = md5(email.toLowerCase().trim());
-    return `https://www.gravatar.com/avatar/${hash}?d=mp&s=40`;
-  };
-
   const handleExplore = (address: string) => {
     window.open(`https://whatsonchain.com/address/${address}`, '_blank');
   };
@@ -70,8 +65,7 @@ export const ActiveRestrictionsTab = ({
   const canApprove = (activity: Activity) => {
     if (activity.status !== 'PENDING') return false;
     if (activity.requester.email === session?.user?.email) return false;
-    if (activity.type === 'BLACKLIST') return false; // blacklist auto-approves
-    return !activity.approvals?.some(a => a.approver.email === session?.user?.email);
+    return !activity.approvals?.some(a => a.approver?.email === session?.user?.email);
   };
 
   return (
@@ -96,6 +90,7 @@ export const ActiveRestrictionsTab = ({
         handleUnfreeze={handleUnfreeze}
         activities={activities}
         handleCancel={handleCancel}
+        handleApprove={handleApprove}
         session={session}
       />
 

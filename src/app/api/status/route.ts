@@ -1,250 +1,119 @@
 // src/app/api/status/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { isSystemPaused } from "@/lib/systemStatus";
 import { ActionStatus } from '@prisma/client';
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const type = searchParams.get('type');
-  const includePending = searchParams.get('includePending') === 'true';
-
-  // Base query conditions
-  const whereCondition = includePending ? {} : { status: 'APPROVED' as ActionStatus };
-  const includeOptions = {
-    requester: { select: { name: true, email: true } },
-    approvals: {
-      include: {
-        approver: { select: { name: true, email: true } }
-      }
-    }
-  };
-
+export async function GET() {
   try {
-    // If no type is specified, return all activities
-    if (!type) {
-      const [freezeRequests, blacklists, systemRequests, mintRequests, burnRequests] = await Promise.all([
-        prisma.freezeRequest.findMany({
-          where: whereCondition,
-          include: includeOptions,
-          orderBy: { createdAt: 'desc' }
-        }),
-        prisma.blacklist.findMany({
-          where: whereCondition,
-          select: {
-            id: true,
-            address: true,
-            createdAt: true,
-            status: true,
-            action: true,
-            requester: {
-              select: {
-                name: true,
-                email: true,
-              },
+    const [
+      isPaused,
+      mintRequests,
+      burnRequests,
+      freezeRequests,
+      blacklistRequests,
+      systemRequests,
+    ] = await Promise.all([
+      isSystemPaused(prisma),
+      prisma.mintRequest.findMany({
+        include: {
+          approvals: {
+            include: {
+              approver: true,
             },
           },
-          orderBy: { createdAt: 'desc' }
-        }),
-        prisma.actionRequest.findMany({
-          where: whereCondition,
-          include: includeOptions,
-          orderBy: { createdAt: 'desc' }
-        }),
-        prisma.mintRequest.findMany({
-          where: whereCondition,
-          select: {
-            id: true,
-            address: true,
-            amount: true,
-            status: true,
-            txid: true,
-            requiresApproval: true,
-            createdAt: true,
-            customerId: true,
-            requester: {
-              select: { name: true, email: true }
-            },
-            approvals: {
-              include: {
-                approver: { select: { name: true, email: true } }
-              }
-            },
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                address: true
-              }
-            }
-          },
-          orderBy: { createdAt: 'desc' }
-        }).then(requests => requests.map(r => ({
-          ...r,
-          amount: Number(r.amount)
-        }))),
-        prisma.burnRequest.findMany({
-          where: whereCondition,
-          select: {
-            id: true,
-            amount: true,
-            status: true,
-            requiresApproval: true,
-            createdAt: true,
-            outpoint: true,
-            requester: {
-              select: { name: true, email: true }
-            },
-            approvals: {
-              include: {
-                approver: { select: { name: true, email: true } }
-              }
-            }
-          },
-          orderBy: { createdAt: 'desc' }
-        }).then(requests => requests.map(r => ({
-          ...r,
-          amount: Number(r.amount)
-        })))
-      ]);
-
-      // Get system pause status
-      const latestPauseAction = await prisma.actionRequest.findFirst({
-        where: {
-          action: { in: ['PAUSE', 'RESUME'] },
-          status: 'APPROVED',
+          customer: true,
+          requester: true,
         },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      const pendingPauseRequest = await prisma.actionRequest.findFirst({
-        where: {
-          action: 'PAUSE',
-          status: 'PENDING',
+        orderBy: {
+          createdAt: 'desc',
         },
-      });
-
-      const isPaused = latestPauseAction?.action === 'PAUSE';
-      const hasPendingPause = !!pendingPauseRequest;
-
-      return NextResponse.json({
-        isPaused,
-        hasPendingPause,
-        freezeRequests,
-        blacklists,
-        systemRequests,
-        mintRequests,
-        burnRequests
-      });
-    }
-
-    // Handle specific type requests
-    switch (type) {
-      case 'freeze':
-        const freezeRequests = await prisma.freezeRequest.findMany({
-          where: whereCondition,
-          include: includeOptions,
-          orderBy: { createdAt: 'desc' }
-        });
-        return NextResponse.json({ freezeRequests });
-
-      case 'blacklist':
-        const blacklists = await prisma.blacklist.findMany({
-          where: whereCondition,
-          select: {
-            id: true,
-            address: true,
-            createdAt: true,
-            status: true,
-            action: true,
-            requester: {
-              select: {
-                name: true,
-                email: true,
-              },
+      }),
+      prisma.burnRequest.findMany({
+        include: {
+          approvals: {
+            include: {
+              approver: true,
             },
           },
-          orderBy: { createdAt: 'desc' }
-        });
-        return NextResponse.json({ blacklists });
-
-      case 'system':
-        const systemRequests = await prisma.actionRequest.findMany({
-          where: whereCondition,
-          include: includeOptions,
-          orderBy: { createdAt: 'desc' }
-        });
-        return NextResponse.json({ systemRequests });
-
-      case 'mint':
-        const mintRequests = await prisma.mintRequest.findMany({
-          where: whereCondition,
-          select: {
-            id: true,
-            address: true,
-            amount: true,
-            status: true,
-            txid: true,
-            requiresApproval: true,
-            createdAt: true,
-            customerId: true,
-            requester: {
-              select: { name: true, email: true }
+          requester: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      prisma.freezeRequest.findMany({
+        include: {
+          approvals: {
+            include: {
+              approver: true,
             },
-            approvals: {
-              include: {
-                approver: { select: { name: true, email: true } }
-              }
-            },
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                address: true
-              }
-            }
           },
-          orderBy: { createdAt: 'desc' }
-        }).then(requests => requests.map(r => ({
-          ...r,
-          amount: Number(r.amount)
-        })));
-        return NextResponse.json({ mintRequests });
-
-      case 'burn':
-        const burnRequests = await prisma.burnRequest.findMany({
-          where: whereCondition,
-          select: {
-            id: true,
-            amount: true,
-            status: true,
-            requiresApproval: true,
-            createdAt: true,
-            outpoint: true,
-            requester: {
-              select: { name: true, email: true }
+          requester: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      prisma.blacklistRequest.findMany({
+        include: {
+          approvals: {
+            include: {
+              approver: true,
             },
-            approvals: {
-              include: {
-                approver: { select: { name: true, email: true } }
-              }
-            }
           },
-          orderBy: { createdAt: 'desc' }
-        }).then(requests => requests.map(r => ({
-          ...r,
-          amount: Number(r.amount)
-        })));
-        return NextResponse.json({ burnRequests });
+          requester: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      prisma.actionRequest.findMany({
+        where: {
+          OR: [
+            { action: 'PAUSE' },
+            { action: 'RESUME' }
+          ]
+        },
+        include: {
+          approvals: {
+            include: {
+              approver: true,
+            },
+          },
+          requester: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+    ]);
 
-      default:
-        return NextResponse.json({ error: 'Invalid request type' }, { status: 400 });
-    }
+    // Find pending pause/resume requests from systemRequests
+    const pendingPauseRequest = systemRequests.find(r => r.action === 'PAUSE' && r.status === ActionStatus.PENDING);
+    const pendingResumeRequest = systemRequests.find(r => r.action === 'RESUME' && r.status === ActionStatus.PENDING);
+
+    return NextResponse.json({
+      success: true,
+      isPaused,
+      hasPendingPause: !!pendingPauseRequest,
+      hasPendingResume: !!pendingResumeRequest,
+      mintRequests: mintRequests.map(r => ({
+        ...r,
+        amount: r.amount.toString(),
+      })),
+      burnRequests: burnRequests.map(r => ({
+        ...r,
+        amount: r.amount.toString(),
+      })),
+      freezeRequests,
+      blacklistRequests,
+      systemRequests,
+    });
   } catch (error) {
-    console.error('Error fetching requests:', error);
+    console.error("Error fetching system status:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch requests' },
+      { error: error instanceof Error ? error.message : "Failed to fetch system status" },
       { status: 500 }
     );
   }

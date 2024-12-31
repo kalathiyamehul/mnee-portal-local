@@ -6,8 +6,9 @@ import type { Activity } from "@/components/pages/dash/content/admin/types";
 interface SystemStatusData {
   isPaused: boolean;
   hasPendingPause: boolean;
+  hasPendingResume: boolean;
   freezeRequests: Activity[];
-  blacklists: Activity[];
+  blacklistRequests: Activity[];
   systemRequests: Activity[];
   mintRequests: Activity[];
   burnRequests: Activity[];
@@ -20,6 +21,7 @@ interface SystemStatusContextType {
   handlePauseToggle: () => Promise<void>;
   isPaused: boolean;
   hasPendingPause: boolean;
+  hasPendingResume: boolean;
 }
 
 const SystemStatusContext = createContext<SystemStatusContextType | null>(null);
@@ -32,7 +34,16 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     try {
       const response = await fetch('/api/status?includePending=true');
       const data = await response.json();
-      setStatusData(data);
+      setStatusData({
+        isPaused: data.isPaused || false,
+        hasPendingPause: data.hasPendingPause || false,
+        hasPendingResume: data.hasPendingResume || false,
+        freezeRequests: data.freezeRequests || [],
+        blacklistRequests: data.blacklistRequests || [],
+        systemRequests: data.systemRequests || [],
+        mintRequests: data.mintRequests || [],
+        burnRequests: data.burnRequests || []
+      });
     } catch (error) {
       console.error('Error fetching system status:', error);
     }
@@ -44,7 +55,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     const response = await fetch('/api/pause', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: statusData.isPaused ? 'UNPAUSE' : 'PAUSE' }),
+      body: JSON.stringify({ action: statusData.isPaused ? 'RESUME' : 'PAUSE' }),
     });
 
     if (!response.ok) {
@@ -77,6 +88,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     handlePauseToggle,
     isPaused: statusData?.isPaused || false,
     hasPendingPause: statusData?.hasPendingPause || false,
+    hasPendingResume: statusData?.hasPendingResume || false,
   }), [statusData, initialLoading, fetchStatus, handlePauseToggle]);
 
   return (

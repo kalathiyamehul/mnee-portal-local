@@ -132,7 +132,9 @@ export interface AddressStatus {
 	isBlacklisted: boolean;
 	isFrozen: boolean;
 	hasPendingFreeze: boolean;
+	hasPendingBlacklist: boolean;
 	pendingFreezeAction?: 'FREEZE' | 'UNFREEZE';
+	pendingBlacklistAction?: 'BLACKLIST' | 'UNBLACKLIST';
 	requester?: {
 		email: string;
 		name: string | null;

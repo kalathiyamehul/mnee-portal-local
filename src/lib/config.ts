@@ -1,7 +1,7 @@
 "use server"
 
 // src/lib/config.ts
-import { Config } from '@prisma/client';
+import type { Config } from '@prisma/client';
 import { cache } from 'react';
 import { prisma } from './prisma';
 
@@ -19,7 +19,7 @@ let configCache: {
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
 // Use React's cache function to dedupe requests within a render cycle
-export const getConfig = cache(async (forceFresh: boolean = false): Promise<Config> => {
+export const getConfig = cache(async (forceFresh = false): Promise<Config> => {
   const now = Date.now();
   configCache.requestCount++;
 

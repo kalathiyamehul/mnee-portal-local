@@ -23,8 +23,6 @@ interface ChartDataPoint {
   totalCustomers?: number;
   restrictionCount?: number;
   totalRestrictions?: number;
-  netSupply?: number;
-  cumulativeSupply?: number;
 }
 
 interface ChartAreaConfig {
@@ -101,20 +99,7 @@ export const TokenActivityChart = ({
         ]);
 
         setDecimals(configData.decimals || 8);
-        
-        // Calculate both net supply and cumulative supply for each data point
-        let cumulativeSupply = 0;
-        const dataWithSupply = chartData.chartData.map((point: ChartDataPoint) => {
-          const netSupply = (point.mintVolume || 0) - (point.burnVolume || 0);
-          cumulativeSupply += netSupply;
-          return {
-            ...point,
-            netSupply,
-            cumulativeSupply
-          };
-        });
-        
-        setData(dataWithSupply);
+        setData(chartData.chartData);
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error(error instanceof Error ? error.message : "Failed to fetch data");
@@ -172,20 +157,6 @@ export const TokenActivityChart = ({
               stroke: accentColor,
               fill: accentColor,
               fillOpacity: 0.2
-            },
-            {
-              dataKey: 'netSupply',
-              name: 'Daily Net',
-              stroke: secondaryColor,
-              fill: 'none',
-              fillOpacity: 0
-            },
-            {
-              dataKey: 'cumulativeSupply',
-              name: 'Total Supply',
-              stroke: getColorFromTheme(['--color-success', '--su']),
-              fill: 'none',
-              fillOpacity: 0
             }
           ],
           tooltipSuffix: ' MNEE'

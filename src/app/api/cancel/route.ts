@@ -49,7 +49,7 @@ export async function POST(request: Request) {
         data: { status: 'CANCELLED' },
       });
     } else if (blacklistRequestId) {
-      const request = await prisma.blacklist.findUnique({
+      const request = await prisma.blacklistRequest.findUnique({
         where: { id: blacklistRequestId },
       });
 
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         );
       }
 
-      await prisma.blacklist.update({
+      await prisma.blacklistRequest.update({
         where: { id: blacklistRequestId },
         data: { status: 'CANCELLED' },
       });

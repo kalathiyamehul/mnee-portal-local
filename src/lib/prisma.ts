@@ -16,6 +16,11 @@ export type UserWithoutPassword = Omit<User, 'password'> & {
   password: null;
 };
 
+export type TransactionClient = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
+
 export const prisma = new PrismaClient();
 
 export async function getUserByEmail(email: string): Promise<User | null> {

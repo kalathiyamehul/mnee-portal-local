@@ -2,13 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
-import { toTokenSat } from 'satoshi-token';
-import { getConfig } from '@/lib/config';
-
-interface MintRequestParams {
-  amount: string;
-  customerId: string;
-}
+import { isSystemPaused } from '@/lib/systemStatus';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -17,80 +11,58 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Check if system is paused
-  const pauseRequest = await prisma.actionRequest.findFirst({
-    where: {
-      action: 'PAUSE',
-      status: 'APPROVED',
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  });
-
-  const resumeRequest = await prisma.actionRequest.findFirst({
-    where: {
-      action: 'RESUME',
-      status: 'APPROVED',
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  });
-
-  // System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
-  const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
-
-  if (isPaused) {
-    return NextResponse.json(
-      { error: "System is paused. Cannot create mint requests at this time." },
-      { status: 423 }
-    );
-  }
+  const { address, amount, customerId } = await request.json();
 
   try {
-    const body: MintRequestParams = await request.json();
-    
-    // Validate required fields
-    if (!body?.amount || !body?.customerId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-
-    // Look up customer to get their address
-    const customer = await prisma.customer.findUnique({
-      where: { id: body.customerId }
-    });
-
-    if (!customer) {
-      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
-    }
-
-    const config = await getConfig();
-    if (!config) {
-      return NextResponse.json({ error: 'Service not configured' }, { status: 500 });
-    }
-
-    // Convert amount to satoshis
-    const amountSat = toTokenSat(body.amount, config.decimals);
-
-    // Create mint request in database with initial approval
     const result = await prisma.$transaction(async (tx) => {
-      // Create the mint request
-      const mintRequest = await tx.mintRequest.create({
-        data: {
-          address: customer.address,
-          amount: amountSat,
-          requestedBy: session.user.id,
-          status: 'PENDING',
-          requiresApproval: true,
-          customerId: customer.id,
+      // Check if system is paused
+      const isPaused = await isSystemPaused(tx);
+      if (isPaused) {
+        throw new Error("System is paused. Cannot create mint requests at this time.");
+      }
+
+      // Check if address is blacklisted
+      const blacklistRequest = await tx.blacklistRequest.findFirst({
+        where: {
+          address,
+          status: 'APPROVED',
+          action: 'BLACKLIST',
         },
-        include: {
-          customer: true
-        }
+        orderBy: {
+          createdAt: 'desc',
+        },
       });
 
-      // Create initial approval from the requester
+      if (blacklistRequest) {
+        throw new Error("Cannot mint to blacklisted address");
+      }
+
+      // Check if address is frozen
+      const freezeRequest = await tx.freezeRequest.findFirst({
+        where: {
+          address,
+          status: 'APPROVED',
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      if (freezeRequest?.action === 'FREEZE') {
+        throw new Error("Cannot mint to frozen address");
+      }
+
+      // Create mint request
+      const mintRequest = await tx.mintRequest.create({
+        data: {
+          address,
+          amount: BigInt(amount),
+          requestedBy: session.user.id,
+          customerId,
+        },
+      });
+
+      // Create initial approval from requester
       await tx.actionApproval.create({
         data: {
           mintRequestId: mintRequest.id,
@@ -101,20 +73,16 @@ export async function POST(request: Request) {
       return mintRequest;
     });
 
-    if (!result) {
-      throw new Error('Failed to create mint request');
-    }
-
-    return NextResponse.json({ 
-      mintRequest: {
-        ...result,
-        amount: result.amount.toString()
-      }
-    }, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      message: "Mint request created",
+      requestId: result.id,
+    });
   } catch (error) {
-    console.error('Error processing mint request:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json({ 
-      error: error instanceof Error ? error.message : 'Failed to process mint request' 
-    }, { status: 500 });
+    console.error("Error creating mint request:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Failed to create mint request" },
+      { status: 400 }
+    );
   }
 } 

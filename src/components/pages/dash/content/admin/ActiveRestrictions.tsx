@@ -2,6 +2,7 @@ import { FaBan, FaSnowflake } from 'react-icons/fa6';
 import { MdRemoveCircleOutline } from 'react-icons/md';
 import type { Activity, AddressStatus } from './types';
 import type { MouseEvent } from 'react';
+import { useEffect } from 'react';
 import { getGravatarUrl } from "@/utils/gravatar";
 import type { Session } from 'next-auth';
 
@@ -14,6 +15,7 @@ interface ActiveRestrictionsProps {
   handleUnfreeze: (address: string) => Promise<void>;
   activities: Activity[];
   handleCancel: (id: string, type: Activity["type"]) => Promise<void>;
+  handleApprove: (id: string, type: Activity["type"]) => Promise<void>;
   session: Session;
 }
 
@@ -26,10 +28,31 @@ export const ActiveRestrictions = ({
   handleUnfreeze,
   activities,
   handleCancel,
+  handleApprove,
   session
 }: ActiveRestrictionsProps) => {
+  useEffect(() => {
+    for (const status of restrictions) {
+      console.log('Status for address:', status.address, {
+        isFrozen: status.isFrozen,
+        hasPendingFreeze: status.hasPendingFreeze,
+        pendingFreezeAction: status.pendingFreezeAction,
+        requester: status.requester
+      });
+    }
+  }, [restrictions]);
+
   const canCancel = (activity: Activity) => {
-    return activity.status === 'PENDING' && activity.requester.email === session?.user?.email;
+    if (!session?.user?.email) return false;
+    return activity.status === 'PENDING' && activity.requester.email === session.user.email;
+  };
+
+  const canApprove = (activity: Activity) => {
+    if (!session?.user?.email) return false;
+    if (activity.status !== 'PENDING') return false;
+    if (activity.requester.email === session.user.email) return false;
+    if (activity.type === 'BLACKLIST') return false;
+    return !activity.approvals?.some(approval => approval.approver?.email === session.user.email);
   };
 
   return (
@@ -74,21 +97,27 @@ export const ActiveRestrictions = ({
                         <FaBan className="w-3 h-3" /> Blacklisted
                       </span>
                     )}
-                    {status.isFrozen ? (
+                    {status.isFrozen && !status.hasPendingFreeze && (
                       <span className="badge badge-error badge-md gap-1">
                         <FaSnowflake className="w-3 h-3" /> Frozen
                       </span>
-                    ) : status.hasPendingFreeze ? (
+                    )}
+                    {status.hasPendingFreeze && (
                       <span className="badge badge-warning badge-md gap-1">
                         <FaSnowflake className="w-3 h-3" /> {status.pendingFreezeAction === 'UNFREEZE' ? 'Unfreezing' : 'Freezing'}
                       </span>
-                    ) : null}
+                    )}
+                    {status.hasPendingBlacklist && (
+                      <span className="badge badge-warning badge-md gap-1">
+                        <FaBan className="w-3 h-3" /> {status.pendingBlacklistAction === 'UNBLACKLIST' ? 'Unblacklisting' : 'Blacklisting'}
+                      </span>
+                    )}
                   </div>
                 </div>
               </td>
               <td>
                 <div className="flex flex-wrap gap-2">
-                  {!status.isBlacklisted && (
+                  {!status.isBlacklisted && !status.hasPendingBlacklist && (
                     <button
                       type="button"
                       className="btn btn-error btn-sm"
@@ -98,7 +127,7 @@ export const ActiveRestrictions = ({
                       <FaBan className="w-3 h-3 mr-1" /> Blacklist
                     </button>
                   )}
-                  {status.isBlacklisted && (
+                  {status.isBlacklisted && !status.hasPendingBlacklist && (
                     <button
                       type="button"
                       className="btn btn-outline btn-sm"
@@ -108,47 +137,59 @@ export const ActiveRestrictions = ({
                       <MdRemoveCircleOutline className="w-3 h-3 mr-1" /> Unblacklist
                     </button>
                   )}
-                  {!status.isFrozen && !status.hasPendingFreeze && (
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-sm"
-                      onClick={(e) => handleFreezeRequest(e, status.address)}
-                      disabled={loading}
-                    >
-                      <FaSnowflake className="w-3 h-3 mr-1" /> Freeze
-                    </button>
-                  )}
                   {status.isFrozen && !status.hasPendingFreeze && (
                     <button
                       type="button"
-                      className="btn btn-outline btn-sm"
+                      className="btn btn-sm btn-error"
                       onClick={() => handleUnfreeze(status.address)}
                       disabled={loading}
                     >
-                      <FaSnowflake className="w-3 h-3 mr-1" /> Unfreeze
+                      <FaSnowflake className="w-3 h-3" /> Unfreeze
                     </button>
                   )}
-                  {status.hasPendingFreeze && (
+                  {!status.isFrozen && !status.hasPendingFreeze && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-error"
+                      onClick={(e) => handleFreezeRequest(e, status.address)}
+                      disabled={loading}
+                    >
+                      <FaSnowflake className="w-3 h-3" /> Freeze
+                    </button>
+                  )}
+                  {(status.hasPendingFreeze || status.hasPendingBlacklist) && (
                     <>
-                      {/* Find the pending freeze request for this address */}
+                      {/* Find the pending requests for this address */}
                       {activities
                         .filter(activity => 
-                          activity.type === 'FREEZE' && 
+                          ((activity.type === 'FREEZE' && status.hasPendingFreeze) ||
+                           (activity.type === 'BLACKLIST' && status.hasPendingBlacklist)) && 
                           activity.address === status.address && 
                           activity.status === 'PENDING'
                         )
                         .map(activity => (
-                          canCancel(activity) && (
-                            <button
-                              key={activity.id}
-                              type="button"
-                              className="btn btn-ghost btn-sm"
-                              onClick={() => handleCancel(activity.id, activity.type)}
-                              disabled={loading}
-                            >
-                              Cancel
-                            </button>
-                          )
+                          <div key={activity.id} className="flex gap-2">
+                            {canCancel(activity) && (
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => handleCancel(activity.id, activity.type)}
+                                disabled={loading}
+                              >
+                                Cancel
+                              </button>
+                            )}
+                            {canApprove(activity) && (
+                              <button
+                                type="button"
+                                className="btn btn-success btn-sm"
+                                onClick={() => handleApprove(activity.id, activity.type)}
+                                disabled={loading}
+                              >
+                                Approve
+                              </button>
+                            )}
+                          </div>
                         ))
                       }
                     </>
