@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { isSystemPaused } from '@/lib/systemStatus';
+import { toTokenSat } from 'satoshi-token';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { address, amount, customerId } = await request.json();
+  const { amount, customerId } = await request.json();
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -20,6 +21,29 @@ export async function POST(request: Request) {
       if (isPaused) {
         throw new Error("System is paused. Cannot create mint requests at this time.");
       }
+
+      // Get config for decimals
+      const config = await tx.config.findFirst({
+        where: { id: 1 }
+      });
+
+      if (!config) {
+        throw new Error("System configuration not found");
+      }
+
+      // Convert display amount to satoshis
+      const amountInSats = toTokenSat(amount, config.decimals, "bigint");
+
+      // Look up customer and their address
+      const customer = await tx.customer.findUnique({
+        where: { id: customerId },
+      });
+
+      if (!customer) {
+        throw new Error("Customer not found");
+      }
+
+      const { address } = customer;
 
       // Check if address is blacklisted
       const blacklistRequest = await tx.blacklistRequest.findFirst({
@@ -52,11 +76,11 @@ export async function POST(request: Request) {
         throw new Error("Cannot mint to frozen address");
       }
 
-      // Create mint request
+      // Create mint request with satoshi amount
       const mintRequest = await tx.mintRequest.create({
         data: {
           address,
-          amount: BigInt(amount),
+          amount: amountInSats,
           requestedBy: session.user.id,
           customerId,
         },
