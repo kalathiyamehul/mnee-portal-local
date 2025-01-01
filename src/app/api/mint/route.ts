@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { address, amount, customerId } = await request.json();
+  const { amount, customerId } = await request.json();
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -20,6 +20,17 @@ export async function POST(request: Request) {
       if (isPaused) {
         throw new Error("System is paused. Cannot create mint requests at this time.");
       }
+
+      // Look up customer and their address
+      const customer = await tx.customer.findUnique({
+        where: { id: customerId },
+      });
+
+      if (!customer) {
+        throw new Error("Customer not found");
+      }
+
+      const { address } = customer;
 
       // Check if address is blacklisted
       const blacklistRequest = await tx.blacklistRequest.findFirst({
