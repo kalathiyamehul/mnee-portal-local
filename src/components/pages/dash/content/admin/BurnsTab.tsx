@@ -29,7 +29,7 @@ const getRowBorderClass = (status: string | undefined) => {
   }
 };
 
-export const BurnsTab = ({}) => {
+export const BurnsTab = () => {
   const { data: session } = useSession();
   const { statusData } = useSystemStatus();
   const [burns, setBurns] = useState<BurnUtxo[]>([]);
@@ -41,7 +41,7 @@ export const BurnsTab = ({}) => {
   const [selectedBurn, setSelectedBurn] = useState<BurnUtxo | null>(null);
   const [selectedRefund, setSelectedRefund] = useState<BurnUtxo | null>(null);
 
-  const fetchConfig = async () => {
+  const fetchConfig = useCallback(async () => {
     try {
       const configResponse = await fetch('/api/config');
       const config = await configResponse.json();
@@ -58,7 +58,7 @@ export const BurnsTab = ({}) => {
       setError(err instanceof Error ? err.message : 'Failed to fetch config');
       return null;
     }
-  };
+  }, []);
 
   const fetchUtxos = useCallback(async (address: string) => {
     try {
@@ -98,7 +98,7 @@ export const BurnsTab = ({}) => {
       await fetchUtxos(address);
     }
     setLoading(false);
-  }, [fetchUtxos]);
+  }, [fetchUtxos, fetchConfig]);
 
   const handleCreateBurnRequest = (burn: BurnUtxo) => {
     setSelectedBurn(burn);
@@ -211,6 +211,7 @@ export const BurnsTab = ({}) => {
                           </span>
                           <div className="flex items-center gap-1">
                             <button
+                              type="button"
                               onClick={() => handleCopyTxid(burn.txid)}
                               className="btn btn-ghost btn-xs btn-square"
                             >
@@ -256,6 +257,7 @@ export const BurnsTab = ({}) => {
                         <div className="flex items-center gap-2">
                           {(!burn.burnRequest || burn.burnRequest.status === 'CANCELLED') && (
                             <button
+                              type="button"
                               onClick={() => handleCreateBurnRequest(burn)}
                               className="btn btn-error btn-sm gap-1"
                             >
@@ -264,7 +266,8 @@ export const BurnsTab = ({}) => {
                           )}
                           {canCancel(burn) && (
                             <button
-                              onClick={() => handleCancelBurn(burn.burnRequest!.id)}
+                              type="button"
+                              onClick={() => burn.burnRequest && handleCancelBurn(burn.burnRequest.id)}
                               className="btn btn-ghost btn-sm"
                             >
                               Cancel
@@ -272,6 +275,7 @@ export const BurnsTab = ({}) => {
                           )}
                           {(!burn.burnRequest || !['APPROVED', 'REFUNDED'].includes(burn.burnRequest?.status)) && (
                             <button
+                              type="button"
                               onClick={() => setSelectedRefund(burn)}
                               className="btn btn-primary btn-sm gap-1"
                               disabled={burn.burnRequest?.status === 'PENDING'}
@@ -311,6 +315,7 @@ export const BurnsTab = ({}) => {
                 </div>
                 <div className="flex items-center gap-1">
                   <button
+                    type="button"
                     onClick={() => handleCopyAddress(burnAddress)}
                     className="btn btn-ghost btn-xs btn-square"
                     title="Copy address"
@@ -327,6 +332,7 @@ export const BurnsTab = ({}) => {
                     <MdOutlineOpenInNew className="w-3 h-3" />
                   </a>
                   <button
+                    type="button"
                     onClick={handleRefresh}
                     disabled={loading}
                     className="btn btn-ghost btn-xs btn-square"
@@ -345,13 +351,13 @@ export const BurnsTab = ({}) => {
                 {burnAddress}
               </div>
 
-              <div className="divider my-2"></div>
+              <div className="divider my-2" />
 
               <div>
                 <div className="text-xs uppercase tracking-wider opacity-50 mb-2">Current Balance</div>
                 <div className="text-2xl font-bold">
                   {loading ? (
-                    <span className="loading loading-spinner loading-sm"></span>
+                    <span className="loading loading-spinner loading-sm" />
                   ) : (
                     `${toToken(utxos.reduce((total, utxo) => total + Number(utxo.data.bsv21.amt), 0).toString(), decimals)} MNEE`
                   )}

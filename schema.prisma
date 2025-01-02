@@ -194,6 +194,7 @@ enum ActionStatus {
   CANCELLED
   DONE
   FAILED
+  REFUNDED
 }
 
 model Config {

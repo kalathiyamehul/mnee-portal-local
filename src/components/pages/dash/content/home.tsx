@@ -256,7 +256,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 	return (
 		<div className="p-4 space-y-8 animate-fade-in">
 			<div className="stats shadow w-full">
-				<div 
+				<div
 					className={getStatCardClass('customers')}
 					onClick={() => handleChartSelect('customers')}
 				>

@@ -119,7 +119,7 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
         </div>
       </div>
       <form method="dialog" className="modal-backdrop" onClick={onClose}>
-        <button>close</button>
+        <button type="button">close</button>
       </form>
     </dialog>
   );

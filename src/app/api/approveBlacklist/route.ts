@@ -18,11 +18,25 @@ export async function POST(request: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      console.log('Processing blacklist approval:', {
+        requestId: blacklistRequestId,
+        approvingUserId: session.user.id
+      });
+
       // Get the blacklist request
       const blacklistRequest = await tx.blacklistRequest.findUnique({
         where: { id: blacklistRequestId },
         include: {
-          approvals: true,
+          approvals: {
+            include: {
+              approver: {
+                select: {
+                  id: true,
+                  email: true
+                }
+              }
+            }
+          },
           requester: {
             select: {
               id: true,
@@ -30,6 +44,17 @@ export async function POST(request: Request) {
             },
           },
         },
+      });
+
+      console.log('Found blacklist request:', {
+        request: {
+          ...blacklistRequest,
+          approvals: blacklistRequest?.approvals.map(a => ({
+            approverId: a.approvedBy,
+            approverEmail: a.approver.email,
+            timestamp: a.createdAt
+          }))
+        }
       });
 
       if (!blacklistRequest) {
@@ -42,6 +67,10 @@ export async function POST(request: Request) {
 
       // Prevent self-approval
       if (blacklistRequest.requestedBy === session.user.id) {
+        console.log('Self-approval attempt blocked:', {
+          requesterId: blacklistRequest.requestedBy,
+          approverId: session.user.id
+        });
         throw new Error('Cannot approve your own request');
       }
 
@@ -54,6 +83,10 @@ export async function POST(request: Request) {
       });
 
       if (existingApproval) {
+        console.log('Duplicate approval attempt blocked:', {
+          requestId: blacklistRequestId,
+          approverId: session.user.id
+        });
         throw new Error('You have already approved this request');
       }
 
@@ -70,8 +103,20 @@ export async function POST(request: Request) {
         where: { blacklistRequestId },
       });
 
+      console.log('Current approval count:', {
+        requestId: blacklistRequestId,
+        approvalCount: approvals,
+        requiresApproval: blacklistRequest.requiresApproval
+      });
+
       // Update status if we have enough approvals
       if (approvals >= 2) {
+        console.log('Approving blacklist request:', {
+          requestId: blacklistRequestId,
+          approvalCount: approvals,
+          action: blacklistRequest.action
+        });
+
         await tx.blacklistRequest.update({
           where: { id: blacklistRequestId },
           data: { 
