@@ -110,7 +110,7 @@ export async function POST(request: Request) {
       });
 
       // Update status if we have enough approvals
-      if (approvals >= 2) {
+      if (approvals === 2) {
         console.log('Approving blacklist request:', {
           requestId: blacklistRequestId,
           approvalCount: approvals,
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
         });
       }
 
-      return { approvals, status: approvals >= 2 ? 'APPROVED' : 'PENDING' };
+      return { approvals, status: approvals === 2 ? 'APPROVED' : 'PENDING' };
     });
 
     return NextResponse.json({

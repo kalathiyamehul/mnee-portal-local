@@ -118,7 +118,7 @@ export async function POST(request: Request) {
 				where: { mintRequestId },
 			});
 
-			if (approvalsCount >= 2) {
+			if (approvalsCount === 2) {
 				// Update request status to APPROVED
 				await tx.mintRequest.update({
 					where: { id: mintRequestId },

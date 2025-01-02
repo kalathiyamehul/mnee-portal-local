@@ -126,23 +126,7 @@ export async function POST(request: Request) {
         },
       });
 
-      // Create initial approval from requester
-      const approval = await tx.freezeApproval.create({
-        data: {
-          freezeRequestId: request.id,
-          approvedBy: session.user.id,
-        },
-        include: {
-          approver: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      return { request, approval };
+      return { request };
     });
 
     return NextResponse.json(result);

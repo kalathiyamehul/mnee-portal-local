@@ -88,7 +88,7 @@ export async function POST(request: Request) {
         include: { approvals: true },
       });
 
-      if (updatedBurnRequest?.approvals.length === 1) {
+      if (updatedBurnRequest?.approvals.length === 2) {
         const remoteConfig = await fetchConfig();
 
         if (!remoteConfig) {

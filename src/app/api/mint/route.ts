@@ -86,14 +86,6 @@ export async function POST(request: Request) {
         },
       });
 
-      // Create initial approval from requester
-      await tx.actionApproval.create({
-        data: {
-          mintRequestId: mintRequest.id,
-          approvedBy: session.user.id,
-        },
-      });
-
       return mintRequest;
     });
 

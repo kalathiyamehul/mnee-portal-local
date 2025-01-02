@@ -27,11 +27,28 @@ export async function POST(request: Request) {
     // Fetch the action request
     const actionRequest = await tx.actionRequest.findUnique({
       where: { id: actionRequestId },
-      include: { approvals: true },
+      include: { 
+        approvals: true,
+        requester: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
     });
 
-    if (!actionRequest || actionRequest.status !== 'PENDING') {
-      throw new Error('Invalid or already processed action request');
+    if (!actionRequest) {
+      throw new Error('Action request not found');
+    }
+
+    if (actionRequest.status !== 'PENDING') {
+      throw new Error('Request is not pending');
+    }
+
+    // Prevent self-approval
+    if (actionRequest.requestedBy === session.user.id) {
+      throw new Error('Cannot approve your own request');
     }
 
     // Check if the user has already approved
@@ -54,12 +71,12 @@ export async function POST(request: Request) {
       },
     });
 
-    // Check approval count (e.g., requires 2 approvals)
+    // Check approval count (requires exactly 2 approvals)
     const approvalsCount = await tx.actionApproval.count({
       where: { actionRequestId },
     });
 
-    if (approvalsCount >= 2) {
+    if (approvalsCount === 2) {
       // Update action request status to APPROVED
       await tx.actionRequest.update({
         where: { id: actionRequestId },
