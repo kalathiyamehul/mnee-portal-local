@@ -14,7 +14,7 @@ model User {
   image                 String?
   emailVerified         DateTime? @map("email_verified")
   password              String
-  requiresPasswordReset Boolean @default(false) @map("requires_password_reset")
+  requiresPasswordReset Boolean   @default(true) @map("requires_password_reset")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 

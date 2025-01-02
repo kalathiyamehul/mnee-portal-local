@@ -157,21 +157,21 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 		}
 	};
 
-	const fetchMetrics = () => {
+	const fetchMetrics = useCallback(() => {
 		fetch("/api/dashboard")
 			.then((response) => response.json())
 			.then((data) => setMetrics(data))
 			.catch((error) => console.error("Failed to fetch dashboard metrics:", error));
-	};
+	}, []);
 
 	useEffect(() => {
 		fetchMetrics();
-	}, []);
+	}, [fetchMetrics]);
 
 	if (!metrics) {
 		return (
 			<div className="flex justify-center items-center min-h-screen animate-fade-in">
-				<div className="loading loading-spinner loading-lg"></div>
+				<div className="loading loading-spinner loading-lg" />
 			</div>
 		);
 	}
@@ -183,7 +183,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 
 		return {
 			txid,
-			vout: parseInt(vout),
+			vout: Number.parseInt(vout),
 			height: 0,
 			data: {
 				bsv21: {

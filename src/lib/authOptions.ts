@@ -26,7 +26,14 @@ export const authOptions: NextAuthOptions = {
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
 
-        return { id: user.id, email: user.email, name: user.name };
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          emailVerified: user.emailVerified,
+          requiresPasswordReset: user.requiresPasswordReset,
+        };
       },
     }),
   ],
@@ -43,12 +50,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.requiresPasswordReset = user.requiresPasswordReset;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user && token) {
         session.user.id = token.id as string;
+        session.user.requiresPasswordReset = token.requiresPasswordReset as boolean;
       }
       return session;
     },
