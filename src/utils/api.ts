@@ -26,7 +26,7 @@ export const fetchTransaction = async (txid: string) => {
     return Transaction.fromBinary(toArray(rawtx, 'base64'));
 }
 
-export const fetchMneeUtxos = async (addresses: string[]) => {
+export const fetchMneeUtxos = async (addresses: string[], op: 'transfer' | 'burn' = 'transfer') => {
     if (!MNEE_API) {
         throw new Error("MNEE_API not defined");
     }
@@ -39,7 +39,11 @@ export const fetchMneeUtxos = async (addresses: string[]) => {
     if (!response.ok) {
         throw new Error("Failed to fetch UTXOs");
     }
-    return await response.json() as MNEEUtxo[];
+    const json = await response.json() as MNEEUtxo[];
+    if (op) {
+        return json.filter((utxo) => utxo.data.bsv21.op.toLowerCase() === op);
+    }
+    return json;
 };
 
 export const ingestTxid = async (txid: string) => {
