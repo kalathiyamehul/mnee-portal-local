@@ -63,7 +63,7 @@ export const BurnsTab = () => {
 
   const fetchUtxos = useCallback(async (address: string) => {
     try {
-      const fetchedBurnUtxos = await fetchMneeUtxos([address], 'burn');
+      const fetchedBurnUtxos = await fetchMneeUtxos([address], ['burn']);
       console.log('Burn UTXOs:', fetchedBurnUtxos, 'Using decimals:', decimals);
       const fetchedTransferUtxos = await fetchMneeUtxos([address]);
       console.log('Transfer UTXOs:', fetchedTransferUtxos);
