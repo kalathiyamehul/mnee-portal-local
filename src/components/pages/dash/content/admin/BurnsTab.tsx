@@ -65,7 +65,7 @@ export const BurnsTab = () => {
     try {
       const fetchedBurnUtxos = await fetchMneeUtxos([address], 'burn');
       console.log('Burn UTXOs:', fetchedBurnUtxos, 'Using decimals:', decimals);
-      const fetchedTransferUtxos = await fetchMneeUtxos([address], 'transfer');
+      const fetchedTransferUtxos = await fetchMneeUtxos([address]);
       console.log('Transfer UTXOs:', fetchedTransferUtxos);
       setUtxos(fetchedBurnUtxos);
       setBurnUtxos(fetchedBurnUtxos);
