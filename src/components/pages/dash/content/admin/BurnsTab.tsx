@@ -67,7 +67,7 @@ export const BurnsTab = () => {
       console.log('Burn UTXOs:', fetchedBurnUtxos, 'Using decimals:', decimals);
       const fetchedTransferUtxos = await fetchMneeUtxos([address]);
       console.log('Transfer UTXOs:', fetchedTransferUtxos);
-      setUtxos(fetchedBurnUtxos);
+      setUtxos(fetchedTransferUtxos);
       setBurnUtxos(fetchedBurnUtxos);
     } catch (err) {
       console.error('Error fetching UTXOs:', err);
@@ -75,6 +75,7 @@ export const BurnsTab = () => {
     }
   }, [decimals]);
 
+  // update burns with requests
   const updateBurns = useCallback(() => {
     if (!burnUtxos.length) return;
 
