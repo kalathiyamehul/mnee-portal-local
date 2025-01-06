@@ -9,80 +9,75 @@ export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { amount, customerId } = await request.json();
-
   try {
+    const { amount, address, customerId } = await request.json();
+
+    if (!amount || !address) {
+      return NextResponse.json(
+        { error: "Amount and address are required" },
+        { status: 400 }
+      );
+    }
+
+    // Check if system is paused
+    const isPaused = await isSystemPaused(prisma);
+    if (isPaused) {
+      return NextResponse.json(
+        { error: "System is paused. Cannot create mint requests at this time." },
+        { status: 400 }
+      );
+    }
+
+    // Get config for decimals
+    const config = await prisma.config.findFirst({
+      where: { id: 1 }
+    });
+
+    if (!config?.decimals) {
+      return NextResponse.json(
+        { error: "Token decimals not configured" },
+        { status: 400 }
+      );
+    }
+
+    // Convert amount to token-sat
+    const amountSat = toTokenSat(amount, config.decimals);
+
+    // Check for existing pending request for this address
+    const existingRequest = await prisma.mintRequest.findFirst({
+      where: {
+        address,
+        status: 'PENDING',
+      }
+    });
+
+    if (existingRequest) {
+      return NextResponse.json(
+        { error: "A pending mint request already exists for this address" },
+        { status: 400 }
+      );
+    }
+
+    // Create mint request
     const result = await prisma.$transaction(async (tx) => {
-      // Check if system is paused
-      const isPaused = await isSystemPaused(tx);
-      if (isPaused) {
-        throw new Error("System is paused. Cannot create mint requests at this time.");
-      }
-
-      // Get config for decimals
-      const config = await tx.config.findFirst({
-        where: { id: 1 }
-      });
-
-      if (!config) {
-        throw new Error("System configuration not found");
-      }
-
-      // Convert display amount to satoshis
-      const amountInSats = toTokenSat(amount, config.decimals, "bigint");
-
-      // Look up customer and their address
-      const customer = await tx.customer.findUnique({
-        where: { id: customerId },
-      });
-
-      if (!customer) {
-        throw new Error("Customer not found");
-      }
-
-      const { address } = customer;
-
-      // Check if address is blacklisted
-      const blacklistRequest = await tx.blacklistRequest.findFirst({
-        where: {
-          address,
-          status: 'APPROVED',
-          action: 'BLACKLIST',
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-
-      if (blacklistRequest) {
-        throw new Error("Cannot mint to blacklisted address");
-      }
-
-      // Check if address is frozen
-      const freezeRequest = await tx.freezeRequest.findFirst({
-        where: {
-          address,
-          status: 'APPROVED',
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-
-      if (freezeRequest?.action === 'FREEZE') {
-        throw new Error("Cannot mint to frozen address");
-      }
-
-      // Create mint request with satoshi amount
       const mintRequest = await tx.mintRequest.create({
         data: {
+          amount: amountSat,
           address,
-          amount: amountInSats,
+          status: 'PENDING',
           requestedBy: session.user.id,
           customerId,
+        },
+      });
+
+      // Create initial approval from requester
+      await tx.actionApproval.create({
+        data: {
+          mintRequestId: mintRequest.id,
+          approvedBy: session.user.id,
         },
       });
 

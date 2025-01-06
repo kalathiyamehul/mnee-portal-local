@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { fetchMneeUtxos } from "@/utils/api";
 import type { MNEEUtxo } from "@/types";
+import { isSystemPaused } from "@/lib/systemStatus";
+import { fetchMneeUtxos } from "@/utils/api";
 
 export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
@@ -31,6 +32,15 @@ export async function POST(request: Request) {
             );
         }
 
+        // Check if system is paused
+        const isPaused = await isSystemPaused(prisma);
+        if (isPaused) {
+            return NextResponse.json(
+                { error: "System is paused. Cannot create burn requests at this time." },
+                { status: 400 }
+            );
+        }
+
         // Get burn address from config
         const config = await prisma.config.findFirst({
             where: { id: 1 }
@@ -43,7 +53,6 @@ export async function POST(request: Request) {
             );
         }
 
-        // Fetch UTXO to verify ownership
         const [txid, voutStr] = outpoint.split('_');
         const vout = Number.parseInt(voutStr, 10);
 
@@ -79,44 +88,13 @@ export async function POST(request: Request) {
             );
         }
 
-        // Check if system is paused
-        const pauseRequest = await prisma.actionRequest.findFirst({
-            where: {
-                action: 'PAUSE',
-                status: 'APPROVED',
-            },
-            orderBy: {
-                createdAt: 'desc'
-            }
-        });
-
-        const resumeRequest = await prisma.actionRequest.findFirst({
-            where: {
-                action: 'RESUME',
-                status: 'APPROVED',
-            },
-            orderBy: {
-                createdAt: 'desc'
-            }
-        });
-
-        // System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
-        const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
-
-        if (isPaused) {
-            return NextResponse.json(
-                { error: "System is paused. Cannot create burn requests at this time." },
-                { status: 400 }
-            );
-        }
-
         // Create burn request
         const burnRequestData = {
             amount,
             requestedBy: session.user.id,
             outpoint,
             status: 'PENDING' as const,
-            refundAddress: refundAddress || null,
+            refundAddress
         };
 
         const burnRequest = await prisma.burnRequest.create({
@@ -138,17 +116,13 @@ export async function POST(request: Request) {
 
         if (error instanceof SyntaxError) {
             return NextResponse.json(
-                { error: "Invalid JSON payload" },
+                { error: "Invalid request body" },
                 { status: 400 }
             );
         }
 
-        const errorMessage = error instanceof Error ? error.message : 'Failed to create burn request';
         return NextResponse.json(
-            { 
-                error: errorMessage,
-                success: false 
-            },
+            { error: error instanceof Error ? error.message : "Failed to create burn request" },
             { status: 500 }
         );
     }

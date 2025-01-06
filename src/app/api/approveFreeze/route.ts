@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
+import { isSystemPaused } from "@/lib/systemStatus";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -50,6 +51,12 @@ export async function POST(request: Request) {
 			if (freezeRequest.status !== 'PENDING') {
 				console.log('Invalid status:', { status: freezeRequest.status });
 				throw new Error("This request is no longer pending");
+			}
+
+			// Check if system is paused
+			const isPaused = await isSystemPaused(tx);
+			if (isPaused) {
+				throw new Error("System is paused. Cannot approve freeze requests at this time.");
 			}
 
 			if (freezeRequest.requester.id === session.user.id) {

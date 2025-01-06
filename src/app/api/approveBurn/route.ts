@@ -9,6 +9,7 @@ import { applyInscription } from "js-1sat-ord";
 import type { Inscription } from "js-1sat-ord";
 import CosignTemplate from "@/templates/cosign";
 import { Utils } from "@bsv/sdk";
+import { isSystemPaused } from "@/lib/systemStatus";
 const { toArray } = Utils;
 
 export async function POST(request: Request) {
@@ -38,28 +39,8 @@ export async function POST(request: Request) {
         throw new Error("Burn request is not pending");
       }
 
-      const pauseRequest = await tx.actionRequest.findFirst({
-        where: {
-          action: 'PAUSE',
-          status: 'APPROVED',
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
-
-      const resumeRequest = await tx.actionRequest.findFirst({
-        where: {
-          action: 'RESUME',
-          status: 'APPROVED',
-        },
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
-
-      const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
-
+      // Check if system is paused
+      const isPaused = await isSystemPaused(tx);
       if (isPaused) {
         throw new Error("System is paused. Cannot approve burn requests at this time.");
       }

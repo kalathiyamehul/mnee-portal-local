@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
+import { isSystemPaused } from '@/lib/systemStatus';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -44,6 +45,14 @@ export async function POST(request: Request) {
 
       if (actionRequest.status !== 'PENDING') {
         throw new Error('Request is not pending');
+      }
+
+      // Check if system is paused, but only if this is not a RESUME request
+      if (actionRequest.action !== 'RESUME') {
+        const isPaused = await isSystemPaused(tx);
+        if (isPaused) {
+          throw new Error("System is paused. Cannot approve system requests at this time.");
+        }
       }
 
       // Prevent self-approval

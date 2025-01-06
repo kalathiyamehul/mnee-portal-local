@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
+import { isSystemPaused } from '@/lib/systemStatus';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -62,16 +63,18 @@ export async function POST(request: Request) {
       }
 
       if (blacklistRequest.status !== 'PENDING') {
-        throw new Error('Request is not pending');
+        throw new Error('This request is no longer pending');
+      }
+
+      // Check if system is paused
+      const isPaused = await isSystemPaused(tx);
+      if (isPaused) {
+        throw new Error("System is paused. Cannot approve blacklist requests at this time.");
       }
 
       // Prevent self-approval
-      if (blacklistRequest.requestedBy === session.user.id) {
-        console.log('Self-approval attempt blocked:', {
-          requesterId: blacklistRequest.requestedBy,
-          approverId: session.user.id
-        });
-        throw new Error('Cannot approve your own request');
+      if (blacklistRequest.requester.id === session.user.id) {
+        throw new Error('You cannot approve your own request');
       }
 
       // Check if user has already approved
