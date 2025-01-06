@@ -81,9 +81,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create the freeze request and initial approval in a transaction
+    // Create the freeze request
     const result = await prisma.$transaction(async (tx) => {
-      // Create the freeze request
       const request = await tx.freezeRequest.create({
         data: {
           address,
