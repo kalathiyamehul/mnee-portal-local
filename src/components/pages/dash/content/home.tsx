@@ -12,6 +12,7 @@ import { ActivityList } from './admin/ActivityList';
 import { getActivityIcon } from "./admin/utils";
 import { useSession } from "next-auth/react";
 import type { Config } from "@prisma/client";
+import { toToken } from "satoshi-token";
 
 // Utility functions
 const getActivityDisplayText = (activity: Activity) => {
@@ -279,7 +280,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 					</div>
 					<div className="stat-title text-base-content/70">24h Mint Volume</div>
 					<div className="stat-value text-primary">
-						{metrics.totalMintVolume.toLocaleString()}
+						{toToken(metrics.totalMintVolume, initialConfig.decimals).toLocaleString()}
 					</div>
 					<div className="stat-desc text-base-content/60">MNEE</div>
 				</div>
