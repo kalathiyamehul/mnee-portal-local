@@ -79,12 +79,26 @@ export const BurnsTab = () => {
 
   // update burns with requests
   const updateBurns = useCallback(() => {
-    if (!burnUtxos.length) return;
+    if (!burnUtxos.length) {
+      console.log('No burn UTXOs found');
+      return;
+    }
+
+    console.log('Updating burns with:', {
+      burnUtxos,
+      burnRequests: statusData?.burnRequests
+    });
 
     const burnsWithRequests = burnUtxos.map(utxo => {
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       const matchingRequest = statusData?.burnRequests?.find(req => req.outpoint === outpoint);
       
+      console.log('Processing burn:', {
+        outpoint,
+        hasMatchingRequest: !!matchingRequest,
+        matchingRequest
+      });
+
       return {
         ...utxo,
         burnRequest: matchingRequest ? {
@@ -94,6 +108,7 @@ export const BurnsTab = () => {
       };
     });
 
+    console.log('Final burns:', burnsWithRequests);
     setBurns(burnsWithRequests as BurnUtxo[]);
   }, [burnUtxos, statusData?.burnRequests]);
 

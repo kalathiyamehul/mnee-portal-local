@@ -40,6 +40,7 @@ export const fetchMneeUtxos = async (addresses: string[], ops: ('transfer' | 'bu
         throw new Error("Failed to fetch UTXOs");
     }
     const json = await response.json() as MNEEUtxo[];
+    console.log('Fetched UTXOs:', json);
     if (ops.length) {
         return json.filter((utxo) => ops.includes(utxo.data.bsv21.op.toLowerCase() as 'transfer' | 'burn' | 'deploy+mint'));
     }

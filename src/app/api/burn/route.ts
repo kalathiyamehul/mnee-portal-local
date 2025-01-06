@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
+import { fetchMneeUtxos } from "@/utils/api";
+import type { MNEEUtxo } from "@/types";
 
 export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
@@ -25,6 +27,39 @@ export async function POST(request: Request) {
         if (!amount || !outpoint) {
             return NextResponse.json(
                 { error: "Amount and outpoint are required" },
+                { status: 400 }
+            );
+        }
+
+        // Get burn address from config
+        const config = await prisma.config.findFirst({
+            where: { id: 1 }
+        });
+
+        if (!config?.burnAddress) {
+            return NextResponse.json(
+                { error: "Burn address not configured" },
+                { status: 400 }
+            );
+        }
+
+        // Fetch UTXO to verify ownership
+        const [txid, voutStr] = outpoint.split('_');
+        const vout = Number.parseInt(voutStr, 10);
+
+        if (!txid || Number.isNaN(vout)) {
+            return NextResponse.json(
+                { error: "Invalid outpoint format" },
+                { status: 400 }
+            );
+        }
+
+        const utxos = await fetchMneeUtxos([config.burnAddress]);
+        const targetUtxo = utxos.find((u: MNEEUtxo) => u.txid === txid && u.vout === vout);
+
+        if (!targetUtxo) {
+            return NextResponse.json(
+                { error: "UTXO not found or not owned by burn address" },
                 { status: 400 }
             );
         }
@@ -96,7 +131,7 @@ export async function POST(request: Request) {
                 amount: burnRequest.amount.toString(),
             }
         };
-        
+
         return NextResponse.json(response);
     } catch (error) {
         console.error("Error creating burn request:", error);
