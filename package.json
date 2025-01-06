@@ -9,7 +9,10 @@
     "studio": "npx prisma studio",
     "db-reset": "npx prisma migrate reset --force",
     "postinstall": "npx prisma generate && npx prisma migrate deploy",
-    "setPasswordReset": "bun scripts/setPasswordReset.ts"
+    "setPasswordReset": "bun scripts/setPasswordReset.ts",
+    "approve": "bun scripts/approve.ts",
+    "find-pending": "bun scripts/find-pending.ts",
+    "list-approvers": "bun scripts/list-approvers.ts"
   },
   "dependencies": {
     "@bsv/sdk": "^1.2.21",

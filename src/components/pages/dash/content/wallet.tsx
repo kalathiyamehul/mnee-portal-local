@@ -97,6 +97,8 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
           throw new Error("Failed to get valid wallet addresses");
         }
         setAddresses(addresses ?? []);
+        // Fetch MNEE balances immediately after getting addresses
+        await fetchBalances(Object.values(addresses));
         toast.success("Wallet connected successfully");
       }
     } catch (error) {
@@ -138,8 +140,14 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       return;
     }
 
+    // Check if we have valid addresses (not empty strings)
+    const validAddresses = Object.values(addresses).filter(addr => addr !== "");
+    if (validAddresses.length === 0) {
+      return;
+    }
+
     const fire = async () => {
-      await fetchBalances(Object.values(addresses));
+      await fetchBalances(validAddresses);
     };
     
     if (balancesLoading === FetchStatus.IDLE) {
@@ -185,11 +193,18 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
         throw new Error("Insufficient MNEE balance");
       }
 
-      const fee = config.fees.find(
-        (fee) => tokenSatAmt >= fee.min && tokenSatAmt <= fee.max,
-      )?.fee;
-      if (fee === undefined) {
-        throw new Error("Fee ranges inadequate");
+      // No fee required when sending to burn address
+      let fee: number;
+      if (recipient === config.burnAddress) {
+        fee = 0;
+      } else {
+        const foundFee = config.fees.find(
+          (fee) => tokenSatAmt >= fee.min && tokenSatAmt <= fee.max,
+        )?.fee;
+        if (foundFee === undefined) {
+          throw new Error("Fee ranges inadequate");
+        }
+        fee = foundFee;
       }
 
       // Build the transaction using the UTXOs, recipient, and amount
@@ -246,29 +261,31 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       });
 
       // Add the token fee output
-      const feeInscriptionData = {
-        p: "bsv-20",
-        op: "transfer",
-        id: config.tokenId,
-        amt: fee.toString(),
-      };
-      const feeDataB64 = Buffer.from(
-        JSON.stringify(feeInscriptionData),
-      ).toString("base64");
-      tx.addOutput({
-        lockingScript: applyInscription(
-          new CosignTemplate().lock(
-            config.feeAddress,
-            PublicKey.fromString(config.approver),
+      if (fee > 0) {  // Only add fee output if there is a fee
+        const feeInscriptionData = {
+          p: "bsv-20",
+          op: "transfer",
+          id: config.tokenId,
+          amt: fee.toString(),
+        };
+        const feeDataB64 = Buffer.from(
+          JSON.stringify(feeInscriptionData),
+        ).toString("base64");
+        tx.addOutput({
+          lockingScript: applyInscription(
+            new CosignTemplate().lock(
+              config.feeAddress,
+              PublicKey.fromString(config.approver),
+            ),
+            {
+              // lockingScript: applyInscription(new P2PKH().lock(config.feeAddress), {
+              dataB64: feeDataB64,
+              contentType: "application/bsv-20",
+            } as Inscription,
           ),
-          {
-            // lockingScript: applyInscription(new P2PKH().lock(config.feeAddress), {
-            dataB64: feeDataB64,
-            contentType: "application/bsv-20",
-          } as Inscription,
-        ),
-        satoshis: 1,
-      });
+          satoshis: 1,
+        });
+      }
 
       // Add the token change inscription
       const changeTokenSatAmt = tokensIn - tokenSatAmt - fee;

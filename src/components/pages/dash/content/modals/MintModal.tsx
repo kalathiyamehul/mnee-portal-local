@@ -143,20 +143,16 @@ export const MintModal = ({
                 <span className="label-text">Amount</span>
               </div>
               <input
-                type="number"
+                type="text"
                 className="input input-bordered w-full max-w-md"
                 value={amount}
                 onChange={(e) => {
-                  const value = Number(e.target.value);
-                  if (value > MAX_TOKEN_VALUE) {
-                    setAmount(MAX_TOKEN_VALUE.toString());
-                  } else {
+                  // Allow numbers and decimals only
+                  if (/^\d*\.?\d*$/.test(e.target.value)) {
                     setAmount(e.target.value);
                   }
                 }}
                 placeholder="Enter amount to mint"
-                min="1"
-                max={MAX_TOKEN_VALUE}
                 required
               />
             </label>
