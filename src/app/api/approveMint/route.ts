@@ -284,7 +284,7 @@ const mintMnee = async (amount: bigint, address: string) => {
 			satoshis: Number(utxo.satoshis)
 		})),
 		fee_per_kb,
-		change_addr: fundingAddress
+		change_addr
 	};
 
 	// mint the MNEE
