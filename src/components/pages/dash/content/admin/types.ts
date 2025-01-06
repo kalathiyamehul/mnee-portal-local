@@ -1,5 +1,5 @@
-import { MNEEUtxo } from '@/types';
-import { Config } from '@prisma/client';
+import type { MNEEUtxo } from '@/types';
+import type { Config } from '@prisma/client';
 import type { IconType } from 'react-icons';
 
 export interface BurnUtxo extends MNEEUtxo {

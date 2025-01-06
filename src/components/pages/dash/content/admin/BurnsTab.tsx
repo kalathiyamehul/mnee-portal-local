@@ -33,6 +33,7 @@ export const BurnsTab = () => {
   const { data: session } = useSession();
   const { statusData } = useSystemStatus();
   const [burns, setBurns] = useState<BurnUtxo[]>([]);
+  const [burnUtxos, setBurnUtxos] = useState<MNEEUtxo[]>([]);
   const [utxos, setUtxos] = useState<MNEEUtxo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,19 +63,23 @@ export const BurnsTab = () => {
 
   const fetchUtxos = useCallback(async (address: string) => {
     try {
-      const fetchedUtxos = await fetchMneeUtxos([address]);
-      console.log('Burn UTXOs:', fetchedUtxos, 'Using decimals:', decimals);
-      setUtxos(fetchedUtxos);
+      const fetchedBurnUtxos = await fetchMneeUtxos([address], ['burn']);
+      console.log('Burn UTXOs:', fetchedBurnUtxos, 'Using decimals:', decimals);
+      const fetchedTransferUtxos = await fetchMneeUtxos([address]);
+      console.log('Transfer UTXOs:', fetchedTransferUtxos);
+      setUtxos(fetchedTransferUtxos);
+      setBurnUtxos(fetchedBurnUtxos);
     } catch (err) {
       console.error('Error fetching UTXOs:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch UTXOs');
     }
   }, [decimals]);
 
+  // update burns with requests
   const updateBurns = useCallback(() => {
-    if (!utxos.length) return;
+    if (!burnUtxos.length) return;
 
-    const burnsWithRequests = utxos.map(utxo => {
+    const burnsWithRequests = burnUtxos.map(utxo => {
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       const matchingRequest = statusData?.burnRequests?.find(req => req.outpoint === outpoint);
       
@@ -87,8 +92,8 @@ export const BurnsTab = () => {
       };
     });
 
-    setBurns(burnsWithRequests as unknown as BurnUtxo[]);
-  }, [utxos, statusData?.burnRequests]);
+    setBurns(burnsWithRequests as BurnUtxo[]);
+  }, [burnUtxos, statusData?.burnRequests]);
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
