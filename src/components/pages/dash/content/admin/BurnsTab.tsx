@@ -63,54 +63,56 @@ export const BurnsTab = () => {
 
   const fetchUtxos = useCallback(async (address: string) => {
     try {
-      // burns only
-      const fetchedBurnUtxos = await fetchMneeUtxos([address], ['burn']);
-      console.log('Burn UTXOs:', fetchedBurnUtxos, 'Using decimals:', decimals);
-      // defaults to deploy+mint and transfer if not specified
+      // defaults to transfer and deploy+mint if not specified
       const fetchedTransferUtxos = await fetchMneeUtxos([address]);
       console.log('Transfer UTXOs:', fetchedTransferUtxos);
       setUtxos(fetchedTransferUtxos);
+
+      // burns only
+      const fetchedBurnUtxos = await fetchMneeUtxos([address], ['burn']);
+      console.log('Burn UTXOs:', fetchedBurnUtxos);
       setBurnUtxos(fetchedBurnUtxos);
     } catch (err) {
       console.error('Error fetching UTXOs:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch UTXOs');
     }
-  }, [decimals]);
+  }, []);
 
   // update burns with requests
   const updateBurns = useCallback(() => {
-    if (!burnUtxos.length) {
-      console.log('No burn UTXOs found');
-      return;
-    }
-
     console.log('Updating burns with:', {
+      utxos,
       burnUtxos,
       burnRequests: statusData?.burnRequests
     });
 
-    const burnsWithRequests = burnUtxos.map(utxo => {
-      const outpoint = `${utxo.txid}_${utxo.vout}`;
-      const matchingRequest = statusData?.burnRequests?.find(req => req.outpoint === outpoint);
-      
-      console.log('Processing burn:', {
-        outpoint,
-        hasMatchingRequest: !!matchingRequest,
-        matchingRequest
-      });
+    // Only use transfer UTXOs for burn requests
+    const burnsWithRequests = utxos.map(utxo => ({
+      ...utxo,
+      burnRequest: statusData?.burnRequests?.find(req => req.outpoint === `${utxo.txid}_${utxo.vout}`)
+    }));
 
-      return {
+    // Add burn UTXOs with APPROVED status
+    for (const utxo of burnUtxos) {
+      burnsWithRequests.push({
         ...utxo,
-        burnRequest: matchingRequest ? {
-          ...matchingRequest,
-          amount: matchingRequest.amount?.toString() || '0'
-        } : undefined
-      };
-    });
+        burnRequest: {
+          id: `${utxo.txid}_${utxo.vout}`,
+          type: 'BURN',
+          status: 'APPROVED',
+          amount: utxo.data.bsv21.amt.toString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          requestedBy: 'system',
+          approvals: [],
+          requester: { name: 'Unknown', email: 'unknown@example.com' }
+        }
+      });
+    }
 
     console.log('Final burns:', burnsWithRequests);
     setBurns(burnsWithRequests as BurnUtxo[]);
-  }, [burnUtxos, statusData?.burnRequests]);
+  }, [utxos, burnUtxos, statusData?.burnRequests]);
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);

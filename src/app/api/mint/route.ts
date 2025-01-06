@@ -13,11 +13,23 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { amount, address, customerId } = await request.json();
+    const { amount, customerId } = await request.json();
 
-    if (!amount || !address) {
+    if (!amount || !customerId) {
       return NextResponse.json(
-        { error: "Amount and address are required" },
+        { error: "Amount and customer ID are required" },
+        { status: 400 }
+      );
+    }
+
+    // Get customer
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId }
+    });
+
+    if (!customer) {
+      return NextResponse.json(
+        { error: "Customer not found" },
         { status: 400 }
       );
     }
@@ -46,17 +58,17 @@ export async function POST(request: Request) {
     // Convert amount to token-sat
     const amountSat = toTokenSat(amount, config.decimals);
 
-    // Check for existing pending request for this address
+    // Check for existing pending request for this customer
     const existingRequest = await prisma.mintRequest.findFirst({
       where: {
-        address,
+        customerId,
         status: 'PENDING',
       }
     });
 
     if (existingRequest) {
       return NextResponse.json(
-        { error: "A pending mint request already exists for this address" },
+        { error: "A pending mint request already exists for this customer" },
         { status: 400 }
       );
     }
@@ -66,18 +78,10 @@ export async function POST(request: Request) {
       const mintRequest = await tx.mintRequest.create({
         data: {
           amount: amountSat,
-          address,
+          address: customer.address,
           status: 'PENDING',
           requestedBy: session.user.id,
           customerId,
-        },
-      });
-
-      // Create initial approval from requester
-      await tx.actionApproval.create({
-        data: {
-          mintRequestId: mintRequest.id,
-          approvedBy: session.user.id,
         },
       });
 
