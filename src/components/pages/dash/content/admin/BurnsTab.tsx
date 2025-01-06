@@ -63,8 +63,10 @@ export const BurnsTab = () => {
 
   const fetchUtxos = useCallback(async (address: string) => {
     try {
+      // burns only
       const fetchedBurnUtxos = await fetchMneeUtxos([address], ['burn']);
       console.log('Burn UTXOs:', fetchedBurnUtxos, 'Using decimals:', decimals);
+      // defaults to deploy+mint and transfer if not specified
       const fetchedTransferUtxos = await fetchMneeUtxos([address]);
       console.log('Transfer UTXOs:', fetchedTransferUtxos);
       setUtxos(fetchedTransferUtxos);

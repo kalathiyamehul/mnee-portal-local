@@ -126,6 +126,24 @@ export const ActivityList = ({
                             <span className="opacity-70">Address:</span> {activity.address}
                           </div>
                         )}
+                        {activity.type === 'BURN' && activity.outpoint && (
+                          <div className="text-sm font-mono">
+                            <span className="opacity-70">Outpoint:</span>{' '}
+                            <a 
+                              href={(() => {
+                                const vout = Number.parseInt(activity.outpoint.split('_')[1], 10);
+                                const outputOffset = Math.floor(vout / 10) * 10;
+                                return `https://whatsonchain.com/tx/${activity.outpoint.split('_')[0]}?limit=10&output=${vout}&outputOffset=${outputOffset}`;
+                              })()}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="hover:underline"
+                              title={activity.outpoint}
+                            >
+                              {activity.outpoint.split('_')[0].slice(0, 8)}...{activity.outpoint.split('_')[0].slice(-8)}_{activity.outpoint.split('_')[1]}
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </td>
                     {showRequester && (
