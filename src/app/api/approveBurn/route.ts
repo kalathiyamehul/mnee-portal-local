@@ -179,6 +179,7 @@ export async function POST(request: Request) {
           data: {
             status: "APPROVED",
             updatedAt: new Date(),
+            txid: cosignTx.id('hex'),
           },
         });
 

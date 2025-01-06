@@ -156,6 +156,7 @@ model BurnRequest {
   updatedAt       DateTime     @updatedAt @map("updated_at")
   refundAddress   String?      @map("refund_address")
   outpoint        String?
+  txid            String      @default("")
 
   // Relations
   requester User             @relation("UserBurnRequests", fields: [requestedBy], references: [id])
