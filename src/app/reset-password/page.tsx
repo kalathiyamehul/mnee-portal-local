@@ -10,21 +10,25 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const router = useRouter();
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (newPassword.length < 8) {
-      setError('Password must be at least 8 characters long');
-      return;
-    }
-
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    
     try {
+      if (newPassword !== confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
+
+      if (newPassword.length < 8) {
+        setError('Password must be at least 8 characters long');
+        return;
+      }
+
       const res = await fetch('/api/resetPassword', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -34,13 +38,17 @@ export default function ResetPasswordPage() {
       if (res.ok) {
         // Sign out and redirect to login
         await signOut({ redirect: false });
-        router.push('/login');
+        // Small delay to ensure everything is cleared
+        await new Promise(resolve => setTimeout(resolve, 500));
+        router.push('/login?reset=success');
       } else {
         const data = await res.json();
         setError(data.error || 'Failed to reset password');
       }
     } catch (err) {
       setError('Failed to reset password');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -62,6 +70,7 @@ export default function ResetPasswordPage() {
             onChange={(e) => setNewPassword(e.target.value)}
             required
             minLength={8}
+            disabled={isSubmitting}
           />
         </div>
         {/* Confirm Password Input */}
@@ -77,13 +86,18 @@ export default function ResetPasswordPage() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             minLength={8}
+            disabled={isSubmitting}
           />
         </div>
         {/* Error Message */}
         {error && <p className="text-red-500 mb-4">{error}</p>}
         {/* Submit Button */}
-        <button type="submit" className="btn btn-primary w-full">
-          Reset Password
+        <button 
+          type="submit" 
+          className="btn btn-primary w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Resetting Password...' : 'Reset Password'}
         </button>
       </form>
     </div>

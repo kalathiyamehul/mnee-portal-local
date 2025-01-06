@@ -83,8 +83,18 @@ There is a helper script to reset the database. This will drop all tables and re
 bun run db-reset
 ```
 
-## New USers
-`/signup` will create a new user accounts.
+## Managing Users
+
+### Force Password Reset
+To force a user to reset their password on next login:
+```bash
+bun run setPasswordReset user@example.com
+```
+
+This will set the `requiresPasswordReset` flag to true for the specified user. The next time they log in, they will be redirected to the password reset page before they can access the dashboard.
+
+### New Users
+`/signup` will create new user accounts.
 
 ## Deploying a new token
 `/setup` will deploy a new token and configure the dashboard.

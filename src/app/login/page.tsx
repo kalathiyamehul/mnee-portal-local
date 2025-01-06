@@ -1,8 +1,8 @@
 'use client';
 
 import type React from 'react';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
@@ -10,16 +10,33 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const router = useRouter();
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams?.get('reset') === 'success') {
+      setSuccess('Password reset successful. Please log in with your new password.');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
+    
+    // If coming from password reset, force a fresh login
+    const isFromReset = searchParams?.get('reset') === 'success';
+    
     const res = await signIn('credentials', {
       redirect: false,
       email,
       password,
+      fromReset: isFromReset // Pass this to credentials
     });
 
     if (res?.ok) {
+      // Small delay to ensure the session is properly initialized
+      await new Promise(resolve => setTimeout(resolve, 500));
       router.push('/dash');
     } else {
       setError('Invalid email or password');
@@ -30,6 +47,8 @@ export default function LoginPage() {
     <div className="flex flex-col items-center justify-center min-h-screen">
       <h1 className="text-2xl mb-4">Login</h1>
       <form className="w-full max-w-sm" onSubmit={handleSubmit}>
+        {/* Success Message */}
+        {success && <p className="text-success mb-4">{success}</p>}
         {/* Email Input */}
         <div className="mb-4">
           <label htmlFor="email" className="block text-sm font-bold mb-2">

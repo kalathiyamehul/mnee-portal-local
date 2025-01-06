@@ -8,7 +8,8 @@
     "start": "next start",
     "studio": "npx prisma studio",
     "db-reset": "npx prisma migrate reset --force",
-    "postinstall": "npx prisma generate && npx prisma migrate deploy"
+    "postinstall": "npx prisma generate && npx prisma migrate deploy",
+    "setPasswordReset": "bun scripts/setPasswordReset.ts"
   },
   "dependencies": {
     "@bsv/sdk": "^1.2.21",
