@@ -16,24 +16,21 @@ interface BurnModalProps {
 
 export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [refundAddress, setRefundAddress] = useState('');
 
   const handleBurn = async () => {
     setIsLoading(true);
     try {
-      console.log('Starting burn request with:', { amount, utxo });
+      console.log('Starting burn request with:', { amount, utxo, refundAddress });
       
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       const payload = {
         amount,
         outpoint,
+        refundAddress: refundAddress || undefined,
       };
       
       console.log('Prepared burn payload:', payload);
-      console.log('Payload types:', {
-        amount: typeof payload.amount,
-        outpoint: typeof payload.outpoint,
-        stringifiedPayload: JSON.stringify(payload)
-      });
 
       const response = await fetch('/api/burn', {
         method: 'POST',
@@ -81,6 +78,21 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
             </div>
           </div>
 
+          <div className="form-control w-full">
+            <label htmlFor="refundAddress" className="label">
+              <span className="label-text">Refund Address (Optional)</span>
+              <span className="label-text-alt opacity-70">Where to send tokens if burn is cancelled</span>
+            </label>
+            <input
+              id="refundAddress"
+              type="text"
+              className="input input-bordered w-full"
+              value={refundAddress}
+              onChange={(e) => setRefundAddress(e.target.value)}
+              placeholder="Enter refund address"
+            />
+          </div>
+
           <div className="alert alert-warning">
             <div className="flex flex-col items-start gap-1">
               <div className="font-semibold">Warning</div>
@@ -118,9 +130,9 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
           </button>
         </div>
       </div>
-      <form method="dialog" className="modal-backdrop" onClick={onClose}>
+      <form method="dialog" className="modal-backdrop" onClick={onClose} onKeyUp={onClose}>
         <button type="button">close</button>
       </form>
     </dialog>
   );
-} 
+}; 
