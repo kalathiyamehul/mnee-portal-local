@@ -1,48 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const router = useRouter();
   const [error, setError] = useState('');
+  const router = useRouter();
   const searchParams = useSearchParams();
   const success = searchParams?.get('reset') === 'success' 
     ? 'Password reset successful. Please log in with your new password.'
     : '';
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     
-    const res = await signIn('credentials', {
-      redirect: false,
-      email,
-      password,
-      fromReset: !!success
-    });
+    try {
+      const res = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+        fromReset: success ? 'true' : 'false'
+      });
 
-    console.log('Auth response:', res);
-
-    if (res?.ok) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      router.push('/dash');
-    } else if (res?.error) {
-      console.error('Auth error:', res.error);
-      if (res.error === 'CredentialsSignin' && res.status === 401) {
-        setError('Invalid email or password');
-      } else if (res.error.includes('PASSWORD_RESET_REQUIRED')) {
+      if (!res?.error) {
+        router.push('/dash');
+      } else if (res.error === 'PASSWORD_RESET_REQUIRED') {
         router.push('/reset-password');
       } else {
-        setError('An error occurred during login');
+        setError('Invalid email or password');
       }
-    } else {
-      setError('An unexpected error occurred');
+    } catch (err) {
+      setError('An error occurred during login');
     }
-  };
+  }, [email, password, router, success]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
@@ -60,6 +54,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
           />
         </div>
         <div className="mb-6">
@@ -73,6 +68,7 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoComplete="current-password"
           />
         </div>
         {error && <p className="text-red-500 mb-4">{error}</p>}

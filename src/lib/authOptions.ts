@@ -37,7 +37,14 @@ export const authOptions: NextAuthOptions = {
         if (!isValid) return null;
 
         if (user.requiresPasswordReset && credentials.fromReset !== 'true') {
-          throw new Error('PASSWORD_RESET_REQUIRED');
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            emailVerified: user.emailVerified,
+            requiresPasswordReset: true
+          };
         }
 
         if (credentials.fromReset === 'true' && user.requiresPasswordReset) {
@@ -46,11 +53,7 @@ export const authOptions: NextAuthOptions = {
             data: { requiresPasswordReset: false }
           });
           return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            image: user.image,
-            emailVerified: user.emailVerified,
+            ...user,
             requiresPasswordReset: false,
           };
         }

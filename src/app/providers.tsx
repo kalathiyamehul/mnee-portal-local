@@ -17,9 +17,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <BalanceProvider>
           <ThemeProvider>
             <YoursProvider>
-              <SystemStatusProvider>
                 {children}
-              </SystemStatusProvider>
             </YoursProvider>
           </ThemeProvider>
         </BalanceProvider>
