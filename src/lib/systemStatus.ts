@@ -1,12 +1,11 @@
-import type { PrismaClient } from '@prisma/client';
-import type { TransactionClient } from './prisma';
+import type { PrismaClient, Prisma } from '@prisma/client';
 
 /**
  * Checks if the system is currently paused by comparing the latest approved PAUSE and RESUME actions.
  * @param prisma PrismaClient instance or transaction client
  * @returns Promise<boolean> true if the system is paused, false otherwise
  */
-export async function isSystemPaused(prisma: PrismaClient | TransactionClient) {
+export async function isSystemPaused(prisma: PrismaClient | Prisma.TransactionClient) {
   const [pauseRequest, resumeRequest] = await Promise.all([
     prisma.actionRequest.findFirst({
       where: {

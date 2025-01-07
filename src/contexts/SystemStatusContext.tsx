@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Activity } from "@/components/pages/dash/content/admin/types";
+import { useSession } from "next-auth/react";
 
 interface SystemStatusData {
   isPaused: boolean;
@@ -29,10 +30,22 @@ const SystemStatusContext = createContext<SystemStatusContextType | null>(null);
 export function SystemStatusProvider({ children }: { children: React.ReactNode }) {
   const [statusData, setStatusData] = useState<SystemStatusData | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
+  const { data: session, status } = useSession();
 
   const fetchStatus = useCallback(async () => {
+    // Don't fetch if not authenticated
+    if (!session?.user) return;
+
     try {
       const response = await fetch('/api/status?includePending=true');
+      if (response.status === 401) {
+        // Handle unauthorized - clear data
+        setStatusData(null);
+        return;
+      }
+      if (!response.ok) {
+        throw new Error('Failed to fetch status');
+      }
       const data = await response.json();
       setStatusData({
         isPaused: data.isPaused || false,
@@ -46,11 +59,12 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
       });
     } catch (error) {
       console.error('Error fetching system status:', error);
+      setStatusData(null);
     }
-  }, []);
+  }, [session?.user]);
 
   const handlePauseToggle = useCallback(async () => {
-    if (!statusData) return;
+    if (!statusData || !session?.user) return;
 
     const response = await fetch('/api/pause', {
       method: 'POST',
@@ -64,9 +78,17 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     }
 
     await fetchStatus();
-  }, [statusData, fetchStatus]);
+  }, [statusData, fetchStatus, session?.user]);
 
   useEffect(() => {
+    // Only start polling if authenticated
+    if (status === 'loading') return;
+    if (!session?.user) {
+      setStatusData(null);
+      setInitialLoading(false);
+      return;
+    }
+
     const initialize = async () => {
       await fetchStatus();
       setInitialLoading(false);
@@ -74,12 +96,12 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
 
     initialize();
 
-    // Set up polling interval
-    const interval = setInterval(fetchStatus, 5000); // Poll every 5 seconds
+    // Set up polling interval only if authenticated
+    const interval = setInterval(fetchStatus, 5000);
 
-    // Clean up interval on unmount
+    // Clean up interval on unmount or when session changes
     return () => clearInterval(interval);
-  }, [fetchStatus]);
+  }, [fetchStatus, session?.user, status]);
 
   const value = useMemo(() => ({ 
     statusData, 

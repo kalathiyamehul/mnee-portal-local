@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { FreezeRequestAction } from '@prisma/client';
+import { isSystemPaused } from '@/lib/systemStatus';
 
 // Helper function to validate FreezeRequestAction
 function isFreezeAction(action: string): action is FreezeRequestAction {
@@ -26,6 +27,15 @@ export async function POST(request: Request) {
 
     if (!action || !isFreezeAction(action)) {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+    }
+
+    // Check if system is paused
+    const isPaused = await isSystemPaused(prisma);
+    if (isPaused) {
+      return NextResponse.json(
+        { error: "System is paused. Cannot create freeze requests at this time." },
+        { status: 400 }
+      );
     }
 
     // Check if there's already a pending request for this address
@@ -71,40 +81,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if system is paused
-    const pauseRequest = await prisma.actionRequest.findFirst({
-      where: {
-        action: 'PAUSE',
-        status: 'APPROVED',
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    const resumeRequest = await prisma.actionRequest.findFirst({
-      where: {
-        action: 'RESUME',
-        status: 'APPROVED',
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    // System is paused if the latest approved PAUSE is more recent than the latest approved RESUME
-    const isPaused = pauseRequest && (!resumeRequest || pauseRequest.createdAt > resumeRequest.createdAt);
-
-    if (isPaused) {
-      return NextResponse.json(
-        { error: "System is paused. Cannot create freeze requests at this time." },
-        { status: 400 }
-      );
-    }
-
-    // Create the freeze request and initial approval in a transaction
+    // Create the freeze request
     const result = await prisma.$transaction(async (tx) => {
-      // Create the freeze request
       const request = await tx.freezeRequest.create({
         data: {
           address,
@@ -126,23 +104,7 @@ export async function POST(request: Request) {
         },
       });
 
-      // Create initial approval from requester
-      const approval = await tx.freezeApproval.create({
-        data: {
-          freezeRequestId: request.id,
-          approvedBy: session.user.id,
-        },
-        include: {
-          approver: {
-            select: {
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      return { request, approval };
+      return { request };
     });
 
     return NextResponse.json(result);

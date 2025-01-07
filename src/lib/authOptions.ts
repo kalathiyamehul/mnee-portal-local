@@ -11,6 +11,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        fromReset: { label: 'From Reset', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -19,6 +20,15 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            password: true,
+            image: true,
+            emailVerified: true,
+            requiresPasswordReset: true,
+          }
         });
 
         if (!user) return null;
@@ -26,7 +36,29 @@ export const authOptions: NextAuthOptions = {
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
 
-        return { id: user.id, email: user.email, name: user.name };
+        if (credentials.fromReset === 'true' && user.requiresPasswordReset) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { requiresPasswordReset: false }
+          });
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            emailVerified: user.emailVerified,
+            requiresPasswordReset: false,
+          };
+        }
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          emailVerified: user.emailVerified,
+          requiresPasswordReset: user.requiresPasswordReset,
+        };
       },
     }),
   ],
@@ -40,15 +72,30 @@ export const authOptions: NextAuthOptions = {
     error: '/login',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
+        // Initial sign in
         token.id = user.id;
+        token.requiresPasswordReset = user.requiresPasswordReset;
       }
+
+      // On token update, refresh user data
+      if (trigger === "update") {
+        const freshUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { requiresPasswordReset: true }
+        });
+        if (freshUser) {
+          token.requiresPasswordReset = freshUser.requiresPasswordReset;
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user && token) {
         session.user.id = token.id as string;
+        session.user.requiresPasswordReset = token.requiresPasswordReset as boolean;
       }
       return session;
     },

@@ -255,7 +255,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	const getApprovalCount = useCallback((activity: Activity) => {
 		// For burn requests, we need to add 1 to account for the requester's approval
 		if (activity.type === 'BURN') {
-			return (activity.approvals?.length || 0) + 1;
+			return activity.approvals?.length || 0;
 		}
 		// For other requests, the requester's approval is already included
 		return activity.approvals?.length || 0;

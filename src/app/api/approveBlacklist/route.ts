@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
+import { isSystemPaused } from '@/lib/systemStatus';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -18,11 +19,25 @@ export async function POST(request: Request) {
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      console.log('Processing blacklist approval:', {
+        requestId: blacklistRequestId,
+        approvingUserId: session.user.id
+      });
+
       // Get the blacklist request
       const blacklistRequest = await tx.blacklistRequest.findUnique({
         where: { id: blacklistRequestId },
         include: {
-          approvals: true,
+          approvals: {
+            include: {
+              approver: {
+                select: {
+                  id: true,
+                  email: true
+                }
+              }
+            }
+          },
           requester: {
             select: {
               id: true,
@@ -32,17 +47,34 @@ export async function POST(request: Request) {
         },
       });
 
+      console.log('Found blacklist request:', {
+        request: {
+          ...blacklistRequest,
+          approvals: blacklistRequest?.approvals.map(a => ({
+            approverId: a.approvedBy,
+            approverEmail: a.approver.email,
+            timestamp: a.createdAt
+          }))
+        }
+      });
+
       if (!blacklistRequest) {
         throw new Error('Blacklist request not found');
       }
 
       if (blacklistRequest.status !== 'PENDING') {
-        throw new Error('Request is not pending');
+        throw new Error('This request is no longer pending');
+      }
+
+      // Check if system is paused
+      const isPaused = await isSystemPaused(tx);
+      if (isPaused) {
+        throw new Error("System is paused. Cannot approve blacklist requests at this time.");
       }
 
       // Prevent self-approval
-      if (blacklistRequest.requestedBy === session.user.id) {
-        throw new Error('Cannot approve your own request');
+      if (blacklistRequest.requester.id === session.user.id) {
+        throw new Error('You cannot approve your own request');
       }
 
       // Check if user has already approved
@@ -54,6 +86,10 @@ export async function POST(request: Request) {
       });
 
       if (existingApproval) {
+        console.log('Duplicate approval attempt blocked:', {
+          requestId: blacklistRequestId,
+          approverId: session.user.id
+        });
         throw new Error('You have already approved this request');
       }
 
@@ -70,8 +106,20 @@ export async function POST(request: Request) {
         where: { blacklistRequestId },
       });
 
+      console.log('Current approval count:', {
+        requestId: blacklistRequestId,
+        approvalCount: approvals,
+        requiresApproval: blacklistRequest.requiresApproval
+      });
+
       // Update status if we have enough approvals
-      if (approvals >= 2) {
+      if (approvals === 2) {
+        console.log('Approving blacklist request:', {
+          requestId: blacklistRequestId,
+          approvalCount: approvals,
+          action: blacklistRequest.action
+        });
+
         await tx.blacklistRequest.update({
           where: { id: blacklistRequestId },
           data: { 
@@ -81,7 +129,7 @@ export async function POST(request: Request) {
         });
       }
 
-      return { approvals, status: approvals >= 2 ? 'APPROVED' : 'PENDING' };
+      return { approvals, status: approvals === 2 ? 'APPROVED' : 'PENDING' };
     });
 
     return NextResponse.json({

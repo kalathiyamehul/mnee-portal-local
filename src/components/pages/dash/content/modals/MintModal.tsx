@@ -14,6 +14,9 @@ interface MintModalProps {
   onSuccess: () => Promise<void>;
 }
 
+// Using a conservative max value to ensure safe BigInt conversion
+const MAX_TOKEN_VALUE = 10_000_000_000; // 1 billion tokens
+
 export const MintModal = ({
   onClose,
   onSuccess
@@ -140,12 +143,16 @@ export const MintModal = ({
                 <span className="label-text">Amount</span>
               </div>
               <input
-                type="number"
+                type="text"
                 className="input input-bordered w-full max-w-md"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => {
+                  // Allow numbers and decimals only
+                  if (/^\d*\.?\d*$/.test(e.target.value)) {
+                    setAmount(e.target.value);
+                  }
+                }}
                 placeholder="Enter amount to mint"
-                min="1"
                 required
               />
             </label>
