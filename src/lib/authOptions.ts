@@ -36,6 +36,10 @@ export const authOptions: NextAuthOptions = {
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
 
+        if (user.requiresPasswordReset && credentials.fromReset !== 'true') {
+          throw new Error('PASSWORD_RESET_REQUIRED');
+        }
+
         if (credentials.fromReset === 'true' && user.requiresPasswordReset) {
           await prisma.user.update({
             where: { id: user.id },
@@ -100,6 +104,20 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
+      // Handle password reset redirect during sign in
+      if (url.startsWith(`${baseUrl}/login`) || url === baseUrl) {
+        // Get the user from the token instead of session
+        const token = await prisma.user.findFirst({
+          where: { requiresPasswordReset: true },
+          orderBy: { updatedAt: 'desc' }
+        });
+        
+        if (token?.requiresPasswordReset) {
+          return `${baseUrl}/reset-password`;
+        }
+        return `${baseUrl}/dash`;
+      }
+
       // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       // Allows callback URLs on the same origin

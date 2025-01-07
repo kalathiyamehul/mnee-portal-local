@@ -25,11 +25,22 @@ export default function LoginPage() {
       fromReset: !!success
     });
 
+    console.log('Auth response:', res);
+
     if (res?.ok) {
       await new Promise(resolve => setTimeout(resolve, 500));
       router.push('/dash');
+    } else if (res?.error) {
+      console.error('Auth error:', res.error);
+      if (res.error === 'CredentialsSignin' && res.status === 401) {
+        setError('Invalid email or password');
+      } else if (res.error.includes('PASSWORD_RESET_REQUIRED')) {
+        router.push('/reset-password');
+      } else {
+        setError('An error occurred during login');
+      }
     } else {
-      setError('Invalid email or password');
+      setError('An unexpected error occurred');
     }
   };
 
