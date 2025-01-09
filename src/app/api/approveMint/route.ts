@@ -240,7 +240,7 @@ const mintMnee = async (amount: bigint, address: string) => {
 	console.log('Created token template');
 
 	// look up latest_minter_tx
-	const dbConfig = await getConfig();
+	const dbConfig = await getConfig(true);
 	const latest_minter_tx = dbConfig?.latestMinterTx;
 	console.log('Got latest minter tx');
 

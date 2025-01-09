@@ -164,11 +164,6 @@ export async function POST(request: Request) {
           },
         });
 
-        await tx.config.update({
-          where: { id: 1 },
-          data: { latestMinterTx: cosignTx.toHex() },
-        });
-
         return { status: "APPROVED", burnTx: cosignTx.toHex() };
       }
 
