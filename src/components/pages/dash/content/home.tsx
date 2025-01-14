@@ -12,6 +12,7 @@ import { ActivityList } from './admin/ActivityList';
 import { getActivityIcon } from "./admin/utils";
 import { useSession } from "next-auth/react";
 import type { Config } from "@prisma/client";
+import { toToken } from "satoshi-token";
 
 // Utility functions
 const getActivityDisplayText = (activity: Activity) => {
@@ -157,21 +158,21 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 		}
 	};
 
-	const fetchMetrics = () => {
+	const fetchMetrics = useCallback(() => {
 		fetch("/api/dashboard")
 			.then((response) => response.json())
 			.then((data) => setMetrics(data))
 			.catch((error) => console.error("Failed to fetch dashboard metrics:", error));
-	};
+	}, []);
 
 	useEffect(() => {
 		fetchMetrics();
-	}, []);
+	}, [fetchMetrics]);
 
 	if (!metrics) {
 		return (
 			<div className="flex justify-center items-center min-h-screen animate-fade-in">
-				<div className="loading loading-spinner loading-lg"></div>
+				<div className="loading loading-spinner loading-lg" />
 			</div>
 		);
 	}
@@ -183,7 +184,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 
 		return {
 			txid,
-			vout: parseInt(vout),
+			vout: Number.parseInt(vout),
 			height: 0,
 			data: {
 				bsv21: {
@@ -256,7 +257,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 	return (
 		<div className="p-4 space-y-8 animate-fade-in">
 			<div className="stats shadow w-full">
-				<div 
+				<div
 					className={getStatCardClass('customers')}
 					onClick={() => handleChartSelect('customers')}
 				>
@@ -279,7 +280,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 					</div>
 					<div className="stat-title text-base-content/70">24h Mint Volume</div>
 					<div className="stat-value text-primary">
-						{metrics.totalMintVolume.toLocaleString()}
+						{toToken(metrics.totalMintVolume, initialConfig.decimals).toLocaleString()}
 					</div>
 					<div className="stat-desc text-base-content/60">MNEE</div>
 				</div>

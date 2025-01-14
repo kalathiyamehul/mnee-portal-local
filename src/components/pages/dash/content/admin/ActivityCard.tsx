@@ -4,7 +4,7 @@ import { DEFAULT_DECIMALS } from '@/lib/constants';
 import type { Activity } from './types';
 import type { Session } from 'next-auth';
 import type { IconType } from 'react-icons';
-import { Config } from '@prisma/client';
+import type { Config } from '@prisma/client';
 
 interface ActivityCardProps {
   activity: Activity;

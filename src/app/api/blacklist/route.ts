@@ -69,14 +69,6 @@ export async function POST(request: Request) {
         },
       });
 
-      // Create initial approval from requester
-      await tx.blacklistApproval.create({
-        data: {
-          blacklistRequestId: blacklistRequest.id,
-          approvedBy: session.user.id,
-        },
-      });
-
       return blacklistRequest;
     });
 

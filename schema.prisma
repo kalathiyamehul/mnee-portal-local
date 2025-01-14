@@ -8,14 +8,15 @@ generator client {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  image         String?
-  emailVerified DateTime? @map("email_verified")
-  password      String
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id                    String    @id @default(cuid())
+  name                  String?
+  email                 String    @unique
+  image                 String?
+  emailVerified         DateTime? @map("email_verified")
+  password              String
+  requiresPasswordReset Boolean   @default(true) @map("requires_password_reset")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
   // Relations
   actionRequests    ActionRequest[]    @relation("UserActionRequests")
@@ -155,6 +156,7 @@ model BurnRequest {
   updatedAt       DateTime     @updatedAt @map("updated_at")
   refundAddress   String?      @map("refund_address")
   outpoint        String?
+  txid            String      @default("")
 
   // Relations
   requester User             @relation("UserBurnRequests", fields: [requestedBy], references: [id])
@@ -194,6 +196,7 @@ enum ActionStatus {
   CANCELLED
   DONE
   FAILED
+  REFUNDED
 }
 
 model Config {

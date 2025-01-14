@@ -33,26 +33,12 @@ export async function POST(request: Request) {
 		);
 	}
 
-	// Use transaction to create both request and initial approval
-
-	const result = await prisma.$transaction(async (tx) => {
-		// Create the action request
-		const actionRequest = await tx.actionRequest.create({
-			data: {
-				action,
-				requestedBy: session.user.id,
-			},
-		});
-
-		// Create initial approval from the requester
-		await tx.actionApproval.create({
-			data: {
-				actionRequestId: actionRequest.id,
-				approvedBy: session.user.id,
-			},
-		});
-
-		return actionRequest;
+	// Create the action request (requires separate approval from requester)
+	const result = await prisma.actionRequest.create({
+		data: {
+			action,
+			requestedBy: session.user.id,
+		},
 	});
 
 	return NextResponse.json({ actionRequest: result }, { status: 201 });
