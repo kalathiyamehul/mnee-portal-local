@@ -337,6 +337,34 @@ const DashboardSettingsContent = () => {
 		fetchConfig();
 	}, [fetchBsvBalances, fetchBurnUtxos]);
 
+	const handleSave = async (newFees?: Fee[]) => {
+		try {
+			setLoading(true);
+			const response = await fetch("/api/config", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					...config,
+					fees: newFees || config?.fees,
+					feeAddress: feeAddress,
+				}),
+			});
+
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error.error || 'Failed to save configuration');
+			}
+
+			toast.success('Configuration saved successfully');
+			setIsEditing(false);
+		} catch (error) {
+			console.error('Error saving config:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to save configuration');
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	if (loading) {
 		return (
 			<div className="flex justify-center items-center min-h-screen animate-fade-in">
