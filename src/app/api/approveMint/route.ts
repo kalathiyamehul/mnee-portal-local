@@ -141,7 +141,10 @@ export async function POST(request: Request) {
 
 			if (freezeRequest?.action === 'FREEZE') {
 				console.log('Address is frozen');
-				throw new Error("Cannot approve mint: the target address is frozen");
+				return NextResponse.json({ 
+					success: false,
+					error: "Address is frozen. Request will remain pending until address is unfrozen."
+				}, { status: 202 });
 			}
 
 			// Create approval
@@ -207,11 +210,12 @@ export async function POST(request: Request) {
 	} catch (error) {
 		console.error("Error processing approval:", error);
 
-		// Only mark as failed for actual errors, not for system checks or pauses
+		// Only mark as failed for actual errors, not for system checks, pauses, or frozen addresses
 		if (mintRequestId && 
 			!(error instanceof Error && 
 				(error.message.includes("System is paused") || 
-				 error.message.includes("will remain pending")))) {
+				 error.message.includes("will remain pending") ||
+				 error.message.includes("address is frozen")))) {
 			try {
 				console.log('Updating request status to FAILED');
 				await prisma.mintRequest.update({
@@ -229,7 +233,9 @@ export async function POST(request: Request) {
 		return NextResponse.json({ 
 			success: false,
 			error: error instanceof Error ? error.message : "Failed to process approval"
-		}, { status: error instanceof Error && error.message.includes("will remain pending") ? 202 : 500 });
+		}, { status: error instanceof Error && 
+			(error.message.includes("will remain pending") || 
+			 error.message.includes("address is frozen")) ? 202 : 500 });
 	}
 }
 

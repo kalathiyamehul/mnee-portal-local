@@ -85,8 +85,10 @@ const MintTableContent = ({
 			const data = await response.json();
 
 			if (response.status === 202) {
-				// System is paused, show info toast
-				toast.error(data.error || "Request will remain pending until system is unpaused");
+				// System is paused or address is frozen, show info toast
+				toast(data.error || "Request will remain pending", {
+					style: { background: '#3b82f6', color: 'white' }
+				});
 				onUpdate?.();
 				return;
 			}
