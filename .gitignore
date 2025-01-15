@@ -40,6 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-Bugs_reported_by_QA.csv
-
 feature
