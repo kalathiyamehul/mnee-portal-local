@@ -16,18 +16,16 @@ interface BurnModalProps {
 
 export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [refundAddress, setRefundAddress] = useState('');
 
   const handleBurn = async () => {
     setIsLoading(true);
     try {
-      console.log('Starting burn request with:', { amount, utxo, refundAddress });
+      console.log('Starting burn request with:', { amount, utxo });
       
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       const payload = {
         amount,
         outpoint,
-        refundAddress: refundAddress || undefined,
       };
       
       console.log('Prepared burn payload:', payload);
@@ -76,21 +74,6 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
             <div className="text-xs opacity-50 mt-1 break-all">
               UTXO: {utxo.txid}:{utxo.vout}
             </div>
-          </div>
-
-          <div className="form-control w-full">
-            <label htmlFor="refundAddress" className="label">
-              <span className="label-text">Refund Address (Optional)</span>
-              <span className="label-text-alt opacity-70">Where to send tokens if burn is cancelled</span>
-            </label>
-            <input
-              id="refundAddress"
-              type="text"
-              className="input input-bordered w-full"
-              value={refundAddress}
-              onChange={(e) => setRefundAddress(e.target.value)}
-              placeholder="Enter refund address"
-            />
           </div>
 
           <div className="alert alert-warning">

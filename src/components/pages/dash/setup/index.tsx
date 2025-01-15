@@ -28,10 +28,15 @@ export default function Setup() {
   useEffect(() => {
     const fetchTokenDetails = async () => {
       if (!tokenId) return;
-      
+      const [txid, vout] = tokenId.split('_');
+      if (!txid || !vout || !Number.isInteger(Number(vout)) || Number(vout) < 0 || txid.length !== 64) {
+        toast.error('Invalid token ID');
+        return;
+      }
+      console.log({txid, vout})
       setLoading(true);
       try {
-        const [txid, vout] = tokenId.split('_');
+       
         const data = await ingestTxid(txid);
         const token = data.txos[Number.parseInt(vout)].data.bsv21;
         setDecimals(token.dec);
@@ -97,13 +102,13 @@ export default function Setup() {
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to save configuration');
+      if (!response.ok) throw new Error('Failed to save configuration 2');
       toast.success('Configuration saved successfully');
       // Signup functionality temporarily disabled
       // router.push('/signup');
       router.push('/login');
     } catch (error) {
-      toast.error('Failed to save configuration');
+      toast.error('Failed to save configuration 3');
       console.error('Error saving config:', error);
     } finally {
       setLoading(false);

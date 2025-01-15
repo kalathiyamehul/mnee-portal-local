@@ -1,4 +1,6 @@
 import { SetupCard } from './SetupCard';
+import { EnvWarning } from './EnvWarning';
+import { useState } from 'react';
 
 interface ImportFormProps {
   onBack: () => void;
@@ -8,7 +10,7 @@ interface ImportFormProps {
   loading: boolean;
   onTokenIdChange: (value: string) => void;
   onFeeAddressChange: (value: string) => void;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
+  onSubmit: (e: React.FormEvent) => void;
 }
 
 export function ImportForm({
@@ -21,9 +23,14 @@ export function ImportForm({
   onFeeAddressChange,
   onSubmit,
 }: ImportFormProps) {
+  const [missingVars, setMissingVars] = useState<string[]>([]);
+  const disabled = missingVars.length > 0;
+
   return (
-    <SetupCard title="Import Token">
+    <SetupCard title="Import Existing Token">
+
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
+      <EnvWarning onMissingVarsChange={setMissingVars} />
         <div className="form-control">
           <label htmlFor="tokenId" className="label">
             <span className="label-text">Token ID</span>
@@ -35,6 +42,7 @@ export function ImportForm({
             value={tokenId}
             onChange={(e) => onTokenIdChange(e.target.value)}
             required
+            disabled={disabled}
           />
         </div>
 
@@ -49,6 +57,7 @@ export function ImportForm({
             value={feeAddress}
             onChange={(e) => onFeeAddressChange(e.target.value)}
             required
+            disabled={disabled}
           />
         </div>
 
@@ -62,7 +71,8 @@ export function ImportForm({
           <button
             type="submit"
             className={`btn btn-primary ${loading ? 'loading' : ''}`}
-            disabled={loading || decimals === null}
+            disabled={loading || disabled || decimals === null}
+            title={disabled ? "Required environment variables are missing" : undefined}
           >
             {decimals === null ? 'Import Token' : 'Complete Setup'}
           </button>

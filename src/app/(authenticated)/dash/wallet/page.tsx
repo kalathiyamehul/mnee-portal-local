@@ -17,7 +17,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const config = await getConfig();
   if (!config) {
-    throw new Error("Config not found");
+    redirect("/setup");
   }
 
   const params = await searchParams;
