@@ -1,10 +1,10 @@
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
-import { FaCopy } from "react-icons/fa6";
+import { FaCopy, FaSpinner } from "react-icons/fa6";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import type { Activity } from "./types";
-import { Session } from "next-auth";
+import type { Session } from "next-auth";
 import { MdOutlineOpenInNew } from "react-icons/md";
 import { toToken } from "satoshi-token";
 import { getConfig } from "@/lib/config";
@@ -61,6 +61,7 @@ const MintTableContent = ({
 	showRequester: boolean 
 }) => {
 	const [config, setConfig] = useState<Config | null>(null);
+	const [loadingApproval, setLoadingApproval] = useState<string | null>(null);
 
 	useEffect(() => {
 		const fetchConfig = async () => {
@@ -72,6 +73,7 @@ const MintTableContent = ({
 
 	const handleApprove = async (id: string) => {
 		try {
+			setLoadingApproval(id);
 			const response = await fetch("/api/approveMint", {
 				method: "POST",
 				headers: {
@@ -95,6 +97,8 @@ const MintTableContent = ({
 		} catch (error) {
 			console.error("Failed to approve mint request:", error);
 			toast.error(error instanceof Error ? error.message : "Failed to approve mint request");
+		} finally {
+			setLoadingApproval(null);
 		}
 	};
 
@@ -216,6 +220,7 @@ const MintTableContent = ({
 									<div className="flex items-center gap-1">
 										<div className="tooltip tooltip-bottom" data-tip="Copy Address">
 											<button
+												type="button"
 												onClick={() => {
 													if (mint.address) {
 														navigator.clipboard.writeText(mint.address);
@@ -259,6 +264,7 @@ const MintTableContent = ({
 													type="button"
 													onClick={() => handleCancel(mint.id)}
 													className="btn btn-ghost btn-xs"
+													disabled={loadingApproval === mint.id}
 												>
 													Cancel
 												</button>
@@ -267,8 +273,16 @@ const MintTableContent = ({
 													type="button"
 													onClick={() => handleApprove(mint.id)}
 													className="btn btn-primary btn-xs"
+													disabled={loadingApproval === mint.id}
 												>
-													Approve
+													{loadingApproval === mint.id ? (
+														<>
+															<FaSpinner className="animate-spin mr-1" />
+															Approving...
+														</>
+													) : (
+														'Approve'
+													)}
 												</button>
 											)}
 										</div>
