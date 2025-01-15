@@ -1,41 +1,38 @@
 // src/app/api/config/route.ts
 import { NextResponse } from "next/server";
-import { getConfig, revalidateConfig } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
-
-// Enable caching for this route
-export const dynamic = 'force-dynamic';
-export const revalidate = 60; // Revalidate every 60 seconds
+import { BURN_WIF, MINT_WIF } from "@/env";
+import { PrivateKey } from "@bsv/sdk";
 
 export async function GET() {
   try {
-    const config = await getConfig();
-    return NextResponse.json(config);
+    const config = await prisma.config.findFirst();
+    return NextResponse.json(config, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Error fetching config:", error);
     return NextResponse.json(
-      { error: "Failed to fetch config" },
+      { error: "Error fetching configuration." },
       { status: 500 }
     );
   }
 }
 
 export async function POST(request: Request) {
+  const { tokenId, feeAddress, fees, decimals, latestMinterTx } = await request.json();
+
+  const mintAddress = PrivateKey.fromWif(MINT_WIF).toAddress();
+  const burnAddress = PrivateKey.fromWif(BURN_WIF).toAddress();
   try {
-    const data = await request.json();
-    const config = await prisma.config.update({
+    const config = await prisma.config.upsert({
       where: { id: 1 },
-      data
+      update: { tokenId, feeAddress, fees, decimals, latestMinterTx, mintAddress, burnAddress },
+      create: { id: 1, tokenId, feeAddress, fees, decimals, latestMinterTx, fundAddress: "", mintAddress, burnAddress },
     });
-
-    // Revalidate cache after update
-    await revalidateConfig();
-
-    return NextResponse.json(config);
+    return NextResponse.json(config, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
-    console.error("Error updating config:", error);
+    console.error("Error saving config:", error);
     return NextResponse.json(
-      { error: "Failed to update config" },
+      { error: "Error saving configuration." },
       { status: 500 }
     );
   }
