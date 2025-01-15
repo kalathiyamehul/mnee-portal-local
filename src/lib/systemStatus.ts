@@ -70,18 +70,19 @@ export async function isSystemPaused(prisma: PrismaClient | Prisma.TransactionCl
  * @returns Promise<boolean> true if the address is blacklisted, false otherwise
  */
 export async function isAddressBlacklisted(prisma: PrismaClient | Prisma.TransactionClient, address: string) {
-  const blacklistRequest = await prisma.blacklistRequest.findFirst({
+  // Get the latest approved blacklist request (either BLACKLIST or UNBLACKLIST)
+  const latestRequest = await prisma.blacklistRequest.findFirst({
     where: {
       address,
       status: 'APPROVED',
-      action: 'BLACKLIST',
     },
     orderBy: {
       createdAt: 'desc',
     },
   });
 
-  return !!blacklistRequest;
+  // Address is blacklisted if the latest approved request is a BLACKLIST action
+  return latestRequest?.action === 'BLACKLIST';
 }
 
 interface SystemCheckOptions {
