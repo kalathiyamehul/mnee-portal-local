@@ -13,7 +13,7 @@ export default async function CustomersPage() {
 
   const config = await getConfig();
   if (!config) {
-    throw new Error("Config not found");
+    redirect("/setup");
   }
 
   return <Dashboard page={DashPages.CUSTOMERS} config={config} />;
