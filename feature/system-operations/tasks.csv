@@ -1,0 +1,6 @@
+ID,Description,Status,Notes
+MLD-122,MAJOR: Mint request approval failing when system is paused instead request should remain in pending state,X,Modified approveMint to keep requests pending when system is paused
+MLD-130,Critical: Mint request failing for unblacklisted wallet address,X,Fixed isAddressBlacklisted to properly handle UNBLACKLIST actions
+MLD-131,MAJOR: Mint request failing for Frozen Wallet address,X,Modified approveMint to keep requests pending when address is frozen
+MLD-136,Critical: Mint request failing for unblacklisted wallet address,X,Fixed isAddressBlacklisted to properly handle UNBLACKLIST actions
+MLD-164,Critical: Approval button does not disable after approval,X,Added loading state and disabled button during approval process 

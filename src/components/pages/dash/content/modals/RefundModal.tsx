@@ -24,17 +24,18 @@ export const RefundModal = ({
   customerName = 'the customer',
 }: RefundModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [refundAddress, setRefundAddress] = useState('');
 
   const handleRefund = async () => {
     setIsLoading(true);
     try {
       const outpoint = `${utxo.txid}_${utxo.vout}`;
-      console.log('Sending refund request:', { outpoint });
+      console.log('Sending refund request:', { outpoint, refundAddress });
       
       const response = await fetch('/api/refund', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ outpoint }),
+        body: JSON.stringify({ outpoint, refundAddress }),
       });
 
       const data = await response.json();
@@ -69,11 +70,27 @@ export const RefundModal = ({
             <div className="text-2xl font-bold">{toToken(amount, decimals)} MNEE</div>
           </div>
 
+          <div className="form-control w-full">
+            <label htmlFor="refundAddress" className="label">
+              <span className="label-text">Refund Address</span>
+              <span className="label-text-alt opacity-70">Where to send the refunded tokens</span>
+            </label>
+            <input
+              id="refundAddress"
+              type="text"
+              className="input input-bordered w-full"
+              value={refundAddress}
+              onChange={(e) => setRefundAddress(e.target.value)}
+              placeholder="Enter refund address"
+              required
+            />
+          </div>
+
           <div className="alert alert-info">
             <div className="flex flex-col items-start gap-1">
               <div className="font-semibold">Note</div>
               <p className="text-sm">
-                Once approved, this will return the MNEE tokens to the wallet address we have on file for {customerName}. The transaction cannot be reversed once confirmed.
+                Once approved, this will return the MNEE tokens to the specified address. The transaction cannot be reversed once confirmed.
               </p>
             </div>
           </div>
@@ -92,7 +109,7 @@ export const RefundModal = ({
             type="button"
             className="btn btn-primary"
             onClick={handleRefund}
-            disabled={isLoading}
+            disabled={isLoading || !refundAddress}
           >
             {isLoading ? (
               <>

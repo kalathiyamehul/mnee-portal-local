@@ -23,7 +23,7 @@ export async function POST(request: Request) {
         }
 
         const payload = JSON.parse(body);
-        const { amount, outpoint, refundAddress } = payload;
+        const { amount, outpoint } = payload;
 
         if (!amount || !outpoint) {
             return NextResponse.json(
@@ -34,7 +34,6 @@ export async function POST(request: Request) {
 
         // Check if system is paused
         const systemCheck = await performSystemChecks(prisma, {
-            address: refundAddress,
             operation: SystemOperation.BURN_REQUEST_CREATE
         });
         if (!systemCheck.isValid) {
@@ -97,7 +96,6 @@ export async function POST(request: Request) {
             requestedBy: session.user.id,
             outpoint,
             status: 'PENDING' as const,
-            refundAddress
         };
 
         const burnRequest = await prisma.burnRequest.create({
