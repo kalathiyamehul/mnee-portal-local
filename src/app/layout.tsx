@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="forest">
+    <html lang="en" data-theme="business">
       <body className={inter.className}>
         <Providers>
           <CustomerProvider>
