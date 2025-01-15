@@ -87,7 +87,10 @@ export async function POST(request: Request) {
 			});
 			if (!systemCheck.isValid) {
 				console.log('System check failed:', systemCheck.error);
-				throw new Error(systemCheck.error);
+				return NextResponse.json({ 
+					success: false,
+					error: systemCheck.error
+				}, { status: 400 });
 			}
 
 			// Prevent self-approval
@@ -189,16 +192,13 @@ export async function POST(request: Request) {
 		console.log('Transaction completed successfully:', result);
 		return NextResponse.json({
 			success: true,
-			message: result.status === "APPROVED" ? "Request approved" : "Approval recorded",
-			status: result.status,
-			approvalsCount: result.approvalsCount,
-			minterTx: result.minterTx,
+			message: result.status === "APPROVED" ? "Request approved" : "Approval recorded"
 		});
 	} catch (error) {
 		console.error("Error processing approval:", error);
 
-		// If we have a mintRequestId, update the request status to failed
-		if (mintRequestId) {
+		// Only mark as failed for actual errors, not for system checks
+		if (mintRequestId && !(error instanceof Error && error.message.includes("System is paused"))) {
 			try {
 				console.log('Updating request status to FAILED');
 				await prisma.mintRequest.update({
@@ -215,8 +215,7 @@ export async function POST(request: Request) {
 
 		return NextResponse.json({ 
 			success: false,
-			error: error instanceof Error ? error.message : "Failed to process approval",
-			requestId: mintRequestId || null
+			error: error instanceof Error ? error.message : "Failed to process approval"
 		}, { status: 500 });
 	}
 }

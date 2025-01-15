@@ -3,11 +3,22 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { BURN_WIF, MINT_WIF } from "@/env";
 import { PrivateKey } from "@bsv/sdk";
+import { getConfig, revalidateConfig } from "@/lib/config";
+
+// Enable caching for this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 60; // Revalidate every 60 seconds
 
 export async function GET() {
   try {
-    const config = await prisma.config.findFirst();
-    return NextResponse.json(config, { headers: { "Cache-Control": "no-store" } });
+    const config = await getConfig();
+    if (!config) {
+      return NextResponse.json(
+        { error: "No configuration found" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json(config);
   } catch (error) {
     console.error("Error fetching config:", error);
     return NextResponse.json(
@@ -28,7 +39,11 @@ export async function POST(request: Request) {
       update: { tokenId, feeAddress, fees, decimals, latestMinterTx, mintAddress, burnAddress },
       create: { id: 1, tokenId, feeAddress, fees, decimals, latestMinterTx, fundAddress: "", mintAddress, burnAddress },
     });
-    return NextResponse.json(config, { headers: { "Cache-Control": "no-store" } });
+
+    // Revalidate cache after update
+    await revalidateConfig();
+
+    return NextResponse.json(config);
   } catch (error) {
     console.error("Error saving config:", error);
     return NextResponse.json(
