@@ -37,11 +37,11 @@ const getActivityDisplayText = (activity: Activity) => {
 };
 
 const requiresApproval = (activity: Activity) => {
-	return activity.type !== 'BLACKLIST';
+	// All actions require approval
+	return true;
 };
 
 const getApprovalCount = (activity: Activity) => {
-	if (activity.type === 'BLACKLIST') return 0;
 	return activity.approvals?.length || 0;
 };
 
@@ -97,7 +97,6 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 		if (!session?.user?.email) return false;
 		if (activity.status !== 'PENDING') return false;
 		if (activity.requester.email === session.user.email) return false;
-		if (activity.type === 'BLACKLIST') return false;
 		return !activity.approvals?.some(approval => approval.approver?.email === session.user.email);
 	}, [session]);
 
