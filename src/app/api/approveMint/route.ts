@@ -87,6 +87,16 @@ export async function POST(request: Request) {
 			});
 			if (!systemCheck.isValid) {
 				console.log('System check failed:', systemCheck.error);
+				
+				// If system is paused, keep the request pending
+				if (systemCheck.error?.includes('System is paused')) {
+					return NextResponse.json({ 
+						success: false,
+						error: "System is paused. Request will remain pending until system is unpaused."
+					}, { status: 202 });
+				}
+				
+				// For other errors (like blacklist), return error
 				return NextResponse.json({ 
 					success: false,
 					error: systemCheck.error
@@ -197,8 +207,11 @@ export async function POST(request: Request) {
 	} catch (error) {
 		console.error("Error processing approval:", error);
 
-		// Only mark as failed for actual errors, not for system checks
-		if (mintRequestId && !(error instanceof Error && error.message.includes("System is paused"))) {
+		// Only mark as failed for actual errors, not for system checks or pauses
+		if (mintRequestId && 
+			!(error instanceof Error && 
+				(error.message.includes("System is paused") || 
+				 error.message.includes("will remain pending")))) {
 			try {
 				console.log('Updating request status to FAILED');
 				await prisma.mintRequest.update({
@@ -216,7 +229,7 @@ export async function POST(request: Request) {
 		return NextResponse.json({ 
 			success: false,
 			error: error instanceof Error ? error.message : "Failed to process approval"
-		}, { status: 500 });
+		}, { status: error instanceof Error && error.message.includes("will remain pending") ? 202 : 500 });
 	}
 }
 

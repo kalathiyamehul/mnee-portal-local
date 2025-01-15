@@ -84,6 +84,13 @@ const MintTableContent = ({
 
 			const data = await response.json();
 
+			if (response.status === 202) {
+				// System is paused, show info toast
+				toast.error(data.error || "Request will remain pending until system is unpaused");
+				onUpdate?.();
+				return;
+			}
+
 			if (!response.ok) {
 				throw new Error(data.error || "Failed to approve mint request");
 			}
