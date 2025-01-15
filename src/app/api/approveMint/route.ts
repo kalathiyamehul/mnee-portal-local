@@ -6,11 +6,18 @@ import { P2PKH, PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import CosignTemplate from "@/templates/cosign";
 import { getConfig } from "@/lib/config";
 import { fetchConfig, fetchTransaction } from "@/utils/api";
-import type { MintRequest } from "@/types/utxo";
 import { MINT_WIF, MNEE_API, MNEE_ORDINALS_SERVICE } from "@/env";
 import { signMint } from "@/templates/vault";
 import { getFundingUtxos } from "@/utils/utxo";
-import { isSystemPaused } from "@/lib/systemStatus";
+import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
+import type { Prisma } from "@prisma/client";
+
+type MintRequestWithRelations = Prisma.MintRequestGetPayload<{
+	include: {
+		requester: true;
+		approvals: true;
+	}
+}>;
 
 export async function POST(request: Request) {
 	console.log('Starting approveMint request');
@@ -49,7 +56,7 @@ export async function POST(request: Request) {
 					requester: true,
 					approvals: true,
 				},
-			});
+			}) as MintRequestWithRelations;
 			console.log('Found mint request:', { 
 				requestId: mintRequest?.id,
 				status: mintRequest?.status,
@@ -67,12 +74,20 @@ export async function POST(request: Request) {
 				throw new Error("Request is not pending");
 			}
 
-			// Check if system is paused
-			console.log('Checking system pause status');
-			const isPaused = await isSystemPaused(tx);
-			if (isPaused) {
-				console.log('System is paused');
-				throw new Error("System is paused. Cannot approve mint requests at this time.");
+			if (mintRequest.amount <= 0n) {
+				console.log('Invalid amount:', { amount: mintRequest.amount.toString() });
+				throw new Error("Mint amount must be greater than 0");
+			}
+
+			// Check if system is paused and address is not blacklisted
+			console.log('Checking system status and blacklist for address:', mintRequest.address);
+			const systemCheck = await performSystemChecks(tx, {
+				address: mintRequest.address,
+				operation: SystemOperation.MINT_REQUEST_APPROVE
+			});
+			if (!systemCheck.isValid) {
+				console.log('System check failed:', systemCheck.error);
+				throw new Error(systemCheck.error);
 			}
 
 			// Prevent self-approval
@@ -97,24 +112,6 @@ export async function POST(request: Request) {
 			if (existingApproval) {
 				console.log('User has already approved');
 				throw new Error("You have already approved this request");
-			}
-
-			// Check if the target address is blacklisted
-			console.log('Checking blacklist status for address:', mintRequest.address);
-			const blacklistRequest = await tx.blacklistRequest.findFirst({
-				where: {
-					address: mintRequest.address,
-					status: 'APPROVED',
-					action: 'BLACKLIST',
-				},
-				orderBy: {
-					createdAt: 'desc',
-				},
-			});
-
-			if (blacklistRequest) {
-				console.log('Address is blacklisted');
-				throw new Error("Cannot approve mint: the target address is blacklisted");
 			}
 
 			// Check if the target address is frozen
@@ -329,7 +326,7 @@ const mintMnee = async (amount: bigint, address: string) => {
 		// iterate over the inputs and set script template to p2pkh
 		for (const input of tx.inputs) {
 			if (!input.unlockingScript?.chunks.length) {
-				input.sourceTransaction = await fetchTransaction(input.sourceTXID || '');
+				input.sourceTransaction = await fetchTransaction(input.sourceTXID ?? '');
 				input.unlockingScriptTemplate = new P2PKH().unlock(pk);
 			}
 		}

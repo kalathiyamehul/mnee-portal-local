@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import type { MNEEUtxo } from "@/types";
-import { isSystemPaused } from "@/lib/systemStatus";
+import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { fetchMneeUtxos } from "@/utils/api";
 
 export async function POST(request: Request) {
@@ -33,10 +33,13 @@ export async function POST(request: Request) {
         }
 
         // Check if system is paused
-        const isPaused = await isSystemPaused(prisma);
-        if (isPaused) {
+        const systemCheck = await performSystemChecks(prisma, {
+            address: refundAddress,
+            operation: SystemOperation.BURN_REQUEST_CREATE
+        });
+        if (!systemCheck.isValid) {
             return NextResponse.json(
-                { error: "System is paused. Cannot create burn requests at this time." },
+                { error: systemCheck.error },
                 { status: 400 }
             );
         }

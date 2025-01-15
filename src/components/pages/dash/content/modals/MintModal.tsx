@@ -51,6 +51,11 @@ export const MintModal = ({
     e.preventDefault();
     if (!selectedCustomer?.address || !amount) return;
 
+    if (Number(amount) <= 0) {
+      toast.error("Amount must be greater than 0");
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await fetch("/api/mint", {
@@ -155,6 +160,9 @@ export const MintModal = ({
                 placeholder="Enter amount to mint"
                 required
               />
+              <div className="label">
+                <span className="label-text-alt text-base-content/70">Amount must be greater than 0</span>
+              </div>
             </label>
           </div>
 
