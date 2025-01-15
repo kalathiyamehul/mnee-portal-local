@@ -4,7 +4,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, set the required environment variables. You can use a .env file if working locally. The dhasboard needs a postgres database to work with.
+First, set the required environment variables. You can use a .env file if working locally. The dashboard needs a postgres database to work with.
 
 ```bash
 touch .env
@@ -19,6 +19,8 @@ MNEE_ORDINALS_SERVICE=https://mnee-ordinals-service.somehost.net
 MINT_WIF=<some_wif>
 BURN_WIF=<some_wif>
 ```
+
+The application now includes environment validation to ensure all required variables are set correctly before startup.
 
 install the dependencies:
 
@@ -84,6 +86,23 @@ bun run db-reset
 ```
 
 ## Managing Users
+
+### User Management Scripts
+Several scripts are available for managing users and system operations:
+
+```bash
+# Force Password Reset
+bun run setPasswordReset user@example.com
+
+# Check User Status
+bun run checkUser user@example.com
+
+# List All Approvers
+bun run listApprovers
+
+# Find Pending Requests
+bun run findPendingRequests
+```
 
 ### Force Password Reset
 To force a user to reset their password on next login:
