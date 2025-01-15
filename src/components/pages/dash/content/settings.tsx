@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { FaPlus,  FaCopy, FaCircleInfo } from "react-icons/fa6";
-import { FaQuestionCircle, FaPencilAlt } from "react-icons/fa";
+import { FaCopy, FaCircleInfo } from "react-icons/fa6";
+import { FaQuestionCircle } from "react-icons/fa";
 import { toToken, toTokenSat } from 'satoshi-token';
 import type { Fee } from './admin/types';
 import type { Config } from '@prisma/client';
@@ -11,209 +11,8 @@ import { useBalance } from '@/contexts/BalanceContext';
 import { MdOutlineOpenInNew } from 'react-icons/md';
 import { toast } from 'react-hot-toast';
 import { fetchMneeUtxos, ingestTxid } from '@/utils/api';
-// import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import type { MNEEUtxo } from "@/types";
 import { FetchStatus } from "@/types/common";
-
-interface EditFeesModalProps {
-	fees: Fee[];
-	onSave: (fees: Fee[]) => void;
-	onClose: () => void;
-	editIndex?: number;
-}
-
-const EditFeesModal = ({ fees, onSave, onClose, editIndex }: EditFeesModalProps) => {
-	const [fee, setFee] = useState<Fee>(() => {
-		if (editIndex !== undefined && fees[editIndex]) {
-			return { ...fees[editIndex] };
-		}
-		return { min: 0, max: Number.MAX_SAFE_INTEGER, fee: 0 };
-	});
-	const [config, setConfig] = useState<Config | null>(null);
-	const [error, setError] = useState<string | null>(null);
-
-	// Fetch config to get decimals
-	useEffect(() => {
-		const fetchConfig = async () => {
-			const response = await fetch('/api/config');
-			const data = await response.json();
-			setConfig(data);
-		};
-		fetchConfig();
-	}, []);
-
-	const validateFeeRange = (newFee: Fee) => {
-		// Skip validation for the fee being edited
-		const otherFees = editIndex !== undefined ? 
-			fees.filter((_, i) => i !== editIndex) : 
-			fees;
-
-		// Check for overlaps with existing fees
-		for (const existingFee of otherFees) {
-			if (
-				(newFee.min >= existingFee.min && newFee.min < existingFee.max) ||
-				(newFee.max > existingFee.min && newFee.max <= existingFee.max) ||
-				(newFee.min <= existingFee.min && newFee.max >= existingFee.max)
-			) {
-				return `Fee range overlaps with existing range ${existingFee.min}-${existingFee.max}`;
-			}
-		}
-
-		// Validate min/max relationship
-		if (newFee.min >= newFee.max) {
-			return 'Minimum value must be less than maximum value';
-		}
-
-		return null;
-	};
-
-	const handleSave = () => {
-		const validationError = validateFeeRange(fee);
-		if (validationError) {
-			setError(validationError);
-			return;
-		}
-
-		let newFees: Fee[];
-		if (editIndex !== undefined) {
-			newFees = fees.map((f, i) => i === editIndex ? fee : f);
-		} else {
-			newFees = [...fees, fee];
-		}
-
-		// Sort fees by min value
-		newFees.sort((a, b) => a.min - b.min);
-		onSave(newFees);
-		onClose();
-	};
-
-	if (!config) {
-		return (
-			<dialog id="edit_fees_modal" className="modal modal-open">
-				<div className="modal-box flex justify-center items-center">
-					<span className="loading loading-spinner loading-lg" />
-				</div>
-			</dialog>
-		);
-	}
-
-	return (
-		<dialog id="edit_fees_modal" className="modal modal-open" onClick={(e) => {
-			if (e.target === e.currentTarget) {
-				onClose();
-			}
-		}}>
-			<div className="modal-box">
-				<h3 className="font-bold text-lg mb-4">
-					{editIndex !== undefined ? 'Edit Fee' : 'Add Fee'}
-				</h3>
-
-				{error && (
-					<div className="alert alert-error mb-4">
-						<span>{error}</span>
-					</div>
-				)}
-				
-				<div className="form-control">
-					<div className="grid grid-cols-3 gap-3">
-						<div>
-							<label className="label">
-								<span className="label-text">Min</span>
-							</label>
-							<label className="input input-bordered flex items-center gap-2">
-								<input
-									type="text"
-									className="grow"
-									value={fee.min === 0 ? '' : toToken(fee.min.toString(), config.decimals)}
-									placeholder="0"
-									onChange={(e) => {
-										const value = e.target.value;
-										if (value === '') {
-											setFee({ ...fee, min: 0 });
-											return;
-										}
-										const tokenAmount = Number(value);
-										if (Number.isNaN(tokenAmount)) return;
-										const satAmount = toTokenSat(tokenAmount,  config.decimals);
-										setFee({ ...fee, min: satAmount });
-										setError(null);
-									}}
-								/>
-								<span className="badge badge-ghost">MNEE</span>
-							</label>
-						</div>
-						<div>
-							<label className="label">
-								<span className="label-text">Max</span>
-							</label>
-							<label className="input input-bordered flex items-center gap-2">
-								<input
-									type="text"
-									className="grow"
-									value={fee.max === Number.MAX_SAFE_INTEGER ? '' : toToken(fee.max.toString(), config.decimals)}
-									placeholder="∞"
-									onChange={(e) => {
-										const value = e.target.value;
-										if (value === '') {
-											setFee({ ...fee, max: Number.MAX_SAFE_INTEGER });
-											return;
-										}
-										const tokenAmount = Number(value);
-										if (Number.isNaN(tokenAmount)) return;
-										const satAmount = toTokenSat(tokenAmount, config.decimals);
-										setFee({ ...fee, max: satAmount });
-										setError(null);
-									}}
-								/>
-								<span className="badge badge-ghost">MNEE</span>
-							</label>
-						</div>
-						<div>
-							<label className="label">
-								<span className="label-text">Fee</span>
-							</label>
-							<label className="input input-bordered flex items-center gap-2">
-								<input
-									type="text"
-									className="grow"
-									value={fee.fee === 0 ? '' : toToken(fee.fee.toString(), config.decimals)}
-									placeholder="0"
-									onChange={(e) => {
-										const value = e.target.value;
-										if (value === '') {
-											setFee({ ...fee, fee: 0 });
-											return;
-										}
-										const tokenAmount = Number(value);
-										if (Number.isNaN(tokenAmount)) return;
-										const satAmount = toTokenSat(tokenAmount , config.decimals);
-										setFee({ ...fee, fee: satAmount });
-										setError(null);
-									}}
-								/>
-								<span className="badge badge-ghost">MNEE</span>
-							</label>
-						</div>
-					</div>
-				</div>
-
-				<div className="modal-action">
-					<button type="button" className="btn" onClick={onClose}>
-						Cancel
-					</button>
-					<button
-						type="button"
-						className="btn btn-primary"
-						onClick={handleSave}
-						disabled={fee.min >= fee.max}
-					>
-						{editIndex !== undefined ? 'Save Changes' : 'Add Fee'}
-					</button>
-				</div>
-			</div>
-		</dialog>
-	);
-};
 
 interface AddressCardProps {
 	title: string;
@@ -438,7 +237,6 @@ const TokenDetailsSection = ({
 const DashboardSettingsContent = () => {
 	const [config, setConfig] = useState<Config | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [showEditFeesModal, setShowEditFeesModal] = useState(false);
 	const [feeAddress, setFeeAddress] = useState("");
 	const [isEditing, setIsEditing] = useState(false);
 	const { balances, balancesLoading } = useBalance();
@@ -449,8 +247,6 @@ const DashboardSettingsContent = () => {
 		icon: string;
 		amt: number;
 	} | null>(null);
-	// const { statusData } = useSystemStatus();
-	const [editingFeeIndex, setEditingFeeIndex] = useState<number | undefined>();
 	const [burnUtxos, setBurnUtxos] = useState<MNEEUtxo[]>([]);
 	const [burnLoading, setBurnLoading] = useState(false);
 
@@ -471,23 +267,6 @@ const DashboardSettingsContent = () => {
 			setBurnLoading(false);
 		}
 	}, []);
-
-	// Calculate circulating supply from mints and burns
-	// const circulatingSupply = useMemo(() => {
-	// 	if (!statusData || !config) return 0n;
-
-	// 	// Sum all approved mints
-	// 	const totalMints = statusData.mintRequests
-	// 		.filter(req => req.status === 'APPROVED')
-	// 		.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
-
-	// 	// Sum all approved burns
-	// 	const totalBurns = statusData.burnRequests
-	// 		.filter(req => req.status === 'APPROVED')
-	// 		.reduce((sum, req) => sum + BigInt(req.amount || '0'), 0n);
-
-	// 	return totalMints - totalBurns;
-	// }, [statusData, config]);
 
 	const fetchBsvBalances = useCallback(async (addresses: string[]) => {
 		try {
@@ -558,33 +337,6 @@ const DashboardSettingsContent = () => {
 		fetchConfig();
 	}, [fetchBsvBalances, fetchBurnUtxos]);
 
-	const handleSave = async (newFees?: Fee[]) => {
-		try {
-			setLoading(true);
-			const response = await fetch("/api/config", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					...config,
-					fees: newFees || config?.fees,
-					feeAddress: feeAddress,
-				}),
-			});
-
-			if (!response.ok) {
-				throw new Error("Failed to save settings");
-			}
-
-			const updatedConfig = await response.json();
-			setConfig(updatedConfig);
-			setIsEditing(false);
-		} catch (error) {
-			console.error("Error saving settings:", error);
-		} finally {
-			setLoading(false);
-		}
-	};
-
 	if (loading) {
 		return (
 			<div className="flex justify-center items-center min-h-screen animate-fade-in">
@@ -625,13 +377,6 @@ const DashboardSettingsContent = () => {
 					<div className="space-y-6">
 						<div className="flex justify-between items-center">
 							<h3 className="text-lg font-bold">Fee Structure</h3>
-							<button
-								type="button" 
-								className="btn btn-primary btn-sm gap-2"
-								onClick={() => setShowEditFeesModal(true)}
-							>
-								<FaPlus /> Add Fee
-							</button>
 						</div>
 						<div className="overflow-x-auto">
 							<table className="table w-full">
@@ -639,7 +384,6 @@ const DashboardSettingsContent = () => {
 									<tr>
 										<th>Range</th>
 										<th>Fee</th>
-										<th className="w-20"></th>
 									</tr>
 								</thead>
 								<tbody>
@@ -649,18 +393,6 @@ const DashboardSettingsContent = () => {
 												{toToken(fee.min, config.decimals)} MNEE - {fee.max === Number.MAX_SAFE_INTEGER ? '∞' : `${toToken(fee.max, config.decimals)} MNEE`}
 											</td>
 											<td>{toToken(fee.fee, config.decimals)} MNEE</td>
-											<td>
-												<button
-													type="button"
-													className="btn btn-ghost btn-xs"
-													onClick={() => {
-														setEditingFeeIndex(index);
-														setShowEditFeesModal(true);
-													}}
-												>
-													<FaPencilAlt />
-												</button>
-											</td>
 										</tr>
 									))}
 								</tbody>
@@ -762,22 +494,6 @@ const DashboardSettingsContent = () => {
 					)}
 				</div>
 			</div>
-
-			{showEditFeesModal && (
-				<EditFeesModal
-					fees={config.fees as Fee[] || []}
-					onSave={(newFees) => {
-						handleSave(newFees);
-						setShowEditFeesModal(false);
-						setEditingFeeIndex(undefined);
-					}}
-					onClose={() => {
-						setShowEditFeesModal(false);
-						setEditingFeeIndex(undefined);
-					}}
-					editIndex={editingFeeIndex}
-				/>
-			)}
 		</div>
 	);
 };

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { BURN_WIF, MINT_WIF } from "@/env";
 import { PrivateKey } from "@bsv/sdk";
 import { getConfig, revalidateConfig } from "@/lib/config";
+import { Prisma } from "@prisma/client";
 
 // Enable caching for this route
 export const dynamic = 'force-dynamic';
@@ -29,15 +30,45 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { tokenId, feeAddress, fees, decimals, latestMinterTx } = await request.json();
+  const { tokenId, feeAddress, decimals, latestMinterTx } = await request.json();
 
   const mintAddress = PrivateKey.fromWif(MINT_WIF).toAddress();
   const burnAddress = PrivateKey.fromWif(BURN_WIF).toAddress();
   try {
+    // Get current config to keep existing fees
+    const currentConfig = await prisma.config.findUnique({
+      where: { id: 1 }
+    });
+
+    const defaultFees = [
+      { min: 0, max: 10000, fee: 50 },
+      { min: 10001, max: Number.MAX_SAFE_INTEGER, fee: 1000 }
+    ];
+
     const config = await prisma.config.upsert({
       where: { id: 1 },
-      update: { tokenId, feeAddress, fees, decimals, latestMinterTx, mintAddress, burnAddress },
-      create: { id: 1, tokenId, feeAddress, fees, decimals, latestMinterTx, fundAddress: "", mintAddress, burnAddress },
+      update: { 
+        tokenId, 
+        feeAddress, 
+        decimals, 
+        latestMinterTx, 
+        mintAddress, 
+        burnAddress,
+        // Keep existing fees or use default
+        fees: currentConfig?.fees ?? defaultFees
+      },
+      create: { 
+        id: 1, 
+        tokenId, 
+        feeAddress, 
+        decimals, 
+        latestMinterTx, 
+        fundAddress: "", 
+        mintAddress, 
+        burnAddress,
+        // Use default fees for new config
+        fees: defaultFees
+      },
     });
 
     // Revalidate cache after update
