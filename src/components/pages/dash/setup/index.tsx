@@ -8,6 +8,7 @@ import { ChooseMode } from './ChooseMode';
 import { DeployForm } from './DeployForm';
 import { ImportForm } from './ImportForm';
 import type { SetupMode } from './types';
+import { revalidateConfig } from '@/lib/config';
 
 // Default fees that will be used during setup
 const DEFAULT_FEES = [
@@ -69,6 +70,9 @@ export default function Setup() {
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Failed to deploy token');
       }
+      
+      await revalidateConfig();
+      console.log("[DEBUG] revalidated config");
       
       toast.success('Token deployed and configured successfully');
       // Signup functionality temporarily disabled
