@@ -70,6 +70,7 @@ export async function POST(request: Request) {
       });
 
       if (updatedBurnRequest?.approvals.length === 2) {
+        // Fetching remote config
         const remoteConfig = await fetchConfig();
 
         if (!remoteConfig) {

@@ -290,8 +290,9 @@ const mintMnee = async (
 	address: string,
 ): Promise<{ success: boolean; rawtx: string; error?: string }> => {
 	console.log("Starting mintMnee:", { amount: amount.toString(), address });
+  // Fetching remote config
 	const config = await fetchConfig();
-	console.log("Fetched config:", { approver: config.approver });
+	console.log("Fetched remote config:", { approver: config.approver });
 
 	// MNEE contract config
 	const pk = PrivateKey.fromWif(MINT_WIF);

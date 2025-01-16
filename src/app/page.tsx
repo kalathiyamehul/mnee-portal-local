@@ -9,7 +9,7 @@ import { getConfig } from "@/lib/config";
 export default async function HomePage() {
 	const config = await getConfig();
 	if (!config) {
-		redirect("/setup");
+		redirect("/setup?fromHome=true");
 	}
 
 	/* Signup functionality temporarily disabled

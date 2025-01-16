@@ -38,7 +38,7 @@ export default async function AuthenticatedLayout({
   // Check if config exists
   const config = await getConfig();
   if (!config?.tokenId) {
-    redirect('/setup');
+    redirect('/setup?fromDashLayout=true');
   }
 
   return (
