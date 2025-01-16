@@ -157,6 +157,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
   useEffect(() => {
     const init = async () => {
+      // Fetching remote config
       const config = await fetchConfig();
       setConfig(config);
     };

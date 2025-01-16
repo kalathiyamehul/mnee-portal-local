@@ -42,7 +42,7 @@ export const BurnsTab = () => {
   const [selectedBurn, setSelectedBurn] = useState<BurnUtxo | null>(null);
   const [selectedRefund, setSelectedRefund] = useState<BurnUtxo | null>(null);
 
-  const fetchConfig = useCallback(async () => {
+  const fetchBurnAddressFromConfig = useCallback(async () => {
     try {
       const configResponse = await fetch('/api/config');
       const config = await configResponse.json();
@@ -53,7 +53,7 @@ export const BurnsTab = () => {
       console.log('Config loaded:', { config, decimals: config.decimals });
       setBurnAddress(config.burnAddress);
       setDecimals(config.decimals ?? DEFAULT_DECIMALS);
-      return config.burnAddress;
+      return config.burnAddress as string;
     } catch (err) {
       console.error('Error fetching config:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch config');
@@ -117,12 +117,12 @@ export const BurnsTab = () => {
   const handleRefresh = useCallback(async () => {
     setLoading(true);
     setError(null);
-    const address = await fetchConfig();
+    const address = await fetchBurnAddressFromConfig();
     if (address) {
       await fetchUtxos(address);
     }
     setLoading(false);
-  }, [fetchUtxos, fetchConfig]);
+  }, [fetchUtxos, fetchBurnAddressFromConfig]);
 
   const handleCreateBurnRequest = (burn: BurnUtxo) => {
     setSelectedBurn(burn);

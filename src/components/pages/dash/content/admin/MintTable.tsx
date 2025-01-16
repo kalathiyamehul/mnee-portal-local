@@ -11,6 +11,7 @@ import { getConfig } from "@/lib/config";
 import { useEffect, useState } from "react";
 import type { Config } from "@/types";
 import { getGravatarUrl } from "@/utils/gravatar";
+import { useRouter } from "next/navigation";
 
 const statusColors: Record<string, string> = {
 	PENDING: "badge-warning",
@@ -62,14 +63,21 @@ const MintTableContent = ({
 }) => {
 	const [config, setConfig] = useState<Config | null>(null);
 	const [loadingApproval, setLoadingApproval] = useState<string | null>(null);
+	const router = useRouter();
 
 	useEffect(() => {
-		const fetchConfig = async () => {
+		const getAndSetConfig = async () => {
 			const config = await getConfig();
-			setConfig(config as unknown as Config);
+      if (!config) {
+        // redirect to setup page
+        router.push('/setup?fromDashAdminMints=true');
+        return;
+      }
+			setConfig(config as Config);
 		};
-		fetchConfig();
-	}, []);
+
+		getAndSetConfig();
+	}, [router]);
 
 	const handleApprove = async (id: string) => {
 		try {

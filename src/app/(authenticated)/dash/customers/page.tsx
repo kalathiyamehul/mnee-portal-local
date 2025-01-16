@@ -13,7 +13,7 @@ export default async function CustomersPage() {
 
   const config = await getConfig();
   if (!config) {
-    redirect("/setup");
+    redirect("/setup?fromDashCustomers=true");
   }
 
   return <Dashboard page={DashPages.CUSTOMERS} config={config} />;

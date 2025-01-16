@@ -67,7 +67,7 @@ const AddressCard = ({ title, address, tooltip, source, balance, isLoading, deci
 				<div className="text-xs uppercase tracking-wider opacity-50">Balance</div>
 				<div className="text-lg font-bold">
 					{isLoading ? (
-						<span className="loading loading-spinner loading-sm"></span>
+						<span className="loading loading-spinner loading-sm" />
 					) : (
 						type === 'mnee' ? 
 							`${toToken(balance || 0, decimals)} MNEE` :
