@@ -63,7 +63,7 @@ const deployMnee = async (feeAddress: string) => {
 			initialDistribution: { address: mintAddress, tokens: MNEE_TOKEN_MAX },
 			paymentPk: mintPk,
 			destinationAddress: mintAddress,
-			decimals: Number(MNEE_TOKEN_DEC),
+			decimals: MNEE_TOKEN_DEC,
 		};
 
 		const result = await deployBsv21Token(config);
