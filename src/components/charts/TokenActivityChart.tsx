@@ -89,8 +89,8 @@ export const TokenActivityChart = ({
         ]);
 
         if (!chartResponse.ok) {
-          const error = await chartResponse.json();
-          throw new Error(error.error || "Failed to fetch chart data");
+          const { error } = await chartResponse.json();
+          throw new Error(error || "Failed to fetch chart data");
         }
 
         const [chartData, configData] = await Promise.all([

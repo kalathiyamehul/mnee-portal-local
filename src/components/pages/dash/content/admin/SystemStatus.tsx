@@ -37,8 +37,8 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to approve pause request");
+        const { error } = await response.json();
+        throw new Error(error || "Failed to approve pause request");
       }
 
       await fetchStatus();
@@ -61,8 +61,8 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to cancel request");
+        const { error } = await response.json();
+        throw new Error(error || "Failed to cancel request");
       }
 
       await fetchStatus();

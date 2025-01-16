@@ -68,8 +68,8 @@ export const MintModal = ({
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create mint request");
+        const { error } = await response.json();
+        throw new Error(error || "Failed to create mint request");
       }
 
       await onSuccess();
