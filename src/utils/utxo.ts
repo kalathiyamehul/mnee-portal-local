@@ -1,7 +1,11 @@
 import type { FundingUtxo } from "@/types/utxo";
 import { MNEE_API } from "@/env";
+import type { Utxo } from "js-1sat-ord";
+import { Script, Utils } from "@bsv/sdk";
 
-export async function getFundingUtxos(fundingAddress: string): Promise<FundingUtxo[]> {
+const { toBase64 } = Utils
+
+export async function getFundingUtxos(fundingAddress: string): Promise<Utxo[]> {
   console.log('Fetching funding UTXOs for address:', fundingAddress);
   const utxosResponse = await fetch(`${MNEE_API}/v1/utxos/${fundingAddress}`);
   
@@ -14,7 +18,7 @@ export async function getFundingUtxos(fundingAddress: string): Promise<FundingUt
     throw new Error(`Failed to fetch UTXOs: ${errorText}`);
   }
 
-  const utxos = await utxosResponse.json();
+  const utxos = await utxosResponse.json() as FundingUtxo[];
   console.log('Received UTXOs:', utxos);
 
   if (!Array.isArray(utxos)) {
@@ -22,5 +26,8 @@ export async function getFundingUtxos(fundingAddress: string): Promise<FundingUt
     throw new Error('Invalid UTXOs response: expected array');
   }
 
-  return utxos;
+  return utxos.map((utxo: FundingUtxo) => ({
+    ...utxo,
+    script: toBase64(Script.fromHex(utxo.locking_script).toBinary()),
+  } as Utxo))
 } 
