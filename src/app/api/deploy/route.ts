@@ -91,7 +91,7 @@ const deployMnee = async (feeAddress: string) => {
 		const data = (await broadcastResponse.json()) as IndexContext;
 		const token = data.txos[0].data.bsv21;
 
-		console.log("broadcasted mnee", deployTxid, token, data);
+		console.log("broadcasted mnee", deployTxid, token, JSON.stringify(data));
 
 		// Create config data object
 		const configData = {
