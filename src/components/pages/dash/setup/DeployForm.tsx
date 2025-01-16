@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { SetupCard } from './SetupCard';
+import { EnvWarning } from './EnvWarning';
 
 interface DeployFormProps {
   onBack: () => void;
@@ -9,6 +10,8 @@ interface DeployFormProps {
 
 export function DeployForm({ onBack, onDeploy, loading }: DeployFormProps) {
   const [feeAddress, setFeeAddress] = useState('');
+  const [missingVars, setMissingVars] = useState<string[]>([]);
+  const disabled = missingVars.some(v => v === 'MINT_WIF' || v === 'BURN_WIF');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,6 +20,7 @@ export function DeployForm({ onBack, onDeploy, loading }: DeployFormProps) {
 
   return (
     <SetupCard title="Deploy New Token">
+      <EnvWarning onMissingVarsChange={setMissingVars} />
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="form-control">
           <label htmlFor="feeAddress" className="label">
@@ -29,13 +33,15 @@ export function DeployForm({ onBack, onDeploy, loading }: DeployFormProps) {
             value={feeAddress}
             onChange={(e) => setFeeAddress(e.target.value)}
             required
+            disabled={disabled}
           />
         </div>
         <div className="form-control mt-4">
           <button
             type="submit"
             className={`btn btn-primary ${loading ? 'loading' : ''}`}
-            disabled={loading}
+            disabled={loading || disabled}
+            title={disabled ? "Required environment variables are missing" : undefined}
           >
             Deploy Token
           </button>

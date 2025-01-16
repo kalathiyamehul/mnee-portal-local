@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
-import { isSystemPaused } from '@/lib/systemStatus';
+import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
 import { toTokenSat } from 'satoshi-token';
 
 export async function POST(request: Request) {
@@ -22,6 +22,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (amount <= 0) {
+      return NextResponse.json(
+        { error: "Amount must be greater than 0" },
+        { status: 400 }
+      );
+    }
+
     // Get customer
     const customer = await prisma.customer.findUnique({
       where: { id: customerId }
@@ -34,11 +41,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if system is paused
-    const isPaused = await isSystemPaused(prisma);
-    if (isPaused) {
+    // Check if system is paused and address is not blacklisted
+    const systemCheck = await performSystemChecks(prisma, {
+      address: customer.address,
+      operation: SystemOperation.MINT_REQUEST_CREATE
+    });
+    if (!systemCheck.isValid) {
       return NextResponse.json(
-        { error: "System is paused. Cannot create mint requests at this time." },
+        { error: systemCheck.error },
         { status: 400 }
       );
     }

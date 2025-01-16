@@ -82,14 +82,14 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
 
             <label className="form-control w-full mb-4">
               <div className="label">
-                <span className="label-text">Bitcoin SV Address</span>
+                <span className="label-text">Ordinals Address</span>
               </div>
               <input
                 type="text"
                 className="input input-bordered w-full max-w-md font-mono"
                 value={formData.address}
                 onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                placeholder="Enter Bitcoin SV address"
+                placeholder="Enter 1Sat Ordinals address"
                 required
               />
             </label>

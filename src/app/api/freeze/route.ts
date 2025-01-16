@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { FreezeRequestAction } from '@prisma/client';
-import { isSystemPaused } from '@/lib/systemStatus';
+import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
 
 // Helper function to validate FreezeRequestAction
 function isFreezeAction(action: string): action is FreezeRequestAction {
@@ -29,11 +29,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }
 
-    // Check if system is paused
-    const isPaused = await isSystemPaused(prisma);
-    if (isPaused) {
+    // Check if system is paused and address is not blacklisted
+    const systemCheck = await performSystemChecks(prisma, {
+      address,
+      operation: SystemOperation.FREEZE_REQUEST_CREATE
+    });
+    if (!systemCheck.isValid) {
       return NextResponse.json(
-        { error: "System is paused. Cannot create freeze requests at this time." },
+        { error: systemCheck.error },
         { status: 400 }
       );
     }

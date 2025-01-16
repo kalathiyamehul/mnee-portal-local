@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
-import { isSystemPaused } from '@/lib/systemStatus';
+import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -67,9 +67,14 @@ export async function POST(request: Request) {
       }
 
       // Check if system is paused
-      const isPaused = await isSystemPaused(tx);
-      if (isPaused) {
-        throw new Error("System is paused. Cannot approve blacklist requests at this time.");
+      console.log('Checking system status');
+      const systemCheck = await performSystemChecks(tx, {
+        address: blacklistRequest.address,
+        operation: SystemOperation.BLACKLIST_REQUEST_APPROVE
+      });
+      if (!systemCheck.isValid) {
+        console.log('System check failed:', systemCheck.error);
+        throw new Error(systemCheck.error);
       }
 
       // Prevent self-approval

@@ -19,7 +19,7 @@ let configCache: {
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
 
 // Use React's cache function to dedupe requests within a render cycle
-export const getConfig = cache(async (forceFresh = false): Promise<Config> => {
+export const getConfig = cache(async (forceFresh = false): Promise<Config | null> => {
   const now = Date.now();
   configCache.requestCount++;
 
@@ -45,10 +45,6 @@ export const getConfig = cache(async (forceFresh = false): Promise<Config> => {
   const config = await prisma.config.findFirst({
     where: { id: 1 },
   });
-
-  if (!config) {
-    throw new Error('Config not found');
-  }
 
   // Update in-memory cache
   configCache = {

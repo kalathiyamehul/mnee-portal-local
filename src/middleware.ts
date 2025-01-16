@@ -9,6 +9,12 @@ export default withAuth(
 		// Check if user needs to reset password
 		const requiresReset = token?.requiresPasswordReset;
 		const isResetPage = req.nextUrl.pathname === '/reset-password';
+		const isResetApi = req.nextUrl.pathname === '/api/resetPassword';
+
+		// Skip password reset check for the reset password API
+		if (isResetApi) {
+			return NextResponse.next();
+		}
 
 		// If requires reset and not on reset page, redirect to reset page
 		if (requiresReset && !isResetPage) {
@@ -34,6 +40,6 @@ export const config = {
 	matcher: [
 		"/dash/:path*",
 		"/reset-password",
-		"/api/((?!auth|config|deploy).*)/:path*", // Protect all API routes except /api/auth/* and /api/config
+		"/api/((?!auth|config|deploy|resetPassword).*)/:path*", // Protect all API routes except /api/auth/*, /api/config, /api/deploy, and /api/resetPassword
 	],
 };

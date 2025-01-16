@@ -212,7 +212,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	const handleApprove = async (id: string, type: Activity['type']) => {
 		try {
 			setLoading(true);
-			const endpoint = type === 'ACTION' ? 'approve' :
+			const endpoint = type === 'ACTION' ? 'approveSystem' :
 				type === 'FREEZE' ? 'approveFreeze' :
 				type === 'BLACKLIST' ? 'approveBlacklist' :
 				type === 'MINT' ? 'approveMint' :
