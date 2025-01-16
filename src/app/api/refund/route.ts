@@ -15,11 +15,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { outpoint } = await request.json();
+    const { outpoint, refundAddress } = await request.json();
 
     if (!outpoint) {
       return NextResponse.json(
         { error: "Missing required field: outpoint" },
+        { status: 400 }
+      );
+    }
+
+    if (!refundAddress) {
+      return NextResponse.json(
+        { error: "Missing required field: refundAddress" },
         { status: 400 }
       );
     }
@@ -49,13 +56,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!burnRequest.refundAddress) {
-      return NextResponse.json(
-        { error: "No refund address specified for this burn request" },
-        { status: 400 }
-      );
-    }
-
     // Create refund transaction
     const burnPk = PrivateKey.fromWif(BURN_WIF);
     const tx = new Transaction();
@@ -69,9 +69,9 @@ export async function POST(request: Request) {
       unlockingScriptTemplate: new OrdP2PKH().unlock(burnPk),
     });
 
-    // Add output back to the refund address
+    // Add output to the refund address
     tx.addOutput({
-      lockingScript: new OrdP2PKH().lock(burnRequest.refundAddress),
+      lockingScript: new OrdP2PKH().lock(refundAddress),
       satoshis: 1,
     });
 

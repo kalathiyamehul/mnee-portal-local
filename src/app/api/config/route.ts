@@ -1,7 +1,10 @@
 // src/app/api/config/route.ts
 import { NextResponse } from "next/server";
-import { getConfig, revalidateConfig } from "@/lib/config";
 import { prisma } from "@/lib/prisma";
+import { BURN_WIF, MINT_WIF } from "@/env";
+import { PrivateKey } from "@bsv/sdk";
+import { getConfig, revalidateConfig } from "@/lib/config";
+import { Prisma } from "@prisma/client";
 
 // Enable caching for this route
 export const dynamic = 'force-dynamic';
@@ -10,22 +13,62 @@ export const revalidate = 60; // Revalidate every 60 seconds
 export async function GET() {
   try {
     const config = await getConfig();
+    if (!config) {
+      return NextResponse.json(
+        { error: "No configuration found" },
+        { status: 404 }
+      );
+    }
     return NextResponse.json(config);
   } catch (error) {
     console.error("Error fetching config:", error);
     return NextResponse.json(
-      { error: "Failed to fetch config" },
+      { error: "Error fetching configuration." },
       { status: 500 }
     );
   }
 }
 
 export async function POST(request: Request) {
+  const { tokenId, feeAddress, decimals, latestMinterTx } = await request.json();
+
+  const mintAddress = PrivateKey.fromWif(MINT_WIF).toAddress();
+  const burnAddress = PrivateKey.fromWif(BURN_WIF).toAddress();
   try {
-    const data = await request.json();
-    const config = await prisma.config.update({
+    // Get current config to keep existing fees
+    const currentConfig = await prisma.config.findUnique({
+      where: { id: 1 }
+    });
+
+    const defaultFees = [
+      { min: 0, max: 10000, fee: 50 },
+      { min: 10001, max: Number.MAX_SAFE_INTEGER, fee: 1000 }
+    ];
+
+    const config = await prisma.config.upsert({
       where: { id: 1 },
-      data
+      update: { 
+        tokenId, 
+        feeAddress, 
+        decimals, 
+        latestMinterTx, 
+        mintAddress, 
+        burnAddress,
+        // Keep existing fees or use default
+        fees: currentConfig?.fees ?? defaultFees
+      },
+      create: { 
+        id: 1, 
+        tokenId, 
+        feeAddress, 
+        decimals, 
+        latestMinterTx, 
+        fundAddress: "", 
+        mintAddress, 
+        burnAddress,
+        // Use default fees for new config
+        fees: defaultFees
+      },
     });
 
     // Revalidate cache after update
@@ -33,9 +76,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json(config);
   } catch (error) {
-    console.error("Error updating config:", error);
+    console.error("Error saving config:", error);
     return NextResponse.json(
-      { error: "Failed to update config" },
+      { error: "Error saving configuration." },
       { status: 500 }
     );
   }

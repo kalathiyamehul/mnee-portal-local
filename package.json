@@ -12,7 +12,9 @@
     "setPasswordReset": "bun scripts/setPasswordReset.ts",
     "approve": "bun scripts/approve.ts",
     "find-pending": "bun scripts/find-pending.ts",
-    "list-approvers": "bun scripts/list-approvers.ts"
+    "list-approvers": "bun scripts/list-approvers.ts",
+    "create-user": "bun scripts/create-user.ts",
+    "check-user": "bun scripts/check-user.ts"
   },
   "dependencies": {
     "@bsv/sdk": "^1.2.21",
