@@ -6,6 +6,7 @@ import type { IndexContext } from "@/types/indexContext";
 import { getFundingUtxos } from "@/utils/utxo";
 import { deployBsv21Token, type DeployBsv21TokenConfig } from "js-1sat-ord";
 import {
+  MNEE_TOKEN_DEC,
 	MNEE_TOKEN_ICON,
 	MNEE_TOKEN_MAX,
 	MNEE_TOKEN_SYM,
@@ -62,6 +63,7 @@ const deployMnee = async (feeAddress: string) => {
 			initialDistribution: { address: mintAddress, tokens: MNEE_TOKEN_MAX },
 			paymentPk: mintPk,
 			destinationAddress: mintAddress,
+			decimals: Number(MNEE_TOKEN_DEC),
 		};
 
 		const result = await deployBsv21Token(config);
