@@ -233,8 +233,8 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 			});
 
 			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.error || 'Failed to approve request');
+				const { error } = await response.json();
+				throw new Error(error || 'Failed to approve request');
 			}
 
 			await fetchStatus();

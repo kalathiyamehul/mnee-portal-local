@@ -143,8 +143,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 			});
 
 			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.error || 'Failed to approve request');
+				const { error } = await response.json();
+				throw new Error(error || 'Failed to approve request');
 			}
 
 			fetchMetrics();

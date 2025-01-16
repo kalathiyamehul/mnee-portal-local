@@ -351,8 +351,8 @@ const DashboardSettingsContent = () => {
 			});
 
 			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.error || 'Failed to save configuration');
+				const { error } = await response.json();
+				throw new Error(error || 'Failed to save configuration');
 			}
 
 			toast.success('Configuration saved successfully');
