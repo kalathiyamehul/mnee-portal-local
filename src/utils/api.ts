@@ -47,6 +47,24 @@ export const fetchMneeUtxos = async (addresses: string[], ops: ('transfer' | 'bu
     return json;
 };
 
+
+export const fetchVaultedMneeUtxos = async (ops: ('transfer' | 'burn' | 'deploy+mint')[] = ['transfer', 'deploy+mint']) => {
+    if (!MNEE_API) {
+        throw new Error("MNEE_API not defined");
+    }
+
+    const response = await fetch(`${MNEE_API}/v1/utxos/vault`);
+    if (!response.ok) {
+        throw new Error("Failed to fetch UTXOs");
+    }
+    const json = await response.json() as MNEEUtxo[];
+    console.log('Fetched UTXOs:', json);
+    if (ops.length) {
+        return json.filter((utxo) => ops.includes(utxo.data.bsv21.op.toLowerCase() as 'transfer' | 'burn' | 'deploy+mint'));
+    }
+    return json;
+};
+
 export const ingestTxid = async (txid: string) => {
   const response = await fetch(`${MNEE_API}/v1/ingest/${txid}`, {
     method: 'POST',
