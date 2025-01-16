@@ -267,9 +267,16 @@ const MintTableContent = ({
 									<div className="font-medium">
 										{toToken(mint.amount as string, config.decimals)} MNEE
 									</div>
-									<span className={`badge badge-sm ${statusColors[mint.status]}`}>
-										{mint.status}
-									</span>
+									<div className="flex items-center gap-2">
+										<span className={`badge badge-sm ${statusColors[mint.status]}`}>
+											{mint.status}
+										</span>
+										{mint.status === 'PENDING' && (
+											<span className="text-xs text-base-content/70">
+												{mint.approvals?.length || 0}/2 Approvals
+											</span>
+										)}
+									</div>
 								</div>
 							</td>
 							{showActions && (

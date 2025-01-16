@@ -3,32 +3,38 @@
 import { useCallback, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { FaSync } from 'react-icons/fa';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [hasUsers, setHasUsers] = useState<boolean | null>(null);
+  const [checking, setChecking] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const success = searchParams?.get('reset') === 'success' 
     ? 'Password reset successful. Please log in with your new password.'
     : '';
 
-  useEffect(() => {
-    const checkUsers = async () => {
-      try {
-        const response = await fetch('/api/users/check');
-        const data = await response.json();
-        setHasUsers(data.hasUsers);
-      } catch (err) {
-        console.error('Error checking users:', err);
-        // Default to true to avoid showing the no users message if we can't check
-        setHasUsers(true);
-      }
-    };
-    checkUsers();
+  const checkUsers = useCallback(async () => {
+    try {
+      setChecking(true);
+      const response = await fetch('/api/users/check');
+      const data = await response.json();
+      setHasUsers(data.hasUsers);
+    } catch (err) {
+      console.error('Error checking users:', err);
+      // Default to true to avoid showing the no users message if we can't check
+      setHasUsers(true);
+    } finally {
+      setChecking(false);
+    }
   }, []);
+
+  useEffect(() => {
+    checkUsers();
+  }, [checkUsers]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -59,9 +65,27 @@ export default function LoginPage() {
       <div className="flex flex-col items-center justify-center min-h-screen">
         <div className="w-full max-w-sm p-6 bg-base-200 rounded-lg shadow-lg">
           <h1 className="text-2xl mb-4 text-center">No Users Found</h1>
-          <p className="text-center text-base-content/70">
+          <p className="text-center text-base-content/70 mb-6">
             No users have been created yet. Please use the create-user script to create a user account.
           </p>
+          <button 
+            type="button"
+            onClick={checkUsers}
+            disabled={checking}
+            className="btn btn-primary w-full"
+          >
+            {checking ? (
+              <>
+                <FaSync className="animate-spin mr-2" />
+                Checking...
+              </>
+            ) : (
+              <>
+                <FaSync className="mr-2" />
+                Check Again
+              </>
+            )}
+          </button>
         </div>
       </div>
     );
