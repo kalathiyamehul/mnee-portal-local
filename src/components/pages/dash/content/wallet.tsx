@@ -470,7 +470,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       }
 
       // Validate recipient address format
-      if (!RegExp(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/).exec(recipient)) {
+      if (!RegExp(/^[1][a-km-zA-HJ-NP-Z1-9]{25,34}$/).exec(recipient)) {
         toast.error("Invalid recipient address format");
         return;
       }
@@ -485,9 +485,6 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
   const canTransfer = useCallback(() => {
     if (!config || !balance || !addresses) return false;
 
-    // Need some BSV for transaction fees
-    if (balance.bsv <= 0) return false;
-
     // If amount is not set or invalid
     const numAmount = Number(amount);
     if (!amount || numAmount <= 0 || Number.isNaN(numAmount)) return false;
@@ -498,7 +495,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
     if (numAmount > mneeTokens) return false;
 
     // Check recipient
-    if (!recipient || !RegExp(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/).exec(recipient)) return false;
+    if (!recipient || !RegExp(/^[1][a-km-zA-HJ-NP-Z1-9]{25,34}$/).exec(recipient)) return false;
 
     return true;
   }, [amount, balance, config, balances, addresses, recipient]);

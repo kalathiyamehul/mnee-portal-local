@@ -15,7 +15,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-
   const config = await fetchConfig();
   if (!config) {
     return NextResponse.json({ error: "Config not found" }, { status: 404 });
