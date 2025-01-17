@@ -429,7 +429,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 
 				{initialLoading ? (
 					<div className="flex justify-center items-center min-h-[calc(100vh-12rem)] animate-fade-in">
-						<div className="loading loading-spinner loading-lg"></div>
+						<div className="loading loading-spinner loading-lg" />
 					</div>
 				) : (
 					<div className="animate-fade-in">
