@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey, Transaction } from "@bsv/sdk";
+import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import {
 	fetchConfig,
 	fetchVaultedMneeUtxos,
@@ -18,6 +18,7 @@ import {
 	transferOrdTokens,
 	type TransferOrdTokensConfig,
 } from "js-1sat-ord";
+import CosignTemplate from "@/templates/cosign";
 
 type MintRequestWithRelations = Prisma.MintRequestGetPayload<{
 	include: {
@@ -291,7 +292,7 @@ const mintMnee = async (
 
 	const distributions = [
 		{
-			address: address,
+			address: new CosignTemplate().lock(address, PublicKey.fromString(config.approver)),
 			tokens: Number(amount),
 		},
 	] as Distribution[];
