@@ -135,7 +135,7 @@ export default function DashboardCustomersContent() {
                       Balance: {balances[customer.address] !== undefined ? (
                         `${toToken(balances[customer.address].toString(), config.decimals)} MNEE`
                       ) : (
-                        <span className="loading loading-spinner loading-xs"></span>
+                        <span className="loading loading-spinner loading-xs" />
                       )}
                     </div>
                   </div>
