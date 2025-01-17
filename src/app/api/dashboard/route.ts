@@ -18,7 +18,7 @@ export async function GET() {
       // Total mint volume (last 24h)
       prisma.mintRequest.aggregate({
         where: {
-          status: "APPROVED",
+          status: "DONE",
           createdAt: {
             gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
           }
