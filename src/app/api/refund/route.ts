@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       sourceTXID: txid,
       sourceOutputIndex: vout,
       sourceTransaction,
-      unlockingScriptTemplate: new CosignTemplate().userUnlock(burnPk),
+      unlockingScriptTemplate: new CosignTemplate().userUnlock(burnPk, "all", true),
     });
 
     // get the parsed MNEEUtxo for the amount
