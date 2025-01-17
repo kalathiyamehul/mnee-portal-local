@@ -42,7 +42,8 @@ export async function GET(request: Request) {
             createdAt: {
               gte: startDate,
               lte: endDate
-            }
+            },
+            status: 'DONE'
           },
           select: {
             amount: true,
@@ -56,7 +57,8 @@ export async function GET(request: Request) {
             createdAt: {
               gte: startDate,
               lte: endDate
-            }
+            },
+            status: 'DONE'
           },
           select: {
             amount: true,
