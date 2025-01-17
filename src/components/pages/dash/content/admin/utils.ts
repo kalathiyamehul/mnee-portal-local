@@ -46,7 +46,7 @@ export const getActivityDisplayText = (activity: Activity): string => {
     case 'FREEZE':
       return "Freeze address";
     case 'BLACKLIST':
-      return "Blacklist address";
+      return `${activity.action === 'BLACKLIST' ? 'Blacklist' : 'Unblacklist'} address`;
     case 'ACTION':
       return activity.action as string;
   }

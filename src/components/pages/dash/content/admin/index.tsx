@@ -468,21 +468,8 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 						)}
 						{(activeTab === 'burns' || activeTab === 'mints') && (
 							<div className="grid grid-cols-1 2xl:grid-cols-2 gap-8">
-								{activeTab === 'burns' ? (
-									<>
-										<BurnsTab />
-										<div className="hidden 2xl:block">
-											<MintsTab showModal={showModal} />
-										</div>
-									</>
-								) : (
-									<>
-										<div className="hidden 2xl:block">
-											<BurnsTab />
-										</div>
-										<MintsTab showModal={showModal} />
-									</>
-								)}
+								<BurnsTab />
+								<MintsTab showModal={showModal} />
 							</div>
 						)}
 					</div>
