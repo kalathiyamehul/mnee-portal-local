@@ -418,6 +418,10 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       setAmount("");
 
       toast.success("Transfer complete");
+
+      // close the modal
+      setShowTransferModal(false);
+      router.replace('/dash/wallet');
     },
     onError: (error) => {
       console.error("Transfer error:", error);
