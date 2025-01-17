@@ -28,8 +28,8 @@ export const FreezeModal = ({
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create freeze request');
+        const { error } = await response.json();
+        throw new Error(error || 'Failed to create freeze request');
       }
 
       await onSuccess();
