@@ -12,6 +12,7 @@ import { useBalance } from "@/contexts/BalanceContext";
 import { getConfig } from "@/lib/config";
 import type { Config } from "@prisma/client";
 import { getGravatarUrl } from "@/utils/gravatar";
+import { FetchStatus } from "@/types/common";
 
 interface CustomerActivity {
   customer: {
@@ -55,7 +56,7 @@ interface CustomerActivity {
 
 export default function CustomerViewContent({ initialData }: { initialData: CustomerActivity }) {
   const router = useRouter();
-  const { balances, balancesLoading } = useBalance();
+  const { balances, fetchBalances, balancesLoading } = useBalance();
   const [data] = useState<CustomerActivity>(initialData);
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'mints' | 'burns'>('mints');
@@ -74,6 +75,19 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
 
     loadConfig();
   }, []);
+
+  // Fetch customer balance
+  useEffect(() => {
+
+    const fire = async () => {
+      console.log('Fetching balance for customer:', data.customer.address);
+      fetchBalances([data.customer.address]);
+    }
+
+    if (balancesLoading === FetchStatus.IDLE && data.customer.address) {
+      fire();
+    }
+  }, [data, fetchBalances, balancesLoading]);
 
   if (!config) {
     return (
@@ -150,7 +164,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
           <div className="space-y-2">
             <div className="text-sm text-base-content/70">Balance</div>
             <div className="font-mono text-sm">
-              {balancesLoading ? 
+              {balancesLoading ?
                 <span className="loading loading-spinner loading-xs" /> :
                 `${toToken((balances[customer.address] || 0).toString(), config.decimals)} MNEE`
               }
@@ -220,11 +234,10 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
                       {toToken(mint.amount.toString(), config.decimals)} MNEE
                     </td>
                     <td>
-                      <div className={`badge ${
-                        mint.status === 'APPROVED' ? 'badge-success' :
-                        mint.status === 'PENDING' ? 'badge-warning' :
-                        'badge-error'
-                      }`}>
+                      <div className={`badge ${mint.status === 'APPROVED' ? 'badge-success' :
+                          mint.status === 'PENDING' ? 'badge-warning' :
+                            'badge-error'
+                        }`}>
                         {mint.status}
                       </div>
                     </td>
@@ -263,11 +276,10 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
                       {toToken(burn.amount.toString(), config.decimals)} MNEE
                     </td>
                     <td>
-                      <div className={`badge ${
-                        burn.status === 'APPROVED' ? 'badge-success' :
-                        burn.status === 'PENDING' ? 'badge-warning' :
-                        'badge-error'
-                      }`}>
+                      <div className={`badge ${burn.status === 'APPROVED' ? 'badge-success' :
+                          burn.status === 'PENDING' ? 'badge-warning' :
+                            'badge-error'
+                        }`}>
                         {burn.status}
                       </div>
                     </td>
@@ -301,12 +313,12 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
               )}
               {((activeTab === 'mints' && activity.mints.length === 0) ||
                 (activeTab === 'burns' && activity.burns.length === 0)) && (
-                <tr>
-                  <td colSpan={5} className="text-center py-4 text-base-content/70">
-                    No {activeTab} found
-                  </td>
-                </tr>
-              )}
+                  <tr>
+                    <td colSpan={5} className="text-center py-4 text-base-content/70">
+                      No {activeTab} found
+                    </td>
+                  </tr>
+                )}
             </tbody>
           </table>
         </div>
