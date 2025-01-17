@@ -290,7 +290,7 @@ const mintMnee = async (
 		satoshis: 1,
 		amt: token.data.bsv21.amt.toString(),
 		id: token.data.bsv21.id,
-		script: toBase64(Script.fromHex(token.script).toBinary()),
+		script: token.script,
 	})) as TokenUtxo[];
 
 	const distributions = [
