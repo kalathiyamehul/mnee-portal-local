@@ -12,6 +12,14 @@ export const fetchConfig = async () => {
     return await response.json() as Config;
 }
 
+export const fetchTxo = async (outpoint: string) => {
+  const response = await fetch(`${MNEE_API}/v1/txos/${outpoint}?tags=*&txo=true`);
+  if (!response.ok) {
+    throw new Error("Failed to fetch txo");
+  }
+  return await response.json() as MNEEUtxo;
+}
+
 export const fetchTransaction = async (txid: string) => {
     const response = await fetch(`${MNEE_API}/v1/tx/${txid}`);
     if (!response.ok) {

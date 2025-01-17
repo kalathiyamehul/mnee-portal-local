@@ -154,6 +154,13 @@ export const MintModal = ({
                 onChange={(e) => {
                   // Allow numbers and decimals only
                   if (/^\d*\.?\d*$/.test(e.target.value)) {
+
+                    // make sure its less than MAX_TOKEN_VALUE
+                    if (Number(e.target.value) > MAX_TOKEN_VALUE) {
+                      toast.error("Amount must be less than 1 billion");
+                      return;
+                    }
+
                     setAmount(e.target.value);
                   }
                 }}

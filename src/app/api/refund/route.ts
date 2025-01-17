@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { PrivateKey, PublicKey, Transaction, Utils } from "@bsv/sdk";
 import { BURN_WIF, MNEE_API } from "@/env";
-import { fetchConfig, fetchTransaction } from "@/utils/api";
+import { fetchConfig, fetchTransaction, fetchTxo } from "@/utils/api";
 import CosignTemplate from "@/templates/cosign";
+import { applyInscription, type Inscription } from "js-1sat-ord";
 const { toBase64 } = Utils;
 
 export async function POST(request: Request) {
@@ -68,9 +69,27 @@ export async function POST(request: Request) {
       unlockingScriptTemplate: new CosignTemplate().userUnlock(burnPk),
     });
 
+    // get the parsed MNEEUtxo for the amount
+    const txo = await fetchTxo(outpoint);
+    const amount = txo.data.bsv21.amt;
+    const cosignScript = new CosignTemplate().lock(refundAddress, PublicKey.fromString(config.approver));
+    const inscriptionData = {
+      p: "bsv-20",
+      op: "transfer",
+      id: config.tokenId,
+      amt: amount.toString(),
+    };
+    const dataB64 = Buffer.from(JSON.stringify(inscriptionData)).toString(
+      "base64",
+    );
+    const inscription = {
+      dataB64,
+      contentType: "application/bsv-20"
+    } as Inscription
+    const lockingScript = applyInscription(cosignScript, inscription);
     // Add output to the refund address
     tx.addOutput({
-      lockingScript: new CosignTemplate().lock(refundAddress, PublicKey.fromString(config.approver)),
+      lockingScript,
       satoshis: 1,
     });
 
