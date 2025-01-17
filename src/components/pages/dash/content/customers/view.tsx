@@ -78,10 +78,9 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
 
   // Fetch customer balance
   useEffect(() => {
-
     const fire = async () => {
       console.log('Fetching balance for customer:', data.customer.address);
-      fetchBalances([data.customer.address]);
+      await fetchBalances([data.customer.address]);
     }
 
     if (balancesLoading === FetchStatus.IDLE && data.customer.address) {
@@ -164,7 +163,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
           <div className="space-y-2">
             <div className="text-sm text-base-content/70">Balance</div>
             <div className="font-mono text-sm">
-              {balancesLoading ?
+              {balancesLoading === FetchStatus.LOADING ?
                 <span className="loading loading-spinner loading-xs" /> :
                 `${toToken((balances[customer.address] || 0).toString(), config.decimals)} MNEE`
               }
