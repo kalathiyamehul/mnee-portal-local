@@ -686,9 +686,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
           {!canTransfer() && amount && (
             <div className="text-sm text-error mt-2">
-              {!balance || balance.bsv <= 0 ? (
-                "Insufficient BSV for transaction fees"
-              ) : Number(amount) > (config && addresses ? toToken(Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0), config.decimals) : 0) ? (
+              {Number(amount) > (config && addresses ? toToken(Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0), config.decimals) : 0) ? (
                 <>
                   Insufficient MNEE balance (
                   {config && addresses ? `${toToken(Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0), config.decimals)} MNEE available` : '0 MNEE available'}
