@@ -403,7 +403,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
     },
     onSuccess: async (data) => {
       const { rawtx } = data;
-      const tx = Transaction.fromHex(rawtx);
+      const tx = Transaction.fromBinary(toArray(rawtx, "base64"));
       if (!rawtx || !tx) {
         throw new Error("Something went wrong");
       }
