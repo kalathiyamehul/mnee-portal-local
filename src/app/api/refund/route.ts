@@ -7,6 +7,7 @@ import { BURN_WIF, MNEE_API } from "@/env";
 import { fetchConfig, fetchTransaction, fetchTxo } from "@/utils/api";
 import CosignTemplate from "@/templates/cosign";
 import { applyInscription, type Inscription } from "js-1sat-ord";
+import type { IndexContext } from "@/types/indexContext";
 const { toBase64 } = Utils;
 
 export async function POST(request: Request) {
@@ -38,10 +39,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const [txid, voutStr] = outpoint.split('_');
+    const [sourceTXID, voutStr] = outpoint.split('_');
     const vout = Number.parseInt(voutStr, 10);
 
-    if (!txid || Number.isNaN(vout)) {
+    if (!sourceTXID || Number.isNaN(vout)) {
       return NextResponse.json(
         { error: "Invalid outpoint format" },
         { status: 400 }
@@ -61,9 +62,9 @@ export async function POST(request: Request) {
     const tx = new Transaction();
 
     // Add input from burn address
-    const sourceTransaction = await fetchTransaction(txid);
+    const sourceTransaction = await fetchTransaction(sourceTXID);
     tx.addInput({
-      sourceTXID: txid,
+      sourceTXID,
       sourceOutputIndex: vout,
       sourceTransaction,
       unlockingScriptTemplate: new CosignTemplate().userUnlock(burnPk, "all", true),
@@ -120,10 +121,11 @@ export async function POST(request: Request) {
       });
     }
 
+    const { txid } = await broadcastResponse.json() as IndexContext
     return NextResponse.json({
       success: true,
       message: "Refund transaction broadcast successfully",
-      txid: tx.id('hex'),
+      txid,
     });
   } catch (error) {
     console.error("Error processing refund:", error);
