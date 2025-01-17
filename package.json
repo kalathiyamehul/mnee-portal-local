@@ -14,7 +14,8 @@
     "find-pending": "bun scripts/find-pending.ts",
     "list-approvers": "bun scripts/list-approvers.ts",
     "create-user": "bun scripts/create-user.ts",
-    "check-user": "bun scripts/check-user.ts"
+    "check-user": "bun scripts/check-user.ts",
+    "delete-mint-request": "bun scripts/delete-mint-request.ts"
   },
   "dependencies": {
     "@bsv/sdk": "^1.2.21",

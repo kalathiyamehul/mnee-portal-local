@@ -241,31 +241,6 @@ export async function POST(request: Request) {
 		});
 	} catch (error) {
 		console.error("Error processing approval:", error);
-
-		// Only mark as failed for actual errors, not for system checks, pauses, or frozen addresses
-		if (
-			mintRequestId &&
-			!(
-				error instanceof Error &&
-				(error.message.includes("System is paused") ||
-					error.message.includes("will remain pending") ||
-					error.message.includes("address is frozen"))
-			)
-		) {
-			try {
-				console.log("Updating request status to FAILED");
-				await prisma.mintRequest.update({
-					where: { id: mintRequestId },
-					data: {
-						status: "FAILED",
-						updatedAt: new Date(),
-					},
-				});
-			} catch (updateError) {
-				console.error("Failed to update mint request status:", updateError);
-			}
-		}
-
 		return NextResponse.json(
 			{
 				success: false,
