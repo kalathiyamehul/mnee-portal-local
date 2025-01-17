@@ -136,39 +136,22 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
   // Effect for MNEE balance
   useEffect(() => {
-    console.log('Balance effect triggered:', {
-      hasAddresses: !!addresses,
-      walletReady: wallet.isReady,
-      balancesLoading,
-      addressCount: addresses ? Object.values(addresses).filter(addr => addr !== "").length : 0
-    });
-
     if (!addresses || !wallet.isReady || balancesLoading === FetchStatus.LOADING) {
-      console.log('Balance fetch skipped:', {
-        noAddresses: !addresses,
-        walletNotReady: !wallet.isReady,
-        alreadyLoading: balancesLoading === FetchStatus.LOADING
-      });
       return;
     }
 
     // Check if we have valid addresses (not empty strings)
     const validAddresses = Object.values(addresses).filter(addr => addr !== "");
     if (validAddresses.length === 0) {
-      console.log('No valid addresses found');
       return;
     }
 
     const fire = async () => {
-      console.log('Fetching balances for addresses:', validAddresses);
       await fetchBalances(validAddresses);
     };
     
     if (balancesLoading === FetchStatus.IDLE) {
-      console.log('Firing balance fetch');
       fire();
-    } else {
-      console.log('Balance fetch not idle:', balancesLoading);
     }
   }, [wallet, addresses, fetchBalances, balancesLoading]);
 

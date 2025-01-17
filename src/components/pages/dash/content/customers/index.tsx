@@ -13,6 +13,7 @@ import { getConfig } from '@/lib/config';
 import { toToken } from 'satoshi-token';
 import type { Config, Customer } from '@prisma/client';
 import { FetchStatus } from '@/types/common';
+import { ErrorIcon } from 'react-hot-toast';
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
@@ -39,11 +40,30 @@ export default function DashboardCustomersContent() {
   }, [fetchCustomers]);
 
   useEffect(() => {
+    console.log('Balance fetch effect triggered:', {
+      hasCustomers: !!customers?.length,
+      customerAddresses: customers?.map(c => c.address),
+      balancesLoading,
+      customersLoading: loading
+    });
+
+    // Don't fetch if customers are still loading
+    if (loading) {
+      console.log('Skipping balance fetch - customers still loading');
+      return;
+    }
+
     const addresses = customers?.map(c => c.address).filter(Boolean);
     if (addresses?.length && balancesLoading === FetchStatus.IDLE) {
+      console.log('Fetching balances for addresses:', addresses);
       fetchBalances(addresses);
+    } else {
+      console.log('Skipping balance fetch:', {
+        hasAddresses: !!addresses?.length,
+        balancesLoading
+      });
     }
-  }, [customers, fetchBalances, balancesLoading]);
+  }, [customers, fetchBalances, balancesLoading, loading]);
 
   if (loading || !config) {
     return (
@@ -132,10 +152,14 @@ export default function DashboardCustomersContent() {
                       </a>
                     </div>
                     <div className="text-sm text-base-content/70">
-                      Balance: {balances[customer.address] !== undefined ? (
+                      Balance: {balancesLoading === FetchStatus.LOADING ? (
+                        <span className="loading loading-spinner loading-xs" />
+                      ) : balancesLoading === FetchStatus.ERROR ? (
+                        "X MNEE"
+                      ) : balances[customer.address] !== undefined ? (
                         `${toToken(balances[customer.address].toString(), config.decimals)} MNEE`
                       ) : (
-                        <span className="loading loading-spinner loading-xs" />
+                        "0 MNEE"
                       )}
                     </div>
                   </div>
