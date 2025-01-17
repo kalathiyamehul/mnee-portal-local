@@ -44,7 +44,8 @@ export async function POST(request: Request) {
     // Find burn request by outpoint
     const burnRequest = await prisma.burnRequest.findFirst({
       where: {
-        outpoint
+        outpoint,
+        status: 'PENDING'
       }
     });
 
