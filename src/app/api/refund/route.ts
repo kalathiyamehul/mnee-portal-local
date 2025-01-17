@@ -2,16 +2,22 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey, Transaction } from "@bsv/sdk";
+import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import { BURN_WIF, MNEE_API } from "@/env";
-import { fetchTransaction } from "@/utils/api";
-import { OrdP2PKH } from "js-1sat-ord";
+import { fetchConfig, fetchTransaction } from "@/utils/api";
+import CosignTemplate from "@/templates/cosign";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+
+  const config = await fetchConfig();
+  if (!config) {
+    return NextResponse.json({ error: "Config not found" }, { status: 404 });
   }
 
   try {
@@ -59,12 +65,12 @@ export async function POST(request: Request) {
       sourceTXID: txid,
       sourceOutputIndex: vout,
       sourceTransaction,
-      unlockingScriptTemplate: new OrdP2PKH().unlock(burnPk),
+      unlockingScriptTemplate: new CosignTemplate().userUnlock(burnPk),
     });
 
     // Add output to the refund address
     tx.addOutput({
-      lockingScript: new OrdP2PKH().lock(refundAddress),
+      lockingScript: new CosignTemplate().lock(refundAddress, PublicKey.fromString(config.approver)),
       satoshis: 1,
     });
 
