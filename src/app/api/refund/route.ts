@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
+import { PrivateKey, PublicKey, Transaction, Utils } from "@bsv/sdk";
 import { BURN_WIF, MNEE_API } from "@/env";
 import { fetchConfig, fetchTransaction } from "@/utils/api";
 import CosignTemplate from "@/templates/cosign";
+const { toBase64 } = Utils;
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -78,11 +79,11 @@ export async function POST(request: Request) {
     await tx.sign();
 
     // Broadcast transaction
-    const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
+    const broadcastResponse = await fetch(`${MNEE_API}/v1/transfer`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        rawtx: Buffer.from(tx.toHex(), "hex").toString("base64"),
+        rawtx: toBase64(tx.toBinary()),
       }),
     });
 
