@@ -11,7 +11,7 @@ import { useBalance } from '@/contexts/BalanceContext';
 import { getGravatarUrl } from '@/utils/gravatar';
 import { getConfig } from '@/lib/config';
 import { toToken } from 'satoshi-token';
-import { Config, Customer } from '@prisma/client';
+import type { Config, Customer } from '@prisma/client';
 import { FetchStatus } from '@/types/common';
 
 export default function DashboardCustomersContent() {
@@ -48,7 +48,7 @@ export default function DashboardCustomersContent() {
   if (loading || !config) {
     return (
       <div className="flex justify-center items-center min-h-screen animate-fade-in">
-        <div className="loading loading-spinner loading-lg"></div>
+        <div className="loading loading-spinner loading-lg" />
       </div>
     );
   }
@@ -72,6 +72,7 @@ export default function DashboardCustomersContent() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Customers</h1>
         <button
+          type="button"
           onClick={() => setShowModal(true)}
           className="btn btn-primary btn-sm gap-2"
         >
@@ -160,6 +161,7 @@ export default function DashboardCustomersContent() {
                 <td>
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEdit({
@@ -179,6 +181,7 @@ export default function DashboardCustomersContent() {
                       Edit
                     </button>
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         router.push(`/dash/customers/${customer.id}`);
