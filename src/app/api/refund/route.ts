@@ -43,18 +43,10 @@ export async function POST(request: Request) {
 
     // Find burn request by outpoint
     const burnRequest = await prisma.burnRequest.findFirst({
-      where: { 
-        outpoint,
-        status: 'CANCELLED'
+      where: {
+        outpoint
       }
     });
-
-    if (!burnRequest) {
-      return NextResponse.json(
-        { error: "No cancelled burn request found for this outpoint" },
-        { status: 404 }
-      );
-    }
 
     // Create refund transaction
     const burnPk = PrivateKey.fromWif(BURN_WIF);
@@ -91,16 +83,18 @@ export async function POST(request: Request) {
       throw new Error("Failed to broadcast refund transaction");
     }
 
-    // Update burn request status to REFUNDED
-    await prisma.burnRequest.update({
-      where: { id: burnRequest.id },
-      data: {
-        status: "REFUNDED",
-        updatedAt: new Date(),
-      },
-    });
+    if (burnRequest) {
+      // Update burn request status to REFUNDED
+      await prisma.burnRequest.update({
+        where: { id: burnRequest.id },
+        data: {
+          status: "REFUNDED",
+          updatedAt: new Date(),
+        },
+      });
+    }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       message: "Refund transaction broadcast successfully",
       txid: tx.id('hex'),
