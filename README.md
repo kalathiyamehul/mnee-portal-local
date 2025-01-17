@@ -102,7 +102,18 @@ bun run listApprovers
 
 # Find Pending Requests
 bun run findPendingRequests
+
+# Delete Mint Request
+bun run delete-mint-request -i <requestId>
 ```
+
+### Delete Mint Request
+To delete a specific mint request from the database:
+```bash
+bun run delete-mint-request -i 123e4567-e89b-12d3-a456-426614174000
+```
+
+This will permanently remove the specified mint request from the database. Use with caution as this action cannot be undone.
 
 ### Force Password Reset
 To force a user to reset their password on next login:
