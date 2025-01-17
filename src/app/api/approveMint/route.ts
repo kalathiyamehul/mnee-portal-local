@@ -314,6 +314,7 @@ const mintMnee = async (
 		tokenChangeAddress: changeAddress,
 	} as TransferOrdTokensConfig;
 
+  console.log({transferConfig})
 	const mintResponse = await transferOrdTokens(transferConfig);
 	if (!mintResponse) {
 		// return an error without throwing
