@@ -144,7 +144,7 @@ export const MintModal = ({
             )}
 
             <label className="form-control w-full block">
-              <div className="label">
+              <div className="label my-2">
                 <span className="label-text">Amount</span>
               </div>
               <input
@@ -160,8 +160,8 @@ export const MintModal = ({
                 placeholder="Enter amount to mint"
                 required
               />
-              <div className="label">
-                <span className="label-text-alt text-base-content/70">Amount must be greater than 0</span>
+              <div className="label my-2">
+                <span className="label-text-alt text-sm text-base-content/70">Amount must be greater than 0</span>
               </div>
             </label>
           </div>
