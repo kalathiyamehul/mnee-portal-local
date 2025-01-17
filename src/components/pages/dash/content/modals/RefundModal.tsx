@@ -47,7 +47,6 @@ export const RefundModal = ({
         return;
       }
 
-      toast.success('Refund request created successfully');
       onSuccess();
     } catch (error) {
       console.error('Error refunding burn:', error);
