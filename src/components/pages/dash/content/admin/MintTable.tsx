@@ -65,6 +65,11 @@ const MintTableContent = ({
 	const [loadingApproval, setLoadingApproval] = useState<string | null>(null);
 	const router = useRouter();
 
+	const hasUserApproved = (mint: Activity) => {
+		if (!session?.user?.email) return false;
+		return mint.approvals?.some(approval => approval.approver?.email === session.user.email);
+	};
+
 	useEffect(() => {
 		const getAndSetConfig = async () => {
 			const config = await getConfig();
@@ -297,13 +302,15 @@ const MintTableContent = ({
 													type="button"
 													onClick={() => handleApprove(mint.id)}
 													className="btn btn-primary btn-xs"
-													disabled={loadingApproval === mint.id}
+													disabled={loadingApproval === mint.id || hasUserApproved(mint)}
 												>
 													{loadingApproval === mint.id ? (
 														<>
 															<FaSpinner className="animate-spin mr-1" />
 															Approving...
 														</>
+													) : hasUserApproved(mint) ? (
+														'Approved'
 													) : (
 														'Approve'
 													)}

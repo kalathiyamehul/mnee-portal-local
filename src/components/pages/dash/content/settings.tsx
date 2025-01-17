@@ -101,7 +101,7 @@ const TokenDetailsSection = ({
 				<div className="flex justify-center mb-6">
 					<img 
 						src={`https://ordfs.network/${tokenDetails.icon}`}
-						alt="Token Icon" 
+						alt={`${tokenDetails.sym} Icon`}
 						className="w-24 h-24 rounded-lg"
 						onError={(e) => {
 							(e.target as HTMLImageElement).style.display = 'none';
