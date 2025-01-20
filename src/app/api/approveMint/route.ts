@@ -307,7 +307,7 @@ const mintMnee = async (
 		protocol: TokenType.BSV21,
 		tokenID: config.tokenId,
     // We do not want 1sat to convert this again its already in sats format
-		// decimals: Number(config.decimals),
+		decimals: 0,
 		utxos: funding_utxos,
 		inputTokens,
 		distributions,
