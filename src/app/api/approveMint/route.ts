@@ -197,11 +197,15 @@ export async function POST(request: Request) {
 
 				try {
 					console.log("Starting MNEE mint process");
-					const { rawtx } = await mintMnee(
+					const { rawtx, error, success } = await mintMnee(
 						mintRequest.amount,
 						mintRequest.address,
 					);
 					console.log("MNEE mint successful, updating request status");
+
+					if (!success) {
+						throw new Error(error);
+					}
 
 					// update the request status and txid
 					await tx.mintRequest.update({
