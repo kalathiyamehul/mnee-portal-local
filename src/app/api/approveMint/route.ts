@@ -318,22 +318,36 @@ const mintMnee = async (
 	} as TransferOrdTokensConfig;
 
   console.log({transferConfig})
-	const mintResponse = await transferOrdTokens(transferConfig);
-	if (!mintResponse) {
-		// return an error without throwing
-		return {
-			success: false,
-			error: "Failed to mint MNEE",
-			rawtx: "",
-		};
-	}
+  let rawtx = "";
+  
+  try {
+    const mintResponse = await transferOrdTokens(transferConfig);
+
+    if (!mintResponse || !mintResponse.tx) {
+      // return an error without throwing
+      return {
+        success: false,
+        error: "Failed to mint MNEE",
+        rawtx: "",
+      };
+    }
+
+    const { tx } = mintResponse;
+    console.log("Signed transaction");
+
+     rawtx = tx.toHex();
+  } catch (error) {
+    console.error("Error during mint process:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+      rawtx: "",
+    };
+  }
+	
 
 	try {
-		const { tx } = mintResponse;
 
-		console.log("Signed transaction");
-
-		const rawtx = tx.toHex();
 
 		// broadcast & ingest
 		console.log("Broadcasting transaction");
