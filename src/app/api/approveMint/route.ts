@@ -297,6 +297,7 @@ const mintMnee = async (
 	const distributions = [
 		{
 			address: new CosignTemplate().lock(address, PublicKey.fromString(config.approver)),
+      // This is already in sats format so we pass 0 decimals as a hack below
 			tokens: Number(amount),
 		},
 	] as Distribution[];
@@ -305,7 +306,8 @@ const mintMnee = async (
 	const transferConfig = {
 		protocol: TokenType.BSV21,
 		tokenID: config.tokenId,
-		decimals: Number(config.decimals),
+    // We do not want 1sat to convert this again its already in sats format
+		// decimals: Number(config.decimals),
 		utxos: funding_utxos,
 		inputTokens,
 		distributions,
