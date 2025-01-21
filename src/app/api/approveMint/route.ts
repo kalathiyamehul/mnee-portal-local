@@ -94,6 +94,7 @@ export async function POST(request: Request) {
 				"Checking system status and blacklist for address:",
 				mintRequest.address,
 			);
+
 			const systemCheck = await performSystemChecks(tx, {
 				address: mintRequest.address,
 				operation: SystemOperation.MINT_REQUEST_APPROVE,
@@ -147,29 +148,30 @@ export async function POST(request: Request) {
 				throw new Error("You have already approved this request");
 			}
 
+      // Handled by system check now
 			// Check if the target address is frozen
-			console.log("Checking freeze status for address:", mintRequest.address);
-			const freezeRequest = await tx.freezeRequest.findFirst({
-				where: {
-					address: mintRequest.address,
-					status: "APPROVED",
-				},
-				orderBy: {
-					createdAt: "desc",
-				},
-			});
+			// console.log("Checking freeze status for address:", mintRequest.address);
+			// const freezeRequest = await tx.freezeRequest.findFirst({
+			// 	where: {
+			// 		address: mintRequest.address,
+			// 		status: "APPROVED",
+			// 	},
+			// 	orderBy: {
+			// 		createdAt: "desc",
+			// 	},
+			// });
 
-			if (freezeRequest?.action === "FREEZE") {
-				console.log("Address is frozen");
-				return NextResponse.json(
-					{
-						success: false,
-						error:
-							"Address is frozen. Request will remain pending until address is unfrozen.",
-					},
-					{ status: 202 },
-				);
-			}
+			// if (freezeRequest?.action === "FREEZE") {
+			// 	console.log("Address is frozen");
+			// 	return NextResponse.json(
+			// 		{
+			// 			success: false,
+			// 			error:
+			// 				"Address is frozen. Request will remain pending until address is unfrozen.",
+			// 		},
+			// 		{ status: 202 },
+			// 	);
+			// }
 
 			// Create approval
 			console.log("Creating approval");
