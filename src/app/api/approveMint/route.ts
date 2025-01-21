@@ -197,11 +197,15 @@ export async function POST(request: Request) {
 
 				try {
 					console.log("Starting MNEE mint process");
-					const { rawtx } = await mintMnee(
+					const { rawtx, error, success } = await mintMnee(
 						mintRequest.amount,
 						mintRequest.address,
 					);
 					console.log("MNEE mint successful, updating request status");
+
+					if (!success) {
+						throw new Error(error);
+					}
 
 					// update the request status and txid
 					await tx.mintRequest.update({
@@ -293,6 +297,7 @@ const mintMnee = async (
 	const distributions = [
 		{
 			address: new CosignTemplate().lock(address, PublicKey.fromString(config.approver)),
+      // This is already in sats format so we pass 0 decimals as a hack below
 			tokens: Number(amount),
 		},
 	] as Distribution[];
@@ -301,7 +306,8 @@ const mintMnee = async (
 	const transferConfig = {
 		protocol: TokenType.BSV21,
 		tokenID: config.tokenId,
-		decimals: Number(config.decimals),
+    // We do not want 1sat to convert this again its already in sats format
+		decimals: 0,
 		utxos: funding_utxos,
 		inputTokens,
 		distributions,
@@ -312,22 +318,36 @@ const mintMnee = async (
 	} as TransferOrdTokensConfig;
 
   console.log({transferConfig})
-	const mintResponse = await transferOrdTokens(transferConfig);
-	if (!mintResponse) {
-		// return an error without throwing
-		return {
-			success: false,
-			error: "Failed to mint MNEE",
-			rawtx: "",
-		};
-	}
+  let rawtx = "";
+  
+  try {
+    const mintResponse = await transferOrdTokens(transferConfig);
+
+    if (!mintResponse || !mintResponse.tx) {
+      // return an error without throwing
+      return {
+        success: false,
+        error: "Failed to mint MNEE",
+        rawtx: "",
+      };
+    }
+
+    const { tx } = mintResponse;
+    console.log("Signed transaction");
+
+     rawtx = tx.toHex();
+  } catch (error) {
+    console.error("Error during mint process:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+      rawtx: "",
+    };
+  }
+	
 
 	try {
-		const { tx } = mintResponse;
 
-		console.log("Signed transaction");
-
-		const rawtx = tx.toHex();
 
 		// broadcast & ingest
 		console.log("Broadcasting transaction");
