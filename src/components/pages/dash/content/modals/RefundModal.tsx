@@ -62,10 +62,19 @@ export const RefundModal = ({
         <h3 className="font-bold text-lg flex items-center gap-2 text-primary">
           <FaArrowRotateLeft className="w-4 h-4" /> Request Refund
         </h3>
-        <p className="py-4">
-          You are about to request a refund of {toToken(amount, decimals)} MNEE to {customerName}.
-          This request will require approval from two administrators.
-        </p>
+        <div className="py-4 space-y-4">
+          <div className="bg-base-200 p-4 rounded-lg">
+            <div className="text-sm opacity-70 mb-1">Amount to refund</div>
+            <div className="text-2xl font-bold">{toToken(amount, decimals)} MNEE</div>
+            <div className="text-xs opacity-50 mt-1 break-all">
+              UTXO: {utxo.txid}:{utxo.vout}
+            </div>
+          </div>
+          <p>
+            You are about to request a refund to {customerName}.
+            This request will require approval from two administrators.
+          </p>
+        </div>
         <div className="form-control w-full">
           <label htmlFor="refundAddress" className="label">
             <span className="label-text">Refund Address</span>
