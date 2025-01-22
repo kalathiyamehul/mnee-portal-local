@@ -11,6 +11,7 @@ import { getConfig } from "@/lib/config";
 import { useEffect, useState } from "react";
 import type { Config } from "@/types";
 import { getGravatarUrl } from "@/utils/gravatar";
+import { useRouter } from "next/navigation";
 
 const statusColors: Record<string, string> = {
 	PENDING: "badge-warning",
@@ -62,14 +63,26 @@ const MintTableContent = ({
 }) => {
 	const [config, setConfig] = useState<Config | null>(null);
 	const [loadingApproval, setLoadingApproval] = useState<string | null>(null);
+	const router = useRouter();
+
+	const hasUserApproved = (mint: Activity) => {
+		if (!session?.user?.email) return false;
+		return mint.approvals?.some(approval => approval.approver?.email === session.user.email);
+	};
 
 	useEffect(() => {
-		const fetchConfig = async () => {
+		const getAndSetConfig = async () => {
 			const config = await getConfig();
-			setConfig(config as unknown as Config);
+      if (!config) {
+        // redirect to setup page
+        router.push('/setup?fromDashAdminMints=true');
+        return;
+      }
+			setConfig(config as Config);
 		};
-		fetchConfig();
-	}, []);
+
+		getAndSetConfig();
+	}, [router]);
 
 	const handleApprove = async (id: string) => {
 		try {
@@ -259,9 +272,16 @@ const MintTableContent = ({
 									<div className="font-medium">
 										{toToken(mint.amount as string, config.decimals)} MNEE
 									</div>
-									<span className={`badge badge-sm ${statusColors[mint.status]}`}>
-										{mint.status}
-									</span>
+									<div className="flex items-center gap-2">
+										<span className={`badge badge-sm ${statusColors[mint.status]}`}>
+											{mint.status}
+										</span>
+										{mint.status === 'PENDING' && (
+											<span className="text-xs text-base-content/70">
+												{mint.approvals?.length || 0}/2 Approvals
+											</span>
+										)}
+									</div>
 								</div>
 							</td>
 							{showActions && (
@@ -282,13 +302,15 @@ const MintTableContent = ({
 													type="button"
 													onClick={() => handleApprove(mint.id)}
 													className="btn btn-primary btn-xs"
-													disabled={loadingApproval === mint.id}
+													disabled={loadingApproval === mint.id || hasUserApproved(mint)}
 												>
 													{loadingApproval === mint.id ? (
 														<>
 															<FaSpinner className="animate-spin mr-1" />
 															Approving...
 														</>
+													) : hasUserApproved(mint) ? (
+														'Approved'
 													) : (
 														'Approve'
 													)}

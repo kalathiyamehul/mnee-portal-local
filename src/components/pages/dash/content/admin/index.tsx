@@ -233,8 +233,8 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 			});
 
 			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.error || 'Failed to approve request');
+				const { error } = await response.json();
+				throw new Error(error || 'Failed to approve request');
 			}
 
 			await fetchStatus();
@@ -429,7 +429,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 
 				{initialLoading ? (
 					<div className="flex justify-center items-center min-h-[calc(100vh-12rem)] animate-fade-in">
-						<div className="loading loading-spinner loading-lg"></div>
+						<div className="loading loading-spinner loading-lg" />
 					</div>
 				) : (
 					<div className="animate-fade-in">

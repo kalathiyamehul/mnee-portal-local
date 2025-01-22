@@ -14,13 +14,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SessionProvider>
-        <BalanceProvider>
-          <ThemeProvider>
-            <YoursProvider>
+        <SystemStatusProvider>
+          <BalanceProvider>
+            <ThemeProvider>
+              <YoursProvider>
                 {children}
-            </YoursProvider>
-          </ThemeProvider>
-        </BalanceProvider>
+              </YoursProvider>
+            </ThemeProvider>
+          </BalanceProvider>
+        </SystemStatusProvider>
       </SessionProvider>
     </QueryClientProvider>
   );

@@ -17,7 +17,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
   const config = await getConfig();
   if (!config) {
-    redirect("/setup");
+    redirect("/setup?fromDashAdmin=true");
   }
 
   const params = await searchParams;

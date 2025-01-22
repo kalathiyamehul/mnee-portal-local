@@ -68,8 +68,8 @@ export const MintModal = ({
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Failed to create mint request");
+        const { error } = await response.json();
+        throw new Error(error || "Failed to create mint request");
       }
 
       await onSuccess();
@@ -144,7 +144,7 @@ export const MintModal = ({
             )}
 
             <label className="form-control w-full block">
-              <div className="label">
+              <div className="label my-2">
                 <span className="label-text">Amount</span>
               </div>
               <input
@@ -154,14 +154,21 @@ export const MintModal = ({
                 onChange={(e) => {
                   // Allow numbers and decimals only
                   if (/^\d*\.?\d*$/.test(e.target.value)) {
+
+                    // make sure its less than MAX_TOKEN_VALUE
+                    if (Number(e.target.value) > MAX_TOKEN_VALUE) {
+                      toast.error("Amount must be less than 1 billion");
+                      return;
+                    }
+
                     setAmount(e.target.value);
                   }
                 }}
                 placeholder="Enter amount to mint"
                 required
               />
-              <div className="label">
-                <span className="label-text-alt text-base-content/70">Amount must be greater than 0</span>
+              <div className="label my-2">
+                <span className="label-text-alt text-sm text-base-content/70">Amount must be greater than 0</span>
               </div>
             </label>
           </div>

@@ -18,7 +18,7 @@ export async function GET() {
       // Total mint volume (last 24h)
       prisma.mintRequest.aggregate({
         where: {
-          status: "APPROVED",
+          status: "DONE",
           createdAt: {
             gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
           }
@@ -64,12 +64,18 @@ export async function GET() {
 
       // Active restrictions (blacklists + freezes)
       Promise.all([
-        prisma.blacklistRequest.count({
-          where: {
-            status: "APPROVED",
-            action: "BLACKLIST"
-          }
-        }),
+        // Get addresses that are currently blacklisted (have a BLACKLIST action with no later UNBLACKLIST)
+        prisma.$queryRaw<[{ count: number }]>`
+          WITH latest_actions AS (
+            SELECT DISTINCT ON (address) address, action
+            FROM blacklist_request
+            WHERE status = 'APPROVED'
+            ORDER BY address, created_at DESC
+          )
+          SELECT COUNT(*)::int as count
+          FROM latest_actions
+          WHERE action = 'BLACKLIST'
+        `.then(result => result[0].count),
         prisma.freezeRequest.findMany({
           where: {
             status: "APPROVED",

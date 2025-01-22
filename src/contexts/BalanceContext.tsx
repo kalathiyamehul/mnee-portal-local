@@ -38,14 +38,24 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const fetchBalances = useCallback(async (addresses: string[]) => {
+    console.log('fetchBalances called:', {
+      currentLoadingState: balancesLoading,
+      addressCount: addresses.length
+    });
+
     // Skip if already loading
     if (balancesLoading === FetchStatus.LOADING) {
+      console.log('Skipping fetch - already loading');
       return;
     }
     
     try {
+      console.log('Setting loading state...');
       setBalancesLoading(FetchStatus.LOADING);
+      
+      console.log('Fetching UTXOs...');
       const utxos = await fetchMneeUtxos(addresses);
+      console.log('UTXOs received:', utxos.length);
       
       const newBalances = addresses.reduce((acc, address) => {
         const addressUtxos = utxos.filter(utxo => utxo.owners[0] === address);
@@ -53,14 +63,18 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
         return { ...acc, [address]: balance };
       }, {});
 
+      console.log('Setting new balances:', newBalances);
       setBalances(prev => ({
         ...prev,
         ...newBalances
       }));
+      
+      console.log('Setting success state...');
       setBalancesLoading(FetchStatus.SUCCESS);
     } catch (error) {
       console.error("Error fetching MNEE balances:", error);
       toast.error("Failed to fetch MNEE balances");
+      console.log('Setting error state...');
       setBalancesLoading(FetchStatus.ERROR);
     }
   }, [balancesLoading]);

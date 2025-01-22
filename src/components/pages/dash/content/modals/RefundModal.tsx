@@ -38,16 +38,13 @@ export const RefundModal = ({
         body: JSON.stringify({ outpoint, refundAddress }),
       });
 
-      const data = await response.json();
-      console.log('Refund response:', { status: response.status, data });
+      console.log('Refund response:', { status: response.status });
 
       if (!response.ok) {
-        console.error('Refund failed:', data);
-        toast.error(data.error || 'Failed to process refund');
-        return;
+        const { error } = await response.json();
+        throw new Error(error || 'Failed to process refund');
       }
 
-      toast.success('Refund request created successfully');
       onSuccess();
     } catch (error) {
       console.error('Error refunding burn:', error);

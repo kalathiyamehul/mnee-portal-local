@@ -13,7 +13,7 @@ export default async function Page() {
 
   const config = await getConfig();
   if (!config) {
-    redirect("/setup");
+    redirect("/setup?fromDash=true");
   }
 
   return <Dashboard page={DashPages.HOME} config={config} />;

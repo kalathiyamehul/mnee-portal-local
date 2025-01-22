@@ -67,7 +67,7 @@ const AddressCard = ({ title, address, tooltip, source, balance, isLoading, deci
 				<div className="text-xs uppercase tracking-wider opacity-50">Balance</div>
 				<div className="text-lg font-bold">
 					{isLoading ? (
-						<span className="loading loading-spinner loading-sm"></span>
+						<span className="loading loading-spinner loading-sm" />
 					) : (
 						type === 'mnee' ? 
 							`${toToken(balance || 0, decimals)} MNEE` :
@@ -101,7 +101,7 @@ const TokenDetailsSection = ({
 				<div className="flex justify-center mb-6">
 					<img 
 						src={`https://ordfs.network/${tokenDetails.icon}`}
-						alt="Token Icon" 
+						alt={`${tokenDetails.sym} Icon`}
 						className="w-24 h-24 rounded-lg"
 						onError={(e) => {
 							(e.target as HTMLImageElement).style.display = 'none';
@@ -351,8 +351,8 @@ const DashboardSettingsContent = () => {
 			});
 
 			if (!response.ok) {
-				const error = await response.json();
-				throw new Error(error.error || 'Failed to save configuration');
+				const { error } = await response.json();
+				throw new Error(error || 'Failed to save configuration');
 			}
 
 			toast.success('Configuration saved successfully');

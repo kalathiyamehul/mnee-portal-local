@@ -18,6 +18,7 @@ export default withAuth(
 
 		// If requires reset and not on reset page, redirect to reset page
 		if (requiresReset && !isResetPage) {
+      console.log("[DEBUG] requiresReset", requiresReset);
 			return NextResponse.redirect(new URL('/reset-password', req.url));
 		}
 
@@ -40,6 +41,6 @@ export const config = {
 	matcher: [
 		"/dash/:path*",
 		"/reset-password",
-		"/api/((?!auth|config|deploy|resetPassword).*)/:path*", // Protect all API routes except /api/auth/*, /api/config, /api/deploy, and /api/resetPassword
+		"/api/((?!auth|config|deploy|resetPassword|users/check).*)/:path*", // Protect all API routes except /api/auth/*, /api/config, /api/deploy, /api/resetPassword, and /api/users/check
 	],
 };
