@@ -33,7 +33,6 @@ export function EnvWarning({ onMissingVarsChange }: EnvWarningProps) {
         if (!isMounted) return;
         if (!hasMintWif) missing.push('MINT_WIF');
         if (!hasBurnWif) missing.push('BURN_WIF');
-        if (!hasOrdinalsService) missing.push('MNEE_ORDINALS_SERVICE');
         setMissingVars(missing);
         onChangeRef.current?.(missing);
 
