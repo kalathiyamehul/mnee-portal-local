@@ -1,7 +1,7 @@
 // src/app/api/config/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { BURN_WIF, MINT_WIF } from "@/env";
+import { getBurnWif, getMintWif } from "@/env";
 import { PrivateKey } from "@bsv/sdk";
 import { getConfig, revalidateConfig } from "@/lib/config";
 import { Prisma } from "@prisma/client";
@@ -32,8 +32,8 @@ export async function GET() {
 export async function POST(request: Request) {
   const { tokenId, feeAddress, decimals, latestMinterTx } = await request.json();
 
-  const mintAddress = PrivateKey.fromWif(MINT_WIF).toAddress();
-  const burnAddress = PrivateKey.fromWif(BURN_WIF).toAddress();
+  const mintAddress = PrivateKey.fromWif(getMintWif()).toAddress();
+  const burnAddress = PrivateKey.fromWif(getBurnWif()).toAddress();
   try {
     // Get current config to keep existing fees
     const currentConfig = await prisma.config.findUnique({
