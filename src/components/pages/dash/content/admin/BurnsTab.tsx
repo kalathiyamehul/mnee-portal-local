@@ -94,21 +94,16 @@ export const BurnsTab = () => {
       refundRequest: statusData?.refundRequests?.find(req => req.outpoint === `${utxo.txid}_${utxo.vout}`)
     }));
 
+    console.log({burnsWithRequests });  
     // Add burn UTXOs with APPROVED status
+    const completedBurnRequests = statusData?.burnRequests || [];
     for (const utxo of burnUtxos) {
+      const outpoint = `${utxo.txid}_${utxo.vout}`;
+      const existingRequest = completedBurnRequests.find(req => req.txid && outpoint.startsWith(req.txid));
+
       burnsWithRequests.push({
         ...utxo,
-        burnRequest: {
-          id: `${utxo.txid}_${utxo.vout}`,
-          type: 'BURN',
-          status: 'APPROVED',
-          amount: utxo.data.bsv21.amt.toString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          requestedBy: 'system',
-          approvals: [],
-          requester: { name: 'Unknown', email: 'unknown@example.com' }
-        },
+        burnRequest: existingRequest,
         refundRequest: undefined
       });
     }
@@ -135,23 +130,27 @@ export const BurnsTab = () => {
     setSelectedBurn(null);
   };
 
-  const handleCancelBurn = async (burnId: string) => {
+  const handleCancel = async (request: { id: string, type: 'burn' | 'refund' }) => {
     try {
       const response = await fetch('/api/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ burnRequestId: burnId }),
+        body: JSON.stringify(
+          request.type === 'burn' 
+            ? { burnRequestId: request.id }
+            : { refundRequestId: request.id }
+        ),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to cancel burn request');
+        throw new Error(data.error || `Failed to cancel ${request.type} request`);
       }
 
-      toast.success('Burn request cancelled');
+      toast.success(`${request.type === 'burn' ? 'Burn' : 'Refund'} request cancelled`);
     } catch (err) {
-      console.error('Error cancelling burn:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to cancel burn request');
+      console.error(`Error cancelling ${request.type}:`, err);
+      toast.error(err instanceof Error ? err.message : `Failed to cancel ${request.type} request`);
     }
   };
 
@@ -358,7 +357,7 @@ export const BurnsTab = () => {
                           {canCancel(burn) && (
                             <button
                               type="button"
-                              onClick={() => burn.burnRequest && handleCancelBurn(burn.burnRequest.id)}
+                              onClick={() => burn.burnRequest && handleCancel({ id: burn.burnRequest.id, type: 'burn' })}
                               className="btn btn-ghost btn-sm"
                             >
                               Cancel Burn
@@ -369,7 +368,7 @@ export const BurnsTab = () => {
                           {canCancelRefund(burn) && (
                             <button
                               type="button"
-                              onClick={() => burn.refundRequest && handleCancelBurn(burn.refundRequest.id)}
+                              onClick={() => burn.refundRequest && handleCancel({ id: burn.refundRequest.id, type: 'refund' })}
                               className="btn btn-ghost btn-sm"
                             >
                               Cancel Refund
