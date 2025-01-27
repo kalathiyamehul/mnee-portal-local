@@ -29,7 +29,7 @@ export function EnvWarning({ onMissingVarsChange }: EnvWarningProps) {
 
       // Check backend variables using server action
       try {
-        const { hasMintWif, hasBurnWif, hasOrdinalsService } = await checkServerEnvVars();
+        const { hasMintWif, hasBurnWif } = await checkServerEnvVars();
         if (!isMounted) return;
         if (!hasMintWif) missing.push('MINT_WIF');
         if (!hasBurnWif) missing.push('BURN_WIF');
