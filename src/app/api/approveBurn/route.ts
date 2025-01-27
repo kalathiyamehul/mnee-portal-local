@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
-import { BURN_WIF, MNEE_API } from "@/env";
+import { getBurnWif, MNEE_API } from "@/env";
 import { fetchConfig, fetchTransaction } from "@/utils/api";
 import { applyInscription } from "js-1sat-ord";
 import type { Inscription } from "js-1sat-ord";
@@ -93,7 +93,7 @@ export async function POST(request: Request) {
           throw new Error("Failed to fetch source transaction");
         }
 
-        const pk = PrivateKey.fromWif(BURN_WIF);
+        const pk = PrivateKey.fromWif(getBurnWif());
         const burnTx = new Transaction();
 
         burnTx.addInput({
