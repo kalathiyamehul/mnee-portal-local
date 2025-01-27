@@ -155,6 +155,46 @@ export const BurnsTab = () => {
     }
   };
 
+  const handleApproveRefund = async (refundId: string) => {
+    try {
+      const response = await fetch('/api/approveRefund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refundRequestId: refundId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to approve refund request');
+      }
+
+      toast.success('Refund request approved');
+    } catch (error) {
+      console.error('Error approving refund:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to approve refund request');
+    }
+  };
+
+  const handleApproveBurn = async (burnId: string) => {
+    try {
+      const response = await fetch('/api/approveBurn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ burnRequestId: burnId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to approve burn request');
+      }
+
+      toast.success('Burn request approved');
+    } catch (error) {
+      console.error('Error approving burn:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to approve burn request');
+    }
+  };
+
   const canCancel = (burn: BurnUtxo) => {
     if (!burn.burnRequest || !session?.user?.email) return false;
     return burn.burnRequest.status === 'PENDING' && 
@@ -165,6 +205,20 @@ export const BurnsTab = () => {
     if (!burn.refundRequest || !session?.user?.email) return false;
     return burn.refundRequest.status === 'PENDING' && 
            burn.refundRequest.requester.email === session.user.email;
+  };
+
+  const canApproveBurn = (burn: BurnUtxo) => {
+    if (!burn.burnRequest || !session?.user?.email) return false;
+    return burn.burnRequest.status === 'PENDING' && 
+           burn.burnRequest.requester.email !== session.user.email &&
+           !burn.burnRequest.approvals.some(approval => approval.approver?.email === session.user.email);
+  };
+
+  const canApproveRefund = (burn: BurnUtxo) => {
+    if (!burn.refundRequest || !session?.user?.email) return false;
+    return burn.refundRequest.status === 'PENDING' && 
+           burn.refundRequest.requester.email !== session.user.email &&
+           !burn.refundRequest.approvals.some(approval => approval.approver?.email === session.user.email);
   };
 
   const handleRefundSuccess = () => {
@@ -297,13 +351,22 @@ export const BurnsTab = () => {
                               <FaFire className="w-3 h-3" /> Burn
                             </button>
                           )}
-                          {(canCancel(burn) || canCancelRefund(burn)) && (
+                          {canCancel(burn) && (
                             <button
                               type="button"
                               onClick={() => burn.burnRequest && handleCancelBurn(burn.burnRequest.id)}
                               className="btn btn-ghost btn-sm"
                             >
                               Cancel
+                            </button>
+                          )}
+                          {canApproveBurn(burn) && (
+                            <button
+                              type="button"
+                              onClick={() => burn.burnRequest && handleApproveBurn(burn.burnRequest.id)}
+                              className="btn btn-success btn-sm"
+                            >
+                              Approve Burn
                             </button>
                           )}
                           {((!burn.refundRequest || !['DONE'].includes(burn.refundRequest?.status)) && (!burn.burnRequest || !['APPROVED', 'REFUNDED'].includes(burn.burnRequest?.status))) && (
@@ -315,6 +378,15 @@ export const BurnsTab = () => {
                               title={burn.burnRequest?.status === 'PENDING' ? 'Cancel burn request first' : undefined}
                             >
                               Refund
+                            </button>
+                          )}
+                          {canApproveRefund(burn) && (
+                            <button
+                              type="button"
+                              onClick={() => burn.refundRequest && handleApproveRefund(burn.refundRequest.id)}
+                              className="btn btn-success btn-sm"
+                            >
+                              Approve Refund
                             </button>
                           )}
                         </div>
