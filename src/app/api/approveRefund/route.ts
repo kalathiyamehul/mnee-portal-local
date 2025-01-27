@@ -165,15 +165,6 @@ export async function POST(request: Request) {
 
       // If we have 2 approvals, broadcast the transaction
       if (approvalCount === 2) {
-        // Update to approved first
-        await tx.refundRequest.update({
-          where: { id: refundRequestId },
-          data: {
-            status: "APPROVED",
-            updatedAt: new Date(),
-          }
-        });
-
         try {
           const txid = await broadcastRefundTransaction(refundRequest);
 
