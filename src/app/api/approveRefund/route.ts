@@ -26,7 +26,7 @@ async function broadcastRefundTransaction(refundRequest: RefundRequest) {
   }
 
   // Create refund transaction
-  const burnPk = PrivateKey.fromWif(getBurnWif());
+  const burnPk = PrivateKey.fromWif(await getBurnWif());
   const tx = new Transaction();
 
   // Add input from burn address

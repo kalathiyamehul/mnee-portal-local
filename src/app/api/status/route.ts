@@ -128,13 +128,13 @@ export async function GET() {
         ...r,
         amount: r.amount.toString(),
       })),
-      freezeRequests,
-      blacklistRequests,
-      systemRequests,
       refundRequests: refundRequests.map(r => ({
         ...r,
         amount: r.amount.toString(),
       })),
+      freezeRequests,
+      blacklistRequests,
+      systemRequests,
     });
   } catch (error) {
     console.error("Error fetching system status:", error);

@@ -4,6 +4,7 @@ import type { IconType } from 'react-icons';
 
 export interface BurnUtxo extends MNEEUtxo {
   burnRequest?: BurnRequest;
+  refundRequest?: RefundRequest;
 }
 
 

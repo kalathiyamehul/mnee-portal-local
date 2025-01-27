@@ -93,7 +93,7 @@ export async function POST(request: Request) {
           throw new Error("Failed to fetch source transaction");
         }
 
-        const pk = PrivateKey.fromWif(getBurnWif());
+        const pk = PrivateKey.fromWif(await getBurnWif());
         const burnTx = new Transaction();
 
         burnTx.addInput({

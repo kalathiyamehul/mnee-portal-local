@@ -36,9 +36,6 @@ export default async function AuthenticatedLayout({
     redirect('/login');
   }
 
-  // Initialize encrypted environment variables
-  await initializeEnv();
-
   // Check if config exists
   const config = await getConfig();
   if (!config?.tokenId) {

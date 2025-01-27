@@ -273,7 +273,7 @@ const mintMnee = async (
 	console.log("Fetched remote config:", { approver: config.approver });
 
 	// MNEE contract config
-	const pk = PrivateKey.fromWif(getMintWif());
+	const pk = PrivateKey.fromWif(await getMintWif());
 	const fundingAddress = pk.toAddress();
 	const funding_utxos = await getFundingUtxos(fundingAddress);
 	console.log("Got funding UTXOs:", { count: funding_utxos.length });

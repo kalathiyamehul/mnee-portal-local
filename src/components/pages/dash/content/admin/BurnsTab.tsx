@@ -83,13 +83,15 @@ export const BurnsTab = () => {
     console.log('Updating burns with:', {
       utxos,
       burnUtxos,
-      burnRequests: statusData?.burnRequests
+      burnRequests: statusData?.burnRequests,
+      refundRequests: statusData?.refundRequests
     });
 
     // Only use transfer UTXOs for burn requests
     const burnsWithRequests = utxos.map(utxo => ({
       ...utxo,
-      burnRequest: statusData?.burnRequests?.find(req => req.outpoint === `${utxo.txid}_${utxo.vout}`)
+      burnRequest: statusData?.burnRequests?.find(req => req.outpoint === `${utxo.txid}_${utxo.vout}`),
+      refundRequest: statusData?.refundRequests?.find(req => req.outpoint === `${utxo.txid}_${utxo.vout}`)
     }));
 
     // Add burn UTXOs with APPROVED status
@@ -106,13 +108,14 @@ export const BurnsTab = () => {
           requestedBy: 'system',
           approvals: [],
           requester: { name: 'Unknown', email: 'unknown@example.com' }
-        }
+        },
+        refundRequest: undefined
       });
     }
 
     console.log('Final burns:', burnsWithRequests);
     setBurns(burnsWithRequests as BurnUtxo[]);
-  }, [utxos, burnUtxos, statusData?.burnRequests]);
+  }, [utxos, burnUtxos, statusData?.burnRequests, statusData?.refundRequests]);
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);

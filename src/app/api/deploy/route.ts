@@ -46,8 +46,8 @@ export async function POST(request: Request) {
 
 const deployMnee = async (feeAddress: string) => {
 	try {
-		const mintPk = PrivateKey.fromWif(getMintWif());
-		const burnPk = PrivateKey.fromWif(getBurnWif());
+		const mintPk = PrivateKey.fromWif(await getMintWif());
+		const burnPk = PrivateKey.fromWif(await getBurnWif());
 		const mintAddress = mintPk.toAddress();
 		const burnAddress = burnPk.toAddress();
 

@@ -32,8 +32,8 @@ export async function GET() {
 export async function POST(request: Request) {
   const { tokenId, feeAddress, decimals, latestMinterTx } = await request.json();
 
-  const mintAddress = PrivateKey.fromWif(getMintWif()).toAddress();
-  const burnAddress = PrivateKey.fromWif(getBurnWif()).toAddress();
+  const mintAddress = PrivateKey.fromWif(await getMintWif()).toAddress();
+  const burnAddress = PrivateKey.fromWif(await getBurnWif()).toAddress();
   try {
     // Get current config to keep existing fees
     const currentConfig = await prisma.config.findUnique({

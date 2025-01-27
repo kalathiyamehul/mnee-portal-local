@@ -46,16 +46,22 @@ export async function initializeEnv() {
 }
 
 // Getter functions for values
-export function getMintWif(): string {
+export async function getMintWif(): Promise<string> {
   if (!MINT_WIF) {
-    throw new Error('MINT_WIF not initialized');
+    await initializeEnv();
+    if (!MINT_WIF) {
+      throw new Error('MINT_WIF not initialized');
+    }
   }
   return MINT_WIF;
 }
 
-export function getBurnWif(): string {
+export async function getBurnWif(): Promise<string> {
   if (!BURN_WIF) {
-    throw new Error('BURN_WIF not initialized');
+    await initializeEnv();
+    if (!BURN_WIF) {
+      throw new Error('BURN_WIF not initialized');
+    }
   }
   return BURN_WIF;
 }
