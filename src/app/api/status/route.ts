@@ -24,19 +24,6 @@ export async function GET() {
       refundRequests,
     ] = await Promise.all([
       isSystemPaused(prisma),
-      prisma.refundRequest.findMany({
-        include: {
-          approvals: {
-            include: {
-              approver: true,
-            },
-          },
-          requester: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      }),
       prisma.mintRequest.findMany({
         include: {
           approvals: {
@@ -109,6 +96,19 @@ export async function GET() {
           createdAt: 'desc',
         },
       }),
+      prisma.refundRequest.findMany({
+        include: {
+          approvals: {
+            include: {
+              approver: true,
+            },
+          },
+          requester: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
     ]);
 
     // Find pending pause/resume requests from systemRequests
@@ -131,6 +131,7 @@ export async function GET() {
       freezeRequests,
       blacklistRequests,
       systemRequests,
+      refundRequests,
     });
   } catch (error) {
     console.error("Error fetching system status:", error);
