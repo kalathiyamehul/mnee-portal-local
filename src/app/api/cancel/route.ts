@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { actionRequestId, freezeRequestId, blacklistRequestId, mintRequestId, burnRequestId } = await request.json();
+  const { actionRequestId, freezeRequestId, blacklistRequestId, mintRequestId, burnRequestId, refundRequestId } = await request.json();
 
   try {
     if (actionRequestId) {
@@ -20,11 +20,11 @@ export async function POST(request: Request) {
       });
 
       if (!request) {
-        return NextResponse.json({ error: 'Request not found' }, { status: 404 });
+        return NextResponse.json({ error: 'Action request not found' }, { status: 404 });
       }
 
       if (request.requestedBy !== session.user.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return NextResponse.json({ error: 'You can only cancel your own requests' }, { status: 403 });
       }
 
       await prisma.actionRequest.update({
@@ -96,6 +96,23 @@ export async function POST(request: Request) {
 
       await prisma.burnRequest.update({
         where: { id: burnRequestId },
+        data: { status: 'CANCELLED' },
+      });
+    } else if (refundRequestId) {
+      const request = await prisma.refundRequest.findUnique({
+        where: { id: refundRequestId },
+      });
+
+      if (!request) {
+        return NextResponse.json({ error: 'Refund request not found' }, { status: 404 });
+      }
+
+      if (request.requestedBy !== session.user.id) {
+        return NextResponse.json({ error: 'You can only cancel your own requests' }, { status: 403 });
+      }
+
+      await prisma.refundRequest.update({
+        where: { id: refundRequestId },
         data: { status: 'CANCELLED' },
       });
     } else {
