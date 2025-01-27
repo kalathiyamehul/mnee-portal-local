@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: "Refund request created successfully",
-      refundRequest,
+      requestId: refundRequest.id,
     });
   } catch (error) {
     console.error("Error creating refund request:", error);

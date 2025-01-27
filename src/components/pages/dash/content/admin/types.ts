@@ -82,6 +82,13 @@ export interface BurnRequest {
 	requiresApproval?: boolean;
 }
 
+export interface RefundRequest extends BaseRequest {
+	action: 'REFUND';
+	outpoint: string;
+	address: string;
+	amount: string;
+}
+
 export type ActivityStatus = 
   | "PENDING"
   | "APPROVED"
@@ -92,8 +99,8 @@ export type ActivityStatus =
 
 export interface Activity {
   id: string;
-  type: "MINT" | "BURN" | "FREEZE" | "BLACKLIST" | "ACTION";
-  action?: 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT' | 'BURN';
+  type: "MINT" | "BURN" | "FREEZE" | "BLACKLIST" | "ACTION" | "REFUND";
+  action?: 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT' | 'BURN' | 'REFUND';
   status: ActivityStatus;
   createdAt: string;
   updatedAt: string;
@@ -149,6 +156,7 @@ export interface StatusResponse {
 	systemRequests: SystemRequest[];
 	mintRequests: MintRequest[];
 	burnRequests: BurnRequest[];
+	refundRequests: RefundRequest[];
 	error?: string;
 }
 

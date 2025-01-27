@@ -30,7 +30,7 @@ export const RefundModal = ({
     setIsLoading(true);
     try {
       const outpoint = `${utxo.txid}_${utxo.vout}`;
-      console.log('Sending refund request:', { outpoint, refundAddress });
+      console.log('Creating refund request:', { outpoint, refundAddress });
       
       const response = await fetch('/api/refund', {
         method: 'POST',
@@ -42,15 +42,19 @@ export const RefundModal = ({
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to process refund');
+        throw new Error(data.error || 'Failed to create refund request');
+      }
+
+      if (!data.requestId) {
+        throw new Error('No request ID returned from server');
       }
 
       toast.success("Refund request created (pending approval)");
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Error refunding burn:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to process refund');
+      console.error('Error creating refund request:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create refund request');
     } finally {
       setIsLoading(false);
     }
@@ -67,6 +71,9 @@ export const RefundModal = ({
           <div className="bg-base-200 p-4 rounded-lg">
             <div className="text-sm opacity-70 mb-1">Amount to refund</div>
             <div className="text-2xl font-bold">{toToken(amount, decimals)} MNEE</div>
+            <div className="text-xs opacity-50 mt-1 break-all">
+              UTXO: {utxo.txid}:{utxo.vout}
+            </div>
           </div>
 
           <div className="form-control w-full">
