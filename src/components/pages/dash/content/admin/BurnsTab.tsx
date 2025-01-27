@@ -342,7 +342,9 @@ export const BurnsTab = () => {
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
-                          {(!burn.burnRequest || burn.burnRequest.status === 'CANCELLED') && (
+                          {/* Show Burn button only if no pending requests */}
+                          {(!burn.burnRequest || burn.burnRequest.status === 'CANCELLED') && 
+                           !burn.refundRequest?.status && (
                             <button
                               type="button"
                               onClick={() => handleCreateBurnRequest(burn)}
@@ -351,16 +353,31 @@ export const BurnsTab = () => {
                               <FaFire className="w-3 h-3" /> Burn
                             </button>
                           )}
+
+                          {/* Cancel Burn button */}
                           {canCancel(burn) && (
                             <button
                               type="button"
                               onClick={() => burn.burnRequest && handleCancelBurn(burn.burnRequest.id)}
                               className="btn btn-ghost btn-sm"
                             >
-                              Cancel
+                              Cancel Burn
                             </button>
                           )}
-                          {canApproveBurn(burn) && (
+
+                          {/* Cancel Refund button */}
+                          {canCancelRefund(burn) && (
+                            <button
+                              type="button"
+                              onClick={() => burn.refundRequest && handleCancelBurn(burn.refundRequest.id)}
+                              className="btn btn-ghost btn-sm"
+                            >
+                              Cancel Refund
+                            </button>
+                          )}
+
+                          {/* Approve Burn button */}
+                          {canApproveBurn(burn) && !burn.refundRequest?.status && (
                             <button
                               type="button"
                               onClick={() => burn.burnRequest && handleApproveBurn(burn.burnRequest.id)}
@@ -369,7 +386,10 @@ export const BurnsTab = () => {
                               Approve Burn
                             </button>
                           )}
-                          {((!burn.refundRequest || !['DONE'].includes(burn.refundRequest?.status)) && (!burn.burnRequest || !['APPROVED', 'REFUNDED'].includes(burn.burnRequest?.status))) && (
+
+                          {/* Refund button - only show if no pending requests */}
+                          {((!burn.refundRequest || !['DONE', 'PENDING'].includes(burn.refundRequest?.status)) && 
+                            (!burn.burnRequest || !['APPROVED', 'REFUNDED', 'PENDING'].includes(burn.burnRequest?.status))) && (
                             <button
                               type="button"
                               onClick={() => setSelectedRefund(burn)}
@@ -380,6 +400,8 @@ export const BurnsTab = () => {
                               Refund
                             </button>
                           )}
+
+                          {/* Approve Refund button */}
                           {canApproveRefund(burn) && (
                             <button
                               type="button"
