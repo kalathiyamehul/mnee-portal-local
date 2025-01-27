@@ -9,7 +9,7 @@ async function getDecryptedEnvVar(name: string, encrypted = true): Promise<strin
   if (!encrypted) {
     return value;
   }
-  return decryptKmsValue(value);
+    return decryptKmsValue(value);
 }
 
 // server side
@@ -19,15 +19,33 @@ let BURN_WIF: string | undefined;
 // Initialize encrypted variables
 export async function initializeEnv() {
   try {
-    MINT_WIF = await getDecryptedEnvVar('MINT_WIF');
-    BURN_WIF = await getDecryptedEnvVar('BURN_WIF');
+    // Try unencrypted values first
+    MINT_WIF = process.env.MINT_WIF;
+    BURN_WIF = process.env.BURN_WIF;
+
+    // If unencrypted values not found, try encrypted values
+    if (!MINT_WIF) {
+      const encryptedMintWif = process.env.ENCRYPTED_MINT_WIF;
+      if (!encryptedMintWif) {
+        throw new Error('Missing environment variable: MINT_WIF or ENCRYPTED_MINT_WIF');
+      }
+      MINT_WIF = await decryptKmsValue(encryptedMintWif);
+    }
+
+    if (!BURN_WIF) {
+      const encryptedBurnWif = process.env.ENCRYPTED_BURN_WIF;
+      if (!encryptedBurnWif) {
+        throw new Error('Missing environment variable: BURN_WIF or ENCRYPTED_BURN_WIF');
+      }
+      BURN_WIF = await decryptKmsValue(encryptedBurnWif);
+    }
   } catch (error) {
-    console.error('Error initializing encrypted environment variables:', error);
+    console.error('Error initializing environment variables:', error);
     throw error;
   }
 }
 
-// Getter functions for encrypted values
+// Getter functions for values
 export function getMintWif(): string {
   if (!MINT_WIF) {
     throw new Error('MINT_WIF not initialized');

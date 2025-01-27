@@ -7,7 +7,7 @@ import {
 	fetchConfig,
 	fetchVaultedMneeUtxos,
 } from "@/utils/api";
-import { getMintWif, getBurnWif, MNEE_API } from "@/env";
+import { getMintWif, MNEE_API } from "@/env";
 import { getFundingUtxos } from "@/utils/utxo";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import type { Prisma } from "@prisma/client";

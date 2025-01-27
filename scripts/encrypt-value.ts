@@ -21,11 +21,11 @@ program
         console.log(encrypted);
         console.log('\nAdd this to your .env file:');
         if (options.description) {
-          console.log(`${options.description}=${encrypted}`);
+          console.log(`ENCRYPTED_${options.description}=${encrypted}`);
         } else {
-          console.log(`MINT_WIF=${encrypted}`);
+          console.log(`ENCRYPTED_MINT_WIF=${encrypted}`);
           console.log('# or');
-          console.log(`BURN_WIF=${encrypted}`);
+          console.log(`ENCRYPTED_BURN_WIF=${encrypted}`);
         }
       }
     } catch (error) {
