@@ -10,6 +10,7 @@ import { redirect } from 'next/navigation';
 import Navbar from '@/components/pages/dash/navbar';
 import { getConfig } from "@/lib/config";
 import { SystemStatusProvider } from '@/contexts/SystemStatusContext';
+import { initializeEnv } from "@/env";
 
 const geistMono = localFont({
   src: "../fonts/GeistMonoVF.woff",
@@ -34,6 +35,9 @@ export default async function AuthenticatedLayout({
     // Redirect unauthenticated users to the login page
     redirect('/login');
   }
+
+  // Initialize encrypted environment variables
+  await initializeEnv();
 
   // Check if config exists
   const config = await getConfig();
