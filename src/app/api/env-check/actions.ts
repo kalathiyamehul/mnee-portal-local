@@ -1,10 +1,10 @@
 'use server'
 
-import { MINT_WIF, BURN_WIF } from '@/env'
+import { getMintWif, getBurnWif } from '@/env'
 
 export async function checkServerEnvVars() {
   return {
-    hasMintWif: !!MINT_WIF,
-    hasBurnWif: !!BURN_WIF,
+    hasMintWif: !!getMintWif(),
+    hasBurnWif: !!getBurnWif(),
   }
 } 
