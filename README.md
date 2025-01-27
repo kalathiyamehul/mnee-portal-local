@@ -36,10 +36,18 @@ The dashboard uses AWS KMS to encrypt sensitive environment variables. To set th
 1. Create a KMS key in your AWS account
 2. Note the KMS key ID and add it to your environment variables
 3. Ensure your AWS credentials have permissions to use the KMS key
-4. Use the KMS encryption utility to encrypt your WIF values:
+4. Use the encrypt-value script to encrypt your WIF values:
    ```bash
-   # Coming soon: Utility script to encrypt values
+   # Encrypt MINT_WIF
+   bun run encrypt-value -d MINT_WIF "your_mint_wif_value"
+   
+   # Encrypt BURN_WIF
+   bun run encrypt-value -d BURN_WIF "your_burn_wif_value"
+   
+   # Encrypt a value (quiet mode - only outputs encrypted value)
+   bun run encrypt-value -q "your_wif_value"
    ```
+   The script will output the encrypted value and instructions for adding it to your .env file. The `-d` option adds a description to help identify which WIF is which in AWS KMS (optional).
 
 ## Installation
 

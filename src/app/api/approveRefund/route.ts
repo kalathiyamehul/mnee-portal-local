@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { isSystemPaused } from "@/lib/systemStatus";
 import { PrivateKey, PublicKey, Transaction, Utils } from "@bsv/sdk";
-import { BURN_WIF, MNEE_API } from "@/env";
+import { getBurnWif, MNEE_API } from "@/env";
 import { fetchConfig, fetchTransaction, fetchTxo } from "@/utils/api";
 import CosignTemplate from "@/templates/cosign";
 import { applyInscription, type Inscription } from "js-1sat-ord";
@@ -26,7 +26,7 @@ async function broadcastRefundTransaction(refundRequest: RefundRequest) {
   }
 
   // Create refund transaction
-  const burnPk = PrivateKey.fromWif(BURN_WIF);
+  const burnPk = PrivateKey.fromWif(getBurnWif());
   const tx = new Transaction();
 
   // Add input from burn address

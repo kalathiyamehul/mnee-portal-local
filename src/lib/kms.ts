@@ -23,11 +23,14 @@ export async function decryptKmsValue(encryptedValue: string): Promise<string> {
   }
 }
 
-export async function encryptKmsValue(value: string): Promise<string> {
+export async function encryptKmsValue(value: string, description?: string): Promise<string> {
   try {
     const command = new EncryptCommand({
       KeyId: process.env.KMS_KEY_ID,
       Plaintext: Buffer.from(value),
+      EncryptionContext: description ? { 
+        purpose: description 
+      } : undefined
     });
 
     const response = await kmsClient.send(command);
