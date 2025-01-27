@@ -161,6 +161,12 @@ export const BurnsTab = () => {
            burn.burnRequest.requester.email === session.user.email;
   };
 
+  const canCancelRefund = (burn: BurnUtxo) => {
+    if (!burn.refundRequest || !session?.user?.email) return false;
+    return burn.refundRequest.status === 'PENDING' && 
+           burn.refundRequest.requester.email === session.user.email;
+  };
+
   const handleRefundSuccess = () => {
     setSelectedRefund(null);
     handleRefresh();
@@ -291,7 +297,7 @@ export const BurnsTab = () => {
                               <FaFire className="w-3 h-3" /> Burn
                             </button>
                           )}
-                          {canCancel(burn) && (
+                          {(canCancel(burn) || canCancelRefund(burn)) && (
                             <button
                               type="button"
                               onClick={() => burn.burnRequest && handleCancelBurn(burn.burnRequest.id)}
@@ -300,7 +306,7 @@ export const BurnsTab = () => {
                               Cancel
                             </button>
                           )}
-                          {(!burn.burnRequest || !['APPROVED', 'REFUNDED'].includes(burn.burnRequest?.status)) && (
+                          {((!burn.refundRequest || !['DONE'].includes(burn.refundRequest?.status)) && (!burn.burnRequest || !['APPROVED', 'REFUNDED'].includes(burn.burnRequest?.status))) && (
                             <button
                               type="button"
                               onClick={() => setSelectedRefund(burn)}
