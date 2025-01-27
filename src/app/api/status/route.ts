@@ -21,8 +21,22 @@ export async function GET() {
       freezeRequests,
       blacklistRequests,
       systemRequests,
+      refundRequests,
     ] = await Promise.all([
       isSystemPaused(prisma),
+      prisma.refundRequest.findMany({
+        include: {
+          approvals: {
+            include: {
+              approver: true,
+            },
+          },
+          requester: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
       prisma.mintRequest.findMany({
         include: {
           approvals: {
