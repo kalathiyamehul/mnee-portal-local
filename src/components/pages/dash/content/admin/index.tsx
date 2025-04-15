@@ -248,7 +248,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 	};
 	const requiresApproval = useCallback((_activity: Activity) => {
     // For now, all actions require approval
-    console.log('requiresApproval', _activity);
+    // console.log('requiresApproval', _activity);
 		return true;
 	}, []);
 

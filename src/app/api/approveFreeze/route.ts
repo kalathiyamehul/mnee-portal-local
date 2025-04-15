@@ -10,16 +10,16 @@ export async function POST(request: Request) {
 	console.log('Session:', { userId: session?.user?.id });
 
 	if (!session?.user?.id) {
-		console.log('Unauthorized: No session or user ID');
+		// console.log('Unauthorized: No session or user ID');
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
 
 	const body = await request.json();
-	console.log('Request body:', body);
+	// console.log('Request body:', body);
 	const { freezeRequestId } = body;
 
 	if (!freezeRequestId) {
-		console.log('Missing freezeRequestId in request body');
+		// console.log('Missing freezeRequestId in request body');
 		return NextResponse.json({ error: "Missing freezeRequestId" }, { status: 400 });
 	}
 
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 	try {
 		const result = await prisma.$transaction(async (tx) => {
 			// Get the freeze request
-			console.log('Finding freeze request:', { freezeRequestId });
+			// console.log('Finding freeze request:', { freezeRequestId });
 			const freezeRequest = await tx.freezeRequest.findUnique({
 				where: { id: freezeRequestId },
 				include: {
@@ -41,15 +41,15 @@ export async function POST(request: Request) {
 				},
 			});
 
-			console.log('Found freeze request:', freezeRequest);
+			// console.log('Found freeze request:', freezeRequest);
 
 			if (!freezeRequest) {
-				console.log('Freeze request not found');
+				// console.log('Freeze request not found');
 				throw new Error("Freeze request not found");
 			}
 
 			if (freezeRequest.status !== 'PENDING') {
-				console.log('Invalid status:', { status: freezeRequest.status });
+				// console.log('Invalid status:', { status: freezeRequest.status });
 				throw new Error("This request is no longer pending");
 			}
 
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
 			});
 
 			if (hasApproved) {
-				console.log('Already approved by user');
+				// console.log('Already approved by user');
 				throw new Error("You have already approved this request");
 			}
 
@@ -103,18 +103,18 @@ export async function POST(request: Request) {
 				},
 			});
 
-			console.log('Created approval:', approval);
+			// console.log('Created approval:', approval);
 
 			// Check if we have enough approvals
 			const updatedApprovals = await tx.freezeApproval.count({
 				where: { freezeRequestId },
 			});
 
-			console.log('Total approvals:', updatedApprovals);
+			// console.log('Total approvals:', updatedApprovals);
 
 			// If we have 2 approvals, mark as approved
 			if (updatedApprovals === 2) {
-				console.log('Updating request to APPROVED');
+				// console.log('Updating request to APPROVED');
 				const updatedRequest = await tx.freezeRequest.update({
 					where: { id: freezeRequestId },
 					data: { status: 'APPROVED' },
@@ -138,7 +138,7 @@ export async function POST(request: Request) {
 					},
 				});
 
-				console.log('Updated request:', updatedRequest);
+				// console.log('Updated request:', updatedRequest);
 				return updatedRequest;
 			}
 
@@ -149,7 +149,7 @@ export async function POST(request: Request) {
 	} catch (error) {
 		console.error('Error in freeze approval:', error);
 		const errorMessage = error instanceof Error ? error.message : "Failed to approve freeze request";
-		console.log('Returning error:', errorMessage);
+		// console.log('Returning error:', errorMessage);
 		return NextResponse.json(
 			{ error: errorMessage },
 			{ status: 500 }

@@ -40,28 +40,28 @@ export default function DashboardCustomersContent() {
   }, [fetchCustomers]);
 
   useEffect(() => {
-    console.log('Balance fetch effect triggered:', {
-      hasCustomers: !!customers?.length,
-      customerAddresses: customers?.map(c => c.address),
-      balancesLoading,
-      customersLoading: loading
-    });
+    // console.log('Balance fetch effect triggered:', {
+    //   hasCustomers: !!customers?.length,
+    //   customerAddresses: customers?.map(c => c.address),
+    //   balancesLoading,
+    //   customersLoading: loading
+    // });
 
     // Don't fetch if customers are still loading
     if (loading) {
-      console.log('Skipping balance fetch - customers still loading');
+      // console.log('Skipping balance fetch - customers still loading');
       return;
     }
 
     const addresses = customers?.map(c => c.address).filter(Boolean);
     if (addresses?.length && balancesLoading === FetchStatus.IDLE) {
-      console.log('Fetching balances for addresses:', addresses);
+      // console.log('Fetching balances for addresses:', addresses);
       fetchBalances(addresses);
     } else {
-      console.log('Skipping balance fetch:', {
-        hasAddresses: !!addresses?.length,
-        balancesLoading
-      });
+      // console.log('Skipping balance fetch:', {
+      //   hasAddresses: !!addresses?.length,
+      //   balancesLoading
+      // });
     }
   }, [customers, fetchBalances, balancesLoading, loading]);
 

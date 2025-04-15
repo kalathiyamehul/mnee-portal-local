@@ -50,7 +50,7 @@ export const BurnsTab = () => {
         throw new Error('Burn address not configured');
       }
 
-      console.log('Config loaded:', { config, decimals: config.decimals });
+      // console.log('Config loaded:', { config, decimals: config.decimals });
       setBurnAddress(config.burnAddress);
       setDecimals(config.decimals ?? DEFAULT_DECIMALS);
       return config.burnAddress as string;
@@ -65,12 +65,12 @@ export const BurnsTab = () => {
     try {
       // defaults to transfer and deploy+mint if not specified
       const fetchedTransferUtxos = await fetchMneeUtxos([address]);
-      console.log('Transfer UTXOs:', fetchedTransferUtxos);
+      // console.log('Transfer UTXOs:', fetchedTransferUtxos);
       setUtxos(fetchedTransferUtxos);
 
       // burns only
       const fetchedBurnUtxos = await fetchMneeUtxos([address], ['burn']);
-      console.log('Burn UTXOs:', fetchedBurnUtxos);
+      // console.log('Burn UTXOs:', fetchedBurnUtxos);
       setBurnUtxos(fetchedBurnUtxos);
     } catch (err) {
       console.error('Error fetching UTXOs:', err);
@@ -80,11 +80,11 @@ export const BurnsTab = () => {
 
   // update burns with requests
   const updateBurns = useCallback(() => {
-    console.log('Updating burns with:', {
-      utxos,
-      burnUtxos,
-      burnRequests: statusData?.burnRequests
-    });
+    // console.log('Updating burns with:', {
+    //   utxos,
+    //   burnUtxos,
+    //   burnRequests: statusData?.burnRequests
+    // });
 
     // Only use transfer UTXOs for burn requests
     const burnsWithRequests = utxos.map(utxo => ({
@@ -110,7 +110,7 @@ export const BurnsTab = () => {
       });
     }
 
-    console.log('Final burns:', burnsWithRequests);
+    // console.log('Final burns:', burnsWithRequests);
     setBurns(burnsWithRequests as BurnUtxo[]);
   }, [utxos, burnUtxos, statusData?.burnRequests]);
 
@@ -183,7 +183,7 @@ export const BurnsTab = () => {
 
   // Update burns when status or UTXOs change
   useEffect(() => {
-    console.log('Updating burns with decimals:', decimals);
+    // console.log('Updating burns with decimals:', decimals);
     updateBurns();
   }, [updateBurns, decimals]);
 

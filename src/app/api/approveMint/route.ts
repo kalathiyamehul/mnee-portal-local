@@ -144,7 +144,7 @@ export async function POST(request: Request) {
 			});
 
 			if (existingApproval) {
-				console.log("User has already approved");
+				// console.log("User has already approved");
 				throw new Error("You have already approved this request");
 			}
 

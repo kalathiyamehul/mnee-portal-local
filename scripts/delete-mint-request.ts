@@ -17,7 +17,7 @@ async function deleteMintRequest() {
         id: options.id
       }
     });
-    console.log('Successfully deleted mint request:', result.id);
+    // console.log('Successfully deleted mint request:', result.id);
   } catch (error) {
     console.error('Failed to delete mint request:', error);
     process.exit(1);
