@@ -36,7 +36,7 @@ export const MintsTab = ({ showModal }: MintsTabProps) => {
 					onUpdate={() => {}} // SystemStatusContext handles updates automatically
 					showActions={true}
 					enablePagination={true}
-					itemsPerPage={4}
+					itemsPerPage={6}
 				/>
 
 				<MintTable 
