@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
 import type { Activity } from "./types";
 import type { Session } from "next-auth";
-import { MdOutlineOpenInNew } from "react-icons/md";
+import { MdOutlineArrowBack, MdOutlineArrowForward, MdOutlineKeyboardBackspace, MdOutlineOpenInNew } from "react-icons/md";
 import { toToken } from "satoshi-token";
 import { getConfig } from "@/lib/config";
 import { useEffect, useState } from "react";
@@ -31,6 +31,9 @@ interface MintTableProps {
 	mode?: 'all' | 'active' | 'history';
 	showActions?: boolean;
 	showRequester?: boolean;
+	// Add pagination props
+	itemsPerPage?: number;
+	enablePagination?: boolean;
 }
 
 const getRowBorderClass = (status: string) => {
@@ -236,9 +239,15 @@ const MintTableContent = ({
 							</td>
 							<td>
 								<div className="flex flex-col gap-1">
+									<a
+										href={`https://whatsonchain.com/address/${mint.address}`}
+										target="_blank"
+										rel="noopener noreferrer"
+									>
 									<span className="font-mono text-sm">
 										{mint.address?.slice(0, 8)}...{mint.address?.slice(-8)}
 									</span>
+									</a>
 									<div className="flex items-center gap-1">
 										<div className="tooltip tooltip-bottom" data-tip="Copy Address">
 											<button
@@ -259,9 +268,9 @@ const MintTableContent = ({
 												href={`https://whatsonchain.com/address/${mint.address}`}
 												target="_blank"
 												rel="noopener noreferrer"
-												className="btn btn-ghost btn-xs text-base-content/70 hover:text-base-content"
+												className="btn btn-link btn-xs"
 											>
-												<MdOutlineOpenInNew className="w-3 h-3" />
+												View on Explorer <MdOutlineOpenInNew className="w-3 h-3" />
 											</a>
 										</div>
 									</div>
@@ -337,9 +346,12 @@ export const MintTable = ({
 	alwaysShow = false,
 	mode = 'all',
 	showActions = true,
-	showRequester = true
+	showRequester = true,
+	enablePagination = false,
+	itemsPerPage = 10
 }: MintTableProps) => {
 	const { data: session } = useSession();
+	const [currentPage, setCurrentPage] = useState(1);
 
 	// Filter mints based on mode
 	const filteredMints = mode === 'all' 
@@ -348,8 +360,15 @@ export const MintTable = ({
 			? mints.filter(mint => mint.status === "PENDING")
 			: mints.filter(mint => mint.status !== "PENDING");
 
-	// Apply limit if specified
-	const displayMints = limit ? filteredMints.slice(0, limit) : filteredMints;
+	// Pagination logic
+	const totalPages = Math.ceil(filteredMints.length / itemsPerPage);
+	const startIndex = (currentPage - 1) * itemsPerPage;
+	const endIndex = startIndex + itemsPerPage;
+	
+	// Apply pagination or limit
+	const displayMints = enablePagination
+		? filteredMints.slice(startIndex, endIndex)
+		: limit ? filteredMints.slice(0, limit) : filteredMints;
 
 	if (!alwaysShow && displayMints.length === 0) {
 		return null;
@@ -379,6 +398,29 @@ export const MintTable = ({
 					showRequester={showRequester}
 				/>
 			</div>
+
+			{/* Pagination controls */}
+			{enablePagination && totalPages > 1 && (
+				<div className="flex justify-end items-center mt-4 gap-2">
+					<button 
+						onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+						disabled={currentPage === 1}
+						className="btn btn-sm"
+					>
+						<MdOutlineArrowBack /> Previous
+					</button>
+					<span className="text-xs">
+						Page {currentPage} of {totalPages}
+					</span>
+					<button
+						onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+						disabled={currentPage === totalPages}
+						className="btn btn-sm"
+					>
+						Next <MdOutlineArrowForward />
+					</button>
+				</div>
+			)}
 		</div>
 	);
-}; 
+};

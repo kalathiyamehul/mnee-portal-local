@@ -35,6 +35,8 @@ export const MintsTab = ({ showModal }: MintsTabProps) => {
 					mode="active"
 					onUpdate={() => {}} // SystemStatusContext handles updates automatically
 					showActions={true}
+					enablePagination={true}
+					itemsPerPage={4}
 				/>
 
 				<MintTable 
@@ -44,8 +46,10 @@ export const MintsTab = ({ showModal }: MintsTabProps) => {
 					onUpdate={() => {}}
 					alwaysShow={true}
 					showActions={false}
+					enablePagination={true}
+					itemsPerPage={6}
 				/>
 			</div>
 		</div>
 	);
-}; 
+};
