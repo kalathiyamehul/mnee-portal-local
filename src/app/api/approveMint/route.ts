@@ -142,6 +142,7 @@ export async function POST(request: Request) {
 					approvedBy: session.user.id,
 				},
 			});
+			console.log("Checking for existing approval", existingApproval);
 
 			if (existingApproval) {
 				// console.log("User has already approved");

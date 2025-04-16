@@ -16,12 +16,13 @@ const opts = program.opts();
 
 async function approveMint(requestId: string, userId: string) {
   try {
+    console.log('Recieved Request', requestId, userId);
     // Verify the mint request exists and is pending
     const mintRequest = await prisma.mintRequest.findUnique({
       where: { id: requestId },
       include: { approvals: true }
     });
-
+    console.log("Mint Request:", mintRequest);
     if (!mintRequest) {
       throw new Error('Mint request not found');
     }
@@ -37,7 +38,7 @@ async function approveMint(requestId: string, userId: string) {
         approvedBy: userId
       }
     });
-
+    console.log('Existing Approval:', existingApproval);
     if (existingApproval) {
       throw new Error('User has already approved this request');
     }
