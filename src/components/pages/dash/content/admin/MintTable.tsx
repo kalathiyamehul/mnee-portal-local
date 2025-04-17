@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import type { Config } from "@/types";
 import { getGravatarUrl } from "@/utils/gravatar";
 import { useRouter } from "next/navigation";
+import { Pagination } from "@/components/common/Pagination";
 
 const statusColors: Record<string, string> = {
 	PENDING: "badge-warning",
@@ -348,7 +349,7 @@ export const MintTable = ({
 	showActions = true,
 	showRequester = true,
 	enablePagination = false,
-	itemsPerPage = 10
+	itemsPerPage = 6
 }: MintTableProps) => {
 	const { data: session } = useSession();
 	const [currentPage, setCurrentPage] = useState(1);
@@ -399,27 +400,15 @@ export const MintTable = ({
 				/>
 			</div>
 
-			{/* Pagination controls */}
+			{/* pagination controls */}
 			{enablePagination && totalPages > 1 && (
-				<div className="flex justify-end items-center mt-4 gap-2">
-					<button 
-						onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-						disabled={currentPage === 1}
-						className="btn btn-sm"
-					>
-						<MdOutlineArrowBack /> Previous
-					</button>
-					<span className="text-xs">
-						Page {currentPage} of {totalPages}
-					</span>
-					<button
-						onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-						disabled={currentPage === totalPages}
-						className="btn btn-sm"
-					>
-						Next <MdOutlineArrowForward />
-					</button>
-				</div>
+				<Pagination
+					currentPage={currentPage}
+					totalPages={totalPages}
+					itemsPerPage={itemsPerPage}
+					totalItems={filteredMints.length}
+					onPageChange={setCurrentPage}
+				/>
 			)}
 		</div>
 	);
