@@ -97,7 +97,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     initialize();
 
     // Set up polling interval only if authenticated
-    const interval = setInterval(fetchStatus, 7500);
+    const interval = setInterval(fetchStatus, 5500);
 
     // Clean up interval on unmount or when session changes
     return () => clearInterval(interval);

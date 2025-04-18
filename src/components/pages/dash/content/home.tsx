@@ -80,6 +80,12 @@ type DashboardMetrics = {
   }>;
 };
 
+type RequestTables = {
+  recentMints: Activity[];
+  recentBurns: Activity[];
+  pendingActivities: Activity[];
+};
+
 interface DashboardHomeContentProps {
   initialConfig: Config;
 }
@@ -92,12 +98,12 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [requestTables, setRequests] = useState<RequestTables | null>(null);
   const [loading, setLoading] = useState(false);
   // Add this line to access system status
   const { statusData, fetchStatus } = useSystemStatus();
 
-  // Now you can use statusData to check system status
+  // Now you can use statusData to check recent Activities & Requestes
   useEffect(() => {
     if (statusData) {
       const allActivities: Activity[] = [
@@ -128,8 +134,11 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
-
-      setActivities(allActivities);
+      setRequests({
+        recentMints: allActivities.filter(act => act.type === "MINT").filter((activity) => activity.status === "PENDING").slice(0, 5),
+        recentBurns: allActivities.filter(act => act.type === "BURN").filter((activity) => activity.status === "PENDING").slice(0, 5),
+        pendingActivities: allActivities.filter((activity) => activity.status === "PENDING").slice(0, 5),
+      });
       setLoading(false);
     }
   }, [statusData]);
@@ -330,12 +339,6 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           requiresApproval: true,
         } as Activity)
     ) || [];
-
-  const pendingActivities =
-    activities
-      .filter((activity) => activity.status === "PENDING")
-      .slice(0, 5) || [];
-
   return (
     <div className="p-4 space-y-8 animate-fade-in">
       <div className="stats shadow w-full">
@@ -493,7 +496,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
         <ActivityList
           showOnlyPending={true}
           setShowOnlyPending={() => {}}
-          filteredActivities={pendingActivities}
+          filteredActivities={requestTables?.pendingActivities || []}
           config={initialConfig}
           loading={loading}
           canCancel={canCancel}
@@ -513,7 +516,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
         <div className="w-full">
           <MintTable
             title="Recent Mints"
-            mints={metrics.recentMints}
+            mints={requestTables?.recentMints || []}
             limit={5}
             showViewAll={true}
             onUpdate={fetchMetrics}

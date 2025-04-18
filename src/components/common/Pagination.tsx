@@ -20,7 +20,7 @@ export const Pagination = ({
 
   return (
     <div className="flex justify-end items-center gap-4 mt-10">
-      <div className="text-sm text-base-content/70">
+      <div className="text-xs text-base-content/70">
         Showing {indexOfFirstItem + 1}-
         {Math.min(indexOfLastItem, totalItems)} of {totalItems} items
       </div>
