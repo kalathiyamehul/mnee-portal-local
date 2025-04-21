@@ -7,6 +7,8 @@ import { formatDistanceToNow } from "date-fns";
 import { getGravatarUrl } from "@/utils/gravatar";
 import { Pagination } from "@/components/common/Pagination";
 import { useEffect, useState } from "react";
+import { ExportButtons } from "@/components/common/ExportButtons";
+import { usePathname } from "next/navigation";
 
 export const ActivityList = ({
   showOnlyPending,
@@ -28,25 +30,44 @@ export const ActivityList = ({
   // Add pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6; // Increased from 4 to show more items per page
-  
+
   // Calculate pagination values
   const totalItems = filteredActivities.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  
+
   // Reset page when filtered activities change
   useEffect(() => {
     setCurrentPage(1);
   }, [filteredActivities.length]);
 
+  const path = usePathname();
+
   // Calculate paginated activities
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentActivities = filteredActivities.slice(indexOfFirstItem, indexOfLastItem);
+  const currentActivities = filteredActivities.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+
+  // Helper to format data for export
+  const exportData = filteredActivities.map((activity, index) => ({
+    "": index + 1,
+    Activity: getActivityDisplayText(activity),
+    Details: activity.customer
+      ? "Customer : " + activity.customer.name + " - " + activity.customer.email
+      : "Address: " + activity.address,
+    Requested_by: activity.requester.name || activity.requester.email,
+    Status: activity.status,
+    Approver: activity.approvals?.map((a) => a.approver?.email).join(", "),
+    Created: new Date(activity.createdAt).toLocaleString(),
+  }));
 
   // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
+
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
       case "PENDING":
@@ -94,25 +115,35 @@ export const ActivityList = ({
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      <div className="w-full">
+        {" "}
+        {/* Changed from overflow-x-auto */}
         {loading ? (
           <div className="flex justify-center items-center py-8">
             <div className="loading loading-spinner loading-lg" />
           </div>
         ) : (
           <>
-            <table className="table w-full">
+            {path === "/dash/admin" && (
+              <ExportButtons
+                data={exportData}
+                filename={`Activity-list`}
+                className="mb-4"
+              />
+            )}
+            <table className="table min-w-full">
               <thead>
                 <tr>
-                  <th>Activity</th>
-                  <th>Details</th>
-                  {showRequester && <th>Requested By</th>}
-                  <th>Status</th>
-                  <th className="w-[100px]">Actions</th>
+                  <th className="w-[25%]">Activity</th>
+                  <th className="w-[30%]">Details</th>
+                  {showRequester && <th className="w-[20%]">Requested By</th>}
+                  <th className="w-[15%]">Status</th>
+                  <th className="w-[10%]">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {currentActivities.map((activity) => { // Changed from filteredActivities to currentActivities
+                {currentActivities.map((activity) => {
+                  // Changed from filteredActivities to currentActivities
                   const Icon = getActivityIcon(activity);
                   const displayText = getActivityDisplayText(activity);
                   const needsApproval = requiresApproval(activity);
@@ -297,7 +328,7 @@ export const ActivityList = ({
                 })}
               </tbody>
             </table>
-            
+
             {totalItems > itemsPerPage && ( // Only show pagination if there are more items than per page limit
               <div className="mt-4">
                 <Pagination
