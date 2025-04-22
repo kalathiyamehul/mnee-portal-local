@@ -30,12 +30,12 @@ export const MintModal = ({
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch('/api/customers');
+        const response = await fetch("/api/customers?page=-1&limit=-1");
         if (!response.ok) {
-          throw new Error('Failed to fetch customers');
+          throw new Error("Failed to fetch customers");
         }
         const data = await response.json();
-        setCustomers(data);
+        setCustomers(data?.customers || []);
       } catch (error) {
         console.error('Error fetching customers:', error);
         toast.error('Failed to fetch customers');
