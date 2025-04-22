@@ -21,11 +21,9 @@ import { ErrorIcon } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 
 export default function DashboardCustomersContent() {
-  // Add these new states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(6);
   const router = useRouter();
-  const { customers, loading, error, fetchCustomers } = useCustomer();
+  const { customers, loading, error, fetchCustomers, pagination } =
+    useCustomer();
   const { balances, fetchBalances, balancesLoading } = useBalance();
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
@@ -46,32 +44,15 @@ export default function DashboardCustomersContent() {
   }, []);
 
   useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
+    fetchCustomers(pagination.page, pagination.limit);
+  }, [fetchCustomers, pagination.page, pagination.limit]);
 
   useEffect(() => {
-    // console.log('Balance fetch effect triggered:', {
-    //   hasCustomers: !!customers?.length,
-    //   customerAddresses: customers?.map(c => c.address),
-    //   balancesLoading,
-    //   customersLoading: loading
-    // });
-
-    // Don't fetch if customers are still loading
-    if (loading) {
-      // console.log('Skipping balance fetch - customers still loading');
-      return;
-    }
+    if (loading) return;
 
     const addresses = customers?.map((c) => c.address).filter(Boolean);
     if (addresses?.length && balancesLoading === FetchStatus.IDLE) {
-      // console.log('Fetching balances for addresses:', addresses);
       fetchBalances(addresses);
-    } else {
-      // console.log('Skipping balance fetch:', {
-      //   hasAddresses: !!addresses?.length,
-      //   balancesLoading
-      // });
     }
   }, [customers, fetchBalances, balancesLoading, loading]);
 
@@ -97,12 +78,9 @@ export default function DashboardCustomersContent() {
     setShowModal(true);
   };
 
-  // Add pagination calculation
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentCustomers =
-    customers?.slice(indexOfFirstItem, indexOfLastItem) || [];
-  const totalPages = Math.ceil((customers?.length || 0) / itemsPerPage);
+  const handlePageChange = (page: number) => {
+    fetchCustomers(page, pagination.limit);
+  };
 
   return (
     <div className="p-4 space-y-6 animate-fade-in">
@@ -129,7 +107,7 @@ export default function DashboardCustomersContent() {
             </tr>
           </thead>
           <tbody>
-            {currentCustomers.map((customer) => (
+            {customers?.map((customer) => (
               <tr
                 key={customer.id}
                 className="hover border-l-4 border-l-transparent hover:border-l-primary cursor-pointer"
@@ -261,14 +239,14 @@ export default function DashboardCustomersContent() {
           </tbody>
         </table>
       </div>
-      {/* Add pagination controls */}
-      {customers && customers.length > itemsPerPage && (
+
+      {customers && customers.length > 0 && (
         <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          itemsPerPage={itemsPerPage}
-          totalItems={customers.length}
-          onPageChange={(page) => setCurrentPage(page)}
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          itemsPerPage={pagination.limit}
+          totalItems={pagination.total}
+          onPageChange={handlePageChange}
         />
       )}
 
@@ -282,7 +260,7 @@ export default function DashboardCustomersContent() {
           onSuccess={() => {
             setShowModal(false);
             setSelectedCustomer(null);
-            fetchCustomers();
+            fetchCustomers(pagination.page, pagination.limit);
           }}
         />
       )}

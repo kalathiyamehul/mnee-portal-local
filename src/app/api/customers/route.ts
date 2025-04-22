@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -11,19 +11,39 @@ export async function GET() {
   }
 
   try {
-    const customers = await prisma.customer.findMany({
-      orderBy: { createdAt: "desc" },
-      include: {
-        creator: {
-          select: {
-            name: true,
-            email: true,
+    // Get pagination parameters from URL
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '6');
+    const offset = (page - 1) * limit;
+
+    // Get total count and paginated customers
+    const [totalCount, customers] = await Promise.all([
+      prisma.customer.count(),
+      prisma.customer.findMany({
+        skip: offset,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          creator: {
+            select: {
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      })
+    ]);
 
-    return NextResponse.json(customers);
+    return NextResponse.json({
+      customers,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit)
+      }
+    });
   } catch (error) {
     console.error("Error fetching customers:", error);
     return NextResponse.json(
