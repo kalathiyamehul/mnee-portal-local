@@ -1,67 +1,99 @@
-import { FC } from "react";
+import { FC, useState } from "react";
 import Papa from "papaparse";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilePdf } from "react-icons/fa6";
 import { TbFileTypeCsv, TbFileTypePdf } from "react-icons/tb";
+import { toast } from "react-hot-toast";
 
 interface ExportButtonsProps {
-  data: any[];
+  data?: any[];
   filename?: string;
   className?: string;
   csvLabel?: string;
   pdfLabel?: string;
+  onExport?: () => Promise<any[]>;
 }
 
 export const ExportButtons: FC<ExportButtonsProps> = ({
-  data,
+  data = [],
   filename = "data",
   className = "",
   csvLabel = "Export to CSV",
   pdfLabel = "Export to PDF",
+  onExport,
 }) => {
-  const handleExportCSV = () => {
-    const csv = Papa.unparse(data);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `${filename}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const [loading, setLoading] = useState(false);
+
+  const handleExportCSV = async () => {
+    try {
+      setLoading(true);
+      const exportData = onExport ? await onExport() : data;
+      if (!exportData?.length) {
+        toast.error("No data to export");
+        return;
+      }
+      const csv = Papa.unparse(exportData);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${filename}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      toast.error("Failed to export CSV");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleExportPDF = () => {
-    if (data.length === 0) return;
-    const doc = new jsPDF({
-      orientation: "landscape",
-      unit: "pt",
-      format: "A4",
-    });
-    autoTable(doc, {
-      head: [Object.keys(data[0])],
-      body: data.map((row) =>
-        Object.values(row).map((value) => value?.toString() || "")
-      ),
-      margin: 10,
-      styles: {
-        fontSize: 8,
-        cellPadding: 4,
-      },
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
-        fontStyle: 'bold',
-        fontSize: 10,
-      },
-      bodyStyles: {
-        textColor: 50,
-      },
-      tableWidth: 'auto',
-      theme: 'grid',
-    });
-    doc.save(`${filename}.pdf`);
+  const handleExportPDF = async () => {
+    try {
+      setLoading(true);
+      const exportData = onExport ? await onExport() : data;
+      if (!exportData?.length) {
+        toast.error("No data to export");
+        return;
+      }
+
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "pt",
+        format: "A4",
+      });
+
+      autoTable(doc, {
+        head: [Object.keys(exportData[0])],
+        body: exportData.map((row) =>
+          Object.values(row).map((value) => value?.toString() || "")
+        ),
+        margin: 10,
+        styles: {
+          fontSize: 8,
+          cellPadding: 4,
+        },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: "bold",
+          fontSize: 10,
+        },
+        bodyStyles: {
+          textColor: 50,
+        },
+        tableWidth: "auto",
+        theme: "grid",
+      });
+      doc.save(`${filename}.pdf`);
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error("Failed to export PDF");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -70,9 +102,13 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
         tabIndex={0}
         role="button"
         className="btn btn-outline btn-sm"
-        disabled={data.length === 0}
+        disabled={loading}
       >
-        Export
+        {loading ? (
+          <span className="loading loading-spinner loading-xs" />
+        ) : (
+          "Export"
+        )}
         <svg
           width="12px"
           height="12px"
@@ -88,13 +124,13 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
         className="dropdown-content z-[1] menu p-2 shadow bg-base-300 rounded-box w-52"
       >
         <li>
-          <button type="button" onClick={handleExportCSV}>
-          <TbFileTypeCsv className="text-xl" /> {csvLabel}
+          <button type="button" onClick={handleExportCSV} disabled={loading}>
+            <TbFileTypeCsv className="text-xl" /> {csvLabel}
           </button>
         </li>
         <li>
-          <button type="button" onClick={handleExportPDF}>
-          <TbFileTypePdf className="text-xl" /> {pdfLabel}
+          <button type="button" onClick={handleExportPDF} disabled={loading}>
+            <TbFileTypePdf className="text-xl" /> {pdfLabel}
           </button>
         </li>
       </ul>

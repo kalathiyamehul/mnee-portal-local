@@ -19,6 +19,7 @@ import type { Config, Customer } from "@prisma/client";
 import { FetchStatus } from "@/types/common";
 import { ErrorIcon } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
+import { ExportButtons } from "@/components/common/ExportButtons";
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
@@ -82,18 +83,43 @@ export default function DashboardCustomersContent() {
     fetchCustomers(page, pagination.limit);
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch("/api/customers?page=-1&limit=-1");
+      if (!response.ok) {
+        throw new Error("Failed to fetch customers for export");
+      }
+      const data = await response.json();
+
+      return data.customers.map((customer: any) => ({
+        ID: customer.id,
+        Name: customer.name,
+        Email: customer.email,
+        Address: customer.address,
+        "Created By": customer.creator.email,
+        "Created At": new Date(customer.createdAt).toLocaleDateString(),
+      }));
+    } catch (error) {
+      console.error("Error exporting customers:", error);
+      throw error;
+    }
+  };
+
   return (
     <div className="p-4 space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Customers</h1>
-        <button
-          type="button"
-          onClick={() => setShowModal(true)}
-          className="btn btn-primary btn-sm gap-2"
-        >
-          <FaUserPlus className="w-4 h-4" />
-          Add Customer
-        </button>
+        <div className="flex gap-2">
+          <ExportButtons filename="customers" onExport={handleExport} />
+          <button
+            type="button"
+            onClick={() => setShowModal(true)}
+            className="btn btn-primary btn-sm gap-2"
+          >
+            <FaUserPlus className="w-4 h-4" />
+            Add Customer
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">

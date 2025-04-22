@@ -15,14 +15,16 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '6');
-    const offset = (page - 1) * limit;
+
+    // If page and limit are -1, return all records
+    const shouldReturnAll = page === -1 && limit === -1;
 
     // Get total count and paginated customers
     const [totalCount, customers] = await Promise.all([
       prisma.customer.count(),
       prisma.customer.findMany({
-        skip: offset,
-        take: limit,
+        skip: shouldReturnAll ? 0 : (page - 1) * limit,
+        take: shouldReturnAll ? undefined : limit,
         orderBy: { createdAt: "desc" },
         include: {
           creator: {
@@ -39,9 +41,9 @@ export async function GET(request: Request) {
       customers,
       pagination: {
         total: totalCount,
-        page,
-        limit,
-        totalPages: Math.ceil(totalCount / limit)
+        page: shouldReturnAll ? 1 : page,
+        limit: shouldReturnAll ? totalCount : limit,
+        totalPages: shouldReturnAll ? 1 : Math.ceil(totalCount / limit)
       }
     });
   } catch (error) {
