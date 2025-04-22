@@ -1,7 +1,9 @@
-import { BurnUtxo } from './types';
+import type { BurnUtxo } from './types';
 import { toToken } from 'satoshi-token';
 import { FaCopy } from 'react-icons/fa6';
 import { formatDistanceToNow } from 'date-fns';
+import { useSession } from 'next-auth/react';
+import { toast } from 'react-hot-toast';
 
 interface BurnTableProps {
 	burns: BurnUtxo[];
@@ -13,7 +15,7 @@ interface BurnTableProps {
 	showRequester?: boolean;
 }
 
-export const BurnTable = ({ 
+export const BurnTable = ({
 	burns, 
 	decimals, 
 	onCopyTxid, 
@@ -22,6 +24,35 @@ export const BurnTable = ({
 	title = "Burns",
 	showRequester = true,
 }: BurnTableProps) => {
+	const { data: session } = useSession();
+	
+	const handleApproveRefund = async (refundId: string) => {
+		try {
+			const response = await fetch('/api/approveRefund', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ refundRequestId: refundId }),
+			});
+
+			if (!response.ok) {
+				const data = await response.json();
+				throw new Error(data.error || 'Failed to approve refund request');
+			}
+
+			toast.success('Refund request approved');
+		} catch (error) {
+			console.error('Error approving refund:', error);
+			toast.error(error instanceof Error ? error.message : 'Failed to approve refund request');
+		}
+	};
+
+	const canApproveRefund = (burn: BurnUtxo) => {
+		if (!burn.refundRequest || !session?.user?.email) return false;
+		return burn.refundRequest.status === 'PENDING' && 
+			burn.refundRequest.requester.email !== session.user.email &&
+			!burn.refundRequest.approvals.some((approval: { approver?: { email: string } }) => approval.approver?.email === session.user.email);
+	};
+
 	if (!alwaysShow && burns.length === 0) return null;
 
 	return (
@@ -43,17 +74,18 @@ export const BurnTable = ({
 							<th>Transaction</th>
 							{showRequester && <th>Requester</th>}
 							<th>Time</th>
+							<th>Actions</th>
 						</tr>
 					</thead>
 					<tbody>
 						{burns.length === 0 ? (
 							<tr>
-								<td colSpan={showRequester ? 5 : 4} className="text-center">
+								<td colSpan={showRequester ? 6 : 5} className="text-center">
 									No burns found
 								</td>
 							</tr>
 						) : (
-							burns.map((burn) => {
+							burns.map(burn => {
 								const amount = burn.data.bsv21.amt;
 								const status = burn.burnRequest?.status || 'PENDING';
 								const createdAt = burn.burnRequest?.createdAt || '';
@@ -69,10 +101,20 @@ export const BurnTable = ({
 											<div className={`badge ${
 												status === 'PENDING' ? 'badge-warning' :
 												status === 'APPROVED' ? 'badge-success' :
+												status === 'REFUNDED' ? 'badge-info' :
 												'badge-error'
 											}`}>
 												{status}
 											</div>
+											{burn.refundRequest && (
+												<div className={`badge ml-2 ${
+													burn.refundRequest.status === 'PENDING' ? 'badge-warning' :
+													burn.refundRequest.status === 'APPROVED' ? 'badge-success' :
+													'badge-error'
+												}`}>
+													REFUND {burn.refundRequest.status}
+												</div>
+											)}
 										</td>
 										<td>
 											<div className="flex items-center gap-2">
@@ -81,6 +123,7 @@ export const BurnTable = ({
 												</div>
 												{onCopyTxid && (
 													<button
+														type="button"
 														className="btn btn-ghost btn-xs btn-square"
 														onClick={() => onCopyTxid(burn.txid)}
 													>
@@ -100,6 +143,16 @@ export const BurnTable = ({
 															Approved by: {burn.burnRequest.approvals.map(a => a.approver?.name || a.approver?.email).join(', ')}
 														</div>
 													)}
+													{burn.refundRequest && (
+														<div className="text-xs text-base-content/70">
+															Refund by: {burn.refundRequest.requester.name || burn.refundRequest.requester.email}
+															{burn.refundRequest.approvals?.length > 0 && (
+																<div>
+																	Approved by: {burn.refundRequest.approvals.map(a => a.approver?.name || a.approver?.email).join(', ')}
+																</div>
+															)}
+														</div>
+													)}
 												</div>
 											</td>
 										)}
@@ -107,6 +160,17 @@ export const BurnTable = ({
 											<div className="text-sm">
 												{formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
 											</div>
+										</td>
+										<td>
+											{canApproveRefund(burn) && (
+												<button
+													type="button"
+													onClick={() => burn.refundRequest && handleApproveRefund(burn.refundRequest.id)}
+													className="btn btn-success btn-sm"
+												>
+													Approve Refund
+												</button>
+											)}
 										</td>
 									</tr>
 								);

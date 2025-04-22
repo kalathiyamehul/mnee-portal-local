@@ -7,7 +7,7 @@ import {
 	fetchConfig,
 	fetchVaultedMneeUtxos,
 } from "@/utils/api";
-import { MINT_WIF, MNEE_API } from "@/env";
+import { getMintWif, MNEE_API } from "@/env";
 import { getFundingUtxos } from "@/utils/utxo";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import type { Prisma } from "@prisma/client";
@@ -274,7 +274,7 @@ const mintMnee = async (
 	console.log("Fetched remote config:", { approver: config.approver });
 
 	// MNEE contract config
-	const pk = PrivateKey.fromWif(MINT_WIF);
+	const pk = PrivateKey.fromWif(await getMintWif());
 	const fundingAddress = pk.toAddress();
 	const funding_utxos = await getFundingUtxos(fundingAddress);
 	console.log("Got funding UTXOs:", { count: funding_utxos.length });

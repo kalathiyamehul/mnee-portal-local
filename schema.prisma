@@ -29,6 +29,8 @@ model User {
   burnApprovals     BurnApproval[]     @relation("UserBurnApprovals")
   customers         Customer[]         @relation("UserCustomers")
   blacklistApprovals BlacklistApproval[] @relation("UserBlacklistApprovals")
+  refundRequests    RefundRequest[]    @relation("UserRefundRequests")
+  refundApprovals   RefundApproval[]   @relation("UserRefundApprovals")
 
   @@map("user")
 }
@@ -177,6 +179,39 @@ model BurnApproval {
   approver    User       @relation("UserBurnApprovals", fields: [approvedBy], references: [id])
 
   @@map("burn_approval")
+}
+
+model RefundRequest {
+  id              String       @id @default(uuid())
+  outpoint        String      
+  refundAddress   String      @map("refund_address")
+  amount          BigInt      @db.BigInt
+  status          ActionStatus @default(PENDING)
+  requestedBy     String      @map("requested_by")
+  txid            String      @default("")
+  requiresApproval Boolean     @default(true) @map("requires_approval")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  requester User             @relation("UserRefundRequests", fields: [requestedBy], references: [id])
+  approvals RefundApproval[]
+
+  @@index([outpoint, status, createdAt])
+  @@map("refund_request")
+}
+
+model RefundApproval {
+  id              String   @id @default(uuid())
+  refundRequestId String   @map("refund_request_id")
+  approvedBy      String   @map("approved_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  refundRequest RefundRequest @relation(fields: [refundRequestId], references: [id])
+  approver      User         @relation("UserRefundApprovals", fields: [approvedBy], references: [id])
+
+  @@map("refund_approval")
 }
 
 enum BlacklistAction {

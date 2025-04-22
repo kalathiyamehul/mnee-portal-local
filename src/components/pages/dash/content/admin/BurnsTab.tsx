@@ -89,30 +89,27 @@ export const BurnsTab = () => {
     // Only use transfer UTXOs for burn requests
     const burnsWithRequests = utxos.map(utxo => ({
       ...utxo,
-      burnRequest: statusData?.burnRequests?.find(req => req.outpoint === `${utxo.txid}_${utxo.vout}`)
+      burnRequest: statusData?.burnRequests?.find(req => req.outpoint === `${utxo.txid}_${utxo.vout}`),
+      refundRequest: statusData?.refundRequests?.find(req => req.outpoint === `${utxo.txid}_${utxo.vout}`)
     }));
 
+    console.log({burnsWithRequests });  
     // Add burn UTXOs with APPROVED status
+    const completedBurnRequests = statusData?.burnRequests || [];
     for (const utxo of burnUtxos) {
+      const outpoint = `${utxo.txid}_${utxo.vout}`;
+      const existingRequest = completedBurnRequests.find(req => req.txid && outpoint.startsWith(req.txid));
+
       burnsWithRequests.push({
         ...utxo,
-        burnRequest: {
-          id: `${utxo.txid}_${utxo.vout}`,
-          type: 'BURN',
-          status: 'APPROVED',
-          amount: utxo.data.bsv21.amt.toString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          requestedBy: 'system',
-          approvals: [],
-          requester: { name: 'Unknown', email: 'unknown@example.com' }
-        }
+        burnRequest: existingRequest,
+        refundRequest: undefined
       });
     }
 
     // console.log('Final burns:', burnsWithRequests);
     setBurns(burnsWithRequests as BurnUtxo[]);
-  }, [utxos, burnUtxos, statusData?.burnRequests]);
+  }, [utxos, burnUtxos, statusData?.burnRequests, statusData?.refundRequests]);
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
@@ -132,9 +129,53 @@ export const BurnsTab = () => {
     setSelectedBurn(null);
   };
 
-  const handleCancelBurn = async (burnId: string) => {
+  const handleCancel = async (request: { id: string, type: 'burn' | 'refund' }) => {
     try {
       const response = await fetch('/api/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          request.type === 'burn' 
+            ? { burnRequestId: request.id }
+            : { refundRequestId: request.id }
+        ),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || `Failed to cancel ${request.type} request`);
+      }
+
+      toast.success(`${request.type === 'burn' ? 'Burn' : 'Refund'} request cancelled`);
+    } catch (err) {
+      console.error(`Error cancelling ${request.type}:`, err);
+      toast.error(err instanceof Error ? err.message : `Failed to cancel ${request.type} request`);
+    }
+  };
+
+  const handleApproveRefund = async (refundId: string) => {
+    try {
+      const response = await fetch('/api/approveRefund', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refundRequestId: refundId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to approve refund request');
+      }
+
+      toast.success('Refund request approved');
+    } catch (error) {
+      console.error('Error approving refund:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to approve refund request');
+    }
+  };
+
+  const handleApproveBurn = async (burnId: string) => {
+    try {
+      const response = await fetch('/api/approveBurn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ burnRequestId: burnId }),
@@ -142,13 +183,13 @@ export const BurnsTab = () => {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to cancel burn request');
+        throw new Error(data.error || 'Failed to approve burn request');
       }
 
-      toast.success('Burn request cancelled');
-    } catch (err) {
-      console.error('Error cancelling burn:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to cancel burn request');
+      toast.success('Burn request approved');
+    } catch (error) {
+      console.error('Error approving burn:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to approve burn request');
     }
   };
 
@@ -156,6 +197,26 @@ export const BurnsTab = () => {
     if (!burn.burnRequest || !session?.user?.email) return false;
     return burn.burnRequest.status === 'PENDING' && 
            burn.burnRequest.requester.email === session.user.email;
+  };
+
+  const canCancelRefund = (burn: BurnUtxo) => {
+    if (!burn.refundRequest || !session?.user?.email) return false;
+    return burn.refundRequest.status === 'PENDING' && 
+           burn.refundRequest.requester.email === session.user.email;
+  };
+
+  const canApproveBurn = (burn: BurnUtxo) => {
+    if (!burn.burnRequest || !session?.user?.email) return false;
+    return burn.burnRequest.status === 'PENDING' && 
+           burn.burnRequest.requester.email !== session.user.email &&
+           !burn.burnRequest.approvals.some(approval => approval.approver?.email === session.user.email);
+  };
+
+  const canApproveRefund = (burn: BurnUtxo) => {
+    if (!burn.refundRequest || !session?.user?.email) return false;
+    return burn.refundRequest.status === 'PENDING' && 
+           burn.refundRequest.requester.email !== session.user.email &&
+           !burn.refundRequest.approvals.some(approval => approval.approver?.email === session.user.email);
   };
 
   const handleRefundSuccess = () => {
@@ -279,7 +340,9 @@ export const BurnsTab = () => {
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
-                          {(!burn.burnRequest || burn.burnRequest.status === 'CANCELLED') && (
+                          {/* Show Burn button only if no pending requests */}
+                          {(!burn.burnRequest || burn.burnRequest.status === 'CANCELLED') && 
+                           !burn.refundRequest?.status && (
                             <button
                               type="button"
                               onClick={() => handleCreateBurnRequest(burn)}
@@ -288,16 +351,43 @@ export const BurnsTab = () => {
                               <FaFire className="w-3 h-3" /> Burn
                             </button>
                           )}
+
+                          {/* Cancel Burn button */}
                           {canCancel(burn) && (
                             <button
                               type="button"
-                              onClick={() => burn.burnRequest && handleCancelBurn(burn.burnRequest.id)}
+                              onClick={() => burn.burnRequest && handleCancel({ id: burn.burnRequest.id, type: 'burn' })}
                               className="btn btn-ghost btn-sm"
                             >
-                              Cancel
+                              Cancel Burn
                             </button>
                           )}
-                          {(!burn.burnRequest || !['APPROVED', 'REFUNDED'].includes(burn.burnRequest?.status)) && (
+
+                          {/* Cancel Refund button */}
+                          {canCancelRefund(burn) && (
+                            <button
+                              type="button"
+                              onClick={() => burn.refundRequest && handleCancel({ id: burn.refundRequest.id, type: 'refund' })}
+                              className="btn btn-ghost btn-sm"
+                            >
+                              Cancel Refund
+                            </button>
+                          )}
+
+                          {/* Approve Burn button */}
+                          {canApproveBurn(burn) && !burn.refundRequest?.status && (
+                            <button
+                              type="button"
+                              onClick={() => burn.burnRequest && handleApproveBurn(burn.burnRequest.id)}
+                              className="btn btn-success btn-sm"
+                            >
+                              Approve Burn
+                            </button>
+                          )}
+
+                          {/* Refund button - only show if no pending requests */}
+                          {((!burn.refundRequest || !['DONE', 'PENDING'].includes(burn.refundRequest?.status)) && 
+                            (!burn.burnRequest || !['APPROVED', 'REFUNDED', 'PENDING'].includes(burn.burnRequest?.status))) && (
                             <button
                               type="button"
                               onClick={() => setSelectedRefund(burn)}
@@ -306,6 +396,17 @@ export const BurnsTab = () => {
                               title={burn.burnRequest?.status === 'PENDING' ? 'Cancel burn request first' : undefined}
                             >
                               Refund
+                            </button>
+                          )}
+
+                          {/* Approve Refund button */}
+                          {canApproveRefund(burn) && (
+                            <button
+                              type="button"
+                              onClick={() => burn.refundRequest && handleApproveRefund(burn.refundRequest.id)}
+                              className="btn btn-success btn-sm"
+                            >
+                              Approve Refund
                             </button>
                           )}
                         </div>

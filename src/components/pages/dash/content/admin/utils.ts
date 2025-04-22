@@ -1,4 +1,4 @@
-import { FaBan, FaCoins, FaFire, FaPause, FaPlay, FaSnowflake } from 'react-icons/fa6';
+import { FaBan, FaCoins, FaFire, FaPause, FaPlay, FaSnowflake, FaArrowRotateLeft } from 'react-icons/fa6';
 import type { Activity } from './types';
 import type { IconType } from 'react-icons';
 
@@ -14,6 +14,8 @@ export const getActivityIcon = (activity: Activity): IconType => {
       return FaCoins;
     case 'BURN':
       return FaFire;
+    case 'REFUND':
+      return FaArrowRotateLeft;
     default:
       return FaSnowflake;
   }
@@ -25,8 +27,8 @@ export const wasAutoApproved = (activity: Activity): boolean => {
     return true;
   }
 
-  // For mint/burn requests, check the requiresApproval flag
-  if ((activity.type === 'MINT' || activity.type === 'BURN') && 'requiresApproval' in activity) {
+  // For mint/burn/refund requests, check the requiresApproval flag
+  if ((activity.type === 'MINT' || activity.type === 'BURN' || activity.type === 'REFUND') && 'requiresApproval' in activity) {
     return !activity.requiresApproval;
   }
 
@@ -49,5 +51,7 @@ export const getActivityDisplayText = (activity: Activity): string => {
       return `${activity.action === 'BLACKLIST' ? 'Blacklist' : 'Unblacklist'} address`;
     case 'ACTION':
       return activity.action as string;
+    case 'REFUND':
+      return "Refund tokens";
   }
 }; 

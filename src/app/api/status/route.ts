@@ -21,6 +21,7 @@ export async function GET() {
       freezeRequests,
       blacklistRequests,
       systemRequests,
+      refundRequests,
     ] = await Promise.all([
       isSystemPaused(prisma),
       prisma.mintRequest.findMany({
@@ -95,6 +96,19 @@ export async function GET() {
           createdAt: 'desc',
         },
       }),
+      prisma.refundRequest.findMany({
+        include: {
+          approvals: {
+            include: {
+              approver: true,
+            },
+          },
+          requester: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
     ]);
 
     // Find pending pause/resume requests from systemRequests
@@ -111,6 +125,10 @@ export async function GET() {
         amount: r.amount.toString(),
       })),
       burnRequests: burnRequests.map(r => ({
+        ...r,
+        amount: r.amount.toString(),
+      })),
+      refundRequests: refundRequests.map(r => ({
         ...r,
         amount: r.amount.toString(),
       })),

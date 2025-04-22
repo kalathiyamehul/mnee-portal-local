@@ -1,11 +1,8 @@
 'use server'
 
-import { MINT_WIF, BURN_WIF, MNEE_ORDINALS_SERVICE } from '@/env'
+import { getMintWif, getBurnWif } from '@/env'
 
-export async function checkServerEnvVars() {
-  return {
-    hasMintWif: !!MINT_WIF,
-    hasBurnWif: !!BURN_WIF,
-    hasOrdinalsService: !!MNEE_ORDINALS_SERVICE
-  }
-} 
+export const checkServerEnvVars = async () =>  ({
+  hasMintWif: !!(await getMintWif().catch(() => false)),
+  hasBurnWif: !!(await getBurnWif().catch(() => false)),
+})

@@ -66,6 +66,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 				...statusData.systemRequests.map(req => ({ ...req, type: 'ACTION' as const })),
 				...statusData.mintRequests.map(req => ({ ...req, type: 'MINT' as const, action: 'MINT' as const })),
 				...statusData.burnRequests.map(req => ({ ...req, type: 'BURN' as const, action: 'BURN' as const })),
+				...statusData.refundRequests.map(req => ({ ...req, type: 'REFUND' as const, action: 'REFUND' as const })),
 			].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
 			setActivities(allActivities);
@@ -216,7 +217,8 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 				type === 'FREEZE' ? 'approveFreeze' :
 				type === 'BLACKLIST' ? 'approveBlacklist' :
 				type === 'MINT' ? 'approveMint' :
-				type === 'BURN' ? 'approveBurn' : null;
+				type === 'BURN' ? 'approveBurn' :
+				type === 'REFUND' ? 'approveRefund' : null;
 
 			if (!endpoint) throw new Error('Invalid activity type');
 
@@ -224,7 +226,8 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 				type === 'FREEZE' ? 'freezeRequestId' :
 				type === 'BLACKLIST' ? 'blacklistRequestId' :
 				type === 'MINT' ? 'mintRequestId' :
-				'burnRequestId';
+				type === 'BURN' ? 'burnRequestId' :
+				'refundRequestId';
 
 			const response = await fetch(`/api/${endpoint}`, {
 				method: 'POST',

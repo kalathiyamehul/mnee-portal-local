@@ -15,14 +15,49 @@ NEXT_PUBLIC_MNEE_API=https://api.somehost.net:8082
 DATABASE_URL=postgresql://postgres:****@postgres.somehost.net:52253/dbname
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key
-MNEE_ORDINALS_SERVICE=https://mnee-ordinals-service.somehost.net
-MINT_WIF=<some_wif>
-BURN_WIF=<some_wif>
+
+# Development: Use unencrypted WIF values directly
+MINT_WIF=<wif_value>
+BURN_WIF=<wif_value>
+
+# Production: Use KMS encrypted values
+# ENCRYPTED_MINT_WIF=<kms_encrypted_wif>
+# ENCRYPTED_BURN_WIF=<kms_encrypted_wif>
+
+# AWS KMS Configuration (required when using encrypted values)
+AWS_REGION=us-west-2  # or your preferred region
+AWS_ACCESS_KEY_ID=your_access_key
+AWS_SECRET_ACCESS_KEY=your_secret_key
+KMS_KEY_ID=your_kms_key_id
 ```
 
-The application now includes environment validation to ensure all required variables are set correctly before startup.
+The application includes environment validation to ensure all required variables are set correctly before startup. For WIF values, you can either:
+- Use unencrypted values directly (MINT_WIF, BURN_WIF) - suitable for development
+- Use KMS encrypted values (ENCRYPTED_MINT_WIF, ENCRYPTED_BURN_WIF) - recommended for production
 
-install the dependencies:
+## KMS Setup
+
+The dashboard uses AWS KMS to encrypt sensitive environment variables in production. To set this up:
+
+1. Create a KMS key in your AWS account
+2. Note the KMS key ID and add it to your environment variables
+3. Ensure your AWS credentials have permissions to use the KMS key
+4. Use the encrypt-value script to encrypt your WIF values:
+   ```bash
+   # Encrypt MINT_WIF
+   bun run encrypt-value -d MINT_WIF "your_mint_wif_value"
+   
+   # Encrypt BURN_WIF
+   bun run encrypt-value -d BURN_WIF "your_burn_wif_value"
+   
+   # Encrypt a value (quiet mode - only outputs encrypted value)
+   bun run encrypt-value -q "your_wif_value"
+   ```
+   The script will output the encrypted value and instructions for adding it to your .env file. The `-d` option adds a description to help identify which WIF is which in AWS KMS.
+
+## Installation
+
+Install the dependencies:
 
 ```bash
 bun i

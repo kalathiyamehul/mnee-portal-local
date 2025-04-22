@@ -416,7 +416,7 @@ const DashboardSettingsContent = () => {
 								</thead>
 								<tbody>
 									{(config.fees as Fee[])?.map((fee, index) => (
-										<tr key={index}>
+										<tr key={`${fee.min}-${fee.max}`}>
 											<td>
 												{toToken(fee.min, config.decimals)} MNEE - {fee.max === Number.MAX_SAFE_INTEGER ? '∞' : `${toToken(fee.max, config.decimals)} MNEE`}
 											</td>

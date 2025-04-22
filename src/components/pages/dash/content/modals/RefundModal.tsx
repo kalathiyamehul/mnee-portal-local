@@ -30,7 +30,7 @@ export const RefundModal = ({
     setIsLoading(true);
     try {
       const outpoint = `${utxo.txid}_${utxo.vout}`;
-      // console.log('Sending refund request:', { outpoint, refundAddress });
+      console.log('Creating refund request:', { outpoint, refundAddress });
       
       const response = await fetch('/api/refund', {
         method: 'POST',
@@ -38,17 +38,23 @@ export const RefundModal = ({
         body: JSON.stringify({ outpoint, refundAddress }),
       });
 
-      // console.log('Refund response:', { status: response.status });
+      console.log('Refund response:', { status: response.status });
+      const data = await response.json();
 
       if (!response.ok) {
-        const { error } = await response.json();
-        throw new Error(error || 'Failed to process refund');
+        throw new Error(data.error || 'Failed to create refund request');
       }
 
+      if (!data.requestId) {
+        throw new Error('No request ID returned from server');
+      }
+
+      toast.success("Refund request created (pending approval)");
       onSuccess();
+      onClose();
     } catch (error) {
-      console.error('Error refunding burn:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to process refund');
+      console.error('Error creating refund request:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create refund request');
     } finally {
       setIsLoading(false);
     }
@@ -65,6 +71,9 @@ export const RefundModal = ({
           <div className="bg-base-200 p-4 rounded-lg">
             <div className="text-sm opacity-70 mb-1">Amount to refund</div>
             <div className="text-2xl font-bold">{toToken(amount, decimals)} MNEE</div>
+            <div className="text-xs opacity-50 mt-1 break-all">
+              UTXO: {utxo.txid}:{utxo.vout}
+            </div>
           </div>
 
           <div className="form-control w-full">
@@ -87,7 +96,7 @@ export const RefundModal = ({
             <div className="flex flex-col items-start gap-1">
               <div className="font-semibold">Note</div>
               <p className="text-sm">
-                Once approved, this will return the MNEE tokens to the specified address. The transaction cannot be reversed once confirmed.
+                This request will require approval from two administrators before the MNEE tokens are returned to the specified address. The transaction cannot be reversed once confirmed.
               </p>
             </div>
           </div>
@@ -106,7 +115,7 @@ export const RefundModal = ({
             type="button"
             className="btn btn-primary"
             onClick={handleRefund}
-            disabled={isLoading || !refundAddress}
+            disabled={!refundAddress || isLoading}
           >
             {isLoading ? (
               <>
@@ -119,8 +128,8 @@ export const RefundModal = ({
           </button>
         </div>
       </div>
-      <form method="dialog" className="modal-backdrop" onClick={onClose}>
-        <button>close</button>
+      <form method="dialog" className="modal-backdrop" onClick={onClose} onKeyDown={onClose}>
+        <button type="button">close</button>
       </form>
     </dialog>
   );

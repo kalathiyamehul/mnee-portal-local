@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { PrivateKey } from "@bsv/sdk";
-import { MINT_WIF, BURN_WIF, MNEE_API } from "@/env";
+import { getMintWif, getBurnWif, MNEE_API } from "@/env";
 import { prisma } from "@/lib/prisma";
 import type { IndexContext } from "@/types/indexContext";
 import { getFundingUtxos } from "@/utils/utxo";
@@ -46,8 +46,8 @@ export async function POST(request: Request) {
 
 const deployMnee = async (feeAddress: string) => {
 	try {
-		const mintPk = PrivateKey.fromWif(MINT_WIF);
-		const burnPk = PrivateKey.fromWif(BURN_WIF);
+		const mintPk = PrivateKey.fromWif(await getMintWif());
+		const burnPk = PrivateKey.fromWif(await getBurnWif());
 		const mintAddress = mintPk.toAddress();
 		const burnAddress = burnPk.toAddress();
 
