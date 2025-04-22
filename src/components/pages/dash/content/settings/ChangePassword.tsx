@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { FaCircleInfo } from "react-icons/fa6";
 
-export const ChangePassword = () => {
+export const ChangePassword = ({ onClose }: { onClose: () => void }) => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -44,6 +44,7 @@ export const ChangePassword = () => {
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
+        onClose(); // Add this line to close the modal
       } else {
         const data = await res.json();
         setError(data.error || "Failed to change password");
