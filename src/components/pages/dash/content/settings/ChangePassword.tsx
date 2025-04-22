@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { FaCircleInfo } from "react-icons/fa6";
+import { IoClose } from "react-icons/io5";
 
 export const ChangePassword = ({ onClose }: { onClose: () => void }) => {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -44,7 +45,7 @@ export const ChangePassword = ({ onClose }: { onClose: () => void }) => {
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
-        onClose(); // Add this line to close the modal
+        onClose(); // Close the modal after successful password change
       } else {
         const data = await res.json();
         setError(data.error || "Failed to change password");
@@ -60,6 +61,13 @@ export const ChangePassword = ({ onClose }: { onClose: () => void }) => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-bold">Change Password</h3>
+        <button
+          onClick={onClose}
+          className="btn btn-ghost btn-sm btn-square"
+          aria-label="Close"
+        >
+          <IoClose className="w-5 h-5" />
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
