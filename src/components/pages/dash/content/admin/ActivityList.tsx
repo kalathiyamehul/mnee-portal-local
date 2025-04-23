@@ -292,7 +292,8 @@ export const ActivityList = ({
                           </span>
                           {activity.status === "PENDING" && needsApproval && (
                             <span className="text-xs opacity-70">
-                              {approvalCount}/2 Approvals
+                              {activity.approvals?.length || 0}/{activity.no_of_approvals}{" "}
+                              Approvals
                             </span>
                           )}
                         </div>
