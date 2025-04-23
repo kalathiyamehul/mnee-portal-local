@@ -173,169 +173,186 @@ const MintTableContent = ({
 	}
 
 	return (
-		<div className="overflow-x-auto">
-			<table className="table w-full">
-				<thead>
-					<tr>
-						{showRequester && <th>Requester</th>}
-						<th>Customer</th>
-						<th>Address</th>
-						<th>Amount</th>
-						{showActions && <th>Actions</th>}
-					</tr>
-				</thead>
-				<tbody>
-					{mints.map((mint) => (
-						<tr key={mint.id} className={`hover ${getRowBorderClass(mint.status)}`}>
-							{showRequester && (
-								<td>
-									<div className="flex items-center gap-3">
-										<div className="avatar">
-											<div className="mask mask-squircle w-10 h-10">
-												<img
-													src={getGravatarUrl(mint.requester.email)}
-													alt="Requester avatar"
-												/>
-											</div>
-										</div>
-										<div>
-											<div className="font-medium">
-												{mint.requester.name || mint.requester.email}
-											</div>
-											<div className="text-sm opacity-50">
-												{formatDistanceToNow(new Date(mint.createdAt), { addSuffix: true })}
-											</div>
-										</div>
-									</div>
-								</td>
-							)}
-							<td>
-								<div className="flex items-center gap-3">
-									<div className="avatar">
-										<div className="mask mask-squircle w-10 h-10">
-											<img
-												src={getGravatarUrl(mint.customer?.email)}
-												alt="Customer avatar"
-											/>
-										</div>
-									</div>
-									<div>
-										<div className="font-medium">
-											{mint.customer ? (
-												<Link 
-													href={`/dash/customers?id=${mint.customer.email}`}
-													className="hover:underline"
-												>
-													{mint.customer.name}
-												</Link>
-											) : (
-												"Unknown"
-											)}
-										</div>
-										<div className="text-sm opacity-50">
-											{mint.customer?.email || "unknown@example.com"}
-										</div>
-									</div>
-								</div>
-							</td>
-							<td>
-								<div className="flex flex-col gap-1">
-									<a
-										href={`https://whatsonchain.com/address/${mint.address}`}
-										target="_blank"
-										rel="noopener noreferrer"
-									>
-									<span className="font-mono text-sm">
-										{mint.address?.slice(0, 8)}...{mint.address?.slice(-8)}
-									</span>
-									</a>
-									<div className="flex items-center gap-1">
-										<div className="tooltip tooltip-bottom" data-tip="Copy Address">
-											<button
-												type="button"
-												onClick={() => {
-													if (mint.address) {
-														navigator.clipboard.writeText(mint.address);
-														toast.success("Address copied");
-													}
-												}}
-												className="btn btn-ghost btn-xs text-base-content/70 hover:text-base-content"
-											>
-												<FaCopy className="w-3 h-3" />
-											</button>
-										</div>
-										<div className="tooltip tooltip-bottom" data-tip="View on WhatsOnChain">
-											<a
-												href={`https://whatsonchain.com/address/${mint.address}`}
-												target="_blank"
-												rel="noopener noreferrer"
-												className="btn btn-link btn-xs"
-											>
-												View on Explorer <MdOutlineOpenInNew className="w-3 h-3" />
-											</a>
-										</div>
-									</div>
-								</div>
-							</td>
-							<td>
-								<div className="flex flex-col gap-1">
-									<div className="font-medium">
-										{toToken(mint.amount as string, config.decimals)} MNEE
-									</div>
-									<div className="flex items-center gap-2">
-										<span className={`badge badge-sm ${statusColors[mint.status]}`}>
-											{mint.status}
-										</span>
-										{mint.status === 'PENDING' && (
-											<span className="text-xs text-base-content/70">
-												{mint.approvals?.length || 0}/2 Approvals
-											</span>
-										)}
-									</div>
-								</div>
-							</td>
-							{showActions && (
-								<td>
-									{mint.status === "PENDING" && session?.user && (
-										<div className="flex gap-2 justify-end">
-											{mint.requester.email === session.user.email ? (
-												<button
-													type="button"
-													onClick={() => handleCancel(mint.id)}
-													className="btn btn-ghost btn-xs"
-													disabled={loadingApproval === mint.id}
-												>
-													Cancel
-												</button>
-											) : (
-												<button
-													type="button"
-													onClick={() => handleApprove(mint.id)}
-													className="btn btn-primary btn-xs"
-													disabled={loadingApproval === mint.id || hasUserApproved(mint)}
-												>
-													{loadingApproval === mint.id ? (
-														<>
-															<FaSpinner className="animate-spin mr-1" />
-															Approving...
-														</>
-													) : hasUserApproved(mint) ? (
-														'Approved'
-													) : (
-														'Approve'
-													)}
-												</button>
-											)}
-										</div>
-									)}
-								</td>
-							)}
-						</tr>
-					))}
-				</tbody>
-			</table>
-		</div>
-	);
+    <div className="overflow-x-auto">
+      <table className="table w-full">
+        <thead>
+          <tr>
+            {showRequester && <th>Requester</th>}
+            <th>Customer</th>
+            <th>Address</th>
+            <th>Amount</th>
+            {showActions && <th>Actions</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {mints.map((mint) => (
+            <tr
+              key={mint.id}
+              className={`hover ${getRowBorderClass(mint.status)}`}
+            >
+              {showRequester && (
+                <td>
+                  <div className="flex items-center gap-3">
+                    <div className="avatar">
+                      <div className="mask mask-squircle w-10 h-10">
+                        <img
+                          src={getGravatarUrl(mint.requester.email)}
+                          alt="Requester avatar"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-medium">
+                        {mint.requester.name || mint.requester.email}
+                      </div>
+                      <div className="text-sm opacity-50">
+                        {formatDistanceToNow(new Date(mint.createdAt), {
+                          addSuffix: true,
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              )}
+              <td>
+                <div className="flex items-center gap-3">
+                  <div className="avatar">
+                    <div className="mask mask-squircle w-10 h-10">
+                      <img
+                        src={getGravatarUrl(mint.customer?.email)}
+                        alt="Customer avatar"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="font-medium">
+                      {mint.customer ? (
+                        <Link
+                          href={`/dash/customers?id=${mint.customer.email}`}
+                          className="hover:underline"
+                        >
+                          {mint.customer.name}
+                        </Link>
+                      ) : (
+                        "Unknown"
+                      )}
+                    </div>
+                    <div className="text-sm opacity-50">
+                      {mint.customer?.email || "unknown@example.com"}
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div className="flex flex-col gap-1">
+                  <a
+                    href={`https://whatsonchain.com/address/${mint.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span className="font-mono text-sm">
+                      {mint.address?.slice(0, 8)}...{mint.address?.slice(-8)}
+                    </span>
+                  </a>
+                  <div className="flex items-center gap-1">
+                    <div
+                      className="tooltip tooltip-bottom"
+                      data-tip="Copy Address"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (mint.address) {
+                            navigator.clipboard.writeText(mint.address);
+                            toast.success("Address copied");
+                          }
+                        }}
+                        className="btn btn-ghost btn-xs text-base-content/70 hover:text-base-content"
+                      >
+                        <FaCopy className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div
+                      className="tooltip tooltip-bottom"
+                      data-tip="View on WhatsOnChain"
+                    >
+                      <a
+                        href={`https://whatsonchain.com/address/${mint.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-link btn-xs"
+                      >
+                        View on Explorer{" "}
+                        <MdOutlineOpenInNew className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div className="flex flex-col gap-1">
+                  <div className="font-medium">
+                    {toToken(mint.amount as string, config.decimals)} MNEE
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`badge badge-sm ${statusColors[mint.status]}`}
+                    >
+                      {mint.status}
+                    </span>
+                    {mint.status === "PENDING" && (
+                      <span className="text-xs text-base-content/70">
+                        {mint.approvals?.length || 0}/{mint.no_of_approvals}{" "}
+                        Approvals
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </td>
+              {showActions && (
+                <td>
+                  {mint.status === "PENDING" && session?.user && (
+                    <div className="flex gap-2 justify-end">
+                      {mint.requester.email === session.user.email ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCancel(mint.id)}
+                          className="btn btn-ghost btn-xs"
+                          disabled={loadingApproval === mint.id}
+                        >
+                          Cancel
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleApprove(mint.id)}
+                          className="btn btn-primary btn-xs"
+                          disabled={
+                            loadingApproval === mint.id || hasUserApproved(mint)
+                          }
+                        >
+                          {loadingApproval === mint.id ? (
+                            <>
+                              <FaSpinner className="animate-spin mr-1" />
+                              Approving...
+                            </>
+                          ) : hasUserApproved(mint) ? (
+                            "Approved"
+                          ) : (
+                            "Approve"
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
 export const MintTable = ({ 
