@@ -3,7 +3,7 @@
 import { useCallback, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
-import { FaSync } from 'react-icons/fa';
+import { FaSync, FaSpinner } from 'react-icons/fa';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const success = searchParams?.get('reset') === 'success' 
     ? 'Password reset successful. Please log in with your new password.'
     : '';
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const checkUsers = useCallback(async () => {
     try {
@@ -39,6 +40,7 @@ export default function LoginPage() {
   const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
+    setIsSubmitting(true);
     
     try {
       const res = await signIn('credentials', {
@@ -57,6 +59,8 @@ export default function LoginPage() {
       }
     } catch (err) {
       setError('An error occurred during login');
+    } finally {
+      setIsSubmitting(false);
     }
   }, [email, password, router, success]);
 
@@ -126,11 +130,18 @@ export default function LoginPage() {
             />
           </div>
           {error && <p className="text-error mb-4">{error}</p>}
-          <button type="submit" className="btn btn-primary w-full">
-            Sign In
+          <button type="submit" className="btn btn-primary w-full" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <FaSpinner className="animate-spin mr-2" />
+                Signing In...
+              </>
+            ) : (
+              'Sign In'
+            )}
           </button>
         </form>
       </div>
     </div>
   );
-} 
+}

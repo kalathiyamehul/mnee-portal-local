@@ -5,6 +5,7 @@ import { getGravatarUrl } from "@/utils/gravatar";
 import Link from "next/link";
 import { useState } from "react";
 import { ChangePassword } from "@/components/pages/dash/content/settings/ChangePassword";
+import TwoFA from "./twoFA";
 
 export default function ProfileScreen() {
   const { data: session } = useSession();
@@ -13,34 +14,52 @@ export default function ProfileScreen() {
   return (
     <div className="container p-4 space-y-6 animate-fade-in">
       <h1 className="text-2xl font-bold">Profile Settings</h1>
-      <div className="bg-base-200 rounded-lg p-6">
-        <div className="flex items-center gap-4 mb-6">
-          <div className="avatar">
-            <div className="mask mask-squircle w-20 h-20">
-              <img
-                src={getGravatarUrl(session?.user?.email ?? "")}
-                alt="User avatar"
-              />
+      <div>
+        <div className="bg-base-200 rounded-lg p-6 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <div className="avatar">
+              <div className="mask mask-squircle w-20 h-20">
+                <img
+                  src={getGravatarUrl(session?.user?.email ?? "")}
+                  alt="User avatar"
+                />
+              </div>
+            </div>
+            <div>
+              <h2 className="text-2xl font-semibold">{session?.user?.name}</h2>
+              <p className="text-xl-content/70">{session?.user?.email}</p>
             </div>
           </div>
-          <div>
-            <h2 className="text-2xl font-semibold">{session?.user?.name}</h2>
-            <p className="text-xl-content/70">{session?.user?.email}</p>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowChangePassword(true)}
+          >
+            Change Password
+          </button>
+        </div>
+
+        {/* 2FA Section */}
+        <div className="mt-6 bg-base-200 rounded-lg p-6 space-y-4">
+          <div className="flex w-full justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Two-Factor Authentication</h3>
+              <p className="text-sm text-neutral-500">
+                Add an extra layer of security to your account
+              </p>
+            </div>
+            <TwoFA />
           </div>
         </div>
-        <button 
-          className="btn btn-primary"
-          onClick={() => setShowChangePassword(true)}
-        >
-          Change Password
-        </button>
 
         {showChangePassword && (
           <div className="modal modal-open">
             <div className="modal-box">
               <ChangePassword onClose={() => setShowChangePassword(false)} />
             </div>
-            <div className="modal-backdrop" onClick={() => setShowChangePassword(false)}></div>
+            <div
+              className="modal-backdrop"
+              onClick={() => setShowChangePassword(false)}
+            ></div>
           </div>
         )}
       </div>

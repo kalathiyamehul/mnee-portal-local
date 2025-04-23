@@ -311,15 +311,23 @@ export const ActivityList = ({
                             </button>
                           )}
                           {canApprove(activity) && (
-                            <button
-                              type="button"
-                              className="btn btn-primary btn-xs"
-                              onClick={() =>
-                                handleApprove(activity.id, activity.type)
-                              }
-                            >
-                              Approve
-                            </button>
+                            <div className="flex gap-2 items-center">
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-xs"
+                                onClick={() =>
+                                  handleApprove(activity.id, activity.type)
+                                }
+                              >
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-error btn-xs"
+                              >
+                                Reject
+                              </button>
+                            </div>
                           )}
                         </div>
                       </td>
