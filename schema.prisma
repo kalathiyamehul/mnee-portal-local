@@ -16,6 +16,8 @@ model User {
   emailVerified         DateTime? @map("email_verified")
   password              String
   requiresPasswordReset Boolean   @default(true) @map("requires_password_reset")
+  twoFactorSecret       String?   @map("two_factor_secret")
+  twoFactorEnabled      Boolean   @default(false) @map("two_factor_enabled")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 

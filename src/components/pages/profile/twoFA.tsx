@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Button = (props: any) => (
   <button
@@ -17,14 +17,73 @@ export default function TwoFA() {
   >("disabled");
   const [qrData, setQRData] = useState<string>();
   const [qrSecret, setQRSecret] = useState<string>();
-  const [userToken, setUserToken] = useState<string>(''); // Initialize with empty string
+  const [userToken, setUserToken] = useState<string>("");
   const [errorText, setErrorText] = useState<string>();
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check initial 2FA status
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        const response = await fetch("/api/auth/2fa/status");
+        const data = await response.json();
+        set2FAStatus(data.enabled ? "enabled" : "disabled");
+      } catch (error) {
+        console.error("Failed to check 2FA status:", error);
+        setErrorText("Failed to check 2FA status");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkStatus();
+  }, []);
+
+  const handleDisable2FA = async () => {
+    try {
+      const response = await fetch("/api/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          disable: true,
+        }),
+      });
+
+      if (response.ok) {
+        set2FAStatus("disabled");
+        setQRData(undefined);
+        setQRSecret(undefined);
+        setUserToken("");
+        setErrorText(undefined);
+      } else {
+        setErrorText("Failed to disable 2FA");
+      }
+    } catch (error) {
+      console.error("Failed to disable 2FA:", error);
+      setErrorText("Failed to disable 2FA");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center">
+        <span className="loading loading-spinner loading-md"></span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 items-end w-full">
       {!qrData && (
         <div className="flex items-center gap-3">
           <span className="badge badge-lg badge-ghost">Current Status:</span>
-          <span className={`font-medium ${_2faStatus === "enabled" ? "text-success" : "text-error"}`}>
+          <span
+            className={`font-medium ${
+              _2faStatus === "enabled" ? "text-success" : "text-error"
+            }`}
+          >
             {_2faStatus === "enabled" ? "Active" : "Inactive"}
           </span>
         </div>
@@ -55,10 +114,29 @@ export default function TwoFA() {
           <div className="space-y-2">
             <h4 className="font-medium">Step 1: Scan QR Code</h4>
             <div className="alert alert-info">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              <span>Use Google Authenticator, Authy or Microsoft Authenticator to scan this code</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                className="stroke-current shrink-0 w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              <span>
+                Use Google Authenticator, Authy or Microsoft Authenticator to
+                scan this code
+              </span>
             </div>
-            <img src={qrData} alt="2FA QR Code" className="mx-auto h-52 w-52 p-2 bg-white rounded" />
+            <img
+              src={qrData}
+              alt="2FA QR Code"
+              className="mx-auto h-52 w-52 p-2 bg-white rounded"
+            />
           </div>
 
           <div className="space-y-2">
@@ -69,42 +147,60 @@ export default function TwoFA() {
               className="input input-bordered w-full max-w-xs"
               maxLength={6}
               onChange={(e) => setUserToken(e.target.value)}
-              value={userToken || ''} // Ensure always string value
+              value={userToken}
             />
-            
+
             <div className="flex gap-2 items-center">
               <button
                 className="btn btn-success btn-sm"
                 onClick={async () => {
-                  const response = await fetch(
-                    `/api/verify?secret=${qrSecret}&token=${userToken}`
-                  );
-                  const data = await response.json();
-                  if (data.verified) {
-                    set2FAStatus("enabled");
-                    setErrorText("");
-                  } else {
+                  try {
+                    const response = await fetch(`/api/verify`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        secret: qrSecret,
+                        token: userToken,
+                      }),
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                      set2FAStatus("enabled");
+                      setErrorText("");
+                      setQRData(undefined);
+                      setQRSecret(undefined);
+                      setUserToken("");
+                    } else {
+                      setUserToken("");
+                      setErrorText(
+                        "Invalid verification code. Please try again."
+                      );
+                    }
+                  } catch (error) {
                     setUserToken("");
-                    setErrorText(
-                      "Failed. Please scan the QR code and repeat verification."
-                    );
+                    setErrorText("Failed to verify code. Please try again.");
                   }
                 }}
               >
                 Verify & Activate
               </button>
-              {errorText && <span className="text-error text-sm">{errorText}</span>}
+              {errorText && (
+                <span className="text-error text-sm">{errorText}</span>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {_2faStatus === "enabled" && (
-        <div className="alert alert-success">
-          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          <span>Two-factor authentication is currently active on your account</span>
-          <button className="btn btn-error btn-sm ml-4">Disable 2FA</button>
-        </div>
+        <button
+          className="btn btn-error btn-sm ml-4"
+          onClick={handleDisable2FA}
+        >
+          Disable 2FA
+        </button>
       )}
     </div>
   );

@@ -84,7 +84,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     // Only start polling if authenticated
-    if (status === 'loading') return;
+    if (status === "loading") return;
     if (!session?.user) {
       setStatusData(null);
       setInitialLoading(false);
@@ -99,10 +99,10 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     initialize();
 
     // Set up polling interval only if authenticated
-    const interval = setInterval(fetchStatus, 5500);
+    // const interval = setInterval(fetchStatus, 5500);
 
     // Clean up interval on unmount or when session changes
-    return () => clearInterval(interval);
+    // return () => clearInterval(interval);
   }, [fetchStatus, session?.user, status]);
 
   const value = useMemo(() => ({ 
