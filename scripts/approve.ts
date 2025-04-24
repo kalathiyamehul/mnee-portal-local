@@ -63,14 +63,14 @@ async function approveMint(requestId: string, userId: string) {
       }
     });
 
-    if (approvalCount >= 2) {
+    if (approvalCount >= mintRequest.no_of_approvals) {
       await prisma.mintRequest.update({
         where: { id: requestId },
         data: { status: 'APPROVED' }
       });
       console.log('Request now has sufficient approvals (2 non-requester approvals) and has been marked as APPROVED');
     } else {
-      console.log(`Request has ${approvalCount} non-requester approval(s), needs 2 for completion`);
+      console.log(`Request has ${approvalCount} non-requester approval(s), needs ${mintRequest.no_of_approvals} for completion`);
     }
 
   } catch (error) {

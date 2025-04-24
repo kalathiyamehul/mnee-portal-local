@@ -190,7 +190,7 @@ export async function POST(request: Request) {
 			});
 			console.log("Current approval count:", approvalsCount);
 
-			if (approvalsCount === 2) {
+			if (approvalsCount === mintRequest.no_of_approvals) {
 				console.log("Required approvals reached, updating status to APPROVED");
 				// Update request status to APPROVED
 				await tx.mintRequest.update({
