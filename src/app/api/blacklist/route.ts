@@ -65,6 +65,7 @@ export async function POST(request: Request) {
           address,
           status: 'PENDING',
           action: action as BlacklistAction,
+          no_of_approvals: no_of_approvals || 2,  // Default to 2 if not provided
           requestedBy: session.user.id,
         },
       });
