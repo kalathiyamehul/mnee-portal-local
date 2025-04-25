@@ -1,0 +1,228 @@
+{
+    "roles": [
+        {
+            "id": "role_superadmin",
+            "name": "Super Admin",
+            "description": "Has unrestricted access to all system features",
+            "permissions": []
+        },
+        {
+            "id": "role_admin",
+            "name": "Admin",
+            "description": "Administrative access with specific permissions",
+            "permissions": [
+                {
+                    "resource": "USER",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "DELETE"
+                    ]
+                },
+                {
+                    "resource": "CUSTOMER",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "DELETE"
+                    ]
+                },
+                {
+                    "resource": "MINT_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "DELETE",
+                        "APPROVE",
+                        "REJECT",
+                        "CANCEL"
+                    ]
+                },
+                {
+                    "resource": "BURN_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "DELETE",
+                        "APPROVE",
+                        "REJECT",
+                        "CANCEL"
+                    ]
+                },
+                {
+                    "resource": "FREEZE_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "APPROVE",
+                        "REJECT"
+                    ]
+                },
+                {
+                    "resource": "BLACKLIST_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "APPROVE",
+                        "REJECT"
+                    ]
+                },
+                {
+                    "resource": "REFUND_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "APPROVE",
+                        "REJECT"
+                    ]
+                },
+                {
+                    "resource": "ACTION_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "APPROVE",
+                        "REJECT"
+                    ]
+                },
+                {
+                    "resource": "CONFIG",
+                    "actions": [
+                        "READ",
+                        "UPDATE"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "role_compliance_officer",
+            "name": "Compliance Officer",
+            "description": "Handles compliance-related operations",
+            "permissions": [
+                {
+                    "resource": "CUSTOMER",
+                    "actions": [
+                        "READ"
+                    ]
+                },
+                {
+                    "resource": "FREEZE_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "APPROVE",
+                        "REJECT"
+                    ]
+                },
+                {
+                    "resource": "BLACKLIST_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "APPROVE",
+                        "REJECT"
+                    ]
+                },
+                {
+                    "resource": "ACTION_REQUEST",
+                    "actions": [
+                        "READ"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "role_finance_manager",
+            "name": "Finance Manager",
+            "description": "Manages financial operations",
+            "permissions": [
+                {
+                    "resource": "MINT_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "APPROVE",
+                        "REJECT"
+                    ]
+                },
+                {
+                    "resource": "BURN_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "APPROVE",
+                        "REJECT"
+                    ]
+                },
+                {
+                    "resource": "REFUND_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE",
+                        "APPROVE",
+                        "REJECT"
+                    ]
+                },
+                {
+                    "resource": "CUSTOMER",
+                    "actions": [
+                        "READ"
+                    ]
+                },
+                {
+                    "resource": "CONFIG",
+                    "actions": [
+                        "READ"
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "role_customer_service",
+            "name": "Customer Service",
+            "description": "Handles customer-related operations",
+            "permissions": [
+                {
+                    "resource": "CUSTOMER",
+                    "actions": [
+                        "CREATE",
+                        "READ",
+                        "UPDATE"
+                    ]
+                },
+                {
+                    "resource": "MINT_REQUEST",
+                    "actions": [
+                        "READ"
+                    ]
+                },
+                {
+                    "resource": "BURN_REQUEST",
+                    "actions": [
+                        "READ"
+                    ]
+                },
+                {
+                    "resource": "REFUND_REQUEST",
+                    "actions": [
+                        "CREATE",
+                        "READ"
+                    ]
+                }
+            ]
+        }
+    ]
+}

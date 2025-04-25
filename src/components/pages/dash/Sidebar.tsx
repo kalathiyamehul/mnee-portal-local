@@ -16,6 +16,7 @@ const menuItems = [
   { name: "Customers", href: "/dash/customers", icon: FaUsers },
   { name: "Admin", href: "/dash/admin", icon: FaGear },
   { name: "Config", href: "/dash/settings", icon: FaSliders },
+  { name: "Roles", href: "/dash/roles", icon: FaUsers },
 ];
 
 const Sidebar: React.FC = () => {
