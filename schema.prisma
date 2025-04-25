@@ -60,7 +60,6 @@ model FreezeRequest {
   status      ActionStatus      @default(PENDING)
   action      FreezeRequestAction
   requestedBy String           @map("requested_by")
-  no_of_approvals Int               @default(2) // Add this line
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
   requiresApproval Boolean      @default(true) @map("requires_approval")
@@ -78,7 +77,6 @@ model BlacklistRequest {
   address     String
   status      ActionStatus   @default(PENDING)
   action      BlacklistAction
-  no_of_approvals Int               @default(2) // Add this line
   requestedBy String        @map("requested_by")
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
@@ -109,7 +107,7 @@ model MintRequest {
   id              String       @id @default(uuid())
   address         String
   amount          BigInt      @db.BigInt
-  no_of_approvals Int         @default(2)
+  no_of_approvals Int         @default(0)
   status          ActionStatus @default(PENDING)
   requestedBy     String      @map("requested_by")
   txid            String      @default("")
