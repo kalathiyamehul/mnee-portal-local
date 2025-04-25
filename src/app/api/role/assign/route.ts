@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Assign role to user
-        const userRole = await prisma.userRole.create({
+        const userRole = await prisma.user.update({
+            where: { id: validatedData.userId },
             data: {
-                userId: validatedData.userId,
                 roleId: validatedData.roleId,
             },
             include: {
@@ -99,12 +99,12 @@ export async function DELETE(request: NextRequest) {
         }
 
         // Delete the role assignment
-        await prisma.userRole.delete({
+        await prisma.user.update({
             where: {
-                userId_roleId: {
-                    userId,
-                    roleId,
-                },
+                id: userId,
+            },
+            data: {
+                roleId: null,
             },
         });
 
