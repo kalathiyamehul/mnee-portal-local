@@ -113,7 +113,7 @@ export async function POST(request: Request) {
 			// console.log('Total approvals:', updatedApprovals);
 
 			// If we have 2 approvals, mark as approved
-			if (updatedApprovals === 2) {
+			if (updatedApprovals === freezeRequest.no_of_approvals) {
 				// console.log('Updating request to APPROVED');
 				const updatedRequest = await tx.freezeRequest.update({
 					where: { id: freezeRequestId },
