@@ -16,6 +16,8 @@ model User {
   emailVerified         DateTime? @map("email_verified")
   password              String
   requiresPasswordReset Boolean   @default(true) @map("requires_password_reset")
+  twoFactorSecret       String?   @map("two_factor_secret")
+  twoFactorEnabled      Boolean   @default(false) @map("two_factor_enabled")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
@@ -32,6 +34,8 @@ model User {
   blacklistApprovals BlacklistApproval[] @relation("UserBlacklistApprovals")
   refundRequests    RefundRequest[]    @relation("UserRefundRequests")
   refundApprovals   RefundApproval[]   @relation("UserRefundApprovals")
+  roleId            String?
+  role              Role?              @relation(fields: [roleId], references: [id])
 
   @@map("user")
 }
@@ -58,6 +62,7 @@ model FreezeRequest {
   status      ActionStatus      @default(PENDING)
   action      FreezeRequestAction
   requestedBy String           @map("requested_by")
+  no_of_approvals Int               @default(2) // Add this line
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
   requiresApproval Boolean      @default(true) @map("requires_approval")
@@ -75,6 +80,7 @@ model BlacklistRequest {
   address     String
   status      ActionStatus   @default(PENDING)
   action      BlacklistAction
+  no_of_approvals Int               @default(2) // Add this line
   requestedBy String        @map("requested_by")
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt @map("updated_at")
@@ -105,7 +111,7 @@ model MintRequest {
   id              String       @id @default(uuid())
   address         String
   amount          BigInt      @db.BigInt
-  no_of_approvals Int         @default(0)
+  no_of_approvals Int         @default(2)
   status          ActionStatus @default(PENDING)
   requestedBy     String      @map("requested_by")
   txid            String      @default("")
@@ -264,4 +270,50 @@ model Customer {
   mintRequests MintRequest[]
 
   @@map("customer")
+}
+
+// Role-based Access Control Models
+model Role {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  users   User[]
+  rolePermissions RolePermission[]
+
+  @@map("role")
+}
+
+model Permission {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  resource    String
+  action      String
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  rolePermissions RolePermission[]
+
+  @@unique([resource, action])
+  @@map("permission")
+}
+
+model RolePermission {
+  id           String    @id @default(uuid())
+  roleId       String    @map("role_id")
+  permissionId String    @map("permission_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  role         Role      @relation(fields: [roleId], references: [id])
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+  @@map("role_permission")
 }
