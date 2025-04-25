@@ -91,8 +91,22 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            return newRole;
+            // Return role with permissions
+            return tx.role.findUnique({
+                where: { id: newRole.id },
+                include: {
+                    rolePermissions: {
+                        include: {
+                            permission: true
+                        }
+                    }
+                }
+            });
         });
+
+        if (!role) {
+            throw new Error("Failed to create role");
+        }
 
         return NextResponse.json(role, { status: 201 });
     } catch (error) {
@@ -102,6 +116,15 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             );
         }
+
+        // Handle unique constraint violation
+        if (error instanceof Error && error.message.includes("P2002")) {
+            return NextResponse.json(
+                { error: "A role with this name already exists" },
+                { status: 400 }
+            );
+        }
+
         console.error("Error creating role:", error);
         return NextResponse.json(
             { error: "Internal server error" },
@@ -166,8 +189,22 @@ export async function PUT(request: NextRequest) {
                 }
             }
 
-            return role;
+            // Return role with permissions
+            return tx.role.findUnique({
+                where: { id: role.id },
+                include: {
+                    rolePermissions: {
+                        include: {
+                            permission: true
+                        }
+                    }
+                }
+            });
         });
+
+        if (!updatedRole) {
+            throw new Error("Failed to update role");
+        }
 
         return NextResponse.json(updatedRole);
     } catch (error) {
@@ -177,6 +214,15 @@ export async function PUT(request: NextRequest) {
                 { status: 400 }
             );
         }
+
+        // Handle unique constraint violation
+        if (error instanceof Error && error.message.includes("P2002")) {
+            return NextResponse.json(
+                { error: "A role with this name already exists" },
+                { status: 400 }
+            );
+        }
+
         console.error("Error updating role:", error);
         return NextResponse.json(
             { error: "Internal server error" },
