@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 
-export default function Verify2FAPage() {
+function Verify2FAInner() {
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -78,5 +78,13 @@ export default function Verify2FAPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function Verify2FAPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Verify2FAInner />
+    </Suspense>
   );
 }
