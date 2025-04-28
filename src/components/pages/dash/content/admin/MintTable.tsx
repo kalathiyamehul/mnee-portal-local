@@ -63,6 +63,7 @@ const MintTableContent = ({
 }) => {
 	const [config, setConfig] = useState<Config | null>(null);
 	const [loadingApproval, setLoadingApproval] = useState<string | null>(null);
+	const [loadingReject, setLoadingReject] = useState<string | null>(null); // <-- Add this line
 	const router = useRouter();
 
 	const hasUserApproved = (mint: Activity) => {
@@ -149,6 +150,37 @@ const MintTableContent = ({
 		} catch (error) {
 			console.error("Failed to cancel mint request:", error);
 			toast.error(error instanceof Error ? error.message : "Failed to cancel mint request");
+		}
+	};
+
+	const handleReject = async (id: string) => {
+		try {
+			setLoadingReject(id);
+			const response = await fetch("/api/rejectMint", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ mintRequestId: id }),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(data.error || "Failed to reject mint request");
+			}
+
+			if (data.success) {
+				toast.success(data.message || "Mint request rejected");
+				onUpdate?.();
+			} else {
+				throw new Error(data.error || "Failed to reject mint request");
+			}
+		} catch (error) {
+			console.error("Failed to reject mint request:", error);
+			toast.error(error instanceof Error ? error.message : "Failed to reject mint request");
+		} finally {
+			setLoadingReject(null);
 		}
 	};
 
@@ -286,38 +318,60 @@ const MintTableContent = ({
 							</td>
 							{showActions && (
 								<td>
-									{mint.status === "PENDING" && session?.user && (
-										<div className="flex gap-2 justify-end">
-											{mint.requester.email === session.user.email ? (
-												<button
-													type="button"
-													onClick={() => handleCancel(mint.id)}
-													className="btn btn-ghost btn-xs"
-													disabled={loadingApproval === mint.id}
-												>
-													Cancel
-												</button>
+								{mint.status === "PENDING" && session?.user && (
+									<div className="flex gap-2 justify-end">
+									{mint.requester.email === session.user.email ? (
+										<button
+										type="button"
+										onClick={() => handleCancel(mint.id)}
+										className="btn btn-ghost btn-xs"
+										disabled={loadingApproval === mint.id}
+										>
+										Cancel
+										</button>
+									) : (
+										<div className="flex gap-2 items-center">
+										<button
+											type="button"
+											onClick={() => handleApprove(mint.id)}
+											className="btn btn-primary btn-xs"
+											disabled={
+											loadingApproval === mint.id ||
+											hasUserApproved(mint)
+											}
+										>
+											{loadingApproval === mint.id ? (
+											<>
+												<FaSpinner className="animate-spin mr-1" />
+												Approving...
+											</>
+											) : hasUserApproved(mint) ? (
+											"Approved"
 											) : (
-												<button
-													type="button"
-													onClick={() => handleApprove(mint.id)}
-													className="btn btn-primary btn-xs"
-													disabled={loadingApproval === mint.id || hasUserApproved(mint)}
-												>
-													{loadingApproval === mint.id ? (
-														<>
-															<FaSpinner className="animate-spin mr-1" />
-															Approving...
-														</>
-													) : hasUserApproved(mint) ? (
-														'Approved'
-													) : (
-														'Approve'
-													)}
-												</button>
+											"Approve"
 											)}
+										</button>
+										{!hasUserApproved(mint) && (
+											<button
+											type="button"
+											className="btn btn-error btn-xs"
+											onClick={() => handleReject(mint.id)}
+											disabled={loadingReject === mint.id}
+											>
+											{loadingReject === mint.id ? (
+												<>
+													<FaSpinner className="animate-spin mr-1" />
+													Rejecting...
+												</>
+											) : (
+												"Reject"
+											)}
+											</button>
+										)}
 										</div>
 									)}
+									</div>
+								)}
 								</td>
 							)}
 						</tr>
@@ -381,4 +435,4 @@ export const MintTable = ({
 			</div>
 		</div>
 	);
-}; 
+};
