@@ -5,6 +5,9 @@ import { DEFAULT_DECIMALS } from '@/lib/constants';
 import type { Activity, ActivityListProps } from './types';
 import { formatDistanceToNow } from 'date-fns';
 import { getGravatarUrl } from "@/utils/gravatar";
+import { FaSpinner } from "react-icons/fa6";
+import { toast } from "react-hot-toast";
+import { useState } from "react";
 
 export const ActivityList = ({
   showOnlyPending,
@@ -52,6 +55,40 @@ export const ActivityList = ({
         return '';
     }
   };
+
+  const [loadingReject, setLoadingReject] = useState<string | null>(null);
+
+  // Implement handleReject
+  const handleReject = async (id: string) => {
+		try {
+			setLoadingReject(id);
+			const response = await fetch("/api/rejectMint", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ mintRequestId: id }),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(data.error || "Failed to reject mint request");
+			}
+
+			if (data.success) {
+				toast.success(data.message || "Mint request rejected");
+				// Remove onUpdate call since it's not defined in the component props
+			} else {
+				throw new Error(data.error || "Failed to reject mint request");
+			}
+		} catch (error) {
+			console.error("Failed to reject mint request:", error);
+			toast.error(error instanceof Error ? error.message : "Failed to reject mint request");
+		} finally {
+			setLoadingReject(null);
+		}
+	};
 
   return (
     <div className="space-y-4">
@@ -231,15 +268,34 @@ export const ActivityList = ({
                             Approve
                           </button>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                        {/* Add Reject button for pending mint requests not by self and not already approved */}
+                        {activity.type === "MINT" &&
+                          canApprove(activity) && (
+                            <button
+                              type="button"
+                              className="btn btn-error btn-xs"
+                              onClick={() => handleReject(activity.id)}
+                              disabled={loadingReject === activity.id}
+                            >
+                              {loadingReject === activity.id ? (
+                                <>
+                                  <FaSpinner className="animate-spin mr-1" />
+                                  Rejecting...
+                                </>
+                              ) : (
+                                "Reject"
+                              )}
+                            </button>
+                          )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
         )}
       </div>
     </div>
   );
-}; 
+};
