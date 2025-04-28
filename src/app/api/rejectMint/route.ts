@@ -46,18 +46,15 @@ export async function POST(request: Request) {
         throw new Error("You cannot reject your own request");
       }
 
-      // Optionally: Check if already rejected/approved by this user (if you want to track rejections)
-      // const existingRejection = await tx.mintRejection.findFirst({ ... });
-      // if (existingRejection) throw new Error("You have already rejected this request");
 
-      // Optionally: System checks (not strictly necessary for rejection, but you may want to check if system is paused)
-      // const systemCheck = await performSystemChecks(tx, {
-      //   address: mintRequest.address,
-      //   operation: SystemOperation.MINT_REQUEST_REJECT,
-      // });
-      // if (!systemCheck.isValid) {
-      //   throw new Error(systemCheck.error);
-      // }
+      // System checks (if system is paused)
+      const systemCheck = await performSystemChecks(tx, {
+        address: mintRequest.address,
+        operation: SystemOperation.MINT_REQUEST_REJECT,
+      });
+      if (!systemCheck.isValid) {
+        throw new Error(systemCheck.error);
+      }
 
       // Update the mint request status to REJECTED
       await tx.mintRequest.update({
@@ -65,19 +62,8 @@ export async function POST(request: Request) {
         data: {
           status: "REJECTED",
           updatedAt: new Date(),
-          // Optionally: rejectionReason: reason,
-          // Optionally: rejectedBy: session.user.id,
         },
       });
-
-      // Optionally: Record the rejection in a separate table if you want to track who rejected
-      // await tx.mintRejection.create({
-      //   data: {
-      //     mintRequestId,
-      //     rejectedBy: session.user.id,
-      //     reason,
-      //   },
-      // });
 
       return { status: "REJECTED" };
     });
