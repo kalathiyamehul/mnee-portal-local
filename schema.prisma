@@ -1,7 +1,7 @@
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  shadowDatabaseUrl = "postgresql://postgres:root@localhost:5432/mnee_portal?schema=public"
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
 }
 
 generator client {
