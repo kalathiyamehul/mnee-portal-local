@@ -55,6 +55,8 @@ export const ActivityList = ({
         return '';
     }
   };
+  
+  console.log("filteredList", filteredActivities)
 
   const [loadingReject, setLoadingReject] = useState<string | null>(null);
 
@@ -145,6 +147,11 @@ export const ActivityList = ({
                               {toToken(activity.amount as string, config?.decimals || DEFAULT_DECIMALS)} MNEE
                             </div>
                           )}
+                          {(activity.type === 'FREEZE' || activity.type === 'BLACKLIST') && (
+                          <div className="text-sm font-mono flex flex-col">
+                            <p className="opacity-70">Address: {activity.address}</p>
+                          </div>
+                        )}
                         </div>
                       </div>
                     </td>
@@ -159,8 +166,8 @@ export const ActivityList = ({
                           </>
                         )}
                         {(activity.type === 'FREEZE' || activity.type === 'BLACKLIST' || (activity.type === 'MINT' && !activity.customer)) && activity.address && (
-                          <div className="text-sm font-mono">
-                            <span className="opacity-70">Address:</span> {activity.address}
+                          <div className="text-sm font-mono flex flex-col">
+                            <p className="opacity-70">Reason: {activity?.reason}</p>
                           </div>
                         )}
                         {activity.type === 'BURN' && activity.outpoint && (
