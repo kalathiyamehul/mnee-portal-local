@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { FaSpinner } from "react-icons/fa6";
 
 function LoginPageInner() {
   const router = useRouter();
@@ -129,10 +130,17 @@ function LoginPageInner() {
 
           <button
             type="submit"
-            className={`btn btn-primary w-full ${isLoading ? "loading" : ""}`}
+            className={`btn btn-primary w-full`}
             disabled={isLoading}
           >
-            {showTwoFactor ? "Verify" : "Sign in"}
+            {showTwoFactor ? "Verify" : (isLoading ? (
+              <>
+                <FaSpinner className="animate-spin" />
+                Signing In...
+              </>
+            ) : (
+              'Sign In'
+            ))} 
           </button>
 
           {showTwoFactor && (
