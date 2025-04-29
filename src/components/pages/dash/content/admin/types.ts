@@ -149,6 +149,7 @@ export interface AddressStatus {
 		name: string | null;
 	};
 	lastUpdate: string;
+	reason?: string;
 }
 
 export interface StatusResponse {

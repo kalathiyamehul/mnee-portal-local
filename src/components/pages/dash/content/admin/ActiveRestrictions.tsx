@@ -42,6 +42,8 @@ export const ActiveRestrictions = ({
     }
   }, [restrictions]);
 
+  console.log('restrictions', restrictions);
+
   const canCancel = (activity: Activity) => {
     if (!session?.user?.email) return false;
     return activity.status === 'PENDING' && activity.requester.email === session.user.email;
@@ -62,13 +64,14 @@ export const ActiveRestrictions = ({
           <tr>
             <th>Requester</th>
             <th>Address</th>
+            <th>Details</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {restrictions.map((status) => (
             <tr key={status.address}>
-              <td>
+              <td className='w-1/6'>
                 <div className="flex items-center gap-3">
                   <div className="avatar">
                     <div className="mask mask-squircle w-10 h-10">
@@ -86,7 +89,7 @@ export const ActiveRestrictions = ({
                   </div>
                 </div>
               </td>
-              <td>
+              <td className='w-1/6'>
                 <div className="flex flex-col gap-2">
                   <div className="font-mono text-sm">
                     {status.address}
@@ -115,7 +118,13 @@ export const ActiveRestrictions = ({
                   </div>
                 </div>
               </td>
-              <td>
+              <td className='w-1/4'>
+                <div className="flex flex-col">
+                    <p className="font-medium">Reason:</p>
+                    <p className="opacity-70">{status?.reason}</p>
+                </div>
+              </td>
+              <td className='w-1/4'>
                 <div className="flex flex-wrap gap-2">
                   {!status.isBlacklisted && !status.hasPendingBlacklist && (
                     <button
