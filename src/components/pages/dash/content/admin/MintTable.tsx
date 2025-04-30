@@ -355,14 +355,6 @@ const MintTableContent = ({
                               "Approve"
                             )}
                           </button>
-                          {!hasUserApproved(mint) && (
-                            <button
-                              type="button"
-                              className="btn btn-error btn-xs"
-                            >
-                              Reject
-                            </button>
-                          )}
                         </div>
                       )}
                     </div>

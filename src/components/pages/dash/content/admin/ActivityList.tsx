@@ -9,6 +9,7 @@ import { Pagination } from "@/components/common/Pagination";
 import { useEffect, useState } from "react";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePathname } from "next/navigation";
+import { MdOutlineOpenInNew } from "react-icons/md";
 
 export const ActivityList = ({
   showOnlyPending,
@@ -117,7 +118,6 @@ export const ActivityList = ({
 
       <div className="w-full">
         {" "}
-        {/* Changed from overflow-x-auto */}
         {loading ? (
           <div className="flex justify-center items-center py-8">
             <div className="loading loading-spinner loading-lg" />
@@ -231,6 +231,20 @@ export const ActivityList = ({
                               </a>
                             </div>
                           )}
+                          <div
+                            className="tooltip tooltip-bottom "
+                            data-tip="Verify on WhatsOnChain"
+                          >
+                            <a
+                              href={`https://whatsonchain.com/address/${activity.address}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-link btn-xs px-0"
+                            >
+                              View on Explorer{" "}
+                              <MdOutlineOpenInNew className="w-3 h-3" />
+                            </a>
+                          </div>
                         </div>
                       </td>
                       {showRequester && (
@@ -321,12 +335,6 @@ export const ActivityList = ({
                                 }
                               >
                                 Approve
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-error btn-xs"
-                              >
-                                Reject
                               </button>
                             </div>
                           )}
