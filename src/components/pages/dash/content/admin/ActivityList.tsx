@@ -177,7 +177,7 @@ export const ActivityList = ({
                               href={(() => {
                                 const vout = Number.parseInt(activity.outpoint.split('_')[1], 10);
                                 const outputOffset = Math.floor(vout / 10) * 10;
-                                return `https://whatsonchain.com/tx/${activity.outpoint.split('_')[0]}?limit=10&output=${vout}&outputOffset=${outputOffset}`;
+                                return `https://whatsonchain.com/tx/${activity.outpoint.split('_')[0]}?limit=10&output=${vout}&outputOffset=${outputOffset}&tab=m8eqcrbs`;
                               })()}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -195,7 +195,7 @@ export const ActivityList = ({
                               href={(() => {
                                 const vout = Number.parseInt(activity.outpoint.split('_')[1], 10);
                                 const outputOffset = Math.floor(vout / 10) * 10;
-                                return `https://whatsonchain.com/tx/${activity.outpoint.split('_')[0]}?limit=10&output=${vout}&outputOffset=${outputOffset}`;
+                                return `https://whatsonchain.com/tx/${activity.outpoint.split('_')[0]}?limit=10&output=${vout}&outputOffset=${outputOffset}&tab=m8eqcrbs`;
                               })()}
                               target="_blank"
                               rel="noopener noreferrer"
