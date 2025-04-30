@@ -9,7 +9,8 @@ export enum SystemOperation {
   // Burn operations
   BURN_REQUEST_CREATE = 'burn request creation',
   BURN_REQUEST_APPROVE = 'burn request approval',
-  
+  BURN_REQUEST_REJECT = 'burn request rejection',
+
   // Refund operations
   REFUND_REQUEST_CREATE = 'refund request creation',
   REFUND_REQUEST_APPROVE = 'refund request approval',
@@ -30,6 +31,7 @@ const BLACKLIST_RESTRICTED_OPERATIONS = new Set([
   SystemOperation.MINT_REQUEST_REJECT,
   SystemOperation.BURN_REQUEST_CREATE,
   SystemOperation.BURN_REQUEST_APPROVE,
+  SystemOperation.BURN_REQUEST_REJECT,
   SystemOperation.REFUND_REQUEST_CREATE,
   SystemOperation.REFUND_REQUEST_APPROVE,
 ]);

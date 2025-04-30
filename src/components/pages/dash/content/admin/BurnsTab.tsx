@@ -1,31 +1,38 @@
-import { useEffect, useState, useCallback } from 'react';
-import { fetchMneeUtxos } from '@/utils/api';
-import { FaSpinner, FaFire, FaCopy, FaArrowsRotate, FaCircleInfo } from 'react-icons/fa6';
-import { toToken } from 'satoshi-token';
-import type { MNEEUtxo } from '@/types';
-import { MdOutlineOpenInNew } from 'react-icons/md';
-import type { BurnUtxo } from './types';
-import { DEFAULT_DECIMALS } from '@/lib/constants';
-import { formatDistanceToNow } from 'date-fns';
-import { BurnModal } from '../modals/BurnModal';
-import { RefundModal } from '../modals/RefundModal';
-import { toast } from 'react-hot-toast';
-import { useSession } from 'next-auth/react';
-import { useSystemStatus } from '@/contexts/SystemStatusContext';
-import { BurnTable } from './BurnTable';
+import { useEffect, useState, useCallback } from "react";
+import { fetchMneeUtxos } from "@/utils/api";
+import {
+  FaSpinner,
+  FaFire,
+  FaCopy,
+  FaArrowsRotate,
+  FaCircleInfo,
+} from "react-icons/fa6";
+import { toToken } from "satoshi-token";
+import type { MNEEUtxo } from "@/types";
+import { MdOutlineOpenInNew } from "react-icons/md";
+import type { BurnUtxo } from "./types";
+import { DEFAULT_DECIMALS } from "@/lib/constants";
+import { formatDistanceToNow } from "date-fns";
+import { BurnModal } from "../modals/BurnModal";
+import { RefundModal } from "../modals/RefundModal";
+import { toast } from "react-hot-toast";
+import { useSession } from "next-auth/react";
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import { BurnTable } from "./BurnTable";
 
 const getRowBorderClass = (status: string | undefined) => {
   switch (status) {
-    case 'PENDING':
-      return 'border-l-4 border-l-warning';
-    case 'APPROVED':
-      return 'border-l-4 border-l-success';
-    case 'REFUNDED':
-      return 'border-l-4 border-l-info';
-    case 'CANCELLED':
-      return 'border-l-4 border-l-error';
+    case "PENDING":
+      return "border-l-4 border-l-warning";
+    case "APPROVED":
+      return "border-l-4 border-l-success";
+    case "REFUNDED":
+      return "border-l-4 border-l-info";
+    case "REJECTED":
+    case "CANCELLED":
+      return "border-l-4 border-l-error";
     default:
-      return 'border-l-4 border-l-secondary';
+      return "border-l-4 border-l-secondary";
   }
 };
 
@@ -44,10 +51,10 @@ export const BurnsTab = () => {
 
   const fetchBurnAddressFromConfig = useCallback(async () => {
     try {
-      const configResponse = await fetch('/api/config');
+      const configResponse = await fetch("/api/config");
       const config = await configResponse.json();
       if (!config?.burnAddress) {
-        throw new Error('Burn address not configured');
+        throw new Error("Burn address not configured");
       }
 
       // console.log('Config loaded:', { config, decimals: config.decimals });
@@ -55,8 +62,8 @@ export const BurnsTab = () => {
       setDecimals(config.decimals ?? DEFAULT_DECIMALS);
       return config.burnAddress as string;
     } catch (err) {
-      console.error('Error fetching config:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch config');
+      console.error("Error fetching config:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch config");
       return null;
     }
   }, []);
@@ -69,12 +76,12 @@ export const BurnsTab = () => {
       setUtxos(fetchedTransferUtxos);
 
       // burns only
-      const fetchedBurnUtxos = await fetchMneeUtxos([address], ['burn']);
+      const fetchedBurnUtxos = await fetchMneeUtxos([address], ["burn"]);
       // console.log('Burn UTXOs:', fetchedBurnUtxos);
       setBurnUtxos(fetchedBurnUtxos);
     } catch (err) {
-      console.error('Error fetching UTXOs:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch UTXOs');
+      console.error("Error fetching UTXOs:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch UTXOs");
     }
   }, []);
 
@@ -87,23 +94,29 @@ export const BurnsTab = () => {
     // });
 
     // Only use transfer UTXOs for burn requests
-    const burnsWithRequests = utxos.map(utxo => ({
+    const burnsWithRequests = utxos.map((utxo) => ({
       ...utxo,
-      burnRequest: statusData?.burnRequests?.find(req => req.outpoint === `${utxo.txid}_${utxo.vout}`),
-      refundRequest: statusData?.refundRequests?.find(req => req.outpoint === `${utxo.txid}_${utxo.vout}`)
+      burnRequest: statusData?.burnRequests?.find(
+        (req) => req.outpoint === `${utxo.txid}_${utxo.vout}`
+      ),
+      refundRequest: statusData?.refundRequests?.find(
+        (req) => req.outpoint === `${utxo.txid}_${utxo.vout}`
+      ),
     }));
 
-    console.log({burnsWithRequests });  
+    console.log({ burnsWithRequests });
     // Add burn UTXOs with APPROVED status
     const completedBurnRequests = statusData?.burnRequests || [];
     for (const utxo of burnUtxos) {
       const outpoint = `${utxo.txid}_${utxo.vout}`;
-      const existingRequest = completedBurnRequests.find(req => req.txid && outpoint.startsWith(req.txid));
+      const existingRequest = completedBurnRequests.find(
+        (req) => req.txid && outpoint.startsWith(req.txid)
+      );
 
       burnsWithRequests.push({
         ...utxo,
         burnRequest: existingRequest,
-        refundRequest: undefined
+        refundRequest: undefined,
       });
     }
 
@@ -129,13 +142,16 @@ export const BurnsTab = () => {
     setSelectedBurn(null);
   };
 
-  const handleCancel = async (request: { id: string, type: 'burn' | 'refund' }) => {
+  const handleCancel = async (request: {
+    id: string;
+    type: "burn" | "refund";
+  }) => {
     try {
-      const response = await fetch('/api/cancel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          request.type === 'burn' 
+          request.type === "burn"
             ? { burnRequestId: request.id }
             : { refundRequestId: request.id }
         ),
@@ -143,96 +159,124 @@ export const BurnsTab = () => {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || `Failed to cancel ${request.type} request`);
+        throw new Error(
+          data.error || `Failed to cancel ${request.type} request`
+        );
       }
 
-      toast.success(`${request.type === 'burn' ? 'Burn' : 'Refund'} request cancelled`);
+      toast.success(
+        `${request.type === "burn" ? "Burn" : "Refund"} request cancelled`
+      );
     } catch (err) {
       console.error(`Error cancelling ${request.type}:`, err);
-      toast.error(err instanceof Error ? err.message : `Failed to cancel ${request.type} request`);
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : `Failed to cancel ${request.type} request`
+      );
     }
   };
 
   const handleApproveRefund = async (refundId: string) => {
     try {
-      const response = await fetch('/api/approveRefund', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/approveRefund", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refundRequestId: refundId }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to approve refund request');
+        throw new Error(data.error || "Failed to approve refund request");
       }
 
-      toast.success('Refund request approved');
+      toast.success("Refund request approved");
     } catch (error) {
-      console.error('Error approving refund:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to approve refund request');
+      console.error("Error approving refund:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to approve refund request"
+      );
     }
   };
 
   const handleApproveBurn = async (burnId: string) => {
     try {
-      const response = await fetch('/api/approveBurn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/approveBurn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ burnRequestId: burnId }),
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to approve burn request');
+        throw new Error(data.error || "Failed to approve burn request");
       }
 
-      toast.success('Burn request approved');
+      toast.success("Burn request approved");
     } catch (error) {
-      console.error('Error approving burn:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to approve burn request');
+      console.error("Error approving burn:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to approve burn request"
+      );
     }
   };
 
   const canCancel = (burn: BurnUtxo) => {
     if (!burn.burnRequest || !session?.user?.email) return false;
-    return burn.burnRequest.status === 'PENDING' && 
-           burn.burnRequest.requester.email === session.user.email;
+    return (
+      burn.burnRequest.status === "PENDING" &&
+      burn.burnRequest.requester.email === session.user.email
+    );
   };
 
   const canCancelRefund = (burn: BurnUtxo) => {
     if (!burn.refundRequest || !session?.user?.email) return false;
-    return burn.refundRequest.status === 'PENDING' && 
-           burn.refundRequest.requester.email === session.user.email;
+    return (
+      burn.refundRequest.status === "PENDING" &&
+      burn.refundRequest.requester.email === session.user.email
+    );
   };
 
   const canApproveBurn = (burn: BurnUtxo) => {
     if (!burn.burnRequest || !session?.user?.email) return false;
-    return burn.burnRequest.status === 'PENDING' && 
-           burn.burnRequest.requester.email !== session.user.email &&
-           !burn.burnRequest.approvals.some(approval => approval.approver?.email === session.user.email);
+    return (
+      burn.burnRequest.status === "PENDING" &&
+      burn.burnRequest.requester.email !== session.user.email &&
+      !burn.burnRequest.approvals.some(
+        (approval) => approval.approver?.email === session.user.email
+      )
+    );
   };
 
   const canApproveRefund = (burn: BurnUtxo) => {
     if (!burn.refundRequest || !session?.user?.email) return false;
-    return burn.refundRequest.status === 'PENDING' && 
-           burn.refundRequest.requester.email !== session.user.email &&
-           !burn.refundRequest.approvals.some(approval => approval.approver?.email === session.user.email);
+    return (
+      burn.refundRequest.status === "PENDING" &&
+      burn.refundRequest.requester.email !== session.user.email &&
+      !burn.refundRequest.approvals.some(
+        (approval) => approval.approver?.email === session.user.email
+      )
+    );
   };
 
   const handleRefundSuccess = () => {
     setSelectedRefund(null);
     handleRefresh();
-    toast.success('Refund initiated successfully');
+    toast.success("Refund initiated successfully");
   };
 
   const handleCopyAddress = (address: string) => {
     navigator.clipboard.writeText(address);
-    toast.success('Address copied to clipboard');
+    toast.success("Address copied to clipboard");
   };
 
   const handleCopyTxid = (txid: string) => {
     navigator.clipboard.writeText(txid);
-    toast.success('Transaction ID copied to clipboard');
+    toast.success("Transaction ID copied to clipboard");
   };
 
   // Initial fetch of config and UTXOs
@@ -249,10 +293,16 @@ export const BurnsTab = () => {
   }, [updateBurns, decimals]);
 
   // Split burns into pending/active and completed
-  const activeBurns = burns.filter(burn => !burn.burnRequest || ['PENDING', 'CANCELLED'].includes(burn.burnRequest.status));
-  const completedBurns = burns.filter(burn => burn.burnRequest && ['APPROVED', 'REFUNDED'].includes(burn.burnRequest.status));
-
-  console.log("AllBurns:", burns)
+  const activeBurns = burns.filter(
+    (burn) =>
+      !burn.burnRequest ||
+      ["PENDING", "CANCELLED"].includes(burn.burnRequest.status)
+  );
+  const completedBurns = burns.filter(
+    (burn) =>
+      burn.burnRequest &&
+      ["APPROVED", "REFUNDED", "REJECTED", "CANCELLED"].includes(burn.burnRequest.status)
+  );
 
   return (
     <div className="p-4 space-y-8">
@@ -287,9 +337,13 @@ export const BurnsTab = () => {
                 </thead>
                 <tbody>
                   {activeBurns.map((burn) => (
-                    <tr 
-                      key={`${burn.txid}_${burn.vout}_${burn.burnRequest?.id || 'new'}_${burn.burnRequest?.createdAt || Date.now()}`} 
-                      className={`hover ${getRowBorderClass(burn.burnRequest?.status)}`}
+                    <tr
+                      key={`${burn.txid}_${burn.vout}_${
+                        burn.burnRequest?.id || "new"
+                      }_${burn.burnRequest?.createdAt || Date.now()}`}
+                      className={`hover ${getRowBorderClass(
+                        burn.burnRequest?.status
+                      )}`}
                     >
                       <td>
                         <div className="flex items-center gap-2">
@@ -319,46 +373,64 @@ export const BurnsTab = () => {
                         {toToken(burn.data.bsv21.amt, decimals)} MNEE
                       </td>
                       <td className="text-sm text-base-content/70">
-                        {burn.burnRequest?.createdAt ? (
-                          formatDistanceToNow(new Date(burn.burnRequest.createdAt), { addSuffix: true })
-                        ) : (
-                          `Block ${burn.height}`
-                        )}
+                        {burn.burnRequest?.createdAt
+                          ? formatDistanceToNow(
+                              new Date(burn.burnRequest.createdAt),
+                              { addSuffix: true }
+                            )
+                          : `Block ${burn.height}`}
                       </td>
                       <td>
                         {burn.burnRequest ? (
-                          <span className={`badge ${
-                            burn.burnRequest.status === 'APPROVED' ? 'badge-success' :
-                            burn.burnRequest.status === 'REFUNDED' ? 'badge-info' :
-                            burn.burnRequest.status === 'PENDING' ? 'badge-ghost' :
-                            burn.burnRequest.status === 'CANCELLED' ? 'badge-secondary' :
-                            'badge-warning'
-                          } badge-sm`}>
-                            {burn.burnRequest.status === 'CANCELLED' ? 'AVAILABLE' : burn.burnRequest.status}
+                          <span
+                            className={`badge ${
+                              burn.burnRequest.status === "APPROVED"
+                                ? "badge-success"
+                                : burn.burnRequest.status === "REFUNDED"
+                                ? "badge-info"
+                                : burn.burnRequest.status === "PENDING"
+                                ? "badge-ghost"
+                                : burn.burnRequest.status === "CANCELLED"
+                                ? "badge-secondary"
+                                : "badge-warning"
+                            } badge-sm`}
+                          >
+                            {burn.burnRequest.status === "CANCELLED"
+                              ? "AVAILABLE"
+                              : burn.burnRequest.status}
                           </span>
                         ) : (
-                          <span className="badge badge-secondary badge-sm animate-pulse">NEW</span>
+                          <span className="badge badge-secondary badge-sm animate-pulse">
+                            NEW
+                          </span>
                         )}
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
                           {/* Show Burn button only if no pending requests */}
-                          {(!burn.burnRequest || burn.burnRequest.status === 'CANCELLED') && 
-                           !burn.refundRequest?.status && (
-                            <button
-                              type="button"
-                              onClick={() => handleCreateBurnRequest(burn)}
-                              className="btn btn-error btn-sm gap-1"
-                            >
-                              <FaFire className="w-3 h-3" /> Burn
-                            </button>
-                          )}
+                          {(!burn.burnRequest ||
+                            burn.burnRequest.status === "CANCELLED") &&
+                            !burn.refundRequest?.status && (
+                              <button
+                                type="button"
+                                onClick={() => handleCreateBurnRequest(burn)}
+                                className="btn btn-error btn-sm gap-1"
+                              >
+                                <FaFire className="w-3 h-3" /> Burn
+                              </button>
+                            )}
 
                           {/* Cancel Burn button */}
                           {canCancel(burn) && (
                             <button
                               type="button"
-                              onClick={() => burn.burnRequest && handleCancel({ id: burn.burnRequest.id, type: 'burn' })}
+                              onClick={() =>
+                                burn.burnRequest &&
+                                handleCancel({
+                                  id: burn.burnRequest.id,
+                                  type: "burn",
+                                })
+                              }
                               className="btn btn-ghost btn-sm"
                             >
                               Cancel Burn
@@ -369,7 +441,13 @@ export const BurnsTab = () => {
                           {canCancelRefund(burn) && (
                             <button
                               type="button"
-                              onClick={() => burn.refundRequest && handleCancel({ id: burn.refundRequest.id, type: 'refund' })}
+                              onClick={() =>
+                                burn.refundRequest &&
+                                handleCancel({
+                                  id: burn.refundRequest.id,
+                                  type: "refund",
+                                })
+                              }
                               className="btn btn-ghost btn-sm"
                             >
                               Cancel Refund
@@ -377,35 +455,54 @@ export const BurnsTab = () => {
                           )}
 
                           {/* Approve Burn button */}
-                          {canApproveBurn(burn) && !burn.refundRequest?.status && (
-                            <button
-                              type="button"
-                              onClick={() => burn.burnRequest && handleApproveBurn(burn.burnRequest.id)}
-                              className="btn btn-success btn-sm"
-                            >
-                              Approve Burn
-                            </button>
-                          )}
+                          {canApproveBurn(burn) &&
+                            !burn.refundRequest?.status && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  burn.burnRequest &&
+                                  handleApproveBurn(burn.burnRequest.id)
+                                }
+                                className="btn btn-success btn-sm"
+                              >
+                                Approve Burn
+                              </button>
+                            )}
 
                           {/* Refund button - only show if no pending requests */}
-                          {((!burn.refundRequest || !['DONE', 'PENDING'].includes(burn.refundRequest?.status)) && 
-                            (!burn.burnRequest || !['APPROVED', 'REFUNDED', 'PENDING'].includes(burn.burnRequest?.status))) && (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedRefund(burn)}
-                              className="btn btn-primary btn-sm gap-1"
-                              disabled={burn.burnRequest?.status === 'PENDING'}
-                              title={burn.burnRequest?.status === 'PENDING' ? 'Cancel burn request first' : undefined}
-                            >
-                              Refund
-                            </button>
-                          )}
+                          {(!burn.refundRequest ||
+                            !["DONE", "PENDING"].includes(
+                              burn.refundRequest?.status
+                            )) &&
+                            (!burn.burnRequest ||
+                              !["APPROVED", "REFUNDED", "PENDING"].includes(
+                                burn.burnRequest?.status
+                              )) && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedRefund(burn)}
+                                className="btn btn-primary btn-sm gap-1"
+                                disabled={
+                                  burn.burnRequest?.status === "PENDING"
+                                }
+                                title={
+                                  burn.burnRequest?.status === "PENDING"
+                                    ? "Cancel burn request first"
+                                    : undefined
+                                }
+                              >
+                                Refund
+                              </button>
+                            )}
 
                           {/* Approve Refund button */}
                           {canApproveRefund(burn) && (
                             <button
                               type="button"
-                              onClick={() => burn.refundRequest && handleApproveRefund(burn.refundRequest.id)}
+                              onClick={() =>
+                                burn.refundRequest &&
+                                handleApproveRefund(burn.refundRequest.id)
+                              }
                               className="btn btn-success btn-sm"
                             >
                               Approve Refund
@@ -420,7 +517,7 @@ export const BurnsTab = () => {
             </div>
           </div>
 
-          <BurnTable 
+          <BurnTable
             title="Burn History"
             burns={completedBurns}
             decimals={decimals}
@@ -434,7 +531,9 @@ export const BurnsTab = () => {
             <div className="bg-base-200 rounded-lg p-6 space-y-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="text-xs uppercase tracking-wider opacity-50">Burn Address</div>
+                  <div className="text-xs uppercase tracking-wider opacity-50">
+                    Burn Address
+                  </div>
                   <div className="text-xs text-base-content/70 flex items-center gap-2 mt-1">
                     <FaCircleInfo className="w-3 h-3" />
                     <span>Send tokens to burn</span>
@@ -474,19 +573,27 @@ export const BurnsTab = () => {
                 </div>
               </div>
 
-              <div className="font-mono text-xs break-all">
-                {burnAddress}
-              </div>
+              <div className="font-mono text-xs break-all">{burnAddress}</div>
 
               <div className="divider my-2" />
 
               <div>
-                <div className="text-xs uppercase tracking-wider opacity-50 mb-2">Current Balance</div>
+                <div className="text-xs uppercase tracking-wider opacity-50 mb-2">
+                  Current Balance
+                </div>
                 <div className="text-2xl font-bold">
                   {loading ? (
                     <span className="loading loading-spinner loading-sm" />
                   ) : (
-                    `${toToken(utxos.reduce((total, utxo) => total + Number(utxo.data.bsv21.amt), 0).toString(), decimals)} MNEE`
+                    `${toToken(
+                      utxos
+                        .reduce(
+                          (total, utxo) => total + Number(utxo.data.bsv21.amt),
+                          0
+                        )
+                        .toString(),
+                      decimals
+                    )} MNEE`
                   )}
                 </div>
               </div>
@@ -522,4 +629,4 @@ export const BurnsTab = () => {
       )}
     </div>
   );
-}; 
+};

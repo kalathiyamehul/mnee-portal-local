@@ -61,36 +61,38 @@ export const ActivityList = ({
   const [loadingReject, setLoadingReject] = useState<string | null>(null);
 
   // Implement handleReject
-  const handleReject = async (id: string) => {
-		try {
-			setLoadingReject(id);
-			const response = await fetch("/api/rejectMint", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ mintRequestId: id }),
-			});
-
-			const data = await response.json();
-
-			if (!response.ok) {
-				throw new Error(data.error || "Failed to reject mint request");
-			}
-
-			if (data.success) {
-				toast.success(data.message || "Mint request rejected");
-				// Remove onUpdate call since it's not defined in the component props
-			} else {
-				throw new Error(data.error || "Failed to reject mint request");
-			}
-		} catch (error) {
-			console.error("Failed to reject mint request:", error);
-			toast.error(error instanceof Error ? error.message : "Failed to reject mint request");
-		} finally {
-			setLoadingReject(null);
-		}
-	};
+  const handleReject = async (id: string, type: "MINT" | "BURN") => {
+    try {
+      setLoadingReject(id);
+      const endpoint = type === "MINT" ? "/api/rejectMint" : "/api/rejectBurn";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          [`${type.toLowerCase()}RequestId`]: id 
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to reject ${type.toLowerCase()} request`);
+      }
+  
+      if (data.success) {
+        toast.success(data.message || `${type} request rejected`);
+      } else {
+        throw new Error(data.error || `Failed to reject ${type.toLowerCase()} request`);
+      }
+    } catch (error) {
+      console.error(`Failed to reject ${type.toLowerCase()} request:`, error);
+      toast.error(error instanceof Error ? error.message : `Failed to reject ${type.toLowerCase()} request`);
+    } finally {
+      setLoadingReject(null);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -281,7 +283,7 @@ export const ActivityList = ({
                             <button
                               type="button"
                               className="btn btn-error btn-xs"
-                              onClick={() => handleReject(activity.id)}
+                              onClick={() => handleReject(activity.id, "MINT")}
                               disabled={loadingReject === activity.id}
                             >
                               {loadingReject === activity.id ? (
@@ -294,6 +296,25 @@ export const ActivityList = ({
                               )}
                             </button>
                           )}
+                          {/* Add Reject button for pending Burn requests not by self and not already approved */}
+                          {activity.type === "BURN" &&
+                            canApprove(activity) && (
+                              <button
+                                type="button"
+                                className="btn btn-error btn-xs"
+                                onClick={() => handleReject(activity.id, "BURN")}
+                                disabled={loadingReject === activity.id}
+                              >
+                                {loadingReject === activity.id ? (
+                                  <>
+                                    <FaSpinner className="animate-spin mr-1" />
+                                    Rejecting...
+                                  </>
+                                ) : (
+                                  "Reject"
+                                )}
+                              </button>
+                            )}
                     </div>
                   </td>
                 </tr>
