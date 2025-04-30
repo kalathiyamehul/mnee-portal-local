@@ -137,7 +137,7 @@ const TokenDetailsSection = ({
 									<FaCopy className="w-3 h-3" />
 								</button>
 								<a
-									href={`https://whatsonchain.com/tx/${config.tokenId.split('_')[0]}`}
+									href={`https://whatsonchain.com/tx/${config.tokenId.split('_')[0]}?tab=m8eqcrbs`}
 									target="_blank"
 									rel="noopener noreferrer"
 									className="btn btn-ghost btn-xs btn-square"

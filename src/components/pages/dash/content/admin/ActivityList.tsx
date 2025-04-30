@@ -218,7 +218,7 @@ export const ActivityList = ({
                                     Math.floor(vout / 10) * 10;
                                   return `https://whatsonchain.com/tx/${
                                     activity.outpoint.split("_")[0]
-                                  }?limit=10&output=${vout}&outputOffset=${outputOffset}`;
+                                  }?limit=10&output=${vout}&outputOffset=${outputOffset}&tab=m8eqcrbs`;
                                 })()}
                                 target="_blank"
                                 rel="noopener noreferrer"

@@ -303,7 +303,7 @@ export const BurnsTab = () => {
                               <FaCopy className="w-3 h-3" />
                             </button>
                             <a
-                              href={`https://whatsonchain.com/tx/${burn.txid}`}
+                              href={`https://whatsonchain.com/tx/${burn.txid}?tab=m8eqcrbs`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="btn btn-ghost btn-xs btn-square"
