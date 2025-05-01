@@ -3,6 +3,7 @@ import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
+import speakeasy from 'speakeasy';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -11,6 +12,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        token: { label: '2FA Token', type: 'text' },
         fromReset: { label: 'From Reset', type: 'text' },
       },
       async authorize(credentials) {
@@ -28,6 +30,8 @@ export const authOptions: NextAuthOptions = {
             image: true,
             emailVerified: true,
             requiresPasswordReset: true,
+            twoFactorEnabled: true,
+            twoFactorSecret: true,
           }
         });
 
@@ -35,6 +39,27 @@ export const authOptions: NextAuthOptions = {
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
+
+        // Check if 2FA is enabled and handle verification
+        if (user.twoFactorEnabled) {
+          // If no token provided, signal that 2FA is required
+          console.log(credentials);
+          if (!credentials.token) {
+            console.log("2FA_REQUIRED");
+            throw new Error("2FA_REQUIRED");
+          }
+
+          // Verify 2FA token
+          const verified = speakeasy.totp.verify({
+            secret: user.twoFactorSecret!,
+            encoding: 'base32',
+            token: credentials.token,
+          });
+
+          if (!verified) {
+            throw new Error("Invalid 2FA token");
+          }
+        }
 
         if (user.requiresPasswordReset && credentials.fromReset !== 'true') {
           return {
@@ -90,10 +115,14 @@ export const authOptions: NextAuthOptions = {
       if (trigger === "update") {
         const freshUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { requiresPasswordReset: true }
+          select: {
+            requiresPasswordReset: true,
+            twoFactorEnabled: true,
+          }
         });
         if (freshUser) {
           token.requiresPasswordReset = freshUser.requiresPasswordReset;
+          token.twoFactorEnabled = freshUser.twoFactorEnabled;
         }
       }
 

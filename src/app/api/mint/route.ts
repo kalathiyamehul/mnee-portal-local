@@ -13,7 +13,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { amount, customerId } = await request.json();
+    const { amount, customerId, no_of_approvals } = await request.json();
 
     if (!amount || !customerId) {
       return NextResponse.json(
@@ -25,6 +25,15 @@ export async function POST(request: Request) {
     if (amount <= 0) {
       return NextResponse.json(
         { error: "Amount must be greater than 0" },
+        { status: 400 }
+      );
+    }
+
+    // Validate no_of_approvals
+    const noOfApprovals = parseInt(no_of_approvals);
+    if (isNaN(noOfApprovals) || noOfApprovals < 0) {
+      return NextResponse.json(
+        { error: "No of Approvals must be a non-negative integer" },
         { status: 400 }
       );
     }
@@ -92,6 +101,7 @@ export async function POST(request: Request) {
           status: 'PENDING',
           requestedBy: session.user.id,
           customerId,
+          no_of_approvals: noOfApprovals,
         },
       });
 

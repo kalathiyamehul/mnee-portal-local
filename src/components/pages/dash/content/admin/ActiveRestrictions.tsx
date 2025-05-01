@@ -31,16 +31,16 @@ export const ActiveRestrictions = ({
   handleApprove,
   session
 }: ActiveRestrictionsProps) => {
-  useEffect(() => {
-    for (const status of restrictions) {
-      console.log('Status for address:', status.address, {
-        isFrozen: status.isFrozen,
-        hasPendingFreeze: status.hasPendingFreeze,
-        pendingFreezeAction: status.pendingFreezeAction,
-        requester: status.requester
-      });
-    }
-  }, [restrictions]);
+  // useEffect(() => {
+  //   for (const status of restrictions) {
+  //     console.log('Status for address:', status.address, {
+  //       isFrozen: status.isFrozen,
+  //       hasPendingFreeze: status.hasPendingFreeze,
+  //       pendingFreezeAction: status.pendingFreezeAction,
+  //       requester: status.requester
+  //     });
+  //   }
+  // }, [restrictions]);
 
   console.log('restrictions', restrictions);
 

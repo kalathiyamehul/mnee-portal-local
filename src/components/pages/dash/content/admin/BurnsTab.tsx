@@ -76,7 +76,7 @@ export const BurnsTab = () => {
       setUtxos(fetchedTransferUtxos);
 
       // burns only
-      const fetchedBurnUtxos = await fetchMneeUtxos([address], ["burn"]);
+      const fetchedBurnUtxos = await fetchMneeUtxos([address], ['burn']);
       // console.log('Burn UTXOs:', fetchedBurnUtxos);
       setBurnUtxos(fetchedBurnUtxos);
     } catch (err) {
