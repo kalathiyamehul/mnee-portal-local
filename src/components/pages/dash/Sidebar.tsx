@@ -9,12 +9,14 @@ import { FaWallet, FaSignOutAlt, FaUsers } from "react-icons/fa";
 import { TbActivityHeartbeat } from "react-icons/tb";
 import { motion } from "framer-motion";
 import { getGravatarUrl } from "@/utils/gravatar";
+import { FaExchangeAlt } from "react-icons/fa"; // Add this import for a transaction icon
 
 const menuItems = [
   { name: "Dashboard", href: "/dash", icon: TbActivityHeartbeat },
   { name: "Wallet", href: "/dash/wallet", icon: FaWallet },
   { name: "Customers", href: "/dash/customers", icon: FaUsers },
   { name: "Admin", href: "/dash/admin", icon: FaGear },
+  { name: "Transactions", href: "/dash/transactions", icon: FaExchangeAlt },
   { name: "Config", href: "/dash/settings", icon: FaSliders },
   { name: "Roles", href: "/dash/roles", icon: FaUsers },
 ];

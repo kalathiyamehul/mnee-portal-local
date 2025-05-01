@@ -6,6 +6,7 @@ import DashboardWalletContent from "./content/wallet"
 import DashboardAdminContent from "./content/admin"
 import DashboardSettingsContent from './content/settings';
 import DashboardCustomersContent from "./content/customers";
+import DashboardTransactionsContent from "./content/transactions"; // <-- Add this import
 import { Config } from "@prisma/client"
 import type { DashPage } from "@/types/dashboard"
 import { DashPages } from "@/types/dashboard"
@@ -31,6 +32,8 @@ const Dashboard: React.FC<DashboardProps> = ({ page, defaultTab, defaultShowTran
                 return <DashboardSettingsContent />
             case DashPages.CUSTOMERS:
                 return <DashboardCustomersContent />
+            case DashPages.TRANSACTIONS: // <-- Add this case
+                return <DashboardTransactionsContent />
             default:
                 return <div>Not Found</div>
         }
