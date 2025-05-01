@@ -19,14 +19,86 @@ interface CustomerModalProps {
 export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalProps) {
   const { createCustomer, updateCustomer } = useCustomer();
   const [loading, setLoading] = useState(false);
+  // Add validation states
+  const [errors, setErrors] = useState({
+    name: '',
+    email: '',
+    address: ''
+  });
+  
   const [formData, setFormData] = useState({
     name: customer?.name || "",
     email: customer?.email || "",
     address: customer?.address || "",
   });
 
+  // Validation functions
+  const validateName = (name: string) => {
+    if (name.length < 2) return "Name must be at least 2 characters long";
+    if (name.length > 50) return "Name must be less than 50 characters";
+    if (!/^[a-zA-Z\s'-]+$/.test(name)) return "Name can only contain letters, spaces, hyphens and apostrophes";
+    return "";
+  };
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Fix email validation logic
+    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    if (email.length > 255) return "Email is too long";
+    return "";
+  };
+
+  const validateAddress = (address: string) => {
+    // Bitcoin address validation
+    if (!address.startsWith('1')) return "Invalid Ordinals Address";
+    if (!/^1[A-Za-z0-9]{25,34}$/.test(address)) {
+      return "Invalid Address Format";
+    }
+    if (/\s/.test(address)) return "Address cannot contain spaces";
+    if (/[^A-Za-z0-9]/.test(address.slice(1))) return "Address can only contain letters and numbers";
+    return "";
+  };
+
+  // Handle input changes with validation
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    let error = '';
+    switch (field) {
+      case 'name':
+        error = validateName(value);
+        break;
+      case 'email':
+        error = validateEmail(value);
+        break;
+      case 'address':
+        error = validateAddress(value);
+        break;
+    }
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate all fields before submission
+    const nameError = validateName(formData.name);
+    const emailError = validateEmail(formData.email);
+    const addressError = validateAddress(formData.address);
+
+    setErrors({
+      name: nameError,
+      email: emailError,
+      address: addressError
+    });
+
+    // Improved error feedback
+    if (nameError || emailError || addressError) {
+      const firstError = [nameError, emailError, addressError].find(e => e);
+      toast.error(firstError || "Please fix the form errors");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -46,53 +118,63 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
     }
   };
 
+  // Update form inputs to include error messages
   return (
     <dialog id="customer_modal" className="modal modal-open">
       <div className="modal-box max-w-lg">
         <h3 className="text-lg font-bold mb-6">{customer ? 'Edit' : 'Add New'} Customer</h3>
         <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <label className="form-control w-full mb-4">
-              <div className="label">
-                <span className="label-text">Customer Name</span>
-              </div>
+          <div className="space-y-6">
+            <div className="form-control w-full mb-4">
+              <label className="label label-text">
+                Customer Name
+              </label>
               <input
                 type="text"
-                className="input input-bordered w-full max-w-md"
+                className={`input input-bordered w-full max-w-md ${errors.name ? 'input-error' : ''}`}
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => handleInputChange('name', e.target.value)}
                 placeholder="Enter customer name"
                 required
               />
-            </label>
+              {errors.name && <div className="label">
+                <span className="label-text-alt text-error">{errors.name}</span>
+              </div>}
+            </div>
 
-            <label className="form-control w-full mb-4">
-              <div className="label">
-                <span className="label-text">Email Address</span>
-              </div>
+            <div className="form-control w-full mb-4">
+              <label className="label label-text">
+                Email Address
+              </label>
               <input
                 type="email"
-                className="input input-bordered w-full max-w-md"
+                className={`input input-bordered w-full max-w-md ${errors.email ? 'input-error' : ''}`}
                 value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                onChange={(e) => handleInputChange('email', e.target.value)}
                 placeholder="Enter customer email"
                 required
               />
-            </label>
+              {errors.email && <div className="label">
+                <span className="label-text-alt text-error">{errors.email}</span>
+              </div>}
+            </div>
 
-            <label className="form-control w-full mb-4">
-              <div className="label">
-                <span className="label-text">Ordinals Address</span>
-              </div>
+            <div className="form-control w-full mb-4">
+              <label className="label label-text">
+                Ordinals Address
+              </label>
               <input
                 type="text"
-                className="input input-bordered w-full max-w-md font-mono"
+                className={`input input-bordered w-full max-w-md font-mono ${errors.address ? 'input-error' : ''}`}
                 value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                onChange={(e) => handleInputChange('address', e.target.value)}
                 placeholder="Enter 1Sat Ordinals address"
                 required
               />
-            </label>
+              {errors.address && <div className="label">
+                <span className="label-text-alt text-error">{errors.address}</span>
+              </div>}
+            </div>
           </div>
 
           <div className="modal-action">
@@ -124,4 +206,4 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
       <div className="modal-backdrop" onClick={onClose}></div>
     </dialog>
   );
-} 
+}

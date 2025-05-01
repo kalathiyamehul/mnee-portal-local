@@ -88,7 +88,7 @@ export const BurnTable = ({
 							burns.map(burn => {
 								const amount = burn.data.bsv21.amt;
 								const status = burn.burnRequest?.status || 'PENDING';
-								const createdAt = burn.burnRequest?.createdAt || new Date().toISOString();
+								const createdAt = burn.burnRequest?.createdAt || '';
 
 								return (
 									<tr key={burn.outpoint}>
