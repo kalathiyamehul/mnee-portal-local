@@ -23,7 +23,7 @@ export async function POST(request: Request) {
         }
 
         const payload = JSON.parse(body);
-        const { amount, outpoint } = payload;
+        const { amount, outpoint, no_of_approvals } = payload;
 
         if (!amount || !outpoint) {
             return NextResponse.json(
@@ -96,6 +96,7 @@ export async function POST(request: Request) {
             requestedBy: session.user.id,
             outpoint,
             status: 'PENDING' as const,
+            no_of_approvals: no_of_approvals ?? 2, // Use provided or default
         };
 
         const burnRequest = await prisma.burnRequest.create({
@@ -127,4 +128,4 @@ export async function POST(request: Request) {
             { status: 500 }
         );
     }
-} 
+}

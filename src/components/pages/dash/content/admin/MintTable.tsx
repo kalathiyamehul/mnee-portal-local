@@ -283,33 +283,46 @@ const MintTableContent = ({
 							</td>
 							<td>
 								<div className="flex flex-col gap-1">
-									<span className="font-mono text-sm">
+									<a
+										href={`https://whatsonchain.com/address/${mint.address}`}
+										target="_blank"
+										rel="noopener noreferrer"
+									>
+										<span className="font-mono text-sm">
 										{mint.address?.slice(0, 8)}...{mint.address?.slice(-8)}
-									</span>
-									<div className="flex items-center gap-1">
-										<div className="tooltip tooltip-bottom" data-tip="Copy Address">
-											<button
-												type="button"
-												onClick={() => {
-													if (mint.address) {
-														navigator.clipboard.writeText(mint.address);
-														toast.success("Address copied");
-													}
-												}}
-												className="btn btn-ghost btn-xs text-base-content/70 hover:text-base-content"
-											>
-												<FaCopy className="w-3 h-3" />
-											</button>
+										</span>
+									</a>
+									<div className="flex items-center">
+										<div
+										className="tooltip tooltip-bottom"
+										data-tip="Copy Address"
+										>
+										<button
+											type="button"
+											onClick={() => {
+											if (mint.address) {
+												navigator.clipboard.writeText(mint.address);
+												toast.success("Address copied");
+											}
+											}}
+											className="btn btn-ghost btn-xs text-base-content/70 hover:text-base-content"
+										>
+											<FaCopy className="w-3 h-3" />
+										</button>
 										</div>
-										<div className="tooltip tooltip-bottom" data-tip="View on WhatsOnChain">
-											<a
-												href={`https://whatsonchain.com/address/${mint.address}`}
-												target="_blank"
-												rel="noopener noreferrer"
-												className="btn btn-ghost btn-xs text-base-content/70 hover:text-base-content"
-											>
-												<MdOutlineOpenInNew className="w-3 h-3" />
-											</a>
+										<div
+										className="tooltip tooltip-bottom"
+										data-tip="View on WhatsOnChain"
+										>
+										<a
+											href={`https://whatsonchain.com/address/${mint.address}`}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="btn btn-link btn-xs"
+										>
+											View on Explorer{" "}
+											<MdOutlineOpenInNew className="w-3 h-3" />
+										</a>
 										</div>
 									</div>
 								</div>
