@@ -163,6 +163,7 @@ model BurnRequest {
   amount          BigInt      @db.BigInt
   status          ActionStatus @default(PENDING)
   requestedBy     String       @map("requested_by")
+  no_of_approvals Int         @default(2)
   requiresApproval Boolean     @default(true) @map("requires_approval")
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
