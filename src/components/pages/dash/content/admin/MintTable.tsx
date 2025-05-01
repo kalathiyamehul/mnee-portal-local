@@ -70,10 +70,10 @@ const MintTableContent = ({
   showActions: boolean;
   showRequester: boolean;
 }) => {
-  const [config, setConfig] = useState<Config | null>(null);
-  const [loadingApproval, setLoadingApproval] = useState<string | null>(null);
-  const [loadingReject, setLoadingReject] = useState<string | null>(null); // <-- Add this line
-  const router = useRouter();
+	const [config, setConfig] = useState<Config | null>(null);
+	const [loadingApproval, setLoadingApproval] = useState<string | null>(null);
+	const [loadingReject, setLoadingReject] = useState<string | null>(null); // <-- Add this line
+	const router = useRouter();
 
   const hasUserApproved = (mint: Activity) => {
     if (!session?.user?.email) return false;
@@ -201,13 +201,13 @@ const MintTableContent = ({
 		}
 	};
 
-  if (mints.length === 0) {
-    return (
-      <div className="text-center py-8 text-base-content/70">
-        No mint requests found
-      </div>
-    );
-  }
+	if (mints.length === 0) {
+		return (
+			<div className="text-center py-8 text-base-content/70">
+				No mint requests found
+			</div>
+		);
+	}
 
   if (!config) {
     return (

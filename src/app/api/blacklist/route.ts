@@ -16,7 +16,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+
   const { address, action, no_of_approvals, reason } = await request.json();
+
 
   // Validate input
   if (!address) {
