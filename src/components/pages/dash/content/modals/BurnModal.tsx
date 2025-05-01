@@ -20,7 +20,7 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
   const handleBurn = async () => {
     setIsLoading(true);
     try {
-      console.log('Starting burn request with:', { amount, utxo });
+      // console.log('Starting burn request with:', { amount, utxo });
       
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       const payload = {
@@ -28,7 +28,7 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
         outpoint,
       };
       
-      console.log('Prepared burn payload:', payload);
+      // console.log('Prepared burn payload:', payload);
 
       const response = await fetch('/api/burn', {
         method: 'POST',
@@ -40,9 +40,9 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
         cache: 'no-store',
       });
 
-      console.log('Burn API response status:', response.status);
+      // console.log('Burn API response status:', response.status);
       const data = await response.json();
-      console.log('Burn API response data:', data);
+      // console.log('Burn API response data:', data);
 
       if (!response.ok) {
         console.error('Burn request failed:', data);

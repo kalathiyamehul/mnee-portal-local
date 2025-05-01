@@ -67,7 +67,7 @@ const Sidebar: React.FC = () => {
         </nav>
         <div className="mt-auto border-t border-base-300">
           <div className="p-4">
-            <div className="flex items-center gap-3 px-4 py-2 rounded-lg text-base-content/70 hover:bg-base-300/30 transition-colors duration-300">
+            <Link href='/profile' className="flex items-center gap-3 px-4 py-2 rounded-lg text-base-content/70 hover:bg-base-300/30 transition-colors duration-300">
               <div className="avatar">
                 <div className="mask mask-squircle w-10 h-10">
                   <img
@@ -81,7 +81,7 @@ const Sidebar: React.FC = () => {
                   {session?.user?.email}
                 </div>
               </div>
-            </div>
+            </Link>
             <Link 
               href="/logout" 
               className="flex items-center gap-3 px-4 py-2 mt-2 rounded-lg text-base-content/70 hover:text-base-content hover:bg-base-300/30 transition-colors duration-300"

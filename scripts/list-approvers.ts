@@ -42,18 +42,18 @@ async function main() {
       }
     });
 
-    console.log('\nMint Request Details:');
-    console.log('====================');
-    console.log(`ID: ${mintRequest.id}`);
-    console.log(`Amount: ${mintRequest.amount}`);
-    console.log(`Requester: ${mintRequest.requester.email}`);
-    console.log('\nCurrent Approvers:');
-    for (const approval of mintRequest.approvals) {
-      console.log(`- ${approval.approver.email} (${approval.approvedBy})`);
-    }
+    // console.log('\nMint Request Details:');
+    // console.log('====================');
+    // console.log(`ID: ${mintRequest.id}`);
+    // console.log(`Amount: ${mintRequest.amount}`);
+    // console.log(`Requester: ${mintRequest.requester.email}`);
+    // console.log('\nCurrent Approvers:');
+    // for (const approval of mintRequest.approvals) {
+    //   console.log(`- ${approval.approver.email} (${approval.approvedBy})`);
+    // }
 
-    console.log('\nEligible Approvers:');
-    console.log('==================');
+    // console.log('\nEligible Approvers:');
+    // console.log('==================');
     const existingApproverIds = mintRequest.approvals.map(a => a.approvedBy);
     const eligibleUsers = users.filter(user => !existingApproverIds.includes(user.id));
     

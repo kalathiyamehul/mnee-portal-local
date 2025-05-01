@@ -79,7 +79,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
   // Fetch customer balance
   useEffect(() => {
     const fire = async () => {
-      console.log('Fetching balance for customer:', data.customer.address);
+      // console.log('Fetching balance for customer:', data.customer.address);
       await fetchBalances([data.customer.address]);
     }
 
@@ -256,7 +256,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
                     <td>
                       {mint.txid && (
                         <a
-                          href={`https://whatsonchain.com/tx/${mint.txid}`}
+                          href={`https://whatsonchain.com/tx/${mint.txid}?tab=m8eqcrbs`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="link link-hover font-mono text-xs"
@@ -298,7 +298,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
                     <td>
                       {burn.txid && (
                         <a
-                          href={`https://whatsonchain.com/tx/${burn.txid}`}
+                          href={`https://whatsonchain.com/tx/${burn.txid}?tab=m8eqcrbs`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="link link-hover font-mono text-xs"

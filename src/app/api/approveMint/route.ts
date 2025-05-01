@@ -142,9 +142,10 @@ export async function POST(request: Request) {
 					approvedBy: session.user.id,
 				},
 			});
+			console.log("Checking for existing approval", existingApproval);
 
 			if (existingApproval) {
-				console.log("User has already approved");
+				// console.log("User has already approved");
 				throw new Error("You have already approved this request");
 			}
 
@@ -189,7 +190,7 @@ export async function POST(request: Request) {
 			});
 			console.log("Current approval count:", approvalsCount);
 
-			if (approvalsCount === 2) {
+			if (approvalsCount === mintRequest.no_of_approvals) {
 				console.log("Required approvals reached, updating status to APPROVED");
 				// Update request status to APPROVED
 				await tx.mintRequest.update({
