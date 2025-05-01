@@ -12,8 +12,6 @@ import { useEffect, useState } from "react";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePathname } from "next/navigation";
 import { MdOutlineOpenInNew } from "react-icons/md";
-import toast from "react-hot-toast";
-import { FaSpinner } from "react-icons/fa6";
 
 export const ActivityList = ({
   showOnlyPending,
@@ -314,64 +312,6 @@ export const ActivityList = ({
                               </a>
                             </div>
                           )}
-                          {(activity.type === 'FREEZE' || activity.type === 'BLACKLIST') && (
-                          <div className="text-sm font-mono flex flex-col">
-                            <p className="opacity-70">Address: {activity.address}</p>
-                          </div>
-                        )}
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="flex flex-col gap-1">
-                        {activity.customer && (
-                          <>
-                            <div className="text-sm">
-                              <span className="opacity-70">Customer:</span> {activity.customer.name}
-                            </div>
-                            <div className="text-sm opacity-70">{activity.customer.email}</div>
-                          </>
-                        )}
-                        {(activity.type === 'FREEZE' || activity.type === 'BLACKLIST' || (activity.type === 'MINT' && !activity.customer)) && activity.address && (
-                          <div className="text-sm font-mono flex flex-col">
-                            <p className="opacity-70">Reason: {activity?.reason}</p>
-                          </div>
-                        )}
-                        {activity.type === 'BURN' && activity.outpoint && (
-                          <div className="text-sm font-mono">
-                            <span className="opacity-70">Outpoint:</span>{' '}
-                            <a 
-                              href={(() => {
-                                const vout = Number.parseInt(activity.outpoint.split('_')[1], 10);
-                                const outputOffset = Math.floor(vout / 10) * 10;
-                                return `https://whatsonchain.com/tx/${activity.outpoint.split('_')[0]}?limit=10&output=${vout}&outputOffset=${outputOffset}&tab=m8eqcrbs`;
-                              })()}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="hover:underline"
-                              title={activity.outpoint}
-                            >
-                              {activity.outpoint.split('_')[0].slice(0, 8)}...{activity.outpoint.split('_')[0].slice(-8)}_{activity.outpoint.split('_')[1]}
-                            </a>
-                          </div>
-                        )}
-                        {activity.type === 'REFUND' && activity.outpoint && (
-                          <div className="text-sm font-mono">
-                            <span className="opacity-70">Outpoint:</span>{' '}
-                            <a 
-                              href={(() => {
-                                const vout = Number.parseInt(activity.outpoint.split('_')[1], 10);
-                                const outputOffset = Math.floor(vout / 10) * 10;
-                                return `https://whatsonchain.com/tx/${activity.outpoint.split('_')[0]}?limit=10&output=${vout}&outputOffset=${outputOffset}&tab=m8eqcrbs`;
-                              })()}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn btn-link btn-xs px-0"
-                            >
-                              View on Explorer{" "}
-                              <MdOutlineOpenInNew className="w-3 h-3" />
-                            </a>
-                          </div>
                         </div>
                       </td>
                       {showRequester && (
@@ -453,56 +393,15 @@ export const ActivityList = ({
                             </button>
                           )}
                           {canApprove(activity) && (
-                            <div className="flex gap-2 items-center">
-                              <button
-                                type="button"
-                                className="btn btn-primary btn-xs"
-                                onClick={() =>
-                                  handleApprove(activity.id, activity.type)
-                                }
-                              >
-                                Approve
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                    )}
-                    <td>
-                      <div className="flex flex-col gap-1">
-                        <span className={`badge ${getStatusBadgeClass(activity.status)}`}>
-                          {activity.status}
-                        </span>
-                        {activity.status === 'PENDING' && needsApproval && (
-                          <span className="text-xs opacity-70">
-                            {approvalCount}/2 Approvals
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="flex gap-2 justify-end">
-                        {canCancel(activity) && (
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-xs"
-                            onClick={() => handleCancel(activity.id, activity.type)}
-                          >
-                            Cancel
-                          </button>
-                        )}
-                        {canApprove(activity) && (
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-xs"
-                            onClick={() => handleApprove(activity.id, activity.type)}
-                          >
-                            Approve
-                          </button>
-                        )}
-                        {/* Add Reject button for pending mint requests not by self and not already approved */}
-                        {activity.type === "MINT" &&
-                          canApprove(activity) && (
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-xs"
+                              onClick={() =>
+                                handleApprove(activity.id, activity.type)
+                              }
+                            >
+                              Approve
+                            </button>
                           )}
                           {/* Add Reject button for pending mint requests not by self and not already approved */}
                           {activity.type === "MINT" && canApprove(activity) && (
@@ -523,31 +422,30 @@ export const ActivityList = ({
                             </button>
                           )}
                           {/* Add Reject button for pending Burn requests not by self and not already approved */}
-                          {activity.type === "BURN" &&
-                            canApprove(activity) && (
-                              <button
-                                type="button"
-                                className="btn btn-error btn-xs"
-                                onClick={() => handleReject(activity.id, "BURN")}
-                                disabled={loadingReject === activity.id}
-                              >
-                                {loadingReject === activity.id ? (
-                                  <>
-                                    <FaSpinner className="animate-spin mr-1" />
-                                    Rejecting...
-                                  </>
-                                ) : (
-                                  "Reject"
-                                )}
-                              </button>
-                            )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                          {activity.type === "BURN" && canApprove(activity) && (
+                            <button
+                              type="button"
+                              className="btn btn-error btn-xs"
+                              onClick={() => handleReject(activity.id, "BURN")}
+                              disabled={loadingReject === activity.id}
+                            >
+                              {loadingReject === activity.id ? (
+                                <>
+                                  <FaSpinner className="animate-spin mr-1" />
+                                  Rejecting...
+                                </>
+                              ) : (
+                                "Reject"
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
 
             {totalItems > itemsPerPage && ( // Only show pagination if there are more items than per page limit
               <div className="mt-4">
@@ -566,4 +464,3 @@ export const ActivityList = ({
     </div>
   );
 };
-
