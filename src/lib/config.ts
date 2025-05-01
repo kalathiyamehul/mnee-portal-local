@@ -25,21 +25,21 @@ export const getConfig = cache(async (forceFresh = false): Promise<Config | null
 
   // Check in-memory cache first
   if (!forceFresh && configCache.data && (now - configCache.timestamp) < CACHE_TTL) {
-    console.log(
-      'Config: Cache hit #%d, age: %ds, caller: %s', 
-      configCache.requestCount,
-      Math.round((now - configCache.timestamp) / 1000),
-      new Error().stack?.split('\n')[2]?.trim() || 'unknown'
-    );
+    // console.log(
+    //   'Config: Cache hit #%d, age: %ds, caller: %s', 
+    //   configCache.requestCount,
+    //   Math.round((now - configCache.timestamp) / 1000),
+    //   new Error().stack?.split('\n')[2]?.trim() || 'unknown'
+    // );
     return configCache.data;
   }
 
   // Log cache miss or force refresh
-  console.log(
-    'Config: %s, caller: %s',
-    forceFresh ? 'Force refresh' : 'Cache miss',
-    new Error().stack?.split('\n')[2]?.trim() || 'unknown'
-  );
+  // console.log(
+  //   'Config: %s, caller: %s',
+  //   forceFresh ? 'Force refresh' : 'Cache miss',
+  //   new Error().stack?.split('\n')[2]?.trim() || 'unknown'
+  // );
 
   // Fetch fresh data
   const config = await prisma.config.findFirst({
@@ -59,12 +59,12 @@ export const getConfig = cache(async (forceFresh = false): Promise<Config | null
 // Function to invalidate the cache when config is updated
 export async function invalidateConfigCache() {
   'use server';
-  console.log('Config: Cache invalidated by:', new Error().stack?.split('\n')[2]?.trim() || 'unknown');
-  configCache = {
-    data: null,
-    timestamp: 0,
-    requestCount: 0,
-  };
+  // console.log('Config: Cache invalidated by:', new Error().stack?.split('\n')[2]?.trim() || 'unknown');
+  // configCache = {
+  //   data: null,
+  //   timestamp: 0,
+  //   requestCount: 0,
+  // };
 }
 
 // Revalidate config in all active sessions

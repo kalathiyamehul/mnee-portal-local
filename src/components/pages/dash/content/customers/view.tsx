@@ -79,7 +79,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
   // Fetch customer balance
   useEffect(() => {
     const fire = async () => {
-      console.log('Fetching balance for customer:', data.customer.address);
+      // console.log('Fetching balance for customer:', data.customer.address);
       await fetchBalances([data.customer.address]);
     }
 

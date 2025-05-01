@@ -1,26 +1,35 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { CustomerModal } from '../modals/CustomerModal';
-import { formatDistanceToNow } from 'date-fns';
-import { FaUserPlus, FaEdit } from 'react-icons/fa';
-import { MdOutlineOpenInNew } from 'react-icons/md';
-import { useCustomer } from '@/contexts/CustomerContext';
-import { useBalance } from '@/contexts/BalanceContext';
-import { getGravatarUrl } from '@/utils/gravatar';
-import { getConfig } from '@/lib/config';
-import { toToken } from 'satoshi-token';
-import type { Config, Customer } from '@prisma/client';
-import { FetchStatus } from '@/types/common';
-import { ErrorIcon } from 'react-hot-toast';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { CustomerModal } from "../modals/CustomerModal";
+import { formatDistanceToNow } from "date-fns";
+import { FaUserPlus, FaEdit } from "react-icons/fa";
+import {
+  MdOutlineArrowBack,
+  MdOutlineArrowForward,
+  MdOutlineOpenInNew,
+} from "react-icons/md";
+import { useCustomer } from "@/contexts/CustomerContext";
+import { useBalance } from "@/contexts/BalanceContext";
+import { getGravatarUrl } from "@/utils/gravatar";
+import { getConfig } from "@/lib/config";
+import { toToken } from "satoshi-token";
+import type { Config, Customer } from "@prisma/client";
+import { FetchStatus } from "@/types/common";
+import { ErrorIcon } from "react-hot-toast";
+import { Pagination } from "@/components/common/Pagination";
+import { ExportButtons } from "@/components/common/ExportButtons";
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
-  const { customers, loading, error, fetchCustomers } = useCustomer();
+  const { customers, loading, error, fetchCustomers, pagination } =
+    useCustomer();
   const { balances, fetchBalances, balancesLoading } = useBalance();
   const [showModal, setShowModal] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
   const [config, setConfig] = useState<Config | null>(null);
 
   useEffect(() => {
@@ -29,39 +38,22 @@ export default function DashboardCustomersContent() {
         const configData = await getConfig();
         setConfig(configData);
       } catch (error) {
-        console.error('Error loading config:', error);
+        console.error("Error loading config:", error);
       }
     };
     init();
   }, []);
 
   useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
+    fetchCustomers(pagination.page, pagination.limit);
+  }, [fetchCustomers, pagination.page, pagination.limit]);
 
   useEffect(() => {
-    console.log('Balance fetch effect triggered:', {
-      hasCustomers: !!customers?.length,
-      customerAddresses: customers?.map(c => c.address),
-      balancesLoading,
-      customersLoading: loading
-    });
+    if (loading) return;
 
-    // Don't fetch if customers are still loading
-    if (loading) {
-      console.log('Skipping balance fetch - customers still loading');
-      return;
-    }
-
-    const addresses = customers?.map(c => c.address).filter(Boolean);
+    const addresses = customers?.map((c) => c.address).filter(Boolean);
     if (addresses?.length && balancesLoading === FetchStatus.IDLE) {
-      console.log('Fetching balances for addresses:', addresses);
       fetchBalances(addresses);
-    } else {
-      console.log('Skipping balance fetch:', {
-        hasAddresses: !!addresses?.length,
-        balancesLoading
-      });
     }
   }, [customers, fetchBalances, balancesLoading, loading]);
 
@@ -87,18 +79,47 @@ export default function DashboardCustomersContent() {
     setShowModal(true);
   };
 
+  const handlePageChange = (page: number) => {
+    fetchCustomers(page, pagination.limit);
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await fetch("/api/customers?page=-1&limit=-1");
+      if (!response.ok) {
+        throw new Error("Failed to fetch customers for export");
+      }
+      const data = await response.json();
+
+      return data.customers.map((customer: any) => ({
+        ID: customer.id,
+        Name: customer.name,
+        Email: customer.email,
+        Address: customer.address,
+        "Created By": customer.creator.email,
+        "Created At": new Date(customer.createdAt).toLocaleDateString(),
+      }));
+    } catch (error) {
+      console.error("Error exporting customers:", error);
+      throw error;
+    }
+  };
+
   return (
     <div className="p-4 space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Customers</h1>
-        <button
-          type="button"
-          onClick={() => setShowModal(true)}
-          className="btn btn-primary btn-sm gap-2"
-        >
-          <FaUserPlus className="w-4 h-4" />
-          Add Customer
-        </button>
+        <div className="flex gap-2">
+          <ExportButtons filename="customers" onExport={handleExport} />
+          <button
+            type="button"
+            onClick={() => setShowModal(true)}
+            className="btn btn-primary btn-sm gap-2"
+          >
+            <FaUserPlus className="w-4 h-4" />
+            Add Customer
+          </button>
+        </div>
       </div>
 
       <div className="overflow-x-auto">
@@ -130,7 +151,9 @@ export default function DashboardCustomersContent() {
                     </div>
                     <div>
                       <div className="font-medium">{customer.name}</div>
-                      <div className="text-sm text-base-content/70">{customer.email}</div>
+                      <div className="text-sm text-base-content/70">
+                        {customer.email}
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -152,12 +175,16 @@ export default function DashboardCustomersContent() {
                       </a>
                     </div>
                     <div className="text-sm text-base-content/70">
-                      Balance: {balancesLoading === FetchStatus.LOADING ? (
+                      Balance:{" "}
+                      {balancesLoading === FetchStatus.LOADING ? (
                         <span className="loading loading-spinner loading-xs" />
                       ) : balancesLoading === FetchStatus.ERROR ? (
                         "X MNEE"
                       ) : balances[customer.address] !== undefined ? (
-                        `${toToken(balances[customer.address].toString(), config.decimals)} MNEE`
+                        `${toToken(
+                          balances[customer.address].toString(),
+                          config.decimals
+                        )} MNEE`
                       ) : (
                         "0 MNEE"
                       )}
@@ -175,9 +202,13 @@ export default function DashboardCustomersContent() {
                       </div>
                     </div>
                     <div>
-                      <div className="font-medium">{customer.creator.email}</div>
+                      <div className="font-medium">
+                        {customer.creator.email}
+                      </div>
                       <div className="text-sm text-base-content/70">
-                        {formatDistanceToNow(new Date(customer.createdAt), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(customer.createdAt), {
+                          addSuffix: true,
+                        })}
                       </div>
                     </div>
                   </div>
@@ -188,15 +219,18 @@ export default function DashboardCustomersContent() {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleEdit({
-                          id: customer.id,
-                          name: customer.name,
-                          email: customer.email,
-                          address: customer.address,
-                          createdBy: customer.creator.email,
-                          createdAt: new Date(customer.createdAt),
-                          updatedAt: new Date(customer.createdAt)
-                        }, e);
+                        handleEdit(
+                          {
+                            id: customer.id,
+                            name: customer.name,
+                            email: customer.email,
+                            address: customer.address,
+                            createdBy: customer.creator.email,
+                            createdAt: new Date(customer.createdAt),
+                            updatedAt: new Date(customer.createdAt),
+                          },
+                          e
+                        );
                       }}
                       className="btn btn-ghost btn-sm gap-2"
                       title="Edit customer"
@@ -220,7 +254,10 @@ export default function DashboardCustomersContent() {
             ))}
             {!customers?.length && (
               <tr>
-                <td colSpan={4} className="text-center py-4 text-base-content/70">
+                <td
+                  colSpan={4}
+                  className="text-center py-4 text-base-content/70"
+                >
                   No customers found
                 </td>
               </tr>
@@ -228,6 +265,16 @@ export default function DashboardCustomersContent() {
           </tbody>
         </table>
       </div>
+
+      {customers && customers.length > 0 && (
+        <Pagination
+          currentPage={pagination.page}
+          totalPages={pagination.totalPages}
+          itemsPerPage={pagination.limit}
+          totalItems={pagination.total}
+          onPageChange={handlePageChange}
+        />
+      )}
 
       {showModal && (
         <CustomerModal
@@ -239,10 +286,10 @@ export default function DashboardCustomersContent() {
           onSuccess={() => {
             setShowModal(false);
             setSelectedCustomer(null);
-            fetchCustomers();
+            fetchCustomers(pagination.page, pagination.limit);
           }}
         />
       )}
     </div>
   );
-} 
+}

@@ -16,12 +16,13 @@ const opts = program.opts();
 
 async function approveMint(requestId: string, userId: string) {
   try {
+    console.log('Recieved Request', requestId, userId);
     // Verify the mint request exists and is pending
     const mintRequest = await prisma.mintRequest.findUnique({
       where: { id: requestId },
       include: { approvals: true }
     });
-
+    console.log("Mint Request:", mintRequest);
     if (!mintRequest) {
       throw new Error('Mint request not found');
     }
@@ -37,7 +38,7 @@ async function approveMint(requestId: string, userId: string) {
         approvedBy: userId
       }
     });
-
+    console.log('Existing Approval:', existingApproval);
     if (existingApproval) {
       throw new Error('User has already approved this request');
     }
@@ -62,14 +63,14 @@ async function approveMint(requestId: string, userId: string) {
       }
     });
 
-    if (approvalCount >= 2) {
+    if (approvalCount >= mintRequest.no_of_approvals) {
       await prisma.mintRequest.update({
         where: { id: requestId },
         data: { status: 'APPROVED' }
       });
       console.log('Request now has sufficient approvals (2 non-requester approvals) and has been marked as APPROVED');
     } else {
-      console.log(`Request has ${approvalCount} non-requester approval(s), needs 2 for completion`);
+      console.log(`Request has ${approvalCount} non-requester approval(s), needs ${mintRequest.no_of_approvals} for completion`);
     }
 
   } catch (error) {
