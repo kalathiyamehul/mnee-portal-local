@@ -6,5 +6,6 @@ export const DashPages = {
     HOME: "home" as DashPage,
     WALLET: "wallet" as DashPage,
     SETTINGS: "settings" as DashPage,
-    TRANSACTIONS: "Transections" as DashPage,
+    TRANSACTIONS: "transections" as DashPage,
+    SUPER_ADMIN: "superadmin" as DashPage,
 } as const; 

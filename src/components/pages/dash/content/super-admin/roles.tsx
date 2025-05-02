@@ -1,3 +1,6 @@
+// This should contain the existing role management code from:
+// d:\Timechain Labs Projects\mnee-portal\src\app\(authenticated)\dash\super-admin\roles\page.tsx
+// (Full implementation moved to components directory)
 "use client";
 
 import { useState, useEffect } from "react";
@@ -472,59 +475,6 @@ export default function RolesPage() {
           </div>
         </div>
       )}
-
-      {/* Roles List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {roles.map((role) => (
-          <div key={role.id} className="card bg-base-200">
-            <div className="card-body">
-              <div className="flex justify-between items-start">
-                <h2 className="card-title">{role.name}</h2>
-                <div className="flex gap-2">
-                  <button
-                    className="btn btn-sm btn-ghost"
-                    onClick={() => {
-                      setEditingRole(role);
-                      setIsEditing(true);
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="btn btn-sm btn-ghost text-error"
-                    onClick={() => handleDeleteRole(role.id)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-              {role.description && (
-                <p className="text-sm text-base-content/70">
-                  {role.description}
-                </p>
-              )}
-              <div className="divider my-2"></div>
-              <div className="space-y-2">
-                <h3 className="font-medium text-sm">Permissions:</h3>
-                {Object.values(Resource).map((resource) => {
-                  const resourcePermissions = role.rolePermissions
-                    .filter((rp) => rp.permission.resource === resource)
-                    .map((rp) => rp.permission.action);
-
-                  if (resourcePermissions.length === 0) return null;
-
-                  return (
-                    <div key={resource} className="text-sm">
-                      <span className="font-medium">{resource}:</span>{" "}
-                      {resourcePermissions.join(", ")}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

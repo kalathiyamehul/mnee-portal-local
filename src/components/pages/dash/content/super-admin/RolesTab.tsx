@@ -42,7 +42,7 @@ enum Action {
   APPROVE = "APPROVE",
 }
 
-export default function RolesPage() {
+export default function RolesTab() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
