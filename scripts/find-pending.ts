@@ -11,8 +11,8 @@ async function main() {
     }
   });
 
-  console.log('\nPending Mint Requests:');
-  console.log('=====================');
+  // console.log('\nPending Mint Requests:');
+  // console.log('=====================');
   
   for (const request of pendingRequests) {
     const nonRequesterApprovals = request.approvals.filter(

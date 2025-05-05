@@ -18,7 +18,7 @@ export default withAuth(
 
 		// If requires reset and not on reset page, redirect to reset page
 		if (requiresReset && !isResetPage) {
-      console.log("[DEBUG] requiresReset", requiresReset);
+    //   console.log("[DEBUG] requiresReset", requiresReset);
 			return NextResponse.redirect(new URL('/reset-password', req.url));
 		}
 
