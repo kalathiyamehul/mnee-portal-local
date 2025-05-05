@@ -30,16 +30,16 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { tokenId, feeAddress, decimals, latestMinterTx } = await request.json();
+  const body = await request.json();
+  const { tokenId, feeAddress, decimals, latestMinterTx, noOfApproval, globalJson } = body;
 
   const mintAddress = PrivateKey.fromWif(await getMintWif()).toAddress();
   const burnAddress = PrivateKey.fromWif(await getBurnWif()).toAddress();
   try {
-    // Get current config to keep existing fees
+    // Get current config to keep existing fees and values
     const currentConfig = await prisma.config.findUnique({
       where: { id: 1 }
     });
-
     const defaultFees = [
       { min: 0, max: 10000, fee: 50 },
       { min: 10001, max: Number.MAX_SAFE_INTEGER, fee: 1000 }
@@ -47,27 +47,27 @@ export async function POST(request: Request) {
 
     const config = await prisma.config.upsert({
       where: { id: 1 },
-      update: { 
-        tokenId, 
-        feeAddress, 
-        decimals, 
-        latestMinterTx, 
-        mintAddress, 
+      update: {
+        tokenId,
+        feeAddress,
+        decimals,
+        latestMinterTx,
+        mintAddress,
         burnAddress,
-        // Keep existing fees or use default
-        fees: currentConfig?.fees ?? defaultFees
+        fees: currentConfig?.fees ?? defaultFees,
       },
-      create: { 
-        id: 1, 
-        tokenId, 
-        feeAddress, 
-        decimals, 
-        latestMinterTx, 
-        fundAddress: "", 
-        mintAddress, 
+      create: {
+        id: 1,
+        tokenId,
+        feeAddress,
+        decimals,
+        latestMinterTx,
+        fundAddress: "",
+        mintAddress,
         burnAddress,
-        // Use default fees for new config
-        fees: defaultFees
+        fees: defaultFees,
+        noOfApproval: noOfApproval ?? 2,
+        globalJson: globalJson ?? {},
       },
     });
 
@@ -83,7 +83,26 @@ export async function POST(request: Request) {
     );
   }
 }
-
+export async function PATCH(request: Request) {
+  const body = await request.json();
+  const { noOfApproval, globalJson } = body;
+  try {
+    await prisma.config.update({
+      where: { id: 1 },
+      data: {
+        ...(noOfApproval !== undefined ? { noOfApproval } : {}),
+        ...(globalJson !== undefined ? { globalJson } : {}),
+      },
+    });
+    return NextResponse.json({ message: "Configuration updated." });
+  } catch (error) {
+    console.error("Error saving config:", error);
+    return NextResponse.json(
+      { error: "Error saving configuration." },
+      { status: 500 }
+    );
+  }
+}
 export async function DELETE() {
   try {
     await prisma.config.deleteMany();
