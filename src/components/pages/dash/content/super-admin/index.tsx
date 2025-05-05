@@ -16,26 +16,24 @@ interface AdminPageProps {
 export default function SuperAdminPage({
   defaultTab = "roles",
 }: AdminPageProps) {
-  const { data: session, status } = useSession() as { data: Session | null; status: string };
+  const { data: session } = useSession() as { data: Session | null };
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab as TabType);
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Set tab from URL on mount
   useEffect(() => {
-    const tabParam = searchParams.get("tab") as TabType;
-    if (tabParam && tabParam !== activeTab) {
-      setActiveTab(tabParam);
-    }
-  }, [searchParams]);
+    setActiveTab(defaultTab as TabType);
+  }, [defaultTab]);
 
-  // Update URL when tab changes (but don't wait for navigation)
   const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", tab);
-    router.replace(`/dash/super-admin?${params.toString()}`);
+    router.push(`/dash/super-admin?${params.toString()}`);
   };
+
+  if (!session) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -57,16 +55,8 @@ export default function SuperAdminPage({
       </div>
 
       <div className="animate-fade-in">
-        {status === "loading" ? (
-          <div className="flex justify-center items-center h-32">
-            <span className="loading loading-spinner loading-lg"></span>
-          </div>
-        ) : (
-          <>
-            {activeTab === "roles" && <RolesTab />}
-            {activeTab === "threshold" && <ThresholdTab />}
-          </>
-        )}
+        {activeTab === "roles" && <RolesTab />}
+        {activeTab === "threshold" && <ThresholdTab />}
       </div>
     </div>
   );
