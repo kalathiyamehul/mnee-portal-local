@@ -114,7 +114,8 @@ export const ActivityCard = ({
             </span>
             {activity.status === 'PENDING' && requiresApproval(activity) && (
               <span className="px-2 py-1 text-xs bg-base-300 rounded-lg">
-                {getApprovalCount(activity)}/2 Approvals
+                {activity.approvals?.length || 0}/{activity.no_of_approvals}{" "}
+                Approvals
               </span>
             )}
           </div>

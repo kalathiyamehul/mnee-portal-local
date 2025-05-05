@@ -6,7 +6,7 @@ import { Script, Utils } from "@bsv/sdk";
 const { toBase64 } = Utils
 
 export async function getFundingUtxos(fundingAddress: string): Promise<Utxo[]> {
-  console.log('Fetching funding UTXOs for address:', fundingAddress);
+  // console.log('Fetching funding UTXOs for address:', fundingAddress);
   const utxosResponse = await fetch(`${MNEE_API}/v1/utxos/${fundingAddress}`);
   
   if (!utxosResponse.ok) {

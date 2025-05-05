@@ -119,6 +119,7 @@ export interface Activity {
     name: string | null;
     email: string;
   };
+	no_of_approvals?: number;
   approvals: Array<{
     id: string;
     approver: {
