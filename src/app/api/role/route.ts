@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
                     }
                 }
             });
-        });
+        }, {timeout: 50000});
 
         if (!role) {
             throw new Error("Failed to create role");
@@ -200,7 +200,7 @@ export async function PUT(request: NextRequest) {
                     }
                 }
             });
-        });
+        }, {timeout: 50000});
 
         if (!updatedRole) {
             throw new Error("Failed to update role");

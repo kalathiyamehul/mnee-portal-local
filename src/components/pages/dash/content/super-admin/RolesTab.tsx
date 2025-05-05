@@ -52,7 +52,7 @@ export default function RolesTab() {
     description: "",
     permissions: [] as PermissionGroup[],
   });
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [editingRole, setEditingRole] = useState<Role & { permissions: PermissionGroup[] } | null>(null);
 
   useEffect(() => {
     fetchRoles();
@@ -77,7 +77,11 @@ export default function RolesTab() {
       const response = await fetch("/api/role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newRole),
+        body: JSON.stringify({
+          name: newRole.name,
+          description: newRole.description,
+          permissions: newRole.permissions.filter(p => p.actions.length > 0)
+        }),
       });
       const data = await response.json();
 
@@ -97,18 +101,17 @@ export default function RolesTab() {
   };
 
   const handleUpdateRole = async (roleId: string) => {
+    if (!editingRole) return;
+    
     try {
       const response = await fetch(`/api/role`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: roleId,
-          name: editingRole?.name,
-          description: editingRole?.description,
-          permissions: editingRole?.rolePermissions.map((rp) => ({
-            resource: rp.permission.resource,
-            actions: [rp.permission.action],
-          })),
+          name: editingRole.name,
+          description: editingRole.description,
+          permissions: editingRole.permissions.filter(p => p.actions.length > 0)
         }),
       });
 
@@ -130,45 +133,105 @@ export default function RolesTab() {
     }
   };
 
+  // Helper to convert rolePermissions to permissions array
+  const rolePermissionsToPermissions = (rolePermissions: Role["rolePermissions"]): PermissionGroup[] => {
+    const permissionMap: Record<string, string[]> = {};
+    
+    // Initialize all resources with empty arrays
+    Object.values(Resource).forEach(resource => {
+      permissionMap[resource] = [];
+    });
+    
+    // Fill in the actions from rolePermissions
+    rolePermissions.forEach(rp => {
+      const { resource, action } = rp.permission;
+      if (permissionMap[resource]) {
+        permissionMap[resource].push(action);
+      }
+    });
+    
+    // Convert to PermissionGroup array
+    return Object.entries(permissionMap).map(([resource, actions]) => ({
+      resource,
+      actions,
+    }));
+  };
+
+  const handleStartEditing = (role: Role) => {
+    const permissions = rolePermissionsToPermissions(role.rolePermissions);
+    setEditingRole({ ...role, permissions });
+    setIsEditing(true);
+  };
+
   const handlePermissionChange = (
     resource: string,
     action: string,
     checked: boolean,
-    isEditing: boolean = false
+    isForEditing: boolean = false
   ) => {
-    const updateFunc = isEditing ? setEditingRole : setNewRole;
-    const currentData = isEditing ? editingRole : newRole;
-
-    if (!currentData) return;
-
-    updateFunc((prev: any) => {
-      const permissions = [...(prev.permissions || [])];
-      const resourceGroup = permissions.find((p) => p.resource === resource);
-
-      if (checked) {
-        if (resourceGroup) {
-          if (!resourceGroup.actions.includes(action)) {
-            resourceGroup.actions.push(action);
-          }
-        } else {
-          permissions.push({ resource, actions: [action] });
-        }
-      } else {
-        if (resourceGroup) {
-          resourceGroup.actions = resourceGroup.actions.filter(
-            (a: string) => a !== action
-          );
-          if (resourceGroup.actions.length === 0) {
-            return {
-              ...prev,
-              permissions: permissions.filter((p) => p.resource !== resource),
+    if (isForEditing && editingRole) {
+      setEditingRole(prev => {
+        if (!prev) return null;
+        
+        const updatedPermissions = [...prev.permissions];
+        const resourceIndex = updatedPermissions.findIndex(p => p.resource === resource);
+        
+        if (resourceIndex === -1 && checked) {
+          // Resource not found and checkbox is checked, add new resource with action
+          updatedPermissions.push({ resource, actions: [action] });
+        } else if (resourceIndex !== -1) {
+          // Resource found
+          if (checked && !updatedPermissions[resourceIndex].actions.includes(action)) {
+            // Add action to existing resource
+            updatedPermissions[resourceIndex] = {
+              ...updatedPermissions[resourceIndex],
+              actions: [...updatedPermissions[resourceIndex].actions, action]
+            };
+          } else if (!checked) {
+            // Remove action from resource
+            updatedPermissions[resourceIndex] = {
+              ...updatedPermissions[resourceIndex],
+              actions: updatedPermissions[resourceIndex].actions.filter(a => a !== action)
             };
           }
         }
-      }
-
-      return { ...prev, permissions };
-    });
+        
+        return {
+          ...prev,
+          permissions: updatedPermissions
+        };
+      });
+    } else {
+      setNewRole(prev => {
+        const updatedPermissions = [...prev.permissions];
+        const resourceIndex = updatedPermissions.findIndex(p => p.resource === resource);
+        
+        if (resourceIndex === -1 && checked) {
+          // Resource not found and checkbox is checked, add new resource with action
+          updatedPermissions.push({ resource, actions: [action] });
+        } else if (resourceIndex !== -1) {
+          // Resource found
+          if (checked && !updatedPermissions[resourceIndex].actions.includes(action)) {
+            // Add action to existing resource
+            updatedPermissions[resourceIndex] = {
+              ...updatedPermissions[resourceIndex],
+              actions: [...updatedPermissions[resourceIndex].actions, action]
+            };
+          } else if (!checked) {
+            // Remove action from resource
+            updatedPermissions[resourceIndex] = {
+              ...updatedPermissions[resourceIndex],
+              actions: updatedPermissions[resourceIndex].actions.filter(a => a !== action)
+            };
+          }
+        }
+        
+        return {
+          ...prev,
+          permissions: updatedPermissions
+        };
+      });
+    }
   };
 
   const handleDeleteRole = async (roleId: string) => {
@@ -195,6 +258,17 @@ export default function RolesTab() {
     }
   };
 
+  // Helper to check if a permission is active
+  const isPermissionActive = (resource: string, action: string, forEditing: boolean = false) => {
+    if (forEditing && editingRole) {
+      const resourcePermission = editingRole.permissions.find(p => p.resource === resource);
+      return resourcePermission?.actions.includes(action) || false;
+    } else {
+      const resourcePermission = newRole.permissions.find(p => p.resource === resource);
+      return resourcePermission?.actions.includes(action) || false;
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -215,66 +289,11 @@ export default function RolesTab() {
         </button>
       </div>
 
-      {/* Table Structure */}
-      <div className="overflow-x-auto">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Role Name</th>
-              <th>Description</th>
-              <th>Permissions</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {roles.map((role) => (
-              <tr key={role.id}>
-                <td className="font-medium">{role.name}</td>
-                <td>{role.description || '-'}</td>
-                <td>
-                  {Object.values(Resource).map((resource) => {
-                    const perms = role.rolePermissions
-                      .filter(rp => rp.permission.resource === resource)
-                      .map(rp => rp.permission.action);
-                    
-                    return perms.length > 0 ? (
-                      <div key={resource} className="badge badge-outline badge-sm mr-2 mb-2">
-                        {resource}: {perms.join(', ')}
-                      </div>
-                    ) : null;
-                  })}
-                </td>
-                <td>
-                  <div className="flex gap-2">
-                    <button
-                      className="btn btn-ghost btn-xs"
-                      onClick={() => {
-                        setEditingRole(role);
-                        setIsEditing(true);
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-ghost btn-xs text-error"
-                      onClick={() => handleDeleteRole(role.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Modals (keep existing modal logic but update styling) */}
+      {/* Create Role Modal */}
       {isCreating && (
         <div className="modal modal-open">
           <div className="modal-box max-w-3xl">
             <h3 className="font-bold text-lg mb-4">Create New Role</h3>
-            {/* Keep existing form fields */}
             <div className="form-control w-full mb-4">
               <label className="label">
                 <span className="label-text">Role Name</span>
@@ -317,33 +336,26 @@ export default function RolesTab() {
                     <div className="card-body p-4">
                       <h3 className="card-title text-sm mb-2">{resource}</h3>
                       <div className="space-y-2">
-                        {Object.values(Action).map((action) => {
-                          const isChecked =
-                            newRole.permissions
-                              .find((p) => p.resource === resource)
-                              ?.actions.includes(action) ?? false;
-
-                          return (
-                            <label
-                              key={action}
-                              className="flex items-center gap-2"
-                            >
-                              <input
-                                type="checkbox"
-                                className="checkbox checkbox-sm"
-                                checked={isChecked}
-                                onChange={(e) =>
-                                  handlePermissionChange(
-                                    resource,
-                                    action,
-                                    e.target.checked
-                                  )
-                                }
-                              />
-                              <span className="text-sm">{action}</span>
-                            </label>
-                          );
-                        })}
+                        {Object.values(Action).map((action) => (
+                          <label
+                            key={action}
+                            className="flex items-center gap-2"
+                          >
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-sm"
+                              checked={isPermissionActive(resource, action)}
+                              onChange={(e) =>
+                                handlePermissionChange(
+                                  resource,
+                                  action,
+                                  e.target.checked
+                                )
+                              }
+                            />
+                            <span className="text-sm">{action}</span>
+                          </label>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -367,11 +379,11 @@ export default function RolesTab() {
         </div>
       )}
 
+      {/* Edit Role Modal */}
       {isEditing && editingRole && (
         <div className="modal modal-open">
           <div className="modal-box max-w-3xl">
             <h3 className="font-bold text-lg mb-4">Edit Role</h3>
-            {/* Keep existing edit form */}
             <div className="form-control w-full mb-4">
               <label className="label">
                 <span className="label-text">Role Name</span>
@@ -415,35 +427,27 @@ export default function RolesTab() {
                     <div className="card-body p-4">
                       <h3 className="card-title text-sm mb-2">{resource}</h3>
                       <div className="space-y-2">
-                        {Object.values(Action).map((action) => {
-                          const isChecked = editingRole.rolePermissions.some(
-                            (rp) =>
-                              rp.permission.resource === resource &&
-                              rp.permission.action === action
-                          );
-
-                          return (
-                            <label
-                              key={action}
-                              className="flex items-center gap-2"
-                            >
-                              <input
-                                type="checkbox"
-                                className="checkbox checkbox-sm"
-                                checked={isChecked}
-                                onChange={(e) =>
-                                  handlePermissionChange(
-                                    resource,
-                                    action,
-                                    e.target.checked,
-                                    true
-                                  )
-                                }
-                              />
-                              <span className="text-sm">{action}</span>
-                            </label>
-                          );
-                        })}
+                        {Object.values(Action).map((action) => (
+                          <label
+                            key={action}
+                            className="flex items-center gap-2"
+                          >
+                            <input
+                              type="checkbox"
+                              className="checkbox checkbox-sm"
+                              checked={isPermissionActive(resource, action, true)}
+                              onChange={(e) =>
+                                handlePermissionChange(
+                                  resource,
+                                  action,
+                                  e.target.checked,
+                                  true
+                                )
+                              }
+                            />
+                            <span className="text-sm">{action}</span>
+                          </label>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -483,10 +487,7 @@ export default function RolesTab() {
                 <div className="flex gap-2">
                   <button
                     className="btn btn-sm btn-ghost"
-                    onClick={() => {
-                      setEditingRole(role);
-                      setIsEditing(true);
-                    }}
+                    onClick={() => handleStartEditing(role)}
                   >
                     Edit
                   </button>
