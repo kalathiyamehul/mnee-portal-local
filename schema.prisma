@@ -243,6 +243,7 @@ enum ActionStatus {
   DONE
   FAILED
   REFUNDED
+  SETTLEMENT
 }
 
 model Config {
