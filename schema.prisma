@@ -256,6 +256,8 @@ model Config {
   mintAddress   String @map("mint_address")
   burnAddress   String @map("burn_address")
   fundAddress   String @map("fund_address")
+  noOfApproval  Int    @default(2)
+  globalJson    Json?
 
   @@map("config")
 }
