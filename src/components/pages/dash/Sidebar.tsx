@@ -31,11 +31,11 @@ const menuItems = [
     icon: FaShieldAlt,
     subItems: [
       { name: "Roles", href: "/dash/super-admin/roles", icon: FaUsers },
-      {
-        name: "Threshold Config",
-        href: "/dash/super-admin/threshold",
-        icon: FaGear,
-      },
+      // {
+      //   name: "Threshold Config",
+      //   href: "/dash/super-admin/threshold",
+      //   icon: FaGear,
+      // },
     ],
   },
 ];
