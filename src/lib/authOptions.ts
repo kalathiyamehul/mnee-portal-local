@@ -159,6 +159,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.requiresPasswordReset = token.requiresPasswordReset as boolean;
+        session.user.rolePermissions = token.rolePermissions as Record<string, string[]>;
       }
       return session;
     },

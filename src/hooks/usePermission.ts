@@ -4,11 +4,9 @@ import { Resource, Action } from "@/lib/permission";
 
 export function usePermission() {
     const { data: session, status } = useSession();
-    console.log("session", session);
     const loading = status === "loading";
     const rolePermissions = session?.user?.rolePermissions;
     const isSuperAdmin = Array.isArray(rolePermissions) && rolePermissions.length === 0;
-    console.log("isSuperAdmin", isSuperAdmin);
     const hasPermission = useCallback(
         (resource: Resource, action: Action): boolean => {
             // if (loading) return false;

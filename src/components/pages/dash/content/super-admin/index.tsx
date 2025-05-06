@@ -45,18 +45,18 @@ export default function SuperAdminPage({
         >
           roles
         </button>
-        {/* <button
+        <button
           type="button"
           className={`tab ${activeTab === "threshold" ? "tab-active" : ""}`}
           onClick={() => handleTabChange("threshold")}
         >
           threshold
-        </button> */}
+        </button>
       </div>
 
       <div className="animate-fade-in">
         {activeTab === "roles" && <RolesTab />}
-        {/* {activeTab === "threshold" && <ThresholdTab />} */}
+        {activeTab === "threshold" && <ThresholdTab />}
       </div>
     </div>
   );
