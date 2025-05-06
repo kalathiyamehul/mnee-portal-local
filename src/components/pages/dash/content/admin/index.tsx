@@ -95,7 +95,19 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     hasRejectFreezePer,
   };
 
-  console.log("Permissions: ", permissions);
+  // Restrictions Permissions object
+  const restrictionsPermissions = {
+    // Freeze
+    hasCreateFreezePer,
+    hasApproveFreezePer,
+    hasRejectFreezePer,
+    // Blacklist
+    hasCreateBlacklistPer,
+    hasApproveBlacklistPer,
+    hasRejectBlacklistPer,
+  };
+
+//   console.log("Permissions: ", permissions);
 
   useEffect(() => {
     setActiveTab(defaultTab as TabType);
@@ -633,6 +645,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 handleCancel={handleCancel}
                 handleApprove={handleApprove}
                 session={session}
+				permissions={restrictionsPermissions}
               />
             )}
             {activeTab === "burns" && (
