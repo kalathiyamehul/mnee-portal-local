@@ -92,6 +92,8 @@ interface DashboardHomeContentProps {
 
 // Add this import at the top with other imports
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import { usePermission } from "@/hooks/usePermission";
+import { Action, Resource } from "@/lib/permission";
 
 const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const { data: session } = useSession();
@@ -142,6 +144,50 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       setLoading(false);
     }
   }, [statusData]);
+  const { hasPermission } = usePermission();
+  // Mint Permissions
+	const hasCreateMintPer = hasPermission(Resource.MINT, Action.CREATE) || false;
+	const hasApproveMintPer = hasPermission(Resource.MINT, Action.APPROVE) || false;
+	const hasRejectMintPer = hasPermission(Resource.MINT, Action.REJECT) || false;
+
+	// Burn Permissions
+	const hasCreateBurnPer = hasPermission(Resource.BURN, Action.CREATE) || false;
+	const hasApproveBurnPer = hasPermission(Resource.BURN, Action.APPROVE) || false;
+	const hasRejectBurnPer = hasPermission(Resource.BURN, Action.REJECT) || false;
+
+	// Refund Permissions
+	const hasCreateRefundPer = hasPermission(Resource.REFUND, Action.CREATE) || false;
+	const hasApproveRefundPer = hasPermission(Resource.REFUND, Action.APPROVE) || false;
+	const hasRejectRefundPer = hasPermission(Resource.REFUND, Action.REJECT) || false;
+
+	// Blacklist Permissions
+	const hasCreateBlacklistPer = hasPermission(Resource.BLACKLIST, Action.CREATE) || false;
+	const hasApproveBlacklistPer = hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
+	const hasRejectBlacklistPer = hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
+
+	// Freeze Permissions
+	const hasCreateFreezePer = hasPermission(Resource.FREEZE, Action.CREATE) || false;
+	const hasApproveFreezePer = hasPermission(Resource.FREEZE, Action.APPROVE) || false;
+	const hasRejectFreezePer = hasPermission(Resource.FREEZE, Action.REJECT) || false;
+
+	// Permissions object
+	const permissions = {
+		// Mint
+		hasApproveMintPer,
+		hasRejectMintPer,
+		// Burn
+		hasApproveBurnPer,
+		hasRejectBurnPer,
+		// Refund
+		hasApproveRefundPer,
+		hasRejectRefundPer,
+		// Blacklist
+		hasApproveBlacklistPer,
+		hasRejectBlacklistPer,
+		// Freeze
+		hasApproveFreezePer,
+		hasRejectFreezePer,
+	};
 
   // Default to 'volume' if no chart is selected
   const selectedChart = (searchParams.get("chart") || "volume") as ChartType;
@@ -509,6 +555,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           getApprovalCount={getApprovalCount}
           showPendingSwitch={false}
           showRequester={true}
+          permissions={permissions}
         />
       </div>
 
@@ -522,6 +569,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
             onUpdate={fetchMetrics}
             showRequester={false}
             mode="all"
+            hasApproveMintPer={hasApproveMintPer}
+            hasRejectMintPer={hasRejectMintPer}
           />
         </div>
 
@@ -537,6 +586,10 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
             alwaysShow={true}
             showViewAll={true}
             showRequester={false}
+            hasApproveBurnPer={hasApproveBurnPer}
+            hasRejectBurnPer={hasRejectBurnPer}
+            hasApproveRefundPer={hasApproveRefundPer}
+            hasRejectRefundPer={hasRejectRefundPer}
           />
         </div>
       </div>

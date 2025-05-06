@@ -27,11 +27,12 @@ export const ActivityList = ({
   getApprovalCount,
   showPendingSwitch = true,
   showRequester = true,
+  permissions,
 }: Omit<ActivityListProps, "session">) => {
   // Add pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6; // Increased from 4 to show more items per page
-
+  // console.log("permissions: ", permissions)
   // Calculate pagination values
   const totalItems = filteredActivities.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
@@ -50,6 +51,21 @@ export const ActivityList = ({
     indexOfFirstItem,
     indexOfLastItem
   );
+
+  // console.log("permissions", permissions)
+
+  // Helper function to check approve permission for activity type
+  const hasApprovePermission = (type: string) => {
+    const permissionMap: Record<string, string> = {
+      MINT: "hasApproveMintPer",
+      BURN: "hasApproveBurnPer",
+      REFUND: "hasApproveRefundPer",
+      BLACKLIST: "hasApproveBlacklistPer",
+      FREEZE: "hasApproveFreezePer",
+    };
+    const key = permissionMap[type];
+    return key ? permissions[key as keyof typeof permissions] : false;
+  };
 
   // Helper to format data for export
   const exportData = filteredActivities.map((activity, index) => ({
@@ -325,7 +341,7 @@ export const ActivityList = ({
                               Cancel
                             </button>
                           )}
-                          {canApprove(activity) && (
+                          {canApprove(activity) && hasApprovePermission(activity.type) && (
                             <div className="flex gap-2 items-center">
                               <button
                                 type="button"

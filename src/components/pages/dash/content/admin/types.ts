@@ -178,6 +178,18 @@ export interface ActivityListProps {
 	getApprovalCount: (activity: Activity) => number;
 	showPendingSwitch?: boolean;
 	showRequester?: boolean;
+	permissions: {
+		hasApproveMintPer: boolean;
+		hasRejectMintPer: boolean;
+		hasApproveBurnPer: boolean;
+		hasRejectBurnPer: boolean;
+		hasApproveRefundPer: boolean;
+		hasRejectRefundPer: boolean;
+		hasApproveBlacklistPer: boolean;
+		hasRejectBlacklistPer: boolean;
+		hasApproveFreezePer: boolean;
+		hasRejectFreezePer: boolean;
+	  };
 }
 
 export interface SystemStatusProps {

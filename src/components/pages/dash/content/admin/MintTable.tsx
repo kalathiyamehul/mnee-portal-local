@@ -34,6 +34,8 @@ interface MintTableProps {
   showViewAll?: boolean;
   onUpdate?: () => void;
   alwaysShow?: boolean;
+  hasApproveMintPer?: boolean;
+	hasRejectMintPer?: boolean;
   mode?: "all" | "active" | "history";
   showActions?: boolean;
   showRequester?: boolean;
@@ -63,12 +65,16 @@ const MintTableContent = ({
   onUpdate,
   showActions,
   showRequester,
+  hasApproveMintPer,
+  hasRejectMintPer
 }: {
   mints: Activity[];
   session: Session | null;
   onUpdate: (() => void) | undefined;
   showActions: boolean;
   showRequester: boolean;
+  hasApproveMintPer?: boolean;
+  hasRejectMintPer?: boolean;
 }) => {
   const [config, setConfig] = useState<Config | null>(null);
   const [loadingApproval, setLoadingApproval] = useState<string | null>(null);
@@ -80,6 +86,9 @@ const MintTableContent = ({
       (approval) => approval.approver?.email === session.user.email
     );
   };
+
+  // console.log("Per:", hasApproveMintPer, hasRejectMintPer);
+  // console.log("Session:", session?.user);
 
   useEffect(() => {
     const getAndSetConfig = async () => {
@@ -322,7 +331,7 @@ const MintTableContent = ({
               </td>
               {showActions && (
                 <td>
-                  {mint.status === "PENDING" && session?.user && (
+                  {hasApproveMintPer && mint.status === "PENDING" && session?.user && (
                     <div className="flex gap-2 justify-end">
                       {mint.requester.email === session.user.email ? (
                         <button
@@ -381,6 +390,8 @@ export const MintTable = ({
   showRequester = true,
   enablePagination = false,
   itemsPerPage = 6,
+  hasApproveMintPer,
+  hasRejectMintPer
 }: MintTableProps) => {
   const { data: session } = useSession();
   const [currentPage, setCurrentPage] = useState(1);
@@ -428,6 +439,8 @@ export const MintTable = ({
           onUpdate={onUpdate}
           showActions={showActions}
           showRequester={showRequester}
+          hasApproveMintPer={hasApproveMintPer}  // Add this line
+          hasRejectMintPer={hasRejectMintPer}    // Add this line
         />
       </div>
 

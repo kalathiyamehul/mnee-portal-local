@@ -29,14 +29,14 @@ const menuItems = [
     name: "SuperAdmin",
     href: "/dash/super-admin",
     icon: FaShieldAlt,
-    subItems: [
-      { name: "Roles", href: "/dash/super-admin", icon: FaUsers },
-      {
-        name: "Threshold Config",
-        href: "/dash/super-admin/threshold",
-        icon: FaGear,
-      },
-    ],
+    // subItems: [
+    //   { name: "Roles", href: "/dash/super-admin", icon: FaUsers },
+    //   {
+    //     name: "Threshold Config",
+    //     href: "/dash/super-admin/threshold",
+    //     icon: FaGear,
+    //   },
+    // ],
   },
 ];
 
@@ -44,16 +44,27 @@ const Sidebar: React.FC = () => {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [hoveredPath, setHoveredPath] = useState(pathname);
-  const { hasPermission } = usePermission();
+  const { hasPermission, hasAllPermissions } =
+    usePermission();
   const canViewWallet = hasPermission(Resource.WALLET, Action.MANAGE);
   const canViewCustomers = hasPermission(Resource.CUSTOMER, Action.MANAGE);
   const canViewSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+  const canViewAdmin = hasAllPermissions([
+    { resource: Resource.MINT, action: Action.MANAGE },
+    { resource: Resource.BURN, action: Action.MANAGE },
+    { resource: Resource.CUSTOMER, action: Action.MANAGE },
+    { resource: Resource.WALLET, action: Action.MANAGE },
+    // { resource: Resource.REFUND, action: Action.MANAGE },
+    // { resource: Resource.BLACKLIST, action: Action.MANAGE },
+    { resource: Resource.FREEZE, action: Action.MANAGE },
+  ]);
+  // console.log("canViewAdmin", canViewAdmin);
   const filteredMenuItems = menuItems.filter((item) => {
-    // if (item.name === "Wallet") return canViewWallet;
-    // if (item.name === "Customers") return canViewCustomers;
-    // if (item.name === "SuperAdmin") return canViewSuperAdmin;
-    // if (item.name === "Admin") return canViewSuperAdmin;
-    // if (item.name === "Config") return canViewSuperAdmin;
+    if (item.name === "Wallet") return canViewWallet;
+    if (item.name === "Customers") return canViewCustomers;
+    if (item.name === "SuperAdmin") return canViewSuperAdmin;
+    if (item.name === "Admin") return canViewAdmin;
+    if (item.name === "Config") return canViewSuperAdmin;
     return true;
   });
 
@@ -67,51 +78,36 @@ const Sidebar: React.FC = () => {
               const isActive = item.href === pathname;
               if (
                 item.name === "SuperAdmin" &&
-                item.subItems &&
                 canViewSuperAdmin
               ) {
                 return (
                   <li key={item.href}>
-                    <div className="flex items-center gap-2 px-3 py-2">
-                      <item.icon className="w-4 h-4" />
-                      <span className="text-sm">{item.name}</span>
-                    </div>
-                    <ul>
-                      {item.subItems.map((sub) => (
-                        <li key={sub.href}>
-                          <Link
-                            href={sub.href}
-                            className={`
-                              relative group flex items-center gap-2 px-3 py-2 rounded-lg
-                              ${
-                                sub.href === pathname
-                                  ? "font-medium"
-                                  : "text-base-content/70"
-                              }
-                            `}
-                            onMouseOver={() => setHoveredPath(sub.href)}
-                            onMouseLeave={() => setHoveredPath(pathname)}
-                          >
-                            <sub.icon className="w-4 h-4" />
-                            <span className="text-sm">{sub.name}</span>
-                            {sub.href === hoveredPath && (
-                              <motion.div
-                                className="absolute inset-0 bg-base-content/10 rounded-lg -z-10"
-                                layoutId="sidebar"
-                                aria-hidden="true"
-                                transition={{
-                                  type: "spring",
-                                  bounce: 0.15,
-                                  stiffness: 100,
-                                  damping: 15,
-                                  duration: 0.5,
-                                }}
-                              />
-                            )}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
+                    <Link
+                    href={item.href}
+                    className={`
+                      relative group flex items-center gap-2 px-3 py-2 rounded-lg
+                      ${isActive ? "font-medium" : "text-base-content/70"}
+                    `}
+                    onMouseOver={() => setHoveredPath(item.href)}
+                    onMouseLeave={() => setHoveredPath(pathname)}
+                  >
+                    <item.icon className="w-4 h-4" />
+                    <span className="text-sm">{item.name}</span>
+                    {item.href === hoveredPath && (
+                      <motion.div
+                        className="absolute inset-0 bg-base-content/10 rounded-lg -z-10"
+                        layoutId="sidebar"
+                        aria-hidden="true"
+                        transition={{
+                          type: "spring",
+                          bounce: 0.15,
+                          stiffness: 100,
+                          damping: 15,
+                          duration: 0.5,
+                        }}
+                      />
+                    )}
+                  </Link>
                   </li>
                 );
               }

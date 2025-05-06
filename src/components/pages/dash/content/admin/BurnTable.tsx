@@ -13,6 +13,10 @@ interface BurnTableProps {
 	showViewAll?: boolean;
 	title?: string;
 	showRequester?: boolean;
+	hasApproveBurnPer?: boolean;
+	hasRejectBurnPer?: boolean;
+    hasRejectRefundPer?: boolean;
+    hasApproveRefundPer?: boolean;
 }
 
 export const BurnTable = ({
@@ -23,6 +27,10 @@ export const BurnTable = ({
 	showViewAll = false,
 	title = "Burns",
 	showRequester = true,
+	hasApproveBurnPer,
+	hasRejectBurnPer,
+    hasRejectRefundPer,
+    hasApproveRefundPer,
 }: BurnTableProps) => {
 	const { data: session } = useSession();
 	
@@ -162,7 +170,7 @@ export const BurnTable = ({
 											</div>
 										</td>
 										<td>
-											{canApproveRefund(burn) && (
+											{canApproveRefund(burn) && hasApproveRefundPer && (
 												<button
 													type="button"
 													onClick={() => burn.refundRequest && handleApproveRefund(burn.refundRequest.id)}

@@ -13,6 +13,8 @@ import { toast } from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
 import { useSystemStatus } from '@/contexts/SystemStatusContext';
 import { BurnTable } from './BurnTable';
+import { usePermission } from '@/hooks/usePermission';
+import { Action, Resource } from '@/lib/permission';
 
 const getRowBorderClass = (status: string | undefined) => {
   switch (status) {
@@ -29,7 +31,16 @@ const getRowBorderClass = (status: string | undefined) => {
   }
 };
 
-export const BurnsTab = () => {
+interface BurnsTabProps {
+  hasCreateBurnPer?: boolean;
+  hasApproveBurnPer?: boolean;
+  hasRejectBurnPer?: boolean;
+  hasCreateRefundPer?: boolean;
+  hasApproveRefundPer?: boolean;
+  hasRejectRefundPer?: boolean;
+}
+
+export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer, hasApproveRefundPer, hasCreateRefundPer, hasRejectRefundPer }: BurnsTabProps) => {
   const { data: session } = useSession();
   const { statusData } = useSystemStatus();
   const [burns, setBurns] = useState<BurnUtxo[]>([]);
@@ -41,6 +52,9 @@ export const BurnsTab = () => {
   const [decimals, setDecimals] = useState(8);
   const [selectedBurn, setSelectedBurn] = useState<BurnUtxo | null>(null);
   const [selectedRefund, setSelectedRefund] = useState<BurnUtxo | null>(null);
+
+
+  // console.log("Permissions: ", hasCreateBurnPer, hasApproveBurnPer, hasRejectBurnPer, hasCreateRefundPer);
 
   const fetchBurnAddressFromConfig = useCallback(async () => {
     try {
@@ -342,7 +356,7 @@ export const BurnsTab = () => {
                         <div className="flex items-center gap-2">
                           {/* Show Burn button only if no pending requests */}
                           {(!burn.burnRequest || burn.burnRequest.status === 'CANCELLED') && 
-                           !burn.refundRequest?.status && (
+                           !burn.refundRequest?.status && hasCreateBurnPer && (
                             <button
                               type="button"
                               onClick={() => handleCreateBurnRequest(burn)}
@@ -375,7 +389,7 @@ export const BurnsTab = () => {
                           )}
 
                           {/* Approve Burn button */}
-                          {canApproveBurn(burn) && !burn.refundRequest?.status && (
+                          {canApproveBurn(burn) && !burn.refundRequest?.status && hasApproveBurnPer && (
                             <button
                               type="button"
                               onClick={() => burn.burnRequest && handleApproveBurn(burn.burnRequest.id)}
@@ -387,7 +401,7 @@ export const BurnsTab = () => {
 
                           {/* Refund button - only show if no pending requests */}
                           {((!burn.refundRequest || !['DONE', 'PENDING'].includes(burn.refundRequest?.status)) && 
-                            (!burn.burnRequest || !['APPROVED', 'REFUNDED', 'PENDING'].includes(burn.burnRequest?.status))) && (
+                            (!burn.burnRequest || !['APPROVED', 'REFUNDED', 'PENDING'].includes(burn.burnRequest?.status))) && hasCreateRefundPer && (
                             <button
                               type="button"
                               onClick={() => setSelectedRefund(burn)}
@@ -400,7 +414,7 @@ export const BurnsTab = () => {
                           )}
 
                           {/* Approve Refund button */}
-                          {canApproveRefund(burn) && (
+                          {canApproveRefund(burn) && hasApproveRefundPer && (
                             <button
                               type="button"
                               onClick={() => burn.refundRequest && handleApproveRefund(burn.refundRequest.id)}
@@ -424,6 +438,10 @@ export const BurnsTab = () => {
             decimals={decimals}
             onCopyTxid={handleCopyTxid}
             alwaysShow={true}
+            hasApproveBurnPer={hasApproveBurnPer}
+            hasRejectBurnPer={hasRejectBurnPer}
+            hasRejectRefundPer={hasRejectRefundPer}
+            hasApproveRefundPer={hasApproveRefundPer}
           />
         </div>
 

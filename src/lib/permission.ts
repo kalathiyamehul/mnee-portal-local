@@ -15,5 +15,6 @@ export enum Action {
     READ = "READ",
     UPDATE = "UPDATE",
     DELETE = "DELETE",
+    REJECT = "REJECT",
     APPROVE = "APPROVE",
 }
