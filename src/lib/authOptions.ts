@@ -29,6 +29,7 @@ export const authOptions: NextAuthOptions = {
             password: true,
             image: true,
             emailVerified: true,
+            roleId: true,
             requiresPasswordReset: true,
             twoFactorEnabled: true,
             twoFactorSecret: true,
@@ -42,14 +43,10 @@ export const authOptions: NextAuthOptions = {
 
         // Check if 2FA is enabled and handle verification
         if (user.twoFactorEnabled) {
-          // If no token provided, signal that 2FA is required
-          console.log(credentials);
           if (!credentials.token) {
             console.log("2FA_REQUIRED");
             throw new Error("2FA_REQUIRED");
           }
-
-          // Verify 2FA token
           const verified = speakeasy.totp.verify({
             secret: user.twoFactorSecret!,
             encoding: 'base32',
@@ -68,7 +65,8 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             image: user.image,
             emailVerified: user.emailVerified,
-            requiresPasswordReset: true
+            requiresPasswordReset: true,
+            roleId: user.roleId,
           };
         }
 
@@ -89,6 +87,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           image: user.image,
           emailVerified: user.emailVerified,
+          roleId: user.roleId,
           requiresPasswordReset: user.requiresPasswordReset,
         };
       },
@@ -106,11 +105,39 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (user) {
-        // Initial sign in
+        const { roleId, requiresPasswordReset } = user as typeof user & { roleId?: string; requiresPasswordReset?: boolean };
+        if (roleId) {
+          const rolePermissions = await prisma.rolePermission.findMany({
+            where: {
+              roleId: roleId,
+            },
+            select: {
+              permission: {
+                select: {
+                  name: true,
+                  resource: true,
+                  action: true,
+                },
+              },
+            },
+          });
+          const groupedPermissions: Record<string, string[]> = {};
+          rolePermissions.forEach(({ permission }) => {
+            const { resource, action } = permission;
+            if (!groupedPermissions[resource]) {
+              groupedPermissions[resource] = [];
+            }
+            if (!groupedPermissions[resource].includes(action)) {
+              groupedPermissions[resource].push(action);
+            }
+          });
+          token.rolePermissions = groupedPermissions;
+        } else {
+          token.rolePermissions = [];
+        }
         token.id = user.id;
-        token.requiresPasswordReset = user.requiresPasswordReset;
+        token.requiresPasswordReset = requiresPasswordReset;
       }
-
       // On token update, refresh user data
       if (trigger === "update") {
         const freshUser = await prisma.user.findUnique({

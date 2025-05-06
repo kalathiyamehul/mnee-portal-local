@@ -48,7 +48,7 @@
     "speakeasy": "^2.0.0",
     "theme-change": "^2.5.0",
     "yours-wallet-provider": "^3.4.2",
-    "zod": "^3.24.3"
+    "zod": "^3.24.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
