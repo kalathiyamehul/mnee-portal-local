@@ -8,65 +8,57 @@ export function PermissionExample() {
   if (loading) {
     return <div>Loading permissions...</div>;
   }
-
-  // Example of checking a single permission
-  const canCreateUser = hasPermission(Resource.USER, Action.CREATE);
-
-  // Example of checking multiple permissions (ALL)
-  const canManageUsers = hasAllPermissions([
-    { resource: Resource.USER, action: Action.CREATE },
-    { resource: Resource.USER, action: Action.UPDATE },
-    { resource: Resource.USER, action: Action.DELETE },
-  ]);
-
-  // Example of checking multiple permissions (ANY)
-  const canViewEither = hasAnyPermission([
-    { resource: Resource.USER, action: Action.READ },
-    { resource: Resource.CUSTOMER, action: Action.READ },
+  // Example: Check if user can see Wallet menu
+  const canViewWallet = hasPermission(Resource.WALLET, Action.READ);
+  // Example: Check if user can see Customers menu
+  const canViewCustomers = hasPermission(Resource.CUSTOMER, Action.READ);
+  // Example: Check if user can see SuperAdmin menu (any super admin permission)
+  const canViewSuperAdmin = hasAnyPermission([
+    { resource: Resource.SUPER_ADMIN, action: Action.READ },
+    { resource: Resource.SUPER_ADMIN, action: Action.CREATE },
+    { resource: Resource.SUPER_ADMIN, action: Action.UPDATE },
+    { resource: Resource.SUPER_ADMIN, action: Action.DELETE },
   ]);
 
   return (
     <div className="space-y-4">
       <div>
+        <h3 className="font-semibold">Sidebar Permission Checks:</h3>
+        <ul className="list-disc ml-6">
+          <li>
+            Wallet menu:{" "}
+            {canViewWallet ? (
+              <span className="text-green-600">Visible</span>
+            ) : (
+              <span className="text-red-600">Hidden</span>
+            )}
+          </li>
+          <li>
+            Customers menu:{" "}
+            {canViewCustomers ? (
+              <span className="text-green-600">Visible</span>
+            ) : (
+              <span className="text-red-600">Hidden</span>
+            )}
+          </li>
+          <li>
+            SuperAdmin menu:{" "}
+            {canViewSuperAdmin ? (
+              <span className="text-green-600">Visible</span>
+            ) : (
+              <span className="text-red-600">Hidden</span>
+            )}
+          </li>
+        </ul>
+      </div>
+      <div>
         <h3 className="font-semibold">Single Permission Check:</h3>
-        {canCreateUser ? (
+        {canViewWallet ? (
           <button className="bg-blue-500 text-white px-4 py-2 rounded">
-            Create User
+            Access Wallet
           </button>
         ) : (
-          <p className="text-red-500">You cannot create users</p>
-        )}
-      </div>
-
-      <div>
-        <h3 className="font-semibold">Multiple Permissions Check (ALL):</h3>
-        {canManageUsers ? (
-          <div className="space-x-2">
-            <button className="bg-blue-500 text-white px-4 py-2 rounded">
-              Create User
-            </button>
-            <button className="bg-green-500 text-white px-4 py-2 rounded">
-              Update User
-            </button>
-            <button className="bg-red-500 text-white px-4 py-2 rounded">
-              Delete User
-            </button>
-          </div>
-        ) : (
-          <p className="text-red-500">You cannot fully manage users</p>
-        )}
-      </div>
-
-      <div>
-        <h3 className="font-semibold">Multiple Permissions Check (ANY):</h3>
-        {canViewEither ? (
-          <p className="text-green-500">
-            You can view either users or customers
-          </p>
-        ) : (
-          <p className="text-red-500">
-            You cannot view either users or customers
-          </p>
+          <p className="text-red-500">You cannot access the wallet</p>
         )}
       </div>
     </div>
