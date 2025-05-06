@@ -17,16 +17,19 @@ const menuItems = [
   { name: "Admin", href: "/dash/admin", icon: FaGear },
   { name: "Transactions", href: "/dash/transactions", icon: FaExchangeAlt },
   { name: "Config", href: "/dash/settings", icon: FaSliders },
-  { 
-    name: "SuperAdmin", 
+  {
+    name: "SuperAdmin",
     href: "/dash/super-admin",
     icon: FaShieldAlt,
     subItems: [
       { name: "Roles", href: "/dash/super-admin/roles", icon: FaUsers },
-      { name: "Threshold Config", href: "/dash/super-admin/threshold", icon: FaGear }
-    ]
+      {
+        name: "Threshold Config",
+        href: "/dash/super-admin/threshold",
+        icon: FaGear,
+      },
+    ],
   },
-  // Remove old Roles entry
 ];
 
 const Sidebar: React.FC = () => {

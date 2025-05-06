@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
+import { Resource, Action } from "@/lib/permission";
 
 interface Role {
   id: string;
@@ -20,26 +21,6 @@ interface Role {
 interface PermissionGroup {
   resource: string;
   actions: string[];
-}
-
-// Define available resources and actions
-enum Resource {
-  USER = "USER",
-  ROLE = "ROLE",
-  CUSTOMER = "CUSTOMER",
-  MINT = "MINT",
-  BURN = "BURN",
-  FREEZE = "FREEZE",
-  BLACKLIST = "BLACKLIST",
-  REFUND = "REFUND",
-}
-
-enum Action {
-  CREATE = "CREATE",
-  READ = "READ",
-  UPDATE = "UPDATE",
-  DELETE = "DELETE",
-  APPROVE = "APPROVE",
 }
 
 export default function RolesTab() {

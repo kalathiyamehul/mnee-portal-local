@@ -3,6 +3,7 @@
 // (Full implementation moved to components directory)
 "use client";
 
+import { Action, Resource } from "@/lib/permission";
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 
@@ -25,25 +26,6 @@ interface PermissionGroup {
   actions: string[];
 }
 
-// Define available resources and actions
-enum Resource {
-  USER = "USER",
-  ROLE = "ROLE",
-  CUSTOMER = "CUSTOMER",
-  MINT = "MINT",
-  BURN = "BURN",
-  FREEZE = "FREEZE",
-  BLACKLIST = "BLACKLIST",
-  REFUND = "REFUND",
-}
-
-enum Action {
-  CREATE = "CREATE",
-  READ = "READ",
-  UPDATE = "UPDATE",
-  DELETE = "DELETE",
-  APPROVE = "APPROVE",
-}
 
 export default function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
