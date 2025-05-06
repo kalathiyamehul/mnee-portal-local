@@ -20,7 +20,6 @@ export default function SuperAdminPage({
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab as TabType);
   const router = useRouter();
   const searchParams = useSearchParams();
-
   useEffect(() => {
     setActiveTab(defaultTab as TabType);
   }, [defaultTab]);
