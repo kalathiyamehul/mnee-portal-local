@@ -54,8 +54,8 @@ const Sidebar: React.FC = () => {
     { resource: Resource.BURN, action: Action.MANAGE },
     { resource: Resource.CUSTOMER, action: Action.MANAGE },
     { resource: Resource.WALLET, action: Action.MANAGE },
-    // { resource: Resource.REFUND, action: Action.MANAGE },
-    // { resource: Resource.BLACKLIST, action: Action.MANAGE },
+    { resource: Resource.REFUND, action: Action.MANAGE },
+    { resource: Resource.BLACKLIST, action: Action.MANAGE },
     { resource: Resource.FREEZE, action: Action.MANAGE },
   ]);
   // console.log("canViewAdmin", canViewAdmin);

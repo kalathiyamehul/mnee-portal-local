@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
         const validatedData = roleSchema.parse(body);
 
         // Create role and its permissions in a transaction
+        // Modified transaction block
         const role = await prisma.$transaction(async (tx) => {
-            // Create the role
             const newRole = await tx.role.create({
                 data: {
                     name: validatedData.name,
@@ -60,18 +60,15 @@ export async function POST(request: NextRequest) {
                 },
             });
 
-            // If permissions are provided, create them and link to the role
             if (validatedData.permissions) {
+                const permissionIds = [];
                 for (const perm of validatedData.permissions) {
                     for (const action of perm.actions) {
-                        // Find or create permission
                         const permission = await tx.permission.upsert({
-                            where: {
-                                resource_action: {
-                                    resource: perm.resource,
-                                    action: action,
-                                }
-                            },
+                            where: { resource_action: {
+                                resource: perm.resource,
+                                action: action,
+                            }},
                             create: {
                                 name: `${perm.resource}_${action}`,
                                 resource: perm.resource,
@@ -79,16 +76,17 @@ export async function POST(request: NextRequest) {
                             },
                             update: {},
                         });
-
-                        // Link permission to role
-                        await tx.rolePermission.create({
-                            data: {
-                                roleId: newRole.id,
-                                permissionId: permission.id,
-                            },
-                        });
+                        permissionIds.push(permission.id);
                     }
                 }
+
+                // Batch create role permissions
+                await tx.rolePermission.createMany({
+                    data: permissionIds.map(permissionId => ({
+                        roleId: newRole.id,
+                        permissionId,
+                    })),
+                });
             }
 
             // Return role with permissions
@@ -102,7 +100,7 @@ export async function POST(request: NextRequest) {
                     }
                 }
             });
-        }, {timeout: 50000});
+        }, { timeout: 300000 });
 
         if (!role) {
             throw new Error("Failed to create role");
@@ -156,12 +154,13 @@ export async function PUT(request: NextRequest) {
 
             // If permissions are provided, update them
             if (validatedData.permissions) {
-                // Remove existing permissions
+                // Remove existing permissions first
                 await tx.rolePermission.deleteMany({
                     where: { roleId: id },
                 });
 
-                // Add new permissions
+                // Collect all permission IDs first
+                const permissionIds = [];
                 for (const perm of validatedData.permissions) {
                     for (const action of perm.actions) {
                         const permission = await tx.permission.upsert({
@@ -178,15 +177,17 @@ export async function PUT(request: NextRequest) {
                             },
                             update: {},
                         });
-
-                        await tx.rolePermission.create({
-                            data: {
-                                roleId: id,
-                                permissionId: permission.id,
-                            },
-                        });
+                        permissionIds.push(permission.id);
                     }
                 }
+
+                // Batch create role permissions
+                await tx.rolePermission.createMany({
+                    data: permissionIds.map(permissionId => ({
+                        roleId: id,
+                        permissionId,
+                    })),
+                });
             }
 
             // Return role with permissions
@@ -200,7 +201,7 @@ export async function PUT(request: NextRequest) {
                     }
                 }
             });
-        }, {timeout: 50000});
+        }, { timeout: 300000 });
 
         if (!updatedRole) {
             throw new Error("Failed to update role");
@@ -270,4 +271,4 @@ export async function DELETE(request: NextRequest) {
             { status: 500 }
         );
     }
-} 
+}

@@ -423,6 +423,15 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
                               Approve Refund
                             </button>
                           )}
+                           {/* Settlement Button */}
+                           {burn.burnRequest?.status === 'APPROVED' && (
+                            <button
+                              type="button"
+                              className="btn btn-success btn-sm"
+                            >
+                              Settle
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

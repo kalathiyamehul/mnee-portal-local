@@ -179,6 +179,15 @@ export const BurnTable = ({
 													Approve Refund
 												</button>
 											)}
+											 {/* Settlement Button */}
+											 {burn.burnRequest?.status === 'APPROVED' && (
+												<button
+												type="button"
+												className="btn btn-primary btn-sm"
+												>
+												Settle
+												</button>
+											)}
 										</td>
 									</tr>
 								);
