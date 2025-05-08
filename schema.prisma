@@ -256,7 +256,7 @@ model Config {
   mintAddress   String @map("mint_address")
   burnAddress   String @map("burn_address")
   fundAddress   String @map("fund_address")
-  mintNoOfApproval  Int    @default(2)
+  minNoOfApproval  Int    @default(2)
   maxNoOfApproval  Int     @default(50)
   globalJson    Json?
 
