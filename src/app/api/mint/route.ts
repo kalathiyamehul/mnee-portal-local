@@ -104,7 +104,16 @@ export async function POST(request: Request) {
           no_of_approvals: noOfApprovals,
         },
       });
-
+      await tx.activityLog.create({
+        data: {
+          name: "Mint Request Created",
+          action: "MINT_REQUEST_CREATE",
+          description: "A mint request has been created",
+          metadata: {
+            mintRequest: JSON.stringify(mintRequest),
+          },
+        },
+      });
       return mintRequest;
     });
 

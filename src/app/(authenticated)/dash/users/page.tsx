@@ -41,7 +41,6 @@ interface PaginatedResponse {
 }
 
 export default function UsersPage() {
-  const { data: session } = useSession();
   const { hasPermission } = usePermission();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);

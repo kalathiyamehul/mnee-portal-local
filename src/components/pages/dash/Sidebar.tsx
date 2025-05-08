@@ -11,6 +11,7 @@ import {
   FaUsers,
   FaShieldAlt,
   FaExchangeAlt,
+  FaHistory,
 } from "react-icons/fa";
 import { TbActivityHeartbeat } from "react-icons/tb";
 import { motion } from "framer-motion";
@@ -24,6 +25,7 @@ const menuItems = [
   { name: "Customers", href: "/dash/customers", icon: FaUsers },
   { name: "Users", href: "/dash/users", icon: FaUsers },
   { name: "Transactions", href: "/dash/transactions", icon: FaExchangeAlt },
+  { name: "Activity", href: "/dash/activity", icon: FaHistory },
   { name: "Config", href: "/dash/settings", icon: FaSliders },
   {
     name: "SuperAdmin",
