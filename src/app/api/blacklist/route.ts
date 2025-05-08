@@ -16,7 +16,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { address, action, no_of_approvals } = await request.json();
+
+  const { address, action, no_of_approvals, reason } = await request.json();
+
 
   // Validate input
   if (!address) {
@@ -65,10 +67,10 @@ export async function POST(request: Request) {
           address,
           status: 'PENDING',
           action: action as BlacklistAction,
+          reason,  // Add reason field
           requestedBy: session.user.id,
         },
       });
-
       return blacklistRequest;
     });
 
@@ -80,4 +82,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-} 
+}

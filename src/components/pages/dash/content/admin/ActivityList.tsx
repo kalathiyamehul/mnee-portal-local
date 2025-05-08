@@ -5,6 +5,8 @@ import { DEFAULT_DECIMALS } from "@/lib/constants";
 import type { Activity, ActivityListProps } from "./types";
 import { formatDistanceToNow } from "date-fns";
 import { getGravatarUrl } from "@/utils/gravatar";
+import { FaSpinner } from "react-icons/fa6";
+import { toast } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 import { useEffect, useState } from "react";
 import { ExportButtons } from "@/components/common/ExportButtons";
@@ -99,6 +101,52 @@ export const ActivityList = ({
     }
   };
 
+  console.log("filteredList", filteredActivities);
+
+  const [loadingReject, setLoadingReject] = useState<string | null>(null);
+
+  // Implement handleReject
+  const handleReject = async (id: string, type: "MINT" | "BURN") => {
+    try {
+      setLoadingReject(id);
+      const endpoint = type === "MINT" ? "/api/rejectMint" : "/api/rejectBurn";
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          [`${type.toLowerCase()}RequestId`]: id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || `Failed to reject ${type.toLowerCase()} request`
+        );
+      }
+
+      if (data.success) {
+        toast.success(data.message || `${type} request rejected`);
+      } else {
+        throw new Error(
+          data.error || `Failed to reject ${type.toLowerCase()} request`
+        );
+      }
+    } catch (error) {
+      console.error(`Failed to reject ${type.toLowerCase()} request:`, error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : `Failed to reject ${type.toLowerCase()} request`
+      );
+    } finally {
+      setLoadingReject(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {showPendingSwitch && (
@@ -180,6 +228,14 @@ export const ActivityList = ({
                                 MNEE
                               </div>
                             )}
+                            {(activity.type === "FREEZE" ||
+                              activity.type === "BLACKLIST") && (
+                              <div className="text-sm font-mono flex flex-col">
+                                <p className="opacity-70">
+                                  Address: {activity.address}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -200,9 +256,10 @@ export const ActivityList = ({
                             activity.type === "BLACKLIST" ||
                             (activity.type === "MINT" && !activity.customer)) &&
                             activity.address && (
-                              <div className="text-sm font-mono">
-                                <span className="opacity-70">Address:</span>{" "}
-                                {activity.address}
+                              <div className="text-sm font-mono flex flex-col">
+                                <p className="opacity-70">
+                                  Reason: {activity?.reason}
+                                </p>
                               </div>
                             )}
                           {activity.type === "BURN" && activity.outpoint && (
@@ -231,20 +288,30 @@ export const ActivityList = ({
                               </a>
                             </div>
                           )}
-                          <div
-                            className="tooltip tooltip-bottom "
-                            data-tip="Verify on WhatsOnChain"
-                          >
-                            <a
-                              href={`https://whatsonchain.com/address/${activity.address}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn btn-link btn-xs px-0"
-                            >
-                              View on Explorer{" "}
-                              <MdOutlineOpenInNew className="w-3 h-3" />
-                            </a>
-                          </div>
+                          {activity.type === "REFUND" && activity.outpoint && (
+                            <div className="text-sm font-mono">
+                              <span className="opacity-70">Outpoint:</span>{" "}
+                              <a
+                                href={(() => {
+                                  const vout = Number.parseInt(
+                                    activity.outpoint.split("_")[1],
+                                    10
+                                  );
+                                  const outputOffset =
+                                    Math.floor(vout / 10) * 10;
+                                  return `https://whatsonchain.com/tx/${
+                                    activity.outpoint.split("_")[0]
+                                  }?limit=10&output=${vout}&outputOffset=${outputOffset}&tab=m8eqcrbs`;
+                                })()}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-link btn-xs px-0"
+                              >
+                                View on Explorer{" "}
+                                <MdOutlineOpenInNew className="w-3 h-3" />
+                              </a>
+                            </div>
+                          )}
                         </div>
                       </td>
                       {showRequester && (
@@ -306,8 +373,8 @@ export const ActivityList = ({
                           </span>
                           {activity.status === "PENDING" && needsApproval && (
                             <span className="text-xs opacity-70">
-                              {activity.approvals?.length || 0}/{activity.no_of_approvals}{" "}
-                              Approvals
+                              {activity.approvals?.length || 0}/
+                              {activity.no_of_approvals} Approvals
                             </span>
                           )}
                         </div>
@@ -326,17 +393,51 @@ export const ActivityList = ({
                             </button>
                           )}
                           {canApprove(activity) && (
-                            <div className="flex gap-2 items-center">
-                              <button
-                                type="button"
-                                className="btn btn-primary btn-xs"
-                                onClick={() =>
-                                  handleApprove(activity.id, activity.type)
-                                }
-                              >
-                                Approve
-                              </button>
-                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-primary btn-xs"
+                              onClick={() =>
+                                handleApprove(activity.id, activity.type)
+                              }
+                            >
+                              Approve
+                            </button>
+                          )}
+                          {/* Add Reject button for pending mint requests not by self and not already approved */}
+                          {activity.type === "MINT" && canApprove(activity) && (
+                            <button
+                              type="button"
+                              className="btn btn-error btn-xs"
+                              onClick={() => handleReject(activity.id, "MINT")}
+                              disabled={loadingReject === activity.id}
+                            >
+                              {loadingReject === activity.id ? (
+                                <>
+                                  <FaSpinner className="animate-spin mr-1" />
+                                  Rejecting...
+                                </>
+                              ) : (
+                                "Reject"
+                              )}
+                            </button>
+                          )}
+                          {/* Add Reject button for pending Burn requests not by self and not already approved */}
+                          {activity.type === "BURN" && canApprove(activity) && (
+                            <button
+                              type="button"
+                              className="btn btn-error btn-xs"
+                              onClick={() => handleReject(activity.id, "BURN")}
+                              disabled={loadingReject === activity.id}
+                            >
+                              {loadingReject === activity.id ? (
+                                <>
+                                  <FaSpinner className="animate-spin mr-1" />
+                                  Rejecting...
+                                </>
+                              ) : (
+                                "Reject"
+                              )}
+                            </button>
                           )}
                         </div>
                       </td>

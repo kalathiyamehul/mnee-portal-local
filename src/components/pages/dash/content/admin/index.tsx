@@ -151,6 +151,7 @@ export default function AdminPage({ defaultTab = 'activity' }: AdminPageProps) {
 					isFrozen,
 					hasPendingFreeze: !!pendingFreeze,
 					hasPendingBlacklist: !!pendingBlacklist,
+					reason: pendingFreeze?.reason || pendingBlacklist?.reason || latestFreezeAction?.reason || latestBlacklistAction?.reason,
 					pendingFreezeAction: pendingFreeze?.action === 'FREEZE' || pendingFreeze?.action === 'UNFREEZE' 
 						? pendingFreeze.action 
 						: undefined,
