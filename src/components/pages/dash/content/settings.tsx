@@ -234,81 +234,6 @@ const TokenDetailsSection = ({
 	);
 };
 
-function SuperAdminConfigModal({
-  config,
-  onClose,
-  onSave,
-}: {
-  config: Config;
-  onClose: () => void;
-  onSave: (updated: { noOfApproval: number; globalJson: any }) => void;
-}) {
-  const [noOfApproval, setNoOfApproval] = useState<number>(
-    config.noOfApproval || 2
-  );
-  const [globalJsonStr, setGlobalJsonStr] = useState<string>(
-    JSON.stringify(config.globalJson ?? {}, null, 2)
-  );
-  const [jsonError, setJsonError] = useState<string>("");
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = () => {
-    setJsonError("");
-    let parsedJson: any = {};
-    try {
-      parsedJson = globalJsonStr ? JSON.parse(globalJsonStr) : {};
-    } catch (e) {
-      setJsonError("Invalid JSON");
-      return;
-    }
-    setSaving(true);
-    onSave({ noOfApproval, globalJson: parsedJson });
-    setSaving(false);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-base-100 rounded-lg shadow-lg p-6 w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">Edit Super Admin Config</h2>
-        <div className="mb-4">
-          <label className="block font-medium mb-1">No. of Approval</label>
-          <input
-            type="number"
-            className="input input-bordered w-full"
-            value={noOfApproval}
-            min={1}
-            onChange={(e) => setNoOfApproval(Number(e.target.value))}
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block font-medium mb-1">Global JSON</label>
-          <textarea
-            className="textarea textarea-bordered w-full font-mono text-xs"
-            rows={6}
-            value={globalJsonStr}
-            onChange={(e) => setGlobalJsonStr(e.target.value)}
-          />
-          {jsonError && (
-            <div className="text-error text-xs mt-1">{jsonError}</div>
-          )}
-        </div>
-        <div className="flex justify-end gap-2">
-          <button className="btn btn-sm" onClick={onClose} disabled={saving}>
-            Cancel
-          </button>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const DashboardSettingsContent = () => {
   const [config, setConfig] = useState<Config | null>(null);
   const [loading, setLoading] = useState(true);
@@ -533,48 +458,6 @@ const DashboardSettingsContent = () => {
               </div>
             </div>
           </div>
-
-          {/* Super Admin Config Modal */}
-          {showSuperAdminModal && (
-            <SuperAdminConfigModal
-              config={config}
-              onClose={() => setShowSuperAdminModal(false)}
-              onSave={async (updated) => {
-                setLoading(true);
-                try {
-                  const response = await fetch("/api/config", {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      noOfApproval: updated.noOfApproval,
-                      globalJson: updated.globalJson,
-                    }),
-                  });
-                  if (!response.ok) {
-                    const { error } = await response.json();
-                    throw new Error(
-                      error || "Failed to save superadmin config"
-                    );
-                  }
-                  setConfig({
-                    ...config,
-                    noOfApproval: updated.noOfApproval,
-                    globalJson: updated.globalJson,
-                  });
-                  toast.success("Super Admin config updated");
-                  setShowSuperAdminModal(false);
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : "Failed to update superadmin config"
-                  );
-                } finally {
-                  setLoading(false);
-                }
-              }}
-            />
-          )}
         </div>
 
         {/* Right Column - System Addresses */}

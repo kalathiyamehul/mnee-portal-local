@@ -66,7 +66,8 @@ export async function POST(request: Request) {
         mintAddress,
         burnAddress,
         fees: defaultFees,
-        noOfApproval: noOfApproval ?? 2,
+        minNoOfApproval: noOfApproval ?? 2,
+        maxNoOfApproval: 50,
         globalJson: globalJson ?? {},
       },
     });
@@ -85,12 +86,13 @@ export async function POST(request: Request) {
 }
 export async function PATCH(request: Request) {
   const body = await request.json();
-  const { noOfApproval, globalJson } = body;
+  const { minNoOfApproval, maxNoOfApproval, globalJson } = body;
   try {
     await prisma.config.update({
       where: { id: 1 },
       data: {
-        ...(noOfApproval !== undefined ? { noOfApproval } : {}),
+        ...(minNoOfApproval !== undefined ? { minNoOfApproval: minNoOfApproval } : {}),
+        ...(maxNoOfApproval !== undefined ? { maxNoOfApproval: maxNoOfApproval } : {}),
         ...(globalJson !== undefined ? { globalJson } : {}),
       },
     });

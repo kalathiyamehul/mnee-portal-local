@@ -8,25 +8,78 @@ interface Threshold {
 }
 
 const ThresholdTab = () => {
-  // Static thresholds data
-  const [thresholds, setThresholds] = useState<Threshold[]>([
-    { id: '1', name: 'Minimum Approvals', value: 2 },
-    { id: '2', name: 'Maximum Approvals', value: 1000 },
-  ])
+  const [loading, setLoading] = useState(true);
+  const [thresholds, setThresholds] = useState<Threshold[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingThreshold, setEditingThreshold] = useState<Threshold | null>(
+    null
+  );
 
-  // Remove loading state and useEffect
-  const [isEditing, setIsEditing] = useState(false)
-  const [editingThreshold, setEditingThreshold] = useState<Threshold | null>(null)
+  // Fetch initial config data
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch("/api/config/database");
+        if (!response.ok) {
+          throw new Error("Failed to fetch configuration");
+        }
+        const config = await response.json();
+        setThresholds([
+          {
+            id: "1",
+            name: "Minimum Approvals",
+            value: config.minNoOfApproval,
+          },
+          { id: "2", name: "Maximum Approvals", value: config.maxNoOfApproval },
+        ]);
+      } catch (error) {
+        console.error("Error fetching config:", error);
+        toast.error("Failed to load threshold settings");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchConfig();
+  }, []);
 
-  // Modified handleUpdateThreshold to work with local state
   const handleUpdateThreshold = async () => {
-    if (!editingThreshold) return
-    
-    setThresholds(prev => 
-      prev.map(t => t.id === editingThreshold.id ? editingThreshold : t)
-    )
-    toast.success('Threshold updated successfully')
-    setIsEditing(false)
+    if (!editingThreshold) return;
+
+    try {
+      const response = await fetch("/api/config", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          minNoOfApproval:
+            editingThreshold.id === "1" ? editingThreshold.value : undefined,
+          maxNoOfApproval:
+            editingThreshold.id === "2" ? editingThreshold.value : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update threshold");
+      }
+
+      setThresholds((prev) =>
+        prev.map((t) => (t.id === editingThreshold.id ? editingThreshold : t))
+      );
+      toast.success("Threshold updated successfully");
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating threshold:", error);
+      toast.error("Failed to update threshold");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <div className="loading loading-spinner loading-lg" />
+      </div>
+    );
   }
 
   return (
@@ -53,8 +106,8 @@ const ThresholdTab = () => {
                   <button
                     className="btn btn-primary btn-sm"
                     onClick={() => {
-                      setEditingThreshold(threshold)
-                      setIsEditing(true)
+                      setEditingThreshold(threshold);
+                      setIsEditing(true);
                     }}
                   >
                     Edit
@@ -79,9 +132,11 @@ const ThresholdTab = () => {
                 min="1"
                 className="input input-bordered w-full"
                 value={editingThreshold?.value}
-                onChange={(e) => setEditingThreshold(prev => 
-                  prev ? {...prev, value: Number(e.target.value)} : null
-                )}
+                onChange={(e) =>
+                  setEditingThreshold((prev) =>
+                    prev ? { ...prev, value: Number(e.target.value) } : null
+                  )
+                }
               />
             </div>
             <div className="modal-action">
@@ -99,7 +154,7 @@ const ThresholdTab = () => {
         </div>
       )}
     </div>
-  )
+  );
 }
 
 export default ThresholdTab
