@@ -24,7 +24,7 @@ export interface ResourcePermission {
     permissions: Action[];
 }
 
-export const DEFAULT_RESOURCE_PERMISSIONS: ResourcePermission[] = [
+export const RESOURCE_PERMISSIONS: ResourcePermission[] = [
     {
         name: Resource.SUPER_ADMIN,
         permissions: [Action.MANAGE]
