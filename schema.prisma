@@ -324,3 +324,15 @@ model RolePermission {
   @@unique([roleId, permissionId])
   @@map("role_permission")
 }
+
+
+model ActivityLog {
+  id           String    @id @default(uuid())
+  name         String?    @map("name")
+  action       String?
+  description  String?
+  metadata     Json?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  @@map("activity_log")
+}
