@@ -22,6 +22,8 @@ const getRowBorderClass = (status: string | undefined) => {
       return 'border-l-4 border-l-warning';
     case 'APPROVED':
       return 'border-l-4 border-l-success';
+    case 'SETTLEMENT':
+      return 'border-l-4 border-l-success';
     case 'REFUNDED':
       return 'border-l-4 border-l-info';
     case 'CANCELLED':
@@ -264,7 +266,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
 
   // Split burns into pending/active and completed
   const activeBurns = burns.filter(burn => !burn.burnRequest || ['PENDING', 'CANCELLED'].includes(burn.burnRequest.status));
-  const completedBurns = burns.filter(burn => burn.burnRequest && ['APPROVED', 'REFUNDED'].includes(burn.burnRequest.status));
+  const completedBurns = burns.filter(burn => burn.burnRequest && ['APPROVED', 'REFUNDED', 'SETTLEMENT'].includes(burn.burnRequest.status));
 
   return (
     <div className="p-4 space-y-8">

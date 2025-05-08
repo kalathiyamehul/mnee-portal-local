@@ -65,7 +65,7 @@ export interface MintRequest extends BaseRequest {
 export interface BurnRequest {
 	id: string;
 	amount: string;
-	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'REFUNDED';
+	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'REFUNDED' | 'SETTLEMENT';
 	requester: {
 		email: string;
 		name: string | null;
@@ -96,7 +96,8 @@ export type ActivityStatus =
   | "CANCELLED"
   | "DONE"
   | "REFUNDED"
-  | "REJECTED";
+  | "REJECTED"
+  | "SETTLEMENT";
 
 export interface Activity {
   id: string;
