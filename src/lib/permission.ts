@@ -2,6 +2,7 @@ export enum Resource {
     SUPER_ADMIN = "SUPER_ADMIN",
     WALLET = "WALLET",
     CUSTOMER = "CUSTOMER",
+    USER = "USER",
     MINT = "MINT",
     BURN = "BURN",
     FREEZE = "FREEZE",
