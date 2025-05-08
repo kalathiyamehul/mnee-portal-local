@@ -65,7 +65,7 @@ export interface MintRequest extends BaseRequest {
 export interface BurnRequest {
 	id: string;
 	amount: string;
-	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'REFUNDED';
+	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'REFUNDED' | 'SETTLED';
 	requester: {
 		email: string;
 		name: string | null;
@@ -96,7 +96,8 @@ export type ActivityStatus =
   | "CANCELLED"
   | "DONE"
   | "REFUNDED"
-  | "REJECTED";
+  | "REJECTED"
+  | "SETTLED";
 
 export interface Activity {
   id: string;
@@ -180,6 +181,18 @@ export interface ActivityListProps {
 	getApprovalCount: (activity: Activity) => number;
 	showPendingSwitch?: boolean;
 	showRequester?: boolean;
+	permissions: {
+		hasApproveMintPer: boolean;
+		hasRejectMintPer: boolean;
+		hasApproveBurnPer: boolean;
+		hasRejectBurnPer: boolean;
+		hasApproveRefundPer: boolean;
+		hasRejectRefundPer: boolean;
+		hasApproveBlacklistPer: boolean;
+		hasRejectBlacklistPer: boolean;
+		hasApproveFreezePer: boolean;
+		hasRejectFreezePer: boolean;
+	  };
 }
 
 export interface SystemStatusProps {

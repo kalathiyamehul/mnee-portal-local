@@ -1,22 +1,39 @@
-import { FaBan, FaSnowflake } from 'react-icons/fa6';
-import { MdRemoveCircleOutline } from 'react-icons/md';
-import type { Activity, AddressStatus } from './types';
-import type { MouseEvent } from 'react';
-import { useEffect } from 'react';
+import { FaBan, FaSnowflake } from "react-icons/fa6";
+import { MdRemoveCircleOutline } from "react-icons/md";
+import type { Activity, AddressStatus } from "./types";
+import type { MouseEvent } from "react";
+import { useEffect } from "react";
 import { getGravatarUrl } from "@/utils/gravatar";
-import type { Session } from 'next-auth';
+import type { Session } from "next-auth";
 
 interface ActiveRestrictionsProps {
   restrictions: AddressStatus[];
   loading: boolean;
-  handleUnblacklist: (e: MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
-  handleBlacklist: (e: MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
-  handleFreezeRequest: (e: MouseEvent<HTMLButtonElement>, address: string) => Promise<void>;
+  handleUnblacklist: (
+    e: MouseEvent<HTMLButtonElement>,
+    address: string
+  ) => Promise<void>;
+  handleBlacklist: (
+    e: MouseEvent<HTMLButtonElement>,
+    address: string
+  ) => Promise<void>;
+  handleFreezeRequest: (
+    e: MouseEvent<HTMLButtonElement>,
+    address: string
+  ) => Promise<void>;
   handleUnfreeze: (address: string) => Promise<void>;
   activities: Activity[];
   handleCancel: (id: string, type: Activity["type"]) => Promise<void>;
   handleApprove: (id: string, type: Activity["type"]) => Promise<void>;
   session: Session;
+  permissions: {
+    hasCreateBlacklistPer: boolean;
+    hasApproveBlacklistPer: boolean;
+    hasRejectBlacklistPer: boolean;
+    hasCreateFreezePer: boolean;
+    hasApproveFreezePer: boolean;
+    hasRejectFreezePer: boolean;
+  };
 }
 
 export const ActiveRestrictions = ({
@@ -29,7 +46,8 @@ export const ActiveRestrictions = ({
   activities,
   handleCancel,
   handleApprove,
-  session
+  session,
+  permissions,
 }: ActiveRestrictionsProps) => {
   // useEffect(() => {
   //   for (const status of restrictions) {
@@ -46,15 +64,20 @@ export const ActiveRestrictions = ({
 
   const canCancel = (activity: Activity) => {
     if (!session?.user?.email) return false;
-    return activity.status === 'PENDING' && activity.requester.email === session.user.email;
+    return (
+      activity.status === "PENDING" &&
+      activity.requester.email === session.user.email
+    );
   };
 
   const canApprove = (activity: Activity) => {
     if (!session?.user?.email) return false;
-    if (activity.status !== 'PENDING') return false;
+    if (activity.status !== "PENDING") return false;
     if (activity.requester.email === session.user.email) return false;
-    if (activity.type === 'BLACKLIST') return false;
-    return !activity.approvals?.some(approval => approval.approver?.email === session.user.email);
+    if (activity.type === "BLACKLIST") return false;
+    return !activity.approvals?.some(
+      (approval) => approval.approver?.email === session.user.email
+    );
   };
 
   return (
@@ -91,9 +114,7 @@ export const ActiveRestrictions = ({
               </td>
               <td className='w-1/6'>
                 <div className="flex flex-col gap-2">
-                  <div className="font-mono text-sm">
-                    {status.address}
-                  </div>
+                  <div className="font-mono text-sm">{status.address}</div>
                   <div className="flex flex-wrap gap-2">
                     {status.isBlacklisted && (
                       <span className="badge badge-error badge-md gap-1">
@@ -107,12 +128,18 @@ export const ActiveRestrictions = ({
                     )}
                     {status.hasPendingFreeze && (
                       <span className="badge badge-warning badge-md gap-1">
-                        <FaSnowflake className="w-3 h-3" /> {status.pendingFreezeAction === 'UNFREEZE' ? 'Unfreezing' : 'Freezing'}
+                        <FaSnowflake className="w-3 h-3" />{" "}
+                        {status.pendingFreezeAction === "UNFREEZE"
+                          ? "Unfreezing"
+                          : "Freezing"}
                       </span>
                     )}
                     {status.hasPendingBlacklist && (
                       <span className="badge badge-warning badge-md gap-1">
-                        <FaBan className="w-3 h-3" /> {status.pendingBlacklistAction === 'UNBLACKLIST' ? 'Unblacklisting' : 'Blacklisting'}
+                        <FaBan className="w-3 h-3" />{" "}
+                        {status.pendingBlacklistAction === "UNBLACKLIST"
+                          ? "Unblacklisting"
+                          : "Blacklisting"}
                       </span>
                     )}
                   </div>
@@ -126,7 +153,7 @@ export const ActiveRestrictions = ({
               </td>
               <td className='w-1/4'>
                 <div className="flex flex-wrap gap-2">
-                  {!status.isBlacklisted && !status.hasPendingBlacklist && (
+                  {!status.isBlacklisted && !status.hasPendingBlacklist && permissions.hasCreateBlacklistPer && (
                     <button
                       type="button"
                       className="btn btn-error btn-sm"
@@ -143,7 +170,8 @@ export const ActiveRestrictions = ({
                       onClick={(e) => handleUnblacklist(e, status.address)}
                       disabled={loading}
                     >
-                      <MdRemoveCircleOutline className="w-3 h-3 mr-1" /> Unblacklist
+                      <MdRemoveCircleOutline className="w-3 h-3 mr-1" />{" "}
+                      Unblacklist
                     </button>
                   )}
                   {status.isFrozen && !status.hasPendingFreeze && (
@@ -156,7 +184,7 @@ export const ActiveRestrictions = ({
                       <FaSnowflake className="w-3 h-3" /> Unfreeze
                     </button>
                   )}
-                  {!status.isFrozen && !status.hasPendingFreeze && (
+                  {!status.isFrozen && !status.hasPendingFreeze && permissions.hasCreateFreezePer && (
                     <button
                       type="button"
                       className="btn btn-sm btn-error"
@@ -166,23 +194,28 @@ export const ActiveRestrictions = ({
                       <FaSnowflake className="w-3 h-3" /> Freeze
                     </button>
                   )}
-                  {(status.hasPendingFreeze || status.hasPendingBlacklist) && (
+                  {(status.hasPendingFreeze && permissions.hasApproveFreezePer || status.hasPendingBlacklist && permissions.hasApproveBlacklistPer) && (
                     <>
                       {/* Find the pending requests for this address */}
                       {activities
-                        .filter(activity => 
-                          ((activity.type === 'FREEZE' && status.hasPendingFreeze) ||
-                           (activity.type === 'BLACKLIST' && status.hasPendingBlacklist)) && 
-                          activity.address === status.address && 
-                          activity.status === 'PENDING'
+                        .filter(
+                          (activity) =>
+                            ((activity.type === "FREEZE" &&
+                              status.hasPendingFreeze) ||
+                              (activity.type === "BLACKLIST" &&
+                                status.hasPendingBlacklist)) &&
+                            activity.address === status.address &&
+                            activity.status === "PENDING"
                         )
-                        .map(activity => (
+                        .map((activity) => (
                           <div key={activity.id} className="flex gap-2">
                             {canCancel(activity) && (
                               <button
                                 type="button"
                                 className="btn btn-ghost btn-sm"
-                                onClick={() => handleCancel(activity.id, activity.type)}
+                                onClick={() =>
+                                  handleCancel(activity.id, activity.type)
+                                }
                                 disabled={loading}
                               >
                                 Cancel
@@ -192,15 +225,16 @@ export const ActiveRestrictions = ({
                               <button
                                 type="button"
                                 className="btn btn-success btn-sm"
-                                onClick={() => handleApprove(activity.id, activity.type)}
+                                onClick={() =>
+                                  handleApprove(activity.id, activity.type)
+                                }
                                 disabled={loading}
                               >
                                 Approve
                               </button>
                             )}
                           </div>
-                        ))
-                      }
+                        ))}
                     </>
                   )}
                 </div>
@@ -211,4 +245,4 @@ export const ActiveRestrictions = ({
       </table>
     </div>
   );
-}; 
+};

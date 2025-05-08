@@ -2,6 +2,7 @@ import type { Config } from '@prisma/client';
 import { ActivityList } from './ActivityList';
 import type { Activity } from './types';
 import type { IconType } from 'react-icons';
+import { boolean } from 'zod';
 
 interface ActivityTabProps {
   activities: Activity[];
@@ -18,6 +19,18 @@ interface ActivityTabProps {
   getActivityDisplayText: (activity: Activity) => string;
   requiresApproval: (activity: Activity) => boolean;
   getApprovalCount: (activity: Activity) => number;
+  permissions: {
+    hasApproveMintPer: boolean;
+    hasRejectMintPer: boolean;
+    hasApproveBurnPer: boolean;
+    hasRejectBurnPer: boolean;
+    hasApproveRefundPer: boolean;
+    hasRejectRefundPer: boolean;
+    hasApproveBlacklistPer: boolean;
+    hasRejectBlacklistPer: boolean;
+    hasApproveFreezePer: boolean;
+    hasRejectFreezePer: boolean;
+  };
 }
 
 export const ActivityTab = ({
@@ -34,6 +47,7 @@ export const ActivityTab = ({
   getActivityDisplayText,
   requiresApproval,
   getApprovalCount,
+  permissions,
 }: ActivityTabProps) => {
   return (
     <div className="p-4">
@@ -51,7 +65,8 @@ export const ActivityTab = ({
         getActivityDisplayText={getActivityDisplayText}
         requiresApproval={requiresApproval}
         getApprovalCount={getApprovalCount}
+        permissions={permissions}
       />
     </div>
   );
-}; 
+};

@@ -20,6 +20,8 @@ import { FetchStatus } from "@/types/common";
 import { ErrorIcon } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
+import { usePermission } from "@/hooks/usePermission";
+import { Resource, Action } from "@/lib/permission";
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
@@ -31,7 +33,7 @@ export default function DashboardCustomersContent() {
     null
   );
   const [config, setConfig] = useState<Config | null>(null);
-
+  const { hasPermission } = usePermission();
   useEffect(() => {
     const init = async () => {
       try {
@@ -111,14 +113,16 @@ export default function DashboardCustomersContent() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
           <ExportButtons filename="customers" onExport={handleExport} />
-          <button
-            type="button"
-            onClick={() => setShowModal(true)}
-            className="btn btn-primary btn-sm gap-2"
-          >
-            <FaUserPlus className="w-4 h-4" />
-            Add Customer
-          </button>
+          {hasPermission(Resource.CUSTOMER, Action.CREATE) && (
+            <button
+              type="button"
+              onClick={() => setShowModal(true)}
+              className="btn btn-primary btn-sm gap-2"
+            >
+              <FaUserPlus className="w-4 h-4" />
+              Add Customer
+            </button>
+          )}
         </div>
       </div>
 
@@ -215,29 +219,31 @@ export default function DashboardCustomersContent() {
                 </td>
                 <td>
                   <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEdit(
-                          {
-                            id: customer.id,
-                            name: customer.name,
-                            email: customer.email,
-                            address: customer.address,
-                            createdBy: customer.creator.email,
-                            createdAt: new Date(customer.createdAt),
-                            updatedAt: new Date(customer.createdAt),
-                          },
-                          e
-                        );
-                      }}
-                      className="btn btn-ghost btn-sm gap-2"
-                      title="Edit customer"
-                    >
-                      <FaEdit className="w-4 h-4" />
-                      Edit
-                    </button>
+                    {hasPermission(Resource.CUSTOMER, Action.UPDATE) && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(
+                            {
+                              id: customer.id,
+                              name: customer.name,
+                              email: customer.email,
+                              address: customer.address,
+                              createdBy: customer.creator.email,
+                              createdAt: new Date(customer.createdAt),
+                              updatedAt: new Date(customer.createdAt),
+                            },
+                            e
+                          );
+                        }}
+                        className="btn btn-ghost btn-sm gap-2"
+                        title="Edit customer"
+                      >
+                        <FaEdit className="w-4 h-4" />
+                        Edit
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => {

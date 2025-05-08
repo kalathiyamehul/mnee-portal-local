@@ -4,7 +4,7 @@ import { FaCopy } from 'react-icons/fa6';
 import { format, formatDate, formatDistanceStrict, formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
-import { formatRevalidate } from 'next/dist/server/lib/revalidate';
+import React from 'react';
 
 interface BurnTableProps {
 	burns: BurnUtxo[];
@@ -14,6 +14,10 @@ interface BurnTableProps {
 	showViewAll?: boolean;
 	title?: string;
 	showRequester?: boolean;
+	hasApproveBurnPer?: boolean;
+	hasRejectBurnPer?: boolean;
+    hasRejectRefundPer?: boolean;
+    hasApproveRefundPer?: boolean;
 }
 
 export const BurnTable = ({
@@ -24,9 +28,11 @@ export const BurnTable = ({
 	showViewAll = false,
 	title = "Burns",
 	showRequester = true,
+    hasApproveRefundPer,
 }: BurnTableProps) => {
 	const { data: session } = useSession();
-	
+	const [settlingId, setSettlingId] = React.useState<string | null>(null);
+
 	const handleApproveRefund = async (refundId: string) => {
 		try {
 			const response = await fetch('/api/approveRefund', {
@@ -47,11 +53,42 @@ export const BurnTable = ({
 		}
 	};
 
+	const handleSettleBurn = async (burnRequestId: string) => {
+        setSettlingId(burnRequestId);
+        try {
+            const response = await fetch('/api/settleBurn', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ burnRequestId }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'Failed to settle burn request');
+            }
+
+            toast.success('Burn request settled successfully');
+            // Optionally, trigger a refresh or callback here
+        } catch (error) {
+            console.error('Error settling burn:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to settle burn request');
+        } finally {
+            setSettlingId(null);
+        }
+    };
+
 	const canApproveRefund = (burn: BurnUtxo) => {
 		if (!burn.refundRequest || !session?.user?.email) return false;
 		return burn.refundRequest.status === 'PENDING' && 
 			burn.refundRequest.requester.email !== session.user.email &&
 			!burn.refundRequest.approvals.some((approval: { approver?: { email: string } }) => approval.approver?.email === session.user.email);
+	};
+
+	const canSettle = (burn: BurnUtxo) => {
+		if (!burn.burnRequest || !session?.user?.email) return false;
+		return burn.burnRequest.status === 'APPROVED' && 
+			burn.burnRequest.requester.email !== session.user.email
 	};
 
 	if (!alwaysShow && burns.length === 0) return null;
@@ -102,6 +139,7 @@ export const BurnTable = ({
 											<div className={`badge ${
 												status === 'PENDING' ? 'badge-warning' :
 												status === 'APPROVED' ? 'badge-success' :
+												status === 'SETTLED'? 'badge-success' :
 												status === 'REFUNDED' ? 'badge-info' :
 												'badge-error'
 											}`}>
@@ -163,7 +201,7 @@ export const BurnTable = ({
 											</div>
 										</td>
 										<td>
-											{canApproveRefund(burn) && (
+											{canApproveRefund(burn) && hasApproveRefundPer && (
 												<button
 													type="button"
 													onClick={() => burn.refundRequest && handleApproveRefund(burn.refundRequest.id)}
@@ -172,6 +210,17 @@ export const BurnTable = ({
 													Approve Refund
 												</button>
 											)}
+											 {/* SETTLED Button */}
+											 {canSettle(burn) && (
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary btn-sm"
+                                                    onClick={() => burn.burnRequest?.id && handleSettleBurn(burn.burnRequest.id)}
+                                                    disabled={settlingId === burn.burnRequest?.id}
+                                                >
+                                                    {settlingId === burn.burnRequest?.id ? 'Settling...' : 'Settle'}
+                                                </button>
+                                            )}
 										</td>
 									</tr>
 								);
