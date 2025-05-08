@@ -16,7 +16,6 @@ interface MintModalProps {
 
 // Using a conservative max value to ensure safe BigInt conversion
 const MAX_TOKEN_VALUE = 10_000_000_000; // 1 billion tokens
-const MAX_UPROAR_VALUE = 1000; // Maximum no_of_approvals value
 
 export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -27,6 +26,31 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
   const [no_of_approvals, setnoOfApprovals] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingCustomers, setLoadingCustomers] = useState(true);
+  const [config, setConfig] = useState<{
+    minNoOfApproval: number;
+    maxNoOfApproval: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch("/api/config");
+        if (!response.ok) {
+          throw new Error("Failed to fetch configuration");
+        }
+        const data = await response.json();
+        setConfig({
+          minNoOfApproval: data.minNoOfApproval,
+          maxNoOfApproval: data.maxNoOfApproval,
+        });
+      } catch (error) {
+        console.error("Error fetching config:", error);
+        toast.error("Failed to fetch configuration");
+      }
+    };
+
+    fetchConfig();
+  }, []);
 
   useEffect(() => {
     const fetchCustomers = async () => {
@@ -50,7 +74,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomer?.address || !amount) return;
+    if (!selectedCustomer?.address || !amount || !config) return;
 
     if (Number(amount) <= 0) {
       toast.error("Amount must be greater than 0");
@@ -58,8 +82,14 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
     }
 
     const uproarValue = parseInt(no_of_approvals);
-    if (isNaN(uproarValue) || uproarValue < 2) {
-      toast.error("Uproar must be a non-negative integer");
+    if (
+      isNaN(uproarValue) ||
+      uproarValue < config.minNoOfApproval ||
+      uproarValue > config.maxNoOfApproval
+    ) {
+      toast.error(
+        `No of Approvals must be between ${config.minNoOfApproval} and ${config.maxNoOfApproval}`
+      );
       return;
     }
 
@@ -93,7 +123,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
     }
   };
 
-  if (loadingCustomers) {
+  if (loadingCustomers || !config) {
     return (
       <dialog id="mint_modal" className="modal modal-open">
         <div className="modal-box max-w-lg flex items-center justify-center">
@@ -203,25 +233,26 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
                   // Only allow non-negative integers
                   if (/^\d*$/.test(value)) {
                     let num = parseInt(value, 10);
-                    if (isNaN(num) || num < 2) {
-                      setnoOfApprovals("2");
-                    } else if (num > MAX_UPROAR_VALUE) {
+                    if (isNaN(num) || num < config.minNoOfApproval) {
+                      setnoOfApprovals(config.minNoOfApproval.toString());
+                    } else if (num > config.maxNoOfApproval) {
                       toast.error(
-                        `No of Approvals must be less than or equal to ${MAX_UPROAR_VALUE}`
+                        `No of Approvals must be less than or equal to ${config.maxNoOfApproval}`
                       );
                     } else {
                       setnoOfApprovals(value);
                     }
                   }
                 }}
-                placeholder="Enter no_of_approvals value (integer)"
-                min="2"
-                max={MAX_UPROAR_VALUE}
+                placeholder={`Enter no_of_approvals value (between ${config.minNoOfApproval} and ${config.maxNoOfApproval})`}
+                min={config.minNoOfApproval}
+                max={config.maxNoOfApproval}
                 required
               />
               <div className="label my-2">
                 <span className="label-text-alt text-sm text-base-content/70">
-                  No of Approvals must be a non-negative integer
+                  No of Approvals must be between {config.minNoOfApproval} and{" "}
+                  {config.maxNoOfApproval}
                 </span>
               </div>
             </label>
