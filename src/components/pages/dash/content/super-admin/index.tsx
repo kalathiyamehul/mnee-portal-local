@@ -42,14 +42,14 @@ export default function SuperAdminPage({
           className={`tab ${activeTab === "roles" ? "tab-active" : ""}`}
           onClick={() => handleTabChange("roles")}
         >
-          roles
+          Roles
         </button>
         <button
           type="button"
           className={`tab ${activeTab === "threshold" ? "tab-active" : ""}`}
           onClick={() => handleTabChange("threshold")}
         >
-          threshold
+          Threshold
         </button>
       </div>
 
