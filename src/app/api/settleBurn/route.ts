@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
       const systemCheck = await performSystemChecks(tx, {
         address: burnRequest.refundAddress ?? undefined,
-        operation: SystemOperation.SETTLEMENT_AFTER_BURN,
+        operation: SystemOperation.SETTLED_AFTER_BURN,
       });
       if (!systemCheck.isValid) {
         throw new Error(systemCheck.error);
@@ -53,17 +53,17 @@ export async function POST(request: Request) {
       await tx.burnRequest.update({
         where: { id: burnRequestId },
         data: {
-          status: "SETTLEMENT",
+          status: "SETTLED",
           updatedAt: new Date(),
         },
       });
 
-      return { status: "SETTLEMENT" };
+      return { status: "SETTLED" };
     });
 
     return NextResponse.json({
       success: true,
-      message: "Burn request SETTLEMENT",
+      message: "Burn request SETTLED",
       status: result.status,
     });
   } catch (error) {

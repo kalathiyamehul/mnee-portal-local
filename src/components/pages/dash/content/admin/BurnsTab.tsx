@@ -22,7 +22,7 @@ const getRowBorderClass = (status: string | undefined) => {
       return 'border-l-4 border-l-warning';
     case 'APPROVED':
       return 'border-l-4 border-l-success';
-    case 'SETTLEMENT':
+    case 'SETTLED':
       return 'border-l-4 border-l-success';
     case 'REFUNDED':
       return 'border-l-4 border-l-info';
@@ -266,7 +266,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
 
   // Split burns into pending/active and completed
   const activeBurns = burns.filter(burn => !burn.burnRequest || ['PENDING', 'CANCELLED'].includes(burn.burnRequest.status));
-  const completedBurns = burns.filter(burn => burn.burnRequest && ['APPROVED', 'REFUNDED', 'SETTLEMENT'].includes(burn.burnRequest.status));
+  const completedBurns = burns.filter(burn => burn.burnRequest && ['APPROVED', 'REFUNDED', 'SETTLED'].includes(burn.burnRequest.status));
 
   return (
     <div className="p-4 space-y-8">
@@ -425,7 +425,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
                               Approve Refund
                             </button>
                           )}
-                           {/* Settlement Button */}
+                           {/* SETTLED Button */}
                            {burn.burnRequest?.status === 'APPROVED' && (
                             <button
                               type="button"

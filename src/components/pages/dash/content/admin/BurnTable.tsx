@@ -139,7 +139,7 @@ export const BurnTable = ({
 											<div className={`badge ${
 												status === 'PENDING' ? 'badge-warning' :
 												status === 'APPROVED' ? 'badge-success' :
-												status === 'SETTLEMENT'? 'badge-success' :
+												status === 'SETTLED'? 'badge-success' :
 												status === 'REFUNDED' ? 'badge-info' :
 												'badge-error'
 											}`}>
@@ -210,7 +210,7 @@ export const BurnTable = ({
 													Approve Refund
 												</button>
 											)}
-											 {/* Settlement Button */}
+											 {/* SETTLED Button */}
 											 {canSettle(burn) && (
                                                 <button
                                                     type="button"
