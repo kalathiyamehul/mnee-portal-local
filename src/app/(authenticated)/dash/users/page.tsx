@@ -17,12 +17,17 @@ interface User {
   role?: {
     id: string;
     name: string;
-  };
+  } | null;
   createdAt: string;
   creator?: {
     name: string | null;
     email: string;
   };
+}
+
+interface Role {
+  id: string;
+  name: string;
 }
 
 interface PaginatedResponse {
@@ -49,7 +54,7 @@ export default function UsersPage() {
     roleId: "",
   });
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [roles, setRoles] = useState([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
@@ -137,7 +142,7 @@ export default function UsersPage() {
         body: JSON.stringify({
           name: editingUser.name,
           email: editingUser.email,
-          roleId: editingUser.role?.id,
+          roleId: editingUser.role?.id || null,
         }),
       });
 
@@ -279,7 +284,7 @@ export default function UsersPage() {
                     required
                   >
                     <option value="">Select a role</option>
-                    {roles.map((role: any) => (
+                    {roles.map((role) => (
                       <option key={role.id} value={role.id}>
                         {role.name}
                       </option>
@@ -335,7 +340,7 @@ export default function UsersPage() {
                   <input
                     type="text"
                     className="input input-bordered w-full max-w-md"
-                    value={editingUser.name}
+                    value={editingUser.name || ""}
                     onChange={(e) =>
                       setEditingUser((prev) =>
                         prev ? { ...prev, name: e.target.value } : null
@@ -351,7 +356,7 @@ export default function UsersPage() {
                   <input
                     type="email"
                     className="input input-bordered w-full max-w-md"
-                    value={editingUser.email}
+                    value={editingUser.email || ""}
                     onChange={(e) =>
                       setEditingUser((prev) =>
                         prev ? { ...prev, email: e.target.value } : null
@@ -372,19 +377,21 @@ export default function UsersPage() {
                         prev
                           ? {
                               ...prev,
-                              role: {
-                                ...prev.role,
-                                id: e.target.value,
-                                name: e.target.value,
-                              },
+                              role: e.target.value
+                                ? {
+                                    id: e.target.value,
+                                    name:
+                                      roles.find((r) => r.id === e.target.value)
+                                        ?.name || "",
+                                  }
+                                : undefined,
                             }
                           : null
                       )
                     }
-                    required
                   >
-                    <option value="">Select a role</option>
-                    {roles.map((role: any) => (
+                    <option value="">No Role</option>
+                    {roles.map((role) => (
                       <option key={role.id} value={role.id}>
                         {role.name}
                       </option>
@@ -408,7 +415,7 @@ export default function UsersPage() {
                   type="submit"
                   className="btn btn-primary"
                   disabled={
-                    !editingUser.name.trim() || !editingUser.email.trim()
+                    !editingUser.name?.trim() || !editingUser.email?.trim()
                   }
                 >
                   Save Changes
@@ -451,7 +458,9 @@ export default function UsersPage() {
                       </div>
                     </div>
                     <div>
-                      <div className="font-medium">{user.name}</div>
+                      <div className="font-medium">
+                        {user.name || "Unnamed User"}
+                      </div>
                       <div className="text-sm text-base-content/70">
                         {user.email}
                       </div>
@@ -459,7 +468,13 @@ export default function UsersPage() {
                   </div>
                 </td>
                 <td>
-                  <div className="text-sm">{user.role?.name || "No Role"}</div>
+                  <div className="text-sm">
+                    {user.role?.name || (
+                      <span className="text-base-content/50 italic">
+                        No Role
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td>
                   <div className="flex items-center gap-3">
