@@ -14,6 +14,7 @@ interface BurnTableProps {
 	showViewAll?: boolean;
 	title?: string;
 	showRequester?: boolean;
+	showActions?: boolean;
 	hasApproveBurnPer?: boolean;
 	hasRejectBurnPer?: boolean;
     hasRejectRefundPer?: boolean;
@@ -26,6 +27,7 @@ export const BurnTable = ({
 	onCopyTxid, 
 	alwaysShow = false,
 	showViewAll = false,
+	showActions,
 	title = "Burns",
 	showRequester = true,
     hasApproveRefundPer,
@@ -112,7 +114,7 @@ export const BurnTable = ({
 							<th>Transaction</th>
 							{showRequester && <th>Requester</th>}
 							<th>Time</th>
-							<th>Actions</th>
+							{showActions && <th>Actions</th>}
 						</tr>
 					</thead>
 					<tbody>
@@ -200,7 +202,7 @@ export const BurnTable = ({
 												{formatDate(createdAt, 'PPpp')}
 											</div>
 										</td>
-										<td>
+										{showActions && <td>
 											{canApproveRefund(burn) && hasApproveRefundPer && (
 												<button
 													type="button"
@@ -221,7 +223,7 @@ export const BurnTable = ({
                                                     {settlingId === burn.burnRequest?.id ? 'Settling...' : 'Settle'}
                                                 </button>
                                             )}
-										</td>
+										</td>}
 									</tr>
 								);
 							})

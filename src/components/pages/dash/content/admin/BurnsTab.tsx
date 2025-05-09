@@ -304,6 +304,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
   // Split burns into pending/active and completed
   const activeBurns = burns.filter(burn => !burn.burnRequest || ['PENDING', 'CANCELLED'].includes(burn.burnRequest.status));
   const completedBurns = burns.filter(burn => burn.burnRequest && ['APPROVED', 'REFUNDED', 'SETTLED'].includes(burn.burnRequest.status));
+  const showActions = hasApproveBurnPer || hasRejectBurnPer || hasApproveRefundPer || hasRejectRefundPer;
 
   return (
     <div className="p-4 space-y-8">
@@ -333,7 +334,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
                     <th>Amount</th>
                     <th>Date</th>
                     <th>Status</th>
-                    <th>Actions</th>
+                    {showActions && <th>Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -515,6 +516,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
             burns={completedBurns}
             decimals={decimals}
             onCopyTxid={handleCopyTxid}
+            showActions={showActions}
             alwaysShow={true}
             hasApproveBurnPer={hasApproveBurnPer}
             hasRejectBurnPer={hasRejectBurnPer}

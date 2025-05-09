@@ -202,6 +202,12 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
           a.address === address
       );
 
+      const reason = activities.filter(
+        (a) =>
+          (a.type === "FREEZE" || a.type === "BLACKLIST") &&
+          a.reason === activity.reason
+      );
+
       // Get latest freeze action
       const latestFreezeAction = addressActions
         .filter((a) => a.type === "FREEZE" && a.status === "APPROVED")
@@ -269,6 +275,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         addressMap.set(address, {
           address,
           isBlacklisted,
+          reason : activity?.reason || '',
           isFrozen,
           hasPendingFreeze: !!pendingFreeze,
           hasPendingBlacklist: !!pendingBlacklist,

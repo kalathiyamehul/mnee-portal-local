@@ -65,6 +65,8 @@ export const ActiveRestrictionsTab = ({
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
+  const showActions = permissions.hasApproveBlacklistPer || permissions.hasApproveFreezePer || permissions.hasRejectBlacklistPer || permissions.hasRejectFreezePer;
+
   const getActionBadgeClass = (activity: Activity) => {
     if (activity.type === "BLACKLIST") {
       return "badge-error";
@@ -134,6 +136,7 @@ export const ActiveRestrictionsTab = ({
         handleBlacklist={handleBlacklist}
         handleFreezeRequest={handleFreezeRequest}
         handleUnfreeze={handleUnfreeze}
+        showActions={showActions}
         activities={activities}
         handleCancel={handleCancel}
         handleApprove={handleApprove}
