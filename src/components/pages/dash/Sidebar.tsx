@@ -23,6 +23,7 @@ const menuItems = [
   { name: "Dashboard", href: "/dash", icon: TbActivityHeartbeat },
   { name: "Wallet", href: "/dash/wallet", icon: FaWallet },
   { name: "Customers", href: "/dash/customers", icon: FaUsers },
+  { name: "Admin", href: "/dash/admin", icon: FaGear },
   { name: "Transactions", href: "/dash/transactions", icon: FaExchangeAlt },
   { name: "Activity", href: "/dash/activity", icon: FaHistory },
   { name: "Config", href: "/dash/settings", icon: FaSliders },
