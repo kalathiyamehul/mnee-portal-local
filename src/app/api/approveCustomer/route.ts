@@ -12,25 +12,45 @@ export async function POST(request: Request) {
   try {
     const { customerRequestId } = await request.json();
     
-    const customerRequest = await prisma.customerRequest.update({
-      where: { id: customerRequestId },
-      include: { approvals: true },
-      data: {
-        approvals: {
-          create: {
-            approvedBy: session.user.id
+    const customerRequest = await prisma.$transaction(async (tx) => {
+      // Update with approval
+      const updatedRequest = await tx.customerRequest.update({
+        where: { id: customerRequestId },
+        include: { 
+          approvals: true,
+          requester: true
+        },
+        data: {
+          approvals: {
+            create: {
+              approvedBy: session.user.id
+            }
           }
         }
-      }
-    });
-
-    // Update subsequent references from params.id to customerRequestId
-    if (customerRequest.approvals.length >= customerRequest.no_of_approvals) {
-      await prisma.customerRequest.update({
-        where: { id: customerRequestId },
-        data: { status: "APPROVED" }
       });
-    }
+
+      // Create customer when approvals met
+      if (updatedRequest.approvals.length >= updatedRequest.no_of_approvals) {
+        await tx.customerRequest.update({
+          where: { id: customerRequestId },
+          data: { status: "APPROVED" }
+        });
+
+        // Only create for new customer requests
+        if (updatedRequest.action === "CREATE") {
+          await tx.customer.create({
+            data: {
+              name: updatedRequest.name,
+              email: updatedRequest.email,
+              address: updatedRequest.address,
+              createdBy: updatedRequest.requestedBy
+            }
+          });
+        }
+      }
+
+      return updatedRequest;
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

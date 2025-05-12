@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaSpinner } from "react-icons/fa6";
 import { toast } from "react-hot-toast";
 import { useCustomer } from "@/contexts/CustomerContext";
@@ -19,7 +19,34 @@ interface CustomerModalProps {
 
 export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalProps) {
   const { createCustomer, updateCustomer } = useCustomer();
+  const [no_of_approvals, setnoOfApprovals] = useState("");
   const [loading, setLoading] = useState(false);
+  const [config, setConfig] = useState<{
+    minNoOfApproval: number;
+    maxNoOfApproval: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch("/api/config");
+        if (!response.ok) {
+          throw new Error("Failed to fetch configuration");
+        }
+        const data = await response.json();
+        setConfig({
+          minNoOfApproval: data.minNoOfApproval,
+          maxNoOfApproval: data.maxNoOfApproval,
+        });
+      } catch (error) {
+        console.error("Error fetching config:", error);
+        toast.error("Failed to fetch configuration");
+      }
+    };
+
+    fetchConfig();
+  }, []);
+
   // Add validation states
   const [errors, setErrors] = useState({
     name: '',
@@ -192,21 +219,35 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
                 <span className="label-text-alt text-error">{errors.address}</span>
               </div>}
             </div>
-            <div className="form-control w-full mb-4">
-              <label className="label label-text">
-                Required Approvals
+            <div className="form-control w-full block">
+              <label className="label my-2">
+                <span className="label-text">No of Approvals</span>
               </label>
               <input
                 type="number"
-                min="1"
-                max="10"
-                className={`input input-bordered w-full max-w-md ${errors.noOfApproval ? 'input-error' : ''}`}
-                value={formData.noOfApproval}
-                onChange={(e) => handleInputChange('noOfApproval', e.target.value)}
+                className="input input-bordered w-full max-w-md"
+                value={no_of_approvals}
+                onChange={(e) => {
+                  let value = e.target.value;
+                  // Only allow non-negative integers
+                  if (/^\d*$/.test(value)) {
+                    let num = parseInt(value, 10);
+                    if (isNaN(num) || (config && num < config.minNoOfApproval)) {
+                      setnoOfApprovals(config?.minNoOfApproval?.toString() || "");
+                    } else if (config?.maxNoOfApproval && num > config.maxNoOfApproval) {
+                      toast.error(
+                        `No of Approvals must be less than or equal to ${config?.maxNoOfApproval}`
+                      );
+                    } else {
+                      setnoOfApprovals(value);
+                    }
+                  }
+                }}
+                placeholder={`Enter no_of_approvals value (between ${config?.minNoOfApproval} and ${config?.maxNoOfApproval})`}
+                min={config?.minNoOfApproval}
+                max={config?.maxNoOfApproval}
+                required
               />
-              {errors.noOfApproval && <div className="label">
-                <span className="label-text-alt text-error">{errors.noOfApproval}</span>
-              </div>}
             </div>
           </div>
 

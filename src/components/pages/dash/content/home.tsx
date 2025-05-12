@@ -28,7 +28,7 @@ const getActivityDisplayText = (activity: Activity) => {
     case "BURN":
       return `Burn from ${activity.address || "customer"}`;
     case "CUSTOMER":
-      return `Create New Customer ${activity.name}`;
+      return `New Customer`;
     case "FREEZE":
       return activity.action === "UNFREEZE"
         ? `Unfreeze Address ${activity.address}`
