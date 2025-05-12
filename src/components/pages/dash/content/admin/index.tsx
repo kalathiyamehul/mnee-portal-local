@@ -76,6 +76,10 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const hasRejectFreezePer =
     hasPermission(Resource.FREEZE, Action.REJECT) || false;
 
+  // Customer Permissions
+  const hasCreateCustomerPer = hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
+  const hasApproveCustomerPer = hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+  const hasRejectCustomerPer = hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
   // Permissions object
   const permissions = {
     // Mint
@@ -93,7 +97,12 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     // Freeze
     hasApproveFreezePer,
     hasRejectFreezePer,
+    // Customer
+    hasApproveCustomerPer,
+    hasRejectCustomerPer,
   };
+
+  console.log("statusData: ", statusData);
 
   // Restrictions Permissions object
   const restrictionsPermissions = {
@@ -159,6 +168,11 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
           ...req,
           type: "REFUND" as const,
           action: "REFUND" as const,
+        })),
+        ...statusData.customerRequests.map((req) => ({
+          ...req,
+          type: "CUSTOMER" as const,
+          action: req.action,
         })),
       ].sort(
         (a, b) =>
@@ -353,7 +367,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     }
   };
 
-  const handleApprove = async (id: string, type: Activity["type"]) => {
+  const handleApprove = async (id: string, type: Activity['type']) => {
     try {
       setLoading(true);
       const endpoint =
@@ -369,6 +383,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
           ? "approveBurn"
           : type === "REFUND"
           ? "approveRefund"
+          : type === "CUSTOMER"
+          ? "approveCustomer"
           : null;
 
       if (!endpoint) throw new Error("Invalid activity type");
@@ -384,6 +400,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
           ? "mintRequestId"
           : type === "BURN"
           ? "burnRequestId"
+          : type === "CUSTOMER"
+          ? "customerRequestId"
           : "refundRequestId";
 
       const response = await fetch(`/api/${endpoint}`, {

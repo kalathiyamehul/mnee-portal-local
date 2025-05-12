@@ -11,6 +11,7 @@ interface CustomerModalProps {
     name: string;
     email: string;
     address: string;
+    noOfApproval: number;
   };
   onClose: () => void;
   onSuccess: () => void;
@@ -23,13 +24,15 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
   const [errors, setErrors] = useState({
     name: '',
     email: '',
-    address: ''
+    address: '',
+    noOfApproval: ''
   });
   
   const [formData, setFormData] = useState({
     name: customer?.name || "",
     email: customer?.email || "",
     address: customer?.address || "",
+    noOfApproval: customer?.noOfApproval || 2, // Add noOfApproval field with default
   });
 
   // Validation functions
@@ -59,20 +62,29 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
     return "";
   };
 
+  const validateApproval = (value: number) => {
+    if (value < 1) return "Minimum 1 approval required";
+    if (value > 10) return "Maximum 10 approvals allowed";
+    return "";
+  };
+  
   // Handle input changes with validation
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     let error = '';
     switch (field) {
       case 'name':
-        error = validateName(value);
+        error = validateName(value.toString());
         break;
       case 'email':
-        error = validateEmail(value);
+        error = validateEmail(value.toString());
         break;
       case 'address':
-        error = validateAddress(value);
+        error = validateAddress(value.toString());
+        break;
+      case 'noOfApproval':
+        error = validateApproval(Number(value));
         break;
     }
     setErrors(prev => ({ ...prev, [field]: error }));
@@ -89,7 +101,8 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
     setErrors({
       name: nameError,
       email: emailError,
-      address: addressError
+      address: addressError,
+      noOfApproval: validateApproval(formData.noOfApproval)
     });
 
     // Improved error feedback
@@ -100,19 +113,23 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
     }
 
     setLoading(true);
-
     try {
-      if (customer) {
-        await updateCustomer(customer.id, formData);
-        toast.success("Customer updated successfully");
-      } else {
-        await createCustomer(formData);
-        toast.success("Customer created successfully");
-      }
+      const response = await fetch('/api/customerRequest', {
+        method: 'POST',
+        body: JSON.stringify({
+          ...formData,
+          action: customer ? "UPDATE" : "CREATE",
+          customerId: customer?.id
+        })
+      });
+      
+      if (!response.ok) throw new Error('Failed to submit request');
+      
+      toast.success("Customer request submitted for approval");
       onSuccess();
     } catch (error) {
-      console.error("Error saving customer:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to save customer");
+      console.error("Error saving customer request:", error);
+      toast.error("Failed to submit customer request");
     } finally {
       setLoading(false);
     }
@@ -173,6 +190,22 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
               />
               {errors.address && <div className="label">
                 <span className="label-text-alt text-error">{errors.address}</span>
+              </div>}
+            </div>
+            <div className="form-control w-full mb-4">
+              <label className="label label-text">
+                Required Approvals
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                className={`input input-bordered w-full max-w-md ${errors.noOfApproval ? 'input-error' : ''}`}
+                value={formData.noOfApproval}
+                onChange={(e) => handleInputChange('noOfApproval', e.target.value)}
+              />
+              {errors.noOfApproval && <div className="label">
+                <span className="label-text-alt text-error">{errors.noOfApproval}</span>
               </div>}
             </div>
           </div>

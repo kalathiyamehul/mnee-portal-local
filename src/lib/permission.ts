@@ -36,7 +36,7 @@ export const RESOURCE_PERMISSIONS: ResourcePermission[] = [
     },
     {
         name: Resource.CUSTOMER,
-        permissions: [Action.MANAGE, Action.CREATE, Action.READ, Action.UPDATE, Action.DELETE]
+        permissions: [Action.MANAGE, Action.CREATE, Action.UPDATE, Action.DELETE, Action.APPROVE, Action.REJECT]
     },
     {
         name: Resource.MINT,

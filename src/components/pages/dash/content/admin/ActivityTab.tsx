@@ -30,6 +30,8 @@ interface ActivityTabProps {
     hasRejectBlacklistPer: boolean;
     hasApproveFreezePer: boolean;
     hasRejectFreezePer: boolean;
+    hasApproveCustomerPer: boolean;
+    hasRejectCustomerPer: boolean;
   };
 }
 

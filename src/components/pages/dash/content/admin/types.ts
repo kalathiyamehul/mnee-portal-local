@@ -101,8 +101,10 @@ export type ActivityStatus =
 
 export interface Activity {
   id: string;
-  type: "MINT" | "BURN" | "FREEZE" | "BLACKLIST" | "ACTION" | "REFUND";
-  action?: 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT' | 'BURN' | 'REFUND';
+  type: "MINT" | "BURN" | "FREEZE" | "BLACKLIST" | "ACTION" | "REFUND" | "CUSTOMER";
+  action?: 'FREEZE' | 'UNFREEZE' | 'BLACKLIST' | 'UNBLACKLIST' | 'PAUSE' | 'RESUME' | 'MINT' | 'BURN' | 'REFUND' | 'CREATE';
+  name?: string;
+  email?: string;
   status: ActivityStatus;
   createdAt: string;
   updatedAt: string;
@@ -192,6 +194,8 @@ export interface ActivityListProps {
 		hasRejectBlacklistPer: boolean;
 		hasApproveFreezePer: boolean;
 		hasRejectFreezePer: boolean;
+		hasApproveCustomerPer: boolean;
+		hasRejectCustomerPer: boolean;
 	  };
 }
 

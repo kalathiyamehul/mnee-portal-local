@@ -27,6 +27,8 @@ const getActivityDisplayText = (activity: Activity) => {
       return `Mint to ${activity.address || "customer"}`;
     case "BURN":
       return `Burn from ${activity.address || "customer"}`;
+    case "CUSTOMER":
+      return `Create New Customer ${activity.name}`;
     case "FREEZE":
       return activity.action === "UNFREEZE"
         ? `Unfreeze Address ${activity.address}`
@@ -131,6 +133,11 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           type: "BURN" as const,
           action: "BURN" as const,
         })),
+        ...statusData.customerRequests.map((req) => ({
+          ...req,
+          type: "CUSTOMER" as const,
+          action: "CREATE" as const,
+        })),
       ]
         .sort(
           (a, b) =>
@@ -170,6 +177,11 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 	const hasApproveFreezePer = hasPermission(Resource.FREEZE, Action.APPROVE) || false;
 	const hasRejectFreezePer = hasPermission(Resource.FREEZE, Action.REJECT) || false;
 
+  // Customers Permissions
+	const hasCreateCustomerPer = hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
+	const hasApproveCustomerPer = hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+	const hasRejectCustomerPer = hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
+
 	// Permissions object
 	const permissions = {
 		// Mint
@@ -187,6 +199,9 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 		// Freeze
 		hasApproveFreezePer,
 		hasRejectFreezePer,
+    // Customers
+		hasApproveCustomerPer,
+		hasRejectCustomerPer,
 	};
 
   // Default to 'volume' if no chart is selected
@@ -248,6 +263,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           ? "approveMint"
           : type === "BURN"
           ? "approveBurn"
+          : type === "CUSTOMER"
+          ? "approveCustomer"
           : null;
 
       if (!endpoint) throw new Error("Invalid activity type");
@@ -261,6 +278,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           ? "blacklistRequestId"
           : type === "MINT"
           ? "mintRequestId"
+          : type === "CUSTOMER"
+          ? "customerRequestId"
           : "burnRequestId";
 
       const response = await fetch(`/api/${endpoint}`, {
