@@ -99,7 +99,7 @@ const MintTableContent = ({
         router.push("/setup?fromDashAdminMints=true");
         return;
       }
-      setConfig(config as Config);
+      setConfig(config as unknown as Config);
     };
 
     getAndSetConfig();
