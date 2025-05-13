@@ -4,6 +4,8 @@ import { FaCopy } from 'react-icons/fa6';
 import { formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
+import { Pagination } from "@/components/common/Pagination";
+import { useEffect, useState } from 'react';
 
 interface BurnTableProps {
 	burns: BurnUtxo[];
@@ -53,6 +55,22 @@ export const BurnTable = ({
 			!burn.refundRequest.approvals.some((approval: { approver?: { email: string } }) => approval.approver?.email === session.user.email);
 	};
 
+	// Pagination state
+	const [currentPage, setCurrentPage] = useState(1);
+	const itemsPerPage = 6;
+	const totalItems = burns.length;
+	const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+	// Reset page when burns change
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [burns.length]);
+
+	// Paginated burns
+	const indexOfLastItem = currentPage * itemsPerPage;
+	const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+	const currentBurns = burns.slice(indexOfFirstItem, indexOfLastItem);
+
 	if (!alwaysShow && burns.length === 0) return null;
 
 	return (
@@ -85,7 +103,7 @@ export const BurnTable = ({
 								</td>
 							</tr>
 						) : (
-							burns.map(burn => {
+							currentBurns.map(burn => {
 								const amount = burn.data.bsv21.amt;
 								const status = burn.burnRequest?.status || 'PENDING';
 								const createdAt = burn.burnRequest?.createdAt || '';
@@ -178,7 +196,18 @@ export const BurnTable = ({
 						)}
 					</tbody>
 				</table>
+				{totalItems > itemsPerPage && (
+					<div className="mt-4">
+						<Pagination
+							currentPage={currentPage}
+							totalPages={totalPages}
+							itemsPerPage={itemsPerPage}
+							totalItems={totalItems}
+							onPageChange={setCurrentPage}
+						/>
+					</div>
+				)}
 			</div>
 		</div>
 	);
-}; 
+};
