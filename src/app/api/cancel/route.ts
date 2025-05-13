@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { actionRequestId, freezeRequestId, blacklistRequestId, mintRequestId, burnRequestId, refundRequestId } = await request.json();
+  const { actionRequestId, freezeRequestId, blacklistRequestId, mintRequestId, burnRequestId, refundRequestId, customerRequestId  } = await request.json();
 
   try {
     if (actionRequestId) {
@@ -96,6 +96,23 @@ export async function POST(request: Request) {
 
       await prisma.burnRequest.update({
         where: { id: burnRequestId },
+        data: { status: 'CANCELLED' },
+      });
+    } else if (customerRequestId) {
+      const request = await prisma.customerRequest.findUnique({
+        where: { id: customerRequestId },
+      });
+
+      if (!request) {
+        return NextResponse.json({ error: 'Request not found' }, { status: 404 });
+      }
+
+      if (request.requestedBy !== session.user.id) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      await prisma.customerRequest.update({
+        where: { id: customerRequestId },
         data: { status: 'CANCELLED' },
       });
     } else if (refundRequestId) {

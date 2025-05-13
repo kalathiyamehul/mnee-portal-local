@@ -230,6 +230,7 @@ export default function DashboardCustomersContent() {
                               name: customer.name,
                               email: customer.email,
                               address: customer.address,
+                              noOfApproval: customer.noOfApproval,
                               createdBy: customer.creator.email,
                               createdAt: new Date(customer.createdAt),
                               updatedAt: new Date(customer.createdAt),
@@ -283,8 +284,13 @@ export default function DashboardCustomersContent() {
       )}
 
       {showModal && (
+        
         <CustomerModal
-          customer={selectedCustomer || undefined}
+        customer={
+          selectedCustomer
+            ? { ...selectedCustomer, noOfApproval: selectedCustomer.noOfApproval ?? 0 }
+            : undefined
+        }
           onClose={() => {
             setShowModal(false);
             setSelectedCustomer(null);

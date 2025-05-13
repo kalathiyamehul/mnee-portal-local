@@ -6,7 +6,7 @@ import { hash } from "bcryptjs";
 
 export async function PUT(
     req: Request,
-    context: { params: { userId: string } }
+    context: any
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -73,7 +73,7 @@ export async function PUT(
 
 export async function DELETE(
     req: Request,
-    context: { params: { userId: string } }
+    context: any
 ) {
     try {
         const session = await getServerSession(authOptions);
@@ -122,4 +122,4 @@ export async function DELETE(
         console.error("[USER_DELETE]", error);
         return new NextResponse("Internal error", { status: 500 });
     }
-} 
+}

@@ -448,7 +448,8 @@ const DashboardSettingsContent = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <div className="font-medium">No. of Approval</div>
-                <div>{config.noOfApproval}</div>
+                <div>{config?.maxNoOfApproval}</div>
+                <div>{config?.minNoOfApproval}</div>
               </div>
               <div>
                 <div className="font-medium">Global JSON</div>

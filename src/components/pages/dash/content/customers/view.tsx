@@ -329,7 +329,10 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
 
       {showModal && (
         <CustomerModal
-          customer={customer}
+          customer={{
+            ...customer,
+            noOfApproval: (customer as any).noOfApproval ?? 0
+          }}
           onClose={() => setShowModal(false)}
           onSuccess={async () => {
             setShowModal(false);
@@ -339,4 +342,4 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
       )}
     </div>
   );
-} 
+}
