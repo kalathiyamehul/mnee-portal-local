@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ActivityLog } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { Pagination } from "@/components/common/Pagination";
+import { ExportButtons } from "@/components/common/ExportButtons";
 
 interface ActivityContentProps {
   initialActivityLogs: ActivityLog[];
@@ -41,6 +42,21 @@ export default function DashboardActivityContent({
     fetchActivityLogs(page, pagination.limit);
   };
 
+  // Handler for exporting activity logs
+  const handleExport = async () => {
+    const response = await fetch("/api/activity?page=-1&limit=-1");
+    if (!response.ok) {
+      throw new Error("Failed to fetch customers for export");
+    }
+    const data = await response.json();
+    return data.activityLogs.map((log: any) => ({
+      Name: log.name || "-",
+      Action: log.action || "-",
+      Description: log.description || "-",
+      Time: new Date(log.createdAt).toLocaleString(),
+    }));
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen animate-fade-in">
@@ -51,8 +67,8 @@ export default function DashboardActivityContent({
 
   return (
     <div className="p-4 space-y-4">
+      <ExportButtons filename="activity-logs" onExport={handleExport} />
       <h1 className="text-2xl font-bold">Activity Logs</h1>
-
       <div className="overflow-x-auto">
         <table className="table w-full">
           <thead>
@@ -79,7 +95,6 @@ export default function DashboardActivityContent({
           </tbody>
         </table>
       </div>
-
       {activityLogs.length > 0 && (
         <Pagination
           currentPage={pagination.page}
