@@ -11,6 +11,7 @@ import {
 	MNEE_TOKEN_MAX,
 	MNEE_TOKEN_SYM,
 } from "@/lib/constants";
+import { logActivity } from "@/lib/activityLogger";
 
 const DEFAULT_FEES = [
 	{ min: 0, max: 10000, fee: 50 },
@@ -115,8 +116,36 @@ const deployMnee = async (feeAddress: string) => {
 					fundAddress: "",
 				},
 			});
+
+			await logActivity(prisma, {
+				name: "Token Deployed",
+				action: "TOKEN_DEPLOY",
+				description: `Token deployed with tokenId ${tokenId}`,
+				metadata: {
+					tokenId,
+					feeAddress,
+					deployTxid,
+					mintAddress: mintAddress.toString(),
+					burnAddress: burnAddress.toString(),
+				},
+			});
 		} catch (error) {
 			console.error("Failed to update config:", error);
+
+			await logActivity(prisma, {
+				name: "Token Deployed (Config Update Failed)",
+				action: "TOKEN_DEPLOY_CONFIG_FAIL",
+				description: `Token deployed with tokenId ${tokenId}, but config update failed`,
+				metadata: {
+					tokenId,
+					feeAddress,
+					deployTxid,
+					mintAddress: mintAddress.toString(),
+					burnAddress: burnAddress.toString(),
+					configError: "Failed to save configuration",
+				},
+			});
+
 			// Even if config update fails, return deployment info
 			return {
 				tokenId,

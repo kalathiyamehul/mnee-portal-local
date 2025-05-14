@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
+import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
 
 const assignRoleSchema = z.object({
     userId: z.string().min(1, "User ID is required"),
@@ -51,6 +52,16 @@ export async function POST(request: NextRequest) {
             },
             include: {
                 role: true,
+            },
+        });
+
+        await logActivity(prisma, {
+            name: "Role Assigned",
+            action: "ROLE_ASSIGN",
+            description: `Role ${validatedData.roleId} assigned to user ${validatedData.userId} by user ${session.user.id}`,
+            metadata: {
+                userId: validatedData.userId,
+                roleId: validatedData.roleId,
             },
         });
 
@@ -108,6 +119,16 @@ export async function DELETE(request: NextRequest) {
             },
         });
 
+        await logActivity(prisma, {
+            name: "Role Removed",
+            action: "ROLE_REMOVE",
+            description: `Role ${roleId} removed from user ${userId} by user ${session.user.id}`,
+            metadata: {
+                userId,
+                roleId,
+            },
+        });
+
         return NextResponse.json({ message: "Role removed successfully" });
     } catch (error) {
         if (error instanceof Error && error.message.includes("P2025")) {
@@ -123,4 +144,4 @@ export async function DELETE(request: NextRequest) {
             { status: 500 }
         );
     }
-} 
+}

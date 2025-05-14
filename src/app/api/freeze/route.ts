@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { FreezeRequestAction } from '@prisma/client';
 import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
+import { logActivity } from '@/lib/activityLogger';
 
 // Helper function to validate FreezeRequestAction
 function isFreezeAction(action: string): action is FreezeRequestAction {
@@ -103,6 +104,14 @@ export async function POST(request: Request) {
               email: true,
             },
           },
+        },
+      });
+      await logActivity(tx, {
+        name: "Freeze Request Created",
+        action: "FREEZE_REQUEST_CREATE",
+        description: `A freeze request has been created for address ${address}`,
+        metadata: {
+          freezeRequest: JSON.stringify(request),
         },
       });
       return { request };

@@ -10,6 +10,7 @@ import type { Inscription } from "js-1sat-ord";
 import CosignTemplate from "@/templates/cosign";
 import { Utils } from "@bsv/sdk";
 import { isSystemPaused } from "@/lib/systemStatus";
+import { logActivity } from "@/lib/activityLogger";
 const { toArray } = Utils;
 
 export async function POST(request: Request) {
@@ -61,6 +62,17 @@ export async function POST(request: Request) {
         data: {
           burnRequestId,
           approvedBy: session.user.id,
+        },
+      });
+
+      await logActivity(tx, {
+        name: "Burn Request Approved",
+        action: "BURN_REQUEST_APPROVE",
+        description: `Burn request ${burnRequestId} approved by user ${session.user.id}`,
+        metadata: {
+          burnRequest: JSON.stringify(burnRequest, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
         },
       });
 
@@ -165,6 +177,17 @@ export async function POST(request: Request) {
           },
         });
 
+        await logActivity(tx, {
+          name: "Burn Request Fully Approved",
+          action: "BURN_REQUEST_FULLY_APPROVED",
+          description: `Burn request ${burnRequestId} fully approved and transaction created`,
+          metadata: {
+            burnRequestId: burnRequestId,
+            txid: cosignTx.id('hex'),
+            burnTx: cosignTx.toHex(),
+          },
+        });
+
         return { status: "APPROVED", burnTx: cosignTx.toHex() };
       }
 
@@ -185,4 +208,4 @@ export async function POST(request: Request) {
       status: 400
     });
   }
-} 
+}

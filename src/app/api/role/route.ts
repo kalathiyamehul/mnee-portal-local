@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
+import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
 
 // Schema for role creation/update
 const roleSchema = z.object({
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
             }
 
             // Return role with permissions
-            return tx.role.findUnique({
+            const createdRole = await tx.role.findUnique({
                 where: { id: newRole.id },
                 include: {
                     rolePermissions: {
@@ -100,6 +101,17 @@ export async function POST(request: NextRequest) {
                     }
                 }
             });
+
+            await logActivity(tx, {
+                name: "Role Created",
+                action: "ROLE_CREATE",
+                description: `Role ${newRole.name} created by user ${session.user.id}`,
+                metadata: {
+                    role: JSON.stringify(createdRole),
+                },
+            });
+
+            return createdRole;
         }, { timeout: 300000 });
 
         if (!role) {
@@ -260,6 +272,15 @@ export async function DELETE(request: NextRequest) {
             // Delete the role
             await tx.role.delete({
                 where: { id },
+            });
+
+            await logActivity(tx, {
+                name: "Role Deleted",
+                action: "ROLE_DELETE",
+                description: `Role ${id} deleted by user ${session.user.id}`,
+                metadata: {
+                    roleId: id,
+                },
             });
         });
 

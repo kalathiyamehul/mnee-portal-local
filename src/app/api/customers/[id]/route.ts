@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function POST(
   request: Request,
@@ -45,21 +46,36 @@ export async function POST(
       );
     }
 
-    const customer = await prisma.customer.update({
-      where: { id },
-      data: {
-        name,
-        email,
-        address,
-      },
-      include: {
-        creator: {
-          select: {
-            name: true,
-            email: true,
+    const customer = await prisma.$transaction(async (tx) => {
+      const updated = await tx.customer.update({
+        where: { id },
+        data: {
+          name,
+          email,
+          address,
+        },
+        include: {
+          creator: {
+            select: {
+              name: true,
+              email: true,
+            },
           },
         },
-      },
+      });
+
+      await logActivity(tx, {
+        name: "Customer Updated",
+        action: "CUSTOMER_UPDATE",
+        description: `Customer ${id} updated by user ${session.user.id}`,
+        metadata: {
+          customer: JSON.stringify(updated, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
+        },
+      });
+
+      return updated;
     });
 
     return NextResponse.json(customer);
@@ -70,4 +86,4 @@ export async function POST(
       { status: 500 }
     );
   }
-} 
+}

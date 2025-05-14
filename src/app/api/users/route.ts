@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function GET(req: Request) {
     try {
@@ -107,9 +108,18 @@ export async function POST(req: Request) {
             },
         });
 
+        await logActivity(prisma, {
+            name: "User Created",
+            action: "USER_CREATE",
+            description: `User ${user.id} created by user ${session.user.id}`,
+            metadata: {
+                user: JSON.stringify(user),
+            },
+        });
+
         return NextResponse.json(user);
     } catch (error) {
         console.error("[USERS_POST]", error);
         return new NextResponse("Internal error", { status: 500 });
     }
-} 
+}

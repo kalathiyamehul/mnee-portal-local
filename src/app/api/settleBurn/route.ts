@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
+import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -55,6 +56,17 @@ export async function POST(request: Request) {
         data: {
           status: "SETTLED",
           updatedAt: new Date(),
+        },
+      });
+
+      await logActivity(tx, {
+        name: "Burn Request Settled",
+        action: "BURN_REQUEST_SETTLE",
+        description: `Burn request ${burnRequestId} settled by user ${session.user.id}`,
+        metadata: {
+          burnRequest: JSON.stringify(burnRequest, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
         },
       });
 

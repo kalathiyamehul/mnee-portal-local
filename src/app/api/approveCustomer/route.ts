@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -29,6 +30,17 @@ export async function POST(request: Request) {
         }
       });
 
+      await logActivity(tx, {
+        name: "Customer Request Approved",
+        action: "CUSTOMER_REQUEST_APPROVE",
+        description: `Customer request ${customerRequestId} approved by user ${session.user.id}`,
+        metadata: {
+          customerRequest: JSON.stringify(updatedRequest, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
+        },
+      });
+
       // Create customer when approvals met
       if (updatedRequest.approvals.length >= updatedRequest.no_of_approvals) {
         await tx.customerRequest.update({
@@ -38,13 +50,24 @@ export async function POST(request: Request) {
 
         // Only create for new customer requests
         if (updatedRequest.action === "CREATE") {
-          await tx.customer.create({
+          const createdCustomer = await tx.customer.create({
             data: {
               name: updatedRequest.name,
               email: updatedRequest.email,
               address: updatedRequest.address,
               createdBy: updatedRequest.requestedBy
             }
+          });
+
+          await logActivity(tx, {
+            name: "Customer Created",
+            action: "CUSTOMER_CREATE",
+            description: `Customer created from approved request ${customerRequestId}`,
+            metadata: {
+              customer: JSON.stringify(createdCustomer, (key, value) =>
+                typeof value === 'bigint' ? value.toString() : value
+              ),
+            },
           });
         }
       }

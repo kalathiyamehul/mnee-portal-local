@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { isSystemPaused } from "@/lib/systemStatus";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -103,7 +104,19 @@ export async function POST(request: Request) {
 				},
 			});
 
-			// console.log('Created approval:', approval);
+			await logActivity(tx, {
+				name: "Freeze Request Approved",
+				action: "FREEZE_REQUEST_APPROVE",
+				description: `Freeze request ${freezeRequestId} approved by user ${session.user.id}`,
+				metadata: {
+					freezeRequest: JSON.stringify(freezeRequest, (key, value) =>
+						typeof value === 'bigint' ? value.toString() : value
+					),
+					approval: JSON.stringify(approval, (key, value) =>
+						typeof value === 'bigint' ? value.toString() : value
+					),
+				},
+			});
 
 			// Check if we have enough approvals
 			const updatedApprovals = await tx.freezeApproval.count({
@@ -138,7 +151,16 @@ export async function POST(request: Request) {
 					},
 				});
 
-				// console.log('Updated request:', updatedRequest);
+				await logActivity(tx, {
+					name: "Freeze Request Fully Approved",
+					action: "FREEZE_REQUEST_FULLY_APPROVED",
+					description: `Freeze request ${freezeRequestId} fully approved after reaching required approvals`,
+					metadata: {
+						freezeRequestId: freezeRequestId,
+						approvals: updatedApprovals,
+					},
+				});
+
 				return updatedRequest;
 			}
 
