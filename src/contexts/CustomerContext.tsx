@@ -9,7 +9,6 @@ interface Customer {
   name: string;
   email: string;
   address: string;
-  noOfApprovals: number;
   createdAt: string;
   creator: {
     name: string | null;

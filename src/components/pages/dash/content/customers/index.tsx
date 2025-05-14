@@ -225,7 +225,6 @@ export default function DashboardCustomersContent() {
                             name: customer.name,
                             email: customer.email,
                             address: customer.address,
-                            noOfApproval: customer.noOfApprovals,
                             createdBy: customer.creator.email,
                             createdAt: new Date(customer.createdAt),
                             updatedAt: new Date(customer.createdAt),
