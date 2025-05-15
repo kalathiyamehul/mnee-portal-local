@@ -107,7 +107,7 @@ export async function POST(request: Request) {
 			await logActivity(tx, {
 				name: "Freeze Request Approved",
 				action: "FREEZE_REQUEST_APPROVE",
-				description: `Freeze request ${freezeRequestId} approved by user ${session.user.id}`,
+				description: `Freeze request ${freezeRequestId} approved by user ${session.user.email}`,
 				metadata: {
 					freezeRequest: JSON.stringify(freezeRequest, (key, value) =>
 						typeof value === 'bigint' ? value.toString() : value

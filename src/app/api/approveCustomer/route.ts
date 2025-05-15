@@ -33,7 +33,7 @@ export async function POST(request: Request) {
       await logActivity(tx, {
         name: "Customer Request Approved",
         action: "CUSTOMER_REQUEST_APPROVE",
-        description: `Customer request ${customerRequestId} approved by user ${session.user.id}`,
+        description: `Customer request ${customerRequestId} approved by user ${session.user.email}`,
         metadata: {
           customerRequest: JSON.stringify(updatedRequest, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value

@@ -67,7 +67,7 @@ export async function POST(
       await logActivity(tx, {
         name: "Customer Updated",
         action: "CUSTOMER_UPDATE",
-        description: `Customer ${id} updated by user ${session.user.id}`,
+        description: `Customer ${id} updated by user ${session.user.email}`,
         metadata: {
           customer: JSON.stringify(updated, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value

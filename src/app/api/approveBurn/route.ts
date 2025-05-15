@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       await logActivity(tx, {
         name: "Burn Request Approved",
         action: "BURN_REQUEST_APPROVE",
-        description: `Burn request ${burnRequestId} approved by user ${session.user.id}`,
+        description: `Burn request ${burnRequestId} approved by user ${session.user.email}`,
         metadata: {
           burnRequest: JSON.stringify(burnRequest, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value

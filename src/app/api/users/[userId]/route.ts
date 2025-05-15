@@ -68,7 +68,7 @@ export async function PUT(
         await logActivity(prisma, {
             name: "User Updated",
             action: "USER_UPDATE",
-            description: `User ${userId} updated by user ${session.user.id}`,
+            description: `User ${userId} updated by user ${session.user.email}`,
             metadata: {
                 user: JSON.stringify(user),
             },

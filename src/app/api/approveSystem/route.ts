@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       await logActivity(tx, {
         name: "System Action Request Approved",
         action: "SYSTEM_ACTION_REQUEST_APPROVE",
-        description: `System action request ${actionRequestId} approved by user ${session.user.id}`,
+        description: `System action request ${actionRequestId} approved by user ${session.user.email}`,
         metadata: {
           actionRequestId,
           approverId: session.user.id,

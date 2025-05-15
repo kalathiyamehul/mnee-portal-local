@@ -187,7 +187,7 @@ export async function POST(request: Request) {
 			await logActivity(tx, {
 				name: "Mint Request Approved",
 				action: "MINT_REQUEST_APPROVE",
-				description: `Mint request ${mintRequestId} approved by user ${session.user.id}`,
+				description: `Mint request ${mintRequestId} approved by user ${session.user.email}`,
 				metadata: {
 					mintRequestId,
 					approverId: session.user.id,

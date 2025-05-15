@@ -110,7 +110,7 @@ export async function POST(request: Request) {
       await logActivity(tx, {
         name: "Blacklist Request Approved",
         action: "BLACKLIST_REQUEST_APPROVE",
-        description: `Blacklist request ${blacklistRequestId} approved by user ${session.user.id}`,
+        description: `Blacklist request ${blacklistRequestId} approved by user ${session.user.email}`,
         metadata: {
           blacklistRequest: JSON.stringify(blacklistRequest, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value

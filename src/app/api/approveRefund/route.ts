@@ -162,7 +162,7 @@ export async function POST(request: Request) {
       await logActivity(tx, {
         name: "Refund Request Approved",
         action: "REFUND_REQUEST_APPROVE",
-        description: `Refund request ${refundRequestId} approved by user ${session.user.id}`,
+        description: `Refund request ${refundRequestId} approved by user ${session.user.email}`,
         metadata: {
           refundRequestId,
           approverId: session.user.id,
