@@ -152,35 +152,37 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     }
   }, [statusData]);
   const { hasPermission } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+
   // Mint Permissions
-	const hasCreateMintPer = hasPermission(Resource.MINT, Action.CREATE) || false;
-	const hasApproveMintPer = hasPermission(Resource.MINT, Action.APPROVE) || false;
-	const hasRejectMintPer = hasPermission(Resource.MINT, Action.REJECT) || false;
+	const hasCreateMintPer = isSuperAdmin? true : hasPermission(Resource.MINT, Action.CREATE) || false;
+	const hasApproveMintPer = isSuperAdmin? true : hasPermission(Resource.MINT, Action.APPROVE) || false;
+	const hasRejectMintPer = isSuperAdmin? true : hasPermission(Resource.MINT, Action.REJECT) || false;
 
 	// Burn Permissions
-	const hasCreateBurnPer = hasPermission(Resource.BURN, Action.CREATE) || false;
-	const hasApproveBurnPer = hasPermission(Resource.BURN, Action.APPROVE) || false;
-	const hasRejectBurnPer = hasPermission(Resource.BURN, Action.REJECT) || false;
+	const hasCreateBurnPer = isSuperAdmin? true : hasPermission(Resource.BURN, Action.CREATE) || false;
+	const hasApproveBurnPer = isSuperAdmin? true : hasPermission(Resource.BURN, Action.APPROVE) || false;
+	const hasRejectBurnPer = isSuperAdmin? true : hasPermission(Resource.BURN, Action.REJECT) || false;
 
 	// Refund Permissions
-	const hasCreateRefundPer = hasPermission(Resource.REFUND, Action.CREATE) || false;
-	const hasApproveRefundPer = hasPermission(Resource.REFUND, Action.APPROVE) || false;
-	const hasRejectRefundPer = hasPermission(Resource.REFUND, Action.REJECT) || false;
+	const hasCreateRefundPer = isSuperAdmin? true : hasPermission(Resource.REFUND, Action.CREATE) || false;
+	const hasApproveRefundPer = isSuperAdmin? true : hasPermission(Resource.REFUND, Action.APPROVE) || false;
+	const hasRejectRefundPer = isSuperAdmin? true : hasPermission(Resource.REFUND, Action.REJECT) || false;
 
 	// Blacklist Permissions
-	const hasCreateBlacklistPer = hasPermission(Resource.BLACKLIST, Action.CREATE) || false;
-	const hasApproveBlacklistPer = hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
-	const hasRejectBlacklistPer = hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
+	const hasCreateBlacklistPer = isSuperAdmin? true : hasPermission(Resource.BLACKLIST, Action.CREATE) || false;
+	const hasApproveBlacklistPer = isSuperAdmin? true : hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
+	const hasRejectBlacklistPer = isSuperAdmin? true : hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
 
 	// Freeze Permissions
-	const hasCreateFreezePer = hasPermission(Resource.FREEZE, Action.CREATE) || false;
-	const hasApproveFreezePer = hasPermission(Resource.FREEZE, Action.APPROVE) || false;
-	const hasRejectFreezePer = hasPermission(Resource.FREEZE, Action.REJECT) || false;
+	const hasCreateFreezePer = isSuperAdmin? true : hasPermission(Resource.FREEZE, Action.CREATE) || false;
+	const hasApproveFreezePer = isSuperAdmin? true : hasPermission(Resource.FREEZE, Action.APPROVE) || false;
+	const hasRejectFreezePer = isSuperAdmin? true : hasPermission(Resource.FREEZE, Action.REJECT) || false;
 
   // Customers Permissions
-	const hasCreateCustomerPer = hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
-	const hasApproveCustomerPer = hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
-	const hasRejectCustomerPer = hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
+	const hasCreateCustomerPer = isSuperAdmin? true : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
+	const hasApproveCustomerPer = isSuperAdmin? true : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+	const hasRejectCustomerPer = isSuperAdmin? true : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
 
 	// Permissions object
 	const permissions = {
