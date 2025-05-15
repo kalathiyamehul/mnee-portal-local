@@ -41,7 +41,7 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
   };
 
   const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[a-zA-Z0-9._+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
     // Fix email validation logic
     if (!emailRegex.test(email)) return "Please enter a valid email address";
     if (email.length > 255) return "Email is too long";
@@ -50,12 +50,12 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
 
   const validateAddress = (address: string) => {
     // Bitcoin address validation
-    if (!address.startsWith('1')) return "Invalid Ordinals Address";
-    if (!/^1[A-Za-z0-9]{25,34}$/.test(address)) {
-      return "Invalid Address Format";
-    }
     if (/\s/.test(address)) return "Address cannot contain spaces";
     if (/[^A-Za-z0-9]/.test(address.slice(1))) return "Address can only contain letters and numbers";
+    if (!address.startsWith('1')) return "Invalid Ordinals Address";
+    if (!/^1[A-Za-z0-9]{34}$/.test(address)) {
+      return "Address Length must be 35 characters";
+    }
     return "";
   };
 
@@ -137,8 +137,8 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
                 placeholder="Enter customer name"
                 required
               />
-              {errors.name && <div className="label">
-                <span className="label-text-alt text-error">{errors.name}</span>
+              {errors.name && <div className="label mt-1">
+                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.name}</span>
               </div>}
             </div>
 
@@ -154,8 +154,8 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
                 placeholder="Enter customer email"
                 required
               />
-              {errors.email && <div className="label">
-                <span className="label-text-alt text-error">{errors.email}</span>
+              {errors.email && <div className="label mt-1">
+                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.email}</span>
               </div>}
             </div>
 
@@ -168,11 +168,12 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
                 className={`input input-bordered w-full max-w-md font-mono ${errors.address ? 'input-error' : ''}`}
                 value={formData.address}
                 onChange={(e) => handleInputChange('address', e.target.value)}
+                maxLength={35}
                 placeholder="Enter 1Sat Ordinals address"
                 required
               />
-              {errors.address && <div className="label">
-                <span className="label-text-alt text-error">{errors.address}</span>
+              {errors.address && <div className="label mt-1">
+                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.address}</span>
               </div>}
             </div>
           </div>
