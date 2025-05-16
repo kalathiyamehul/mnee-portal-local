@@ -6,6 +6,8 @@ import { MdRemoveCircleOutline } from 'react-icons/md';
 import { formatDistanceToNow } from 'date-fns';
 import type { Session } from 'next-auth';
 import { getGravatarUrl } from '@/utils/gravatar';
+import { Pagination } from '@/components/common/Pagination';
+import { useState, useEffect } from 'react';
 
 interface ActiveRestrictionsTabProps {
   restrictions: AddressStatus[];
@@ -68,6 +70,22 @@ export const ActiveRestrictionsTab = ({
     return !activity.approvals?.some(a => a.approver?.email === session?.user?.email);
   };
 
+  // Pagination state for history table
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+  const totalItems = restrictionActivities.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+  // Reset page when activities change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [restrictionActivities.length]);
+
+  // Paginated activities
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentActivities = restrictionActivities.slice(indexOfFirstItem, indexOfLastItem);
+
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
@@ -108,7 +126,7 @@ export const ActiveRestrictionsTab = ({
               </tr>
             </thead>
             <tbody>
-              {restrictionActivities.map((activity) => (
+              {currentActivities.map((activity) => (
                 <tr key={activity.id} className={`hover ${getRowBorderClass(activity)}`}>
                   <td>
                     <div className="flex items-center gap-3">
@@ -226,8 +244,19 @@ export const ActiveRestrictionsTab = ({
               ))}
             </tbody>
           </table>
+          {totalItems > itemsPerPage && (
+            <div className="mt-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                itemsPerPage={itemsPerPage}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-}; 
+};
