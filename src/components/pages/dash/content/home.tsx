@@ -208,6 +208,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 
   // Default to 'volume' if no chart is selected
   const selectedChart = (searchParams.get("chart") || "volume") as ChartType;
+  const showActions = hasApproveMintPer || hasRejectMintPer || hasApproveBurnPer || hasRejectBurnPer || hasApproveRefundPer || hasRejectRefundPer || hasApproveBlacklistPer || hasRejectBlacklistPer || hasApproveFreezePer || hasRejectFreezePer || hasApproveCustomerPer || hasRejectCustomerPer;
 
   const canCancel = useCallback(
     (activity: Activity) => {
@@ -566,6 +567,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           filteredActivities={requestTables?.pendingActivities || []}
           config={initialConfig}
           loading={loading}
+          showAction={showActions}
           canCancel={canCancel}
           canApprove={canApprove}
           handleCancel={handleCancel}
