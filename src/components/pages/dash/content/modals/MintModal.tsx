@@ -58,7 +58,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
     }
 
     const uproarValue = parseInt(no_of_approvals);
-    if (isNaN(uproarValue) || uproarValue < 0) {
+    if (isNaN(uproarValue) || uproarValue < 2) {
       toast.error("Uproar must be a non-negative integer");
       return;
     }
@@ -199,20 +199,23 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
                 className="input input-bordered w-full max-w-md"
                 value={no_of_approvals}
                 onChange={(e) => {
-                  const value = e.target.value;
+                  let value = e.target.value;
                   // Only allow non-negative integers
                   if (/^\d*$/.test(value)) {
-                    if (parseInt(value) > MAX_UPROAR_VALUE) {
+                    let num = parseInt(value, 10);
+                    if (isNaN(num) || num < 2) {
+                      setnoOfApprovals("2");
+                    } else if (num > MAX_UPROAR_VALUE) {
                       toast.error(
                         `No of Approvals must be less than or equal to ${MAX_UPROAR_VALUE}`
                       );
-                      return;
+                    } else {
+                      setnoOfApprovals(value);
                     }
-                    setnoOfApprovals(value);
                   }
                 }}
                 placeholder="Enter no_of_approvals value (integer)"
-                min="0"
+                min="2"
                 max={MAX_UPROAR_VALUE}
                 required
               />
@@ -252,4 +255,4 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
       </div>
     </dialog>
   );
-}; 
+};

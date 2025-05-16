@@ -1,9 +1,10 @@
 import type { BurnUtxo } from './types';
 import { toToken } from 'satoshi-token';
 import { FaCopy } from 'react-icons/fa6';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDate, formatDistanceStrict, formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
+import { formatRevalidate } from 'next/dist/server/lib/revalidate';
 import { Pagination } from "@/components/common/Pagination";
 import { useEffect, useState } from 'react';
 
@@ -175,8 +176,8 @@ export const BurnTable = ({
 											</td>
 										)}
 										<td>
-											<div className="text-sm">
-												{formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
+											<div className="text-xs">
+												{formatDate(createdAt, 'PPpp')}
 											</div>
 										</td>
 										<td>

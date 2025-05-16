@@ -106,6 +106,7 @@ export interface Activity {
   createdAt: string;
   updatedAt: string;
   amount?: string;
+  reason?: string;
   address?: string;
   txid?: string;
   outpoint?: string;
@@ -149,6 +150,7 @@ export interface AddressStatus {
 		name: string | null;
 	};
 	lastUpdate: string;
+	reason?: string;
 }
 
 export interface StatusResponse {
@@ -187,4 +189,4 @@ export interface SystemStatusProps {
 
 export interface ActiveRestrictionsProps {
 	restrictions: AddressStatus[];
-} 
+}
