@@ -19,6 +19,7 @@ export const ActivityList = ({
   filteredActivities,
   config,
   loading,
+  showAction,
   canCancel,
   canApprove,
   handleCancel,
@@ -203,7 +204,7 @@ export const ActivityList = ({
                   <th className="w-[30%]">Details</th>
                   {showRequester && <th className="w-[20%]">Requested By</th>}
                   <th className="w-[15%]">Status</th>
-                  <th className="w-[10%]">Actions</th>
+                  {showAction && <th className="w-[10%]">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -410,7 +411,7 @@ export const ActivityList = ({
                           )}
                         </div>
                       </td>
-                      <td>
+                     {showAction && <td>
                         <div className="flex gap-2 justify-end">
                           {canCancel(activity) && (
                             <button
@@ -437,7 +438,7 @@ export const ActivityList = ({
                             </div>
                           )}
                         </div>
-                      </td>
+                      </td>}
                     </tr>
                   );
                 })}

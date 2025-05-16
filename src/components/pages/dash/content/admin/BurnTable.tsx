@@ -1,10 +1,13 @@
+import React from 'react';
 import type { BurnUtxo } from './types';
 import { toToken } from 'satoshi-token';
 import { FaCopy } from 'react-icons/fa6';
 import { format, formatDate, formatDistanceStrict, formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
-import React from 'react';
+import { formatRevalidate } from 'next/dist/server/lib/revalidate';
+import { Pagination } from "@/components/common/Pagination";
+import { useEffect, useState } from 'react';
 
 interface BurnTableProps {
 	burns: BurnUtxo[];
@@ -14,6 +17,7 @@ interface BurnTableProps {
 	showViewAll?: boolean;
 	title?: string;
 	showRequester?: boolean;
+	showActions?: boolean;
 	hasApproveBurnPer?: boolean;
 	hasRejectBurnPer?: boolean;
     hasRejectRefundPer?: boolean;
@@ -26,6 +30,7 @@ export const BurnTable = ({
 	onCopyTxid, 
 	alwaysShow = false,
 	showViewAll = false,
+	showActions,
 	title = "Burns",
 	showRequester = true,
     hasApproveRefundPer,
@@ -90,6 +95,21 @@ export const BurnTable = ({
 		return burn.burnRequest.status === 'APPROVED' && 
 			burn.burnRequest.requester.email !== session.user.email
 	};
+	// Pagination state
+	const [currentPage, setCurrentPage] = useState(1);
+	const itemsPerPage = 6;
+	const totalItems = burns.length;
+	const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+	// Reset page when burns change
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [burns.length]);
+
+	// Paginated burns
+	const indexOfLastItem = currentPage * itemsPerPage;
+	const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+	const currentBurns = burns.slice(indexOfFirstItem, indexOfLastItem);
 
 	if (!alwaysShow && burns.length === 0) return null;
 
@@ -112,7 +132,7 @@ export const BurnTable = ({
 							<th>Transaction</th>
 							{showRequester && <th>Requester</th>}
 							<th>Time</th>
-							<th>Actions</th>
+							{showActions && <th>Actions</th>}
 						</tr>
 					</thead>
 					<tbody>
@@ -123,7 +143,7 @@ export const BurnTable = ({
 								</td>
 							</tr>
 						) : (
-							burns.map(burn => {
+							currentBurns.map(burn => {
 								const amount = burn.data.bsv21.amt;
 								const status = burn.burnRequest?.status || 'PENDING';
 								const createdAt = burn.burnRequest?.createdAt || '';
@@ -200,7 +220,7 @@ export const BurnTable = ({
 												{formatDate(createdAt, 'PPpp')}
 											</div>
 										</td>
-										<td>
+										{showActions && <td>
 											{canApproveRefund(burn) && hasApproveRefundPer && (
 												<button
 													type="button"
@@ -221,14 +241,25 @@ export const BurnTable = ({
                                                     {settlingId === burn.burnRequest?.id ? 'Settling...' : 'Settle'}
                                                 </button>
                                             )}
-										</td>
+										</td>}
 									</tr>
 								);
 							})
 						)}
 					</tbody>
 				</table>
+				{totalItems > itemsPerPage && (
+					<div className="mt-4">
+						<Pagination
+							currentPage={currentPage}
+							totalPages={totalPages}
+							itemsPerPage={itemsPerPage}
+							totalItems={totalItems}
+							onPageChange={setCurrentPage}
+						/>
+					</div>
+				)}
 			</div>
 		</div>
 	);
-}; 
+};

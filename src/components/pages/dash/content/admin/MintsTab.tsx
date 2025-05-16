@@ -40,7 +40,7 @@ export const MintsTab = ({ showModal, hasCreateMintPer, hasApproveMintPer, hasRe
           mints={mintRequests}
           mode="active"
           onUpdate={() => {}} // SystemStatusContext handles updates automatically
-          showActions={true}
+          showActions={hasApproveMintPer && hasRejectMintPer}
           hasApproveMintPer={hasApproveMintPer}
           hasRejectMintPer={hasRejectMintPer}
           enablePagination={true}

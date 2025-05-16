@@ -1,4 +1,4 @@
-export type DashPage = "admin" | "customers" | "users" | "home" | "wallet" | "settings" | 'transections' | 'activity';
+export type DashPage = "admin" | "customers" | "users" | "home" | "wallet" | "settings" | 'transactions' | 'activity';
 
 export const DashPages = {
     ADMIN: "admin" as DashPage,
@@ -7,7 +7,7 @@ export const DashPages = {
     HOME: "home" as DashPage,
     WALLET: "wallet" as DashPage,
     SETTINGS: "settings" as DashPage,
-    TRANSACTIONS: "transections" as DashPage,
+    TRANSACTIONS: "transactions" as DashPage,
     ACTIVITY: "activity" as DashPage,
     SUPER_ADMIN: "superadmin" as DashPage,
 } as const; 

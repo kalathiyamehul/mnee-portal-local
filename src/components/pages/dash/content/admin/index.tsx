@@ -284,6 +284,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         addressMap.set(address, {
           address,
           isBlacklisted,
+          reason : activity?.reason || '',
           isFrozen,
           hasPendingFreeze: !!pendingFreeze,
           hasPendingBlacklist: !!pendingBlacklist,

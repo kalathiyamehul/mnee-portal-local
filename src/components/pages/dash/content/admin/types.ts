@@ -173,6 +173,7 @@ export interface ActivityListProps {
 	filteredActivities: Activity[];
 	config: Config;
 	loading: boolean;
+	showAction: boolean;
 	canCancel: (activity: Activity) => boolean;
 	canApprove: (activity: Activity) => boolean;
 	handleCancel: (id: string, type: Activity['type']) => Promise<void>;

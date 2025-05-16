@@ -1,10 +1,11 @@
-import { FaBan, FaSnowflake } from "react-icons/fa6";
-import { MdRemoveCircleOutline } from "react-icons/md";
-import type { Activity, AddressStatus } from "./types";
-import type { MouseEvent } from "react";
-import { useEffect } from "react";
+import { FaBan, FaSnowflake } from 'react-icons/fa6';
+import { MdRemoveCircleOutline } from 'react-icons/md';
+import type { Activity, AddressStatus } from './types';
+import type { MouseEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { getGravatarUrl } from "@/utils/gravatar";
-import type { Session } from "next-auth";
+import type { Session } from 'next-auth';
+import { Pagination } from "@/components/common/Pagination";
 
 interface ActiveRestrictionsProps {
   restrictions: AddressStatus[];
@@ -26,6 +27,7 @@ interface ActiveRestrictionsProps {
   handleCancel: (id: string, type: Activity["type"]) => Promise<void>;
   handleApprove: (id: string, type: Activity["type"]) => Promise<void>;
   session: Session;
+  showActions?: boolean;
   permissions: {
     hasCreateBlacklistPer: boolean;
     hasApproveBlacklistPer: boolean;
@@ -44,6 +46,7 @@ export const ActiveRestrictions = ({
   handleFreezeRequest,
   handleUnfreeze,
   activities,
+  showActions,
   handleCancel,
   handleApprove,
   session,
@@ -60,7 +63,7 @@ export const ActiveRestrictions = ({
   //   }
   // }, [restrictions]);
 
-  console.log('restrictions', restrictions);
+  console.log("restrictions", restrictions);
 
   const canCancel = (activity: Activity) => {
     if (!session?.user?.email) return false;
@@ -80,6 +83,22 @@ export const ActiveRestrictions = ({
     );
   };
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+  const totalItems = restrictions.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+  // Reset page when restrictions change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [restrictions.length]);
+
+  // Paginated restrictions
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentRestrictions = restrictions.slice(indexOfFirstItem, indexOfLastItem);
+
   return (
     <div className="overflow-x-auto">
       <table className="table">
@@ -88,13 +107,13 @@ export const ActiveRestrictions = ({
             <th>Requester</th>
             <th>Address</th>
             <th>Details</th>
-            <th>Actions</th>
+            {showActions && <th>Actions</th>}
           </tr>
         </thead>
         <tbody>
-          {restrictions.map((status) => (
+          {currentRestrictions.map((status) => (
             <tr key={status.address}>
-              <td className='w-1/6'>
+              <td className="w-1/6">
                 <div className="flex items-center gap-3">
                   <div className="avatar">
                     <div className="mask mask-squircle w-10 h-10">
@@ -112,7 +131,7 @@ export const ActiveRestrictions = ({
                   </div>
                 </div>
               </td>
-              <td className='w-1/6'>
+              <td className="w-1/6">
                 <div className="flex flex-col gap-2">
                   <div className="font-mono text-sm">{status.address}</div>
                   <div className="flex flex-wrap gap-2">
@@ -145,104 +164,126 @@ export const ActiveRestrictions = ({
                   </div>
                 </div>
               </td>
-              <td className='w-1/4'>
+              <td className="w-1/4">
                 <div className="flex flex-col">
-                    <p className="font-medium">Reason:</p>
-                    <p className="opacity-70">{status?.reason}</p>
+                  <p className="font-medium">Reason:</p>
+                  <p className="opacity-70">{status?.reason}</p>
                 </div>
               </td>
-              <td className='w-1/4'>
-                <div className="flex flex-wrap gap-2">
-                  {!status.isBlacklisted && !status.hasPendingBlacklist && permissions.hasCreateBlacklistPer && (
-                    <button
-                      type="button"
-                      className="btn btn-error btn-sm"
-                      onClick={(e) => handleBlacklist(e, status.address)}
-                      disabled={loading}
-                    >
-                      <FaBan className="w-3 h-3 mr-1" /> Blacklist
-                    </button>
-                  )}
-                  {status.isBlacklisted && !status.hasPendingBlacklist && (
-                    <button
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      onClick={(e) => handleUnblacklist(e, status.address)}
-                      disabled={loading}
-                    >
-                      <MdRemoveCircleOutline className="w-3 h-3 mr-1" />{" "}
-                      Unblacklist
-                    </button>
-                  )}
-                  {status.isFrozen && !status.hasPendingFreeze && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-error"
-                      onClick={() => handleUnfreeze(status.address)}
-                      disabled={loading}
-                    >
-                      <FaSnowflake className="w-3 h-3" /> Unfreeze
-                    </button>
-                  )}
-                  {!status.isFrozen && !status.hasPendingFreeze && permissions.hasCreateFreezePer && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-error"
-                      onClick={(e) => handleFreezeRequest(e, status.address)}
-                      disabled={loading}
-                    >
-                      <FaSnowflake className="w-3 h-3" /> Freeze
-                    </button>
-                  )}
-                  {(status.hasPendingFreeze && permissions.hasApproveFreezePer || status.hasPendingBlacklist && permissions.hasApproveBlacklistPer) && (
-                    <>
-                      {/* Find the pending requests for this address */}
-                      {activities
-                        .filter(
-                          (activity) =>
-                            ((activity.type === "FREEZE" &&
-                              status.hasPendingFreeze) ||
-                              (activity.type === "BLACKLIST" &&
-                                status.hasPendingBlacklist)) &&
-                            activity.address === status.address &&
-                            activity.status === "PENDING"
-                        )
-                        .map((activity) => (
-                          <div key={activity.id} className="flex gap-2">
-                            {canCancel(activity) && (
-                              <button
-                                type="button"
-                                className="btn btn-ghost btn-sm"
-                                onClick={() =>
-                                  handleCancel(activity.id, activity.type)
-                                }
-                                disabled={loading}
-                              >
-                                Cancel
-                              </button>
-                            )}
-                            {canApprove(activity) && (
-                              <button
-                                type="button"
-                                className="btn btn-success btn-sm"
-                                onClick={() =>
-                                  handleApprove(activity.id, activity.type)
-                                }
-                                disabled={loading}
-                              >
-                                Approve
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                    </>
-                  )}
-                </div>
-              </td>
+              {showActions && (
+                <td className="w-1/4">
+                  <div className="flex flex-wrap gap-2">
+                    {!status.isBlacklisted &&
+                      !status.hasPendingBlacklist &&
+                      permissions.hasCreateBlacklistPer && (
+                        <button
+                          type="button"
+                          className="btn btn-error btn-sm"
+                          onClick={(e) => handleBlacklist(e, status.address)}
+                          disabled={loading}
+                        >
+                          <FaBan className="w-3 h-3 mr-1" /> Blacklist
+                        </button>
+                      )}
+                    {status.isBlacklisted && !status.hasPendingBlacklist && (
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        onClick={(e) => handleUnblacklist(e, status.address)}
+                        disabled={loading}
+                      >
+                        <MdRemoveCircleOutline className="w-3 h-3 mr-1" />{" "}
+                        Unblacklist
+                      </button>
+                    )}
+                    {status.isFrozen && !status.hasPendingFreeze && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-error"
+                        onClick={() => handleUnfreeze(status.address)}
+                        disabled={loading}
+                      >
+                        <FaSnowflake className="w-3 h-3" /> Unfreeze
+                      </button>
+                    )}
+                    {!status.isFrozen &&
+                      !status.hasPendingFreeze &&
+                      permissions.hasCreateFreezePer && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-error"
+                          onClick={(e) =>
+                            handleFreezeRequest(e, status.address)
+                          }
+                          disabled={loading}
+                        >
+                          <FaSnowflake className="w-3 h-3" /> Freeze
+                        </button>
+                      )}
+                    {((status.hasPendingFreeze &&
+                      permissions.hasApproveFreezePer) ||
+                      (status.hasPendingBlacklist &&
+                        permissions.hasApproveBlacklistPer)) && (
+                      <>
+                        {/* Find the pending requests for this address */}
+                        {activities
+                          .filter(
+                            (activity) =>
+                              ((activity.type === "FREEZE" &&
+                                status.hasPendingFreeze) ||
+                                (activity.type === "BLACKLIST" &&
+                                  status.hasPendingBlacklist)) &&
+                              activity.address === status.address &&
+                              activity.status === "PENDING"
+                          )
+                          .map((activity) => (
+                            <div key={activity.id} className="flex gap-2">
+                              {canCancel(activity) && (
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost btn-sm"
+                                  onClick={() =>
+                                    handleCancel(activity.id, activity.type)
+                                  }
+                                  disabled={loading}
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                              {canApprove(activity) && (
+                                <button
+                                  type="button"
+                                  className="btn btn-success btn-sm"
+                                  onClick={() =>
+                                    handleApprove(activity.id, activity.type)
+                                  }
+                                  disabled={loading}
+                                >
+                                  Approve
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                      </>
+                    )}
+                  </div>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
+      {totalItems > itemsPerPage && (
+        <div className="mt-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            itemsPerPage={itemsPerPage}
+            totalItems={totalItems}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 };
