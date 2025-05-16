@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -52,11 +53,23 @@ export async function POST(request: Request) {
         throw new Error(systemCheck.error);
       }
 
-      await tx.burnRequest.update({
+      const updated = await tx.burnRequest.update({
         where: { id: burnRequestId },
         data: {
           status: "REJECTED",
           updatedAt: new Date(),
+        },
+      });
+
+      await logActivity(tx, {
+        name: "Burn Request Rejected",
+        action: "BURN_REQUEST_REJECT",
+        description: `Burn request ${burnRequestId} rejected by user ${session.user.id}`,
+        metadata: {
+          burnRequest: JSON.stringify(updated, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
+          reason,
         },
       });
 

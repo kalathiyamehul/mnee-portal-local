@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function PUT(
     req: Request,
@@ -64,6 +65,15 @@ export async function PUT(
             },
         });
 
+        await logActivity(prisma, {
+            name: "User Updated",
+            action: "USER_UPDATE",
+            description: `User ${userId} updated by user ${session.user.email}`,
+            metadata: {
+                user: JSON.stringify(user),
+            },
+        });
+
         return NextResponse.json(user);
     } catch (error) {
         console.error("[USER_PUT]", error);
@@ -114,6 +124,15 @@ export async function DELETE(
         await prisma.user.delete({
             where: {
                 id: userId,
+            },
+        });
+
+        await logActivity(prisma, {
+            name: "User Deleted",
+            action: "USER_DELETE",
+            description: `User ${userId} deleted by user ${session.user.id}`,
+            metadata: {
+                userId,
             },
         });
 

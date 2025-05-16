@@ -19,7 +19,7 @@ export default async function ActivityPage() {
 
   // Get paginated activity logs
   const page = 1;
-  const limit = 10;
+  const limit = 8;
   const [totalCount, activityLogs] = await Promise.all([
     prisma.activityLog.count(),
     prisma.activityLog.findMany({

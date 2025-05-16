@@ -54,10 +54,10 @@ const Sidebar: React.FC = () => {
   ]);
   // console.log("canViewAdmin", canViewAdmin);
   const filteredMenuItems = menuItems.filter((item) => {
-    if (item.name === "Wallet") return canViewWallet;
-    if (item.name === "Customers") return canViewCustomers;
+    if (item.name === "Wallet") return canViewSuperAdmin || canViewWallet;
+    if (item.name === "Customers") return canViewSuperAdmin || canViewCustomers;
     if (item.name === "SuperAdmin") return canViewSuperAdmin;
-    if (item.name === "Admin") return canViewAdmin;
+    if (item.name === "Admin") return canViewSuperAdmin || canViewAdmin;
     if (item.name === "Config") return canViewSuperAdmin;
     return true;
   });

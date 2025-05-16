@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function POST(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -38,6 +39,17 @@ export async function POST(request: Request) {
 		data: {
 			action,
 			requestedBy: session.user.id,
+		},
+	});
+
+	await logActivity(prisma, {
+		name: `System ${action} Requested`,
+		action: `SYSTEM_${action}_REQUEST`,
+		description: `System ${action} requested by user ${session.user.id}`,
+		metadata: {
+			actionRequest: JSON.stringify(result, (key, value) =>
+				typeof value === 'bigint' ? value.toString() : value
+			),
 		},
 	});
 

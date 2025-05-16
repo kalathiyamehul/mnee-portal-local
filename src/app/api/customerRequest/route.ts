@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { getConfig } from "@/lib/config";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -17,16 +18,31 @@ export async function POST(request: Request) {
 
     // Validation checks...
 
-    const customerRequest = await prisma.customerRequest.create({
-      data: {
-        name,
-        email,
-        address,
-        action,
-        customerId,
-        requestedBy: session.user.id,
-        no_of_approvals: config?.minNoOfApproval || 2,
-      }
+    const customerRequest = await prisma.$transaction(async (tx) => {
+      const req = await tx.customerRequest.create({
+        data: {
+          name,
+          email,
+          address,
+          action,
+          customerId,
+          requestedBy: session.user.id,
+          no_of_approvals: config?.minNoOfApproval || 2,
+        }
+      });
+
+      await logActivity(tx, {
+        name: "Customer Request Created",
+        action: "CUSTOMER_REQUEST_CREATE",
+        description: `Customer request created for ${email}`,
+        metadata: {
+          customerRequest: JSON.stringify(req, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
+        },
+      });
+
+      return req;
     });
 
     return NextResponse.json(customerRequest, { status: 201 });

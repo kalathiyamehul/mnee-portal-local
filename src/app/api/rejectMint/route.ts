@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -46,7 +47,6 @@ export async function POST(request: Request) {
         throw new Error("You cannot reject your own request");
       }
 
-
       // System checks (if system is paused)
       const systemCheck = await performSystemChecks(tx, {
         address: mintRequest.address,
@@ -56,12 +56,23 @@ export async function POST(request: Request) {
         throw new Error(systemCheck.error);
       }
 
-      // Update the mint request status to REJECTED
-      await tx.mintRequest.update({
+      const updated = await tx.mintRequest.update({
         where: { id: mintRequestId },
         data: {
           status: "REJECTED",
           updatedAt: new Date(),
+        },
+      });
+
+      await logActivity(tx, {
+        name: "Mint Request Rejected",
+        action: "MINT_REQUEST_REJECT",
+        description: `Mint request ${mintRequestId} rejected by user ${session.user.id}`,
+        metadata: {
+          mintRequest: JSON.stringify(updated, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
+          reason,
         },
       });
 

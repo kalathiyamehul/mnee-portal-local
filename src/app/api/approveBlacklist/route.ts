@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
+import { logActivity } from "@/lib/activityLogger";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -99,10 +100,24 @@ export async function POST(request: Request) {
       }
 
       // Create approval
-      await tx.blacklistApproval.create({
+      const approval = await tx.blacklistApproval.create({
         data: {
           blacklistRequestId,
           approvedBy: session.user.id,
+        },
+      });
+
+      await logActivity(tx, {
+        name: "Blacklist Request Approved",
+        action: "BLACKLIST_REQUEST_APPROVE",
+        description: `Blacklist request ${blacklistRequestId} approved by user ${session.user.email}`,
+        metadata: {
+          blacklistRequest: JSON.stringify(blacklistRequest, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
+          approval: JSON.stringify(approval, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
         },
       });
 
@@ -111,25 +126,23 @@ export async function POST(request: Request) {
         where: { blacklistRequestId },
       });
 
-      console.log('Current approval count:', {
-        requestId: blacklistRequestId,
-        approvalCount: approvals,
-        requiresApproval: blacklistRequest.requiresApproval
-      });
-
       // Update status if we have enough approvals
       if (approvals === blacklistRequest.no_of_approvals) {
-        console.log('Approving blacklist request:', {
-          requestId: blacklistRequestId,
-          approvalCount: approvals,
-          action: blacklistRequest.action
-        });
-
         await tx.blacklistRequest.update({
           where: { id: blacklistRequestId },
           data: { 
             status: 'APPROVED',
             updatedAt: new Date(),
+          },
+        });
+
+        await logActivity(tx, {
+          name: "Blacklist Request Fully Approved",
+          action: "BLACKLIST_REQUEST_FULLY_APPROVED",
+          description: `Blacklist request ${blacklistRequestId} fully approved after reaching required approvals`,
+          metadata: {
+            blacklistRequestId: blacklistRequestId,
+            approvals: approvals,
           },
         });
       }
@@ -150,4 +163,4 @@ export async function POST(request: Request) {
       error: error instanceof Error ? error.message : 'Failed to process approval',
     }, { status: 500 });
   }
-} 
+}

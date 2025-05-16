@@ -42,6 +42,7 @@ interface PaginatedResponse {
 
 export default function UsersPage() {
   const { hasPermission } = usePermission();
+  const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -61,7 +62,7 @@ export default function UsersPage() {
     totalPages: 1,
   });
 
-  const canManageUsers = hasPermission(Resource.USER, Action.MANAGE);
+  const canManageUsers = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
 
   if (!canManageUsers) {
     return (
@@ -507,12 +508,14 @@ export default function UsersPage() {
                       <FaEdit className="w-4 h-4" />
                       Edit
                     </button>
-                    <button
-                      className="btn btn-ghost btn-sm text-error"
-                      onClick={() => handleDeleteUser(user.id)}
-                    >
-                      Delete
-                    </button>
+                    {user.email !== session?.user?.email &&
+                      <button
+                        className="btn btn-ghost btn-sm text-error"
+                        onClick={() => handleDeleteUser(user.id)}
+                      >
+                        Delete
+                      </button>
+                    }
                   </div>
                 </td>
               </tr>

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { BlacklistAction } from '@prisma/client';
+import { logActivity } from "@/lib/activityLogger";
 
 // Helper function to validate BlacklistAction
 function isBlacklistAction(action: string): action is BlacklistAction {
@@ -16,9 +17,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-
   const { address, action, no_of_approvals, reason } = await request.json();
-
 
   // Validate input
   if (!address) {
@@ -59,7 +58,7 @@ export async function POST(request: Request) {
       throw new Error('Address is not currently blacklisted');
     }
 
-    // Create the blacklist request with PENDING status
+    // Create the blacklist request with PENDING status and log activity
     const result = await prisma.$transaction(async (tx) => {
       // Create the blacklist request
       const blacklistRequest = await tx.blacklistRequest.create({
@@ -71,6 +70,18 @@ export async function POST(request: Request) {
           requestedBy: session.user.id,
         },
       });
+
+      await logActivity(tx, {
+        name: "Blacklist Request Created",
+        action: "BLACKLIST_REQUEST_CREATE",
+        description: `A blacklist request has been created for address ${address} with action ${action}`,
+        metadata: {
+          blacklistRequest: JSON.stringify(blacklistRequest, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
+        },
+      });
+
       return blacklistRequest;
     });
 
