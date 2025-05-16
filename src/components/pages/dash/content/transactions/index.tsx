@@ -14,34 +14,7 @@ type Transaction = {
 
 export default function DashboardTransactionsContent() {
   // Add type to dummy data
-  const [transactions] = useState<Transaction[]>([
-    {
-      txid: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2",
-      outpoint: "a1b2c3d4e5f6g7h8i9j0k1ls9t0u1v2w3x4y5z6a7b8c9d0e1f2_0",
-      blockHeight: 789123,
-      timestamp: new Date().toISOString(),
-      status: "Done",
-      type: "MINT",
-    },
-    {
-      txid: "f2e1d0c9b8a7z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1",
-      outpoint:
-        "f2e1d0c9b8a7z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1_1",
-      blockHeight: 789124,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-      status: "Done",
-      type: "BURN",
-    },
-    {
-      txid: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2",
-      outpoint: "a1b2c3d4e5f6g7h8i9j0k1ls0u1v2w3x4y5z6a7b8c9d0e1f2_0",
-      blockHeight: 759123,
-      timestamp: new Date().toISOString(),
-      status: "Done",
-      type: "MINT",
-    },
-    // Add more dummy transactions with different types as needed
-  ]);
+  const [transactions] = useState<Transaction[]>([]);
   const [loading] = useState(false);
 
   // Filter state
@@ -166,7 +139,7 @@ export default function DashboardTransactionsContent() {
                   </td>
                   <td>
                     <a
-                      href={`https://whatsonchain.com/tx/${tx.txid}`}
+                      href={`https://whatsonchain.com/tx/${tx.txid}?tab=m8eqcrbs`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn btn-link btn-xs"
