@@ -1,11 +1,13 @@
-import { ActiveRestrictions } from "./ActiveRestrictions";
-import type { AddressStatus, Activity } from "./types";
-import type { MouseEvent } from "react";
-import { FaSnowflake, FaBan } from "react-icons/fa6";
-import { MdRemoveCircleOutline } from "react-icons/md";
-import { formatDistanceToNow } from "date-fns";
-import type { Session } from "next-auth";
-import { getGravatarUrl } from "@/utils/gravatar";
+import { ActiveRestrictions } from './ActiveRestrictions';
+import type { AddressStatus, Activity } from './types';
+import type { MouseEvent } from 'react';
+import { FaSnowflake, FaBan } from 'react-icons/fa6';
+import { MdRemoveCircleOutline } from 'react-icons/md';
+import { formatDistanceToNow } from 'date-fns';
+import type { Session } from 'next-auth';
+import { getGravatarUrl } from '@/utils/gravatar';
+import { Pagination } from '@/components/common/Pagination';
+import { useState, useEffect } from 'react';
 
 interface ActiveRestrictionsTabProps {
   restrictions: AddressStatus[];
@@ -112,6 +114,22 @@ export const ActiveRestrictionsTab = ({
     const key = permissionMap[type];
     return key ? permissions[key as keyof typeof permissions] : false;
   };
+
+  // Pagination state for history table
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+  const totalItems = restrictionActivities.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+  // Reset page when activities change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [restrictionActivities.length]);
+
+  // Paginated activities
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentActivities = restrictionActivities.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <div className="p-4">
@@ -321,6 +339,17 @@ export const ActiveRestrictionsTab = ({
               ))}
             </tbody>
           </table>
+          {totalItems > itemsPerPage && (
+            <div className="mt-4">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                itemsPerPage={itemsPerPage}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

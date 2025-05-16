@@ -1,10 +1,11 @@
-import { FaBan, FaSnowflake } from "react-icons/fa6";
-import { MdRemoveCircleOutline } from "react-icons/md";
-import type { Activity, AddressStatus } from "./types";
-import type { MouseEvent } from "react";
-import { useEffect } from "react";
+import { FaBan, FaSnowflake } from 'react-icons/fa6';
+import { MdRemoveCircleOutline } from 'react-icons/md';
+import type { Activity, AddressStatus } from './types';
+import type { MouseEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { getGravatarUrl } from "@/utils/gravatar";
-import type { Session } from "next-auth";
+import type { Session } from 'next-auth';
+import { Pagination } from "@/components/common/Pagination";
 
 interface ActiveRestrictionsProps {
   restrictions: AddressStatus[];
@@ -82,7 +83,21 @@ export const ActiveRestrictions = ({
     );
   };
 
-  console.log("All Restrictions", restrictions);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
+  const totalItems = restrictions.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+  // Reset page when restrictions change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [restrictions.length]);
+
+  // Paginated restrictions
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentRestrictions = restrictions.slice(indexOfFirstItem, indexOfLastItem);
 
   return (
     <div className="overflow-x-auto">
@@ -96,7 +111,7 @@ export const ActiveRestrictions = ({
           </tr>
         </thead>
         <tbody>
-          {restrictions.map((status) => (
+          {currentRestrictions.map((status) => (
             <tr key={status.address}>
               <td className="w-1/6">
                 <div className="flex items-center gap-3">
@@ -258,6 +273,17 @@ export const ActiveRestrictions = ({
           ))}
         </tbody>
       </table>
+      {totalItems > itemsPerPage && (
+        <div className="mt-4">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            itemsPerPage={itemsPerPage}
+            totalItems={totalItems}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 };
