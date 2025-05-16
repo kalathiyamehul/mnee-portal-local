@@ -36,14 +36,14 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
   const validateName = (name: string) => {
     if (name.length < 2) return "Name must be at least 2 characters long";
     if (name.length > 50) return "Name must be less than 50 characters";
-    if (!/^[a-zA-Z\s'-]+$/.test(name)) return "Name can only contain letters, spaces, hyphens and apostrophes";
+    // Unicode letters, marks, spaces, hyphens, apostrophes
+    if (!/^[\p{L}\p{M}\s'-]+$/u.test(name)) return "Name can only contain letters, spaces, hyphens and apostrophes";
     return "";
   };
 
   const validateEmail = (email: string) => {
-    const emailRegex = /^[a-zA-Z0-9._+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
-    // Fix email validation logic
-    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    // Basic Unicode email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email)) return "Please enter a valid email address";
     if (email.length > 255) return "Email is too long";
     return "";
   };
