@@ -1,7 +1,8 @@
-import type { Config } from '@prisma/client';
-import { ActivityList } from './ActivityList';
-import type { Activity } from './types';
-import type { IconType } from 'react-icons';
+import type { Config } from "@prisma/client";
+import { ActivityList } from "./ActivityList";
+import type { Activity } from "./types";
+import type { IconType } from "react-icons";
+import { boolean } from "zod";
 
 interface ActivityTabProps {
   activities: Activity[];
@@ -12,12 +13,24 @@ interface ActivityTabProps {
   loading: boolean;
   canCancel: (activity: Activity) => boolean;
   canApprove: (activity: Activity) => boolean;
-  onCancel: (id: string, type: Activity['type']) => Promise<void>;
-  onApprove: (id: string, type: Activity['type']) => Promise<void>;
+  onCancel: (id: string, type: Activity["type"]) => Promise<void>;
+  onApprove: (id: string, type: Activity["type"]) => Promise<void>;
   getActivityIcon: (activity: Activity) => IconType;
   getActivityDisplayText: (activity: Activity) => string;
   requiresApproval: (activity: Activity) => boolean;
   getApprovalCount: (activity: Activity) => number;
+  permissions: {
+    hasApproveMintPer: boolean;
+    hasRejectMintPer: boolean;
+    hasApproveBurnPer: boolean;
+    hasRejectBurnPer: boolean;
+    hasApproveRefundPer: boolean;
+    hasRejectRefundPer: boolean;
+    hasApproveBlacklistPer: boolean;
+    hasRejectBlacklistPer: boolean;
+    hasApproveFreezePer: boolean;
+    hasRejectFreezePer: boolean;
+  };
 }
 
 export const ActivityTab = ({
@@ -34,7 +47,20 @@ export const ActivityTab = ({
   getActivityDisplayText,
   requiresApproval,
   getApprovalCount,
+  permissions,
 }: ActivityTabProps) => {
+  const showAction =
+    permissions.hasApproveBlacklistPer ||
+    permissions.hasApproveBurnPer ||
+    permissions.hasApproveFreezePer ||
+    permissions.hasApproveMintPer ||
+    permissions.hasApproveRefundPer ||
+    permissions.hasRejectRefundPer ||
+    permissions.hasRejectBurnPer ||
+    permissions.hasRejectFreezePer ||
+    permissions.hasRejectBlacklistPer ||
+    permissions.hasRejectMintPer;
+
   return (
     <div className="p-4">
       <ActivityList
@@ -43,6 +69,7 @@ export const ActivityTab = ({
         filteredActivities={filteredActivities}
         config={config as Config}
         loading={loading}
+        showAction={showAction}
         canCancel={canCancel}
         canApprove={canApprove}
         handleCancel={handleCancel}
@@ -51,7 +78,8 @@ export const ActivityTab = ({
         getActivityDisplayText={getActivityDisplayText}
         requiresApproval={requiresApproval}
         getApprovalCount={getApprovalCount}
+        permissions={permissions}
       />
     </div>
   );
-}; 
+};

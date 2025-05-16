@@ -22,6 +22,9 @@ export enum SystemOperation {
   // Blacklist operations
   BLACKLIST_REQUEST_CREATE = 'blacklist request creation',
   BLACKLIST_REQUEST_APPROVE = 'blacklist request approval',
+
+  // SETTLED operations
+  SETTLED_AFTER_BURN = 'SETTLED after burn',
 }
 
 // Operations that require blacklist checks
@@ -34,6 +37,7 @@ const BLACKLIST_RESTRICTED_OPERATIONS = new Set([
   SystemOperation.BURN_REQUEST_REJECT,
   SystemOperation.REFUND_REQUEST_CREATE,
   SystemOperation.REFUND_REQUEST_APPROVE,
+  SystemOperation.SETTLED_AFTER_BURN
 ]);
 
 /**

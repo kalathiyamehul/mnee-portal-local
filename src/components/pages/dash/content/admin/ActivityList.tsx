@@ -19,6 +19,7 @@ export const ActivityList = ({
   filteredActivities,
   config,
   loading,
+  showAction,
   canCancel,
   canApprove,
   handleCancel,
@@ -29,11 +30,12 @@ export const ActivityList = ({
   getApprovalCount,
   showPendingSwitch = true,
   showRequester = true,
+  permissions,
 }: Omit<ActivityListProps, "session">) => {
   // Add pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6; // Increased from 4 to show more items per page
-
+  // console.log("permissions: ", permissions)
   // Calculate pagination values
   const totalItems = filteredActivities.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
@@ -52,6 +54,21 @@ export const ActivityList = ({
     indexOfFirstItem,
     indexOfLastItem
   );
+
+  // console.log("permissions", permissions)
+
+  // Helper function to check approve permission for activity type
+  const hasApprovePermission = (type: string) => {
+    const permissionMap: Record<string, string> = {
+      MINT: "hasApproveMintPer",
+      BURN: "hasApproveBurnPer",
+      REFUND: "hasApproveRefundPer",
+      BLACKLIST: "hasApproveBlacklistPer",
+      FREEZE: "hasApproveFreezePer",
+    };
+    const key = permissionMap[type];
+    return key ? permissions[key as keyof typeof permissions] : false;
+  };
 
   // Helper to format data for export
   const exportData = filteredActivities.map((activity, index) => ({
@@ -186,7 +203,7 @@ export const ActivityList = ({
                   <th className="w-[30%]">Details</th>
                   {showRequester && <th className="w-[20%]">Requested By</th>}
                   <th className="w-[15%]">Status</th>
-                  <th className="w-[10%]">Actions</th>
+                  {showAction && <th className="w-[10%]">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -379,7 +396,7 @@ export const ActivityList = ({
                           )}
                         </div>
                       </td>
-                      <td>
+                     {showAction && <td>
                         <div className="flex gap-2 justify-end">
                           {canCancel(activity) && (
                             <button
@@ -392,55 +409,21 @@ export const ActivityList = ({
                               Cancel
                             </button>
                           )}
-                          {canApprove(activity) && (
-                            <button
-                              type="button"
-                              className="btn btn-primary btn-xs"
-                              onClick={() =>
-                                handleApprove(activity.id, activity.type)
-                              }
-                            >
-                              Approve
-                            </button>
-                          )}
-                          {/* Add Reject button for pending mint requests not by self and not already approved */}
-                          {activity.type === "MINT" && canApprove(activity) && (
-                            <button
-                              type="button"
-                              className="btn btn-error btn-xs"
-                              onClick={() => handleReject(activity.id, "MINT")}
-                              disabled={loadingReject === activity.id}
-                            >
-                              {loadingReject === activity.id ? (
-                                <>
-                                  <FaSpinner className="animate-spin mr-1" />
-                                  Rejecting...
-                                </>
-                              ) : (
-                                "Reject"
-                              )}
-                            </button>
-                          )}
-                          {/* Add Reject button for pending Burn requests not by self and not already approved */}
-                          {activity.type === "BURN" && canApprove(activity) && (
-                            <button
-                              type="button"
-                              className="btn btn-error btn-xs"
-                              onClick={() => handleReject(activity.id, "BURN")}
-                              disabled={loadingReject === activity.id}
-                            >
-                              {loadingReject === activity.id ? (
-                                <>
-                                  <FaSpinner className="animate-spin mr-1" />
-                                  Rejecting...
-                                </>
-                              ) : (
-                                "Reject"
-                              )}
-                            </button>
+                          {canApprove(activity) && hasApprovePermission(activity.type) && (
+                            <div className="flex gap-2 items-center">
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-xs"
+                                onClick={() =>
+                                  handleApprove(activity.id, activity.type)
+                                }
+                              >
+                                Approve
+                              </button>
+                            </div>
                           )}
                         </div>
-                      </td>
+                      </td>}
                     </tr>
                   );
                 })}

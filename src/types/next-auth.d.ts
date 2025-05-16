@@ -9,6 +9,7 @@ declare module 'next-auth' {
       name?: string | null;
       email?: string | null;
       requiresPasswordReset?: boolean;
+      rolePermissions?: Record<string, string[]>;
     };
   }
   interface User {
