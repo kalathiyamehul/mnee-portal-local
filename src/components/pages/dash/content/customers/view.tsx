@@ -13,6 +13,8 @@ import { getConfig } from "@/lib/config";
 import type { Config } from "@prisma/client";
 import { getGravatarUrl } from "@/utils/gravatar";
 import { FetchStatus } from "@/types/common";
+import { usePermission } from "@/hooks/usePermission";
+import { Action, Resource } from "@/lib/permission";
 
 interface CustomerActivity {
   customer: {
@@ -61,7 +63,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'mints' | 'burns'>('mints');
   const [config, setConfig] = useState<Config | null>(null);
-
+  const { hasPermission } = usePermission();
   useEffect(() => {
     const loadConfig = async () => {
       try {
@@ -129,7 +131,8 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
               <p className="text-base-content/70">{customer.email}</p>
             </div>
           </div>
-          <button
+          {hasPermission(Resource.CUSTOMER, Action.UPDATE) && (
+            <button
             type="button"
             onClick={() => setShowModal(true)}
             className="btn btn-ghost btn-sm gap-2"
@@ -137,6 +140,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
             <FaEdit className="w-4 h-4" />
             Edit
           </button>
+          )}
         </div>
 
         <div className="divider" />

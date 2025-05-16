@@ -5,10 +5,22 @@ import { getGravatarUrl } from "@/utils/gravatar";
 import { useState } from "react";
 import { ChangePassword } from "@/components/pages/dash/content/settings/ChangePassword";
 import TwoFA from "./twoFA";
+import { usePermission } from "@/hooks/usePermission";
+import { Action, Resource } from "@/lib/permission";
 
 export default function ProfileScreen() {
   const { data: session } = useSession();
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const { hasPermission, hasAllPermissions } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+  const isAdmin = hasAllPermissions([
+    { resource: Resource.MINT, action: Action.CREATE },
+    { resource: Resource.BURN, action: Action.CREATE },
+    { resource: Resource.CUSTOMER, action: Action.CREATE },
+    { resource: Resource.REFUND, action: Action.CREATE },
+    { resource: Resource.BLACKLIST, action: Action.CREATE },
+    { resource: Resource.FREEZE, action: Action.CREATE },
+  ]);
 
   return (
     <div className="container p-4 space-y-6 animate-fade-in">
@@ -31,6 +43,9 @@ export default function ProfileScreen() {
                   {session?.user?.name}
                 </h2>
                 <p className="text-xl-content/70">{session?.user?.email}</p>
+                <p className="text-xl-content/70">
+                  Role: {isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "User"}
+                </p>
               </div>
             </div>
           </div>

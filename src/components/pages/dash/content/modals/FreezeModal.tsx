@@ -12,6 +12,7 @@ export const FreezeModal = ({
   onSuccess
 }: FreezeModalProps) => {
   const [address, setAddress] = useState('');
+  const [reason, setReason] = useState('');  // Add reason state
   const [freezeLoading, setFreezeLoading] = useState(false);
   const [blacklistLoading, setBlacklistLoading] = useState(false);
 
@@ -20,10 +21,10 @@ export const FreezeModal = ({
       setFreezeLoading(true);
       const response = await fetch('/api/freeze', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address,
           action: 'FREEZE',
+          reason  // Include reason
         }),
       });
 
@@ -48,10 +49,10 @@ export const FreezeModal = ({
       setBlacklistLoading(true);
       const response = await fetch('/api/blacklist', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           address,
           action: 'BLACKLIST',
+          reason  // Include reason
         }),
       });
 
@@ -80,7 +81,7 @@ export const FreezeModal = ({
           <p><FaLock className="inline mr-2" /> Blacklist: Prevents an address from receiving funds</p>
         </div>
         <div className="space-y-4">
-          <label className="form-control w-full block">
+          <div className="form-control w-full block">
             <div className="label">
               <span className="label-text">Bitcoin Address</span>
             </div>
@@ -92,7 +93,21 @@ export const FreezeModal = ({
               placeholder="Enter Bitcoin SV Address"
               required
             />
-          </label>
+          </div>
+          <div className="form-control w-full block">
+            <label className="label">
+              <span className="label-text">Reason</span>
+            </label>
+            <input
+              type="text"
+              className="input input-bordered w-full max-w-md font-mono"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={100}
+              placeholder="Reason for Freezing/Blacklisting Address"
+              required
+            />
+          </div>
         </div>
         <div className="modal-action">
           <button
@@ -122,4 +137,4 @@ export const FreezeModal = ({
       </div>
     </dialog>
   );
-}; 
+};

@@ -34,6 +34,8 @@ interface MintTableProps {
   showViewAll?: boolean;
   onUpdate?: () => void;
   alwaysShow?: boolean;
+  hasApproveMintPer?: boolean;
+	hasRejectMintPer?: boolean;
   mode?: "all" | "active" | "history";
   showActions?: boolean;
   showRequester?: boolean;
@@ -63,16 +65,21 @@ const MintTableContent = ({
   onUpdate,
   showActions,
   showRequester,
+  hasApproveMintPer,
+  hasRejectMintPer
 }: {
   mints: Activity[];
   session: Session | null;
   onUpdate: (() => void) | undefined;
   showActions: boolean;
   showRequester: boolean;
+  hasApproveMintPer?: boolean;
+  hasRejectMintPer?: boolean;
 }) => {
-  const [config, setConfig] = useState<Config | null>(null);
-  const [loadingApproval, setLoadingApproval] = useState<string | null>(null);
-  const router = useRouter();
+	const [config, setConfig] = useState<Config | null>(null);
+	const [loadingApproval, setLoadingApproval] = useState<string | null>(null);
+	const [loadingReject, setLoadingReject] = useState<string | null>(null); // <-- Add this line
+	const router = useRouter();
 
   const hasUserApproved = (mint: Activity) => {
     if (!session?.user?.email) return false;
@@ -80,6 +87,9 @@ const MintTableContent = ({
       (approval) => approval.approver?.email === session.user.email
     );
   };
+
+  // console.log("Per:", hasApproveMintPer, hasRejectMintPer);
+  // console.log("Session:", session?.user);
 
   useEffect(() => {
     const getAndSetConfig = async () => {
@@ -89,7 +99,7 @@ const MintTableContent = ({
         router.push("/setup?fromDashAdminMints=true");
         return;
       }
-      setConfig(config as Config);
+      setConfig(config as unknown as Config);
     };
 
     getAndSetConfig();
@@ -169,13 +179,44 @@ const MintTableContent = ({
     }
   };
 
-  if (mints.length === 0) {
-    return (
-      <div className="text-center py-8 text-base-content/70">
-        No mint requests found
-      </div>
-    );
-  }
+	const handleReject = async (id: string) => {
+		try {
+			setLoadingReject(id);
+			const response = await fetch("/api/rejectMint", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ mintRequestId: id }),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(data.error || "Failed to reject mint request");
+			}
+
+			if (data.success) {
+				toast.success(data.message || "Mint request rejected");
+				onUpdate?.();
+			} else {
+				throw new Error(data.error || "Failed to reject mint request");
+			}
+		} catch (error) {
+			console.error("Failed to reject mint request:", error);
+			toast.error(error instanceof Error ? error.message : "Failed to reject mint request");
+		} finally {
+			setLoadingReject(null);
+		}
+	};
+
+	if (mints.length === 0) {
+		return (
+			<div className="text-center py-8 text-base-content/70">
+				No mint requests found
+			</div>
+		);
+	}
 
   if (!config) {
     return (
@@ -322,7 +363,7 @@ const MintTableContent = ({
               </td>
               {showActions && (
                 <td>
-                  {mint.status === "PENDING" && session?.user && (
+                  {hasApproveMintPer && mint.status === "PENDING" && session?.user && (
                     <div className="flex gap-2 justify-end">
                       {mint.requester.email === session.user.email ? (
                         <button
@@ -381,6 +422,8 @@ export const MintTable = ({
   showRequester = true,
   enablePagination = false,
   itemsPerPage = 6,
+  hasApproveMintPer,
+  hasRejectMintPer
 }: MintTableProps) => {
   const { data: session } = useSession();
   const [currentPage, setCurrentPage] = useState(1);
@@ -428,6 +471,8 @@ export const MintTable = ({
           onUpdate={onUpdate}
           showActions={showActions}
           showRequester={showRequester}
+          hasApproveMintPer={hasApproveMintPer}  // Add this line
+          hasRejectMintPer={hasRejectMintPer}    // Add this line
         />
       </div>
 

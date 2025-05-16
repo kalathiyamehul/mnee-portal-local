@@ -65,7 +65,7 @@ export interface MintRequest extends BaseRequest {
 export interface BurnRequest {
 	id: string;
 	amount: string;
-	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'REFUNDED';
+	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'REFUNDED' | 'SETTLED';
 	requester: {
 		email: string;
 		name: string | null;
@@ -96,7 +96,8 @@ export type ActivityStatus =
   | "CANCELLED"
   | "DONE"
   | "REFUNDED"
-  | "REJECTED";
+  | "REJECTED"
+  | "SETTLED";
 
 export interface Activity {
   id: string;
@@ -106,6 +107,7 @@ export interface Activity {
   createdAt: string;
   updatedAt: string;
   amount?: string;
+  reason?: string;
   address?: string;
   txid?: string;
   outpoint?: string;
@@ -149,6 +151,7 @@ export interface AddressStatus {
 		name: string | null;
 	};
 	lastUpdate: string;
+	reason?: string;
 }
 
 export interface StatusResponse {
@@ -168,6 +171,7 @@ export interface ActivityListProps {
 	filteredActivities: Activity[];
 	config: Config;
 	loading: boolean;
+	showAction: boolean;
 	canCancel: (activity: Activity) => boolean;
 	canApprove: (activity: Activity) => boolean;
 	handleCancel: (id: string, type: Activity['type']) => Promise<void>;
@@ -178,6 +182,18 @@ export interface ActivityListProps {
 	getApprovalCount: (activity: Activity) => number;
 	showPendingSwitch?: boolean;
 	showRequester?: boolean;
+	permissions: {
+		hasApproveMintPer: boolean;
+		hasRejectMintPer: boolean;
+		hasApproveBurnPer: boolean;
+		hasRejectBurnPer: boolean;
+		hasApproveRefundPer: boolean;
+		hasRejectRefundPer: boolean;
+		hasApproveBlacklistPer: boolean;
+		hasRejectBlacklistPer: boolean;
+		hasApproveFreezePer: boolean;
+		hasRejectFreezePer: boolean;
+	  };
 }
 
 export interface SystemStatusProps {
@@ -187,4 +203,4 @@ export interface SystemStatusProps {
 
 export interface ActiveRestrictionsProps {
 	restrictions: AddressStatus[];
-} 
+}

@@ -16,16 +16,17 @@ interface BurnModalProps {
 
 export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [numApprovals, setNumApprovals] = useState(2); // Default value as per schema
 
   const handleBurn = async () => {
     setIsLoading(true);
     try {
       // console.log('Starting burn request with:', { amount, utxo });
-      
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       const payload = {
         amount,
         outpoint,
+        no_of_approvals: numApprovals, // Pass to API
       };
       
       // console.log('Prepared burn payload:', payload);
@@ -74,6 +75,28 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
             <div className="text-xs opacity-50 mt-1 break-all">
               UTXO: {utxo.txid}:{utxo.vout}
             </div>
+            {/* New Field: Number of Approvals */}
+            <div className="mt-4">
+              <label className="text-sm opacity-70 mb-1 block" htmlFor="num-approvals">
+                Number of Approvals
+              </label>
+              <input
+                id="num-approvals"
+                type="number"
+                min={2}
+                className="input input-bordered w-full"
+                value={numApprovals}
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  if (val < 2) {
+                    setNumApprovals(2);
+                  } else {
+                    setNumApprovals(val);
+                  }
+                }}
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
           <div className="alert alert-warning">
@@ -118,4 +141,4 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
       </form>
     </dialog>
   );
-}; 
+};
