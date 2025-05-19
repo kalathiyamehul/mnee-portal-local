@@ -266,7 +266,10 @@ const DashboardSettingsContent = () => {
       const utxos = await fetchMneeUtxos([address]);
       setBurnUtxos(utxos);
     } catch (error) {
-      console.error("Error fetching burn UTXOs:", error);
+      // console.error("Error fetching burn UTXOs:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Error fetching burn UTXOs"
+      );
     } finally {
       setBurnLoading(false);
     }
@@ -289,13 +292,19 @@ const DashboardSettingsContent = () => {
           // Convert satoshis to BSV
           balances[address] = data.confirmed / 1e8;
         } catch (error) {
-          console.error(`Error fetching BSV balance for ${address}:`, error);
+          // console.error(`Error fetching BSV balance for ${address}:`, error);
+          toast.error(
+            error instanceof Error ? error.message : `Error fetching BSV balance for ${address}:`
+          );
         }
       }
 
       setBsvBalances(balances);
     } catch (error) {
-      console.error("Error fetching BSV balances:", error);
+      // console.error("Error fetching BSV balances:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Error fetching BSV balances"
+      );
     } finally {
       setBsvLoading(false);
     }
@@ -334,7 +343,10 @@ const DashboardSettingsContent = () => {
           amt: tokenData.amt,
         });
       } catch (error) {
-        console.error("Error fetching config:", error);
+        // console.error("Error fetching config:", error);
+        toast.error(
+          error instanceof Error ? error.message : "Error fetching config"
+        );
       } finally {
         setLoading(false);
       }
@@ -364,7 +376,7 @@ const DashboardSettingsContent = () => {
       toast.success("Configuration saved successfully");
       setIsEditing(false);
     } catch (error) {
-      console.error("Error saving config:", error);
+      // console.error("Error saving config:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to save configuration"
       );

@@ -186,7 +186,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
           });
         }
       } catch (error) {
-        console.error("Error fetching config:", error);
+        // console.error("Error fetching config:", error);
+        toast.error("Error fetching config");
       }
     };
 
@@ -350,7 +351,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       await fetchStatus();
       toast.success("Request cancelled");
     } catch (error) {
-      console.error("Error cancelling request:", error);
+      // console.error("Error cancelling request:", error);
       toast.error("Failed to cancel request");
     } finally {
       setLoading(false);
@@ -404,7 +405,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       await fetchStatus();
       toast.success("Request approved");
     } catch (error) {
-      console.error("Error approving request:", error);
+      // console.error("Error approving request:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to approve request"
       );
@@ -449,7 +450,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       await fetchStatus();
       toast.success("Address unblacklist requested");
     } catch (error) {
-      console.error("Error unblacklisting address:", error);
+      // console.error("Error unblacklisting address:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to unblacklist address"
       );
@@ -481,7 +482,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       await fetchStatus();
       toast.success("Freeze request created");
     } catch (error) {
-      console.error("Error freezing address:", error);
+      // console.error("Error freezing address:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to freeze address"
       );
@@ -510,7 +511,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       await fetchStatus();
       toast.success("Unfreeze request created");
     } catch (error) {
-      console.error("Error unfreezing address:", error);
+      // console.error("Error unfreezing address:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to unfreeze address"
       );
@@ -542,7 +543,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       await fetchStatus();
       toast.success("Address blacklist requested");
     } catch (error) {
-      console.error("Error blacklisting address:", error);
+      // console.error("Error blacklisting address:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to blacklist address"
       );

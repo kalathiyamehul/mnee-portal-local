@@ -71,7 +71,12 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
       setDecimals(config.decimals ?? DEFAULT_DECIMALS);
       return config.burnAddress as string;
     } catch (err) {
-      console.error("Error fetching config:", err);
+      // console.error("Error fetching config:", err);
+      toast.error(
+        err instanceof Error
+        ? err.message
+          : "Failed to fetch config"
+      );
       setError(err instanceof Error ? err.message : "Failed to fetch config");
       return null;
     }
@@ -89,7 +94,12 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
       // console.log('Burn UTXOs:', fetchedBurnUtxos);
       setBurnUtxos(fetchedBurnUtxos);
     } catch (err) {
-      console.error("Error fetching UTXOs:", err);
+      // console.error("Error fetching UTXOs:", err);
+      toast.error(
+        err instanceof Error
+        ? err.message
+          : "Failed to fetch UTXOs"
+      );
       setError(err instanceof Error ? err.message : "Failed to fetch UTXOs");
     }
   }, []);
@@ -177,7 +187,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
         `${request.type === "burn" ? "Burn" : "Refund"} request cancelled`
       );
     } catch (err) {
-      console.error(`Error cancelling ${request.type}:`, err);
+      // console.error(`Error cancelling ${request.type}:`, err);
       toast.error(
         err instanceof Error
           ? err.message
@@ -201,7 +211,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
 
       toast.success("Refund request approved");
     } catch (error) {
-      console.error("Error approving refund:", error);
+      // console.error("Error approving refund:", error);
       toast.error(
         error instanceof Error
           ? error.message
@@ -225,7 +235,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
 
       toast.success("Burn request approved");
     } catch (error) {
-      console.error("Error approving burn:", error);
+      // console.error("Error approving burn:", error);
       toast.error(
         error instanceof Error
           ? error.message

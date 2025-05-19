@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Activity } from "@/components/pages/dash/content/admin/types";
 import { useSession } from "next-auth/react";
+import toast from "react-hot-toast";
 
 interface SystemStatusData {
   isPaused: boolean;
@@ -60,7 +61,8 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
         refundRequests: data.refundRequests || []
       });
     } catch (error) {
-      console.error('Error fetching system status:', error);
+      // console.error('Error fetching system status:', error);
+      toast.error(error instanceof Error? error.message : 'Failed to fetch system status');
       setStatusData(null);
     }
   }, [session?.user]);

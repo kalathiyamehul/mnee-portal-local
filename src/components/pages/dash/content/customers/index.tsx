@@ -17,7 +17,7 @@ import { getConfig } from "@/lib/config";
 import { toToken } from "satoshi-token";
 import type { Config, Customer } from "@prisma/client";
 import { FetchStatus } from "@/types/common";
-import { ErrorIcon } from "react-hot-toast";
+import toast, { ErrorIcon } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePermission } from "@/hooks/usePermission";
@@ -40,7 +40,8 @@ export default function DashboardCustomersContent() {
         const configData = await getConfig();
         setConfig(configData);
       } catch (error) {
-        console.error("Error loading config:", error);
+        // console.error("Error loading config:", error);
+        toast.error("Failed to load config");
       }
     };
     init();
@@ -102,7 +103,8 @@ export default function DashboardCustomersContent() {
         "Created At": new Date(customer.createdAt).toLocaleDateString(),
       }));
     } catch (error) {
-      console.error("Error exporting customers:", error);
+      // console.error("Error exporting customers:", error);
+      toast.error("Failed to export customers");
       throw error;
     }
   };

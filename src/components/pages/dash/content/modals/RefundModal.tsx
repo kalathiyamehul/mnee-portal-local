@@ -53,7 +53,7 @@ export const RefundModal = ({
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Error creating refund request:', error);
+      // console.error('Error creating refund request:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create refund request');
     } finally {
       setIsLoading(false);

@@ -31,7 +31,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       }));
       setBalancesLoading(FetchStatus.SUCCESS);
     } catch (error) {
-      console.error("Error fetching MNEE balance:", error);
+      // console.error("Error fetching MNEE balance:", error);
       toast.error("Failed to fetch MNEE balance");
       setBalancesLoading(FetchStatus.ERROR);
     }
@@ -72,7 +72,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       // console.log('Setting success state...');
       setBalancesLoading(FetchStatus.SUCCESS);
     } catch (error) {
-      console.error("Error fetching MNEE balances:", error);
+      // console.error("Error fetching MNEE balances:", error);
       toast.error("Failed to fetch MNEE balances");
       // console.log('Setting error state...');
       setBalancesLoading(FetchStatus.ERROR);
@@ -89,7 +89,8 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
           await fetchBalance(config.burnAddress);
         }
       } catch (error) {
-        console.error("Error fetching config:", error);
+        // console.error("Error fetching config:", error);
+        toast.error("Error fetching config");
       }
     };
     init();

@@ -46,7 +46,7 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
       // console.log('Burn API response data:', data);
 
       if (!response.ok) {
-        console.error('Burn request failed:', data);
+        // console.error('Burn request failed:', data);
         toast.error(data.error || 'Failed to create burn request');
         return;
       }
@@ -54,7 +54,7 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
       toast.success('Burn request created successfully');
       onSuccess();
     } catch (error) {
-      console.error('Error in burn request process:', error);
+      // console.error('Error in burn request process:', error);
       toast.error('Failed to create burn request. Please try again.');
     } finally {
       setIsLoading(false);

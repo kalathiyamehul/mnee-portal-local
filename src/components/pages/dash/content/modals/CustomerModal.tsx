@@ -111,7 +111,7 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
       }
       onSuccess();
     } catch (error) {
-      console.error("Error saving customer:", error);
+      // console.error("Error saving customer:", error);
       toast.error(error instanceof Error ? error.message : "Failed to save customer");
     } finally {
       setLoading(false);

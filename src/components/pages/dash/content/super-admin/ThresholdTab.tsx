@@ -33,7 +33,7 @@ const ThresholdTab = () => {
           { id: "2", name: "Maximum Approvals", value: config.maxNoOfApproval },
         ]);
       } catch (error) {
-        console.error("Error fetching config:", error);
+        // console.error("Error fetching config:", error);
         toast.error("Failed to load threshold settings");
       } finally {
         setLoading(false);
@@ -69,7 +69,7 @@ const ThresholdTab = () => {
       toast.success("Threshold updated successfully");
       setIsEditing(false);
     } catch (error) {
-      console.error("Error updating threshold:", error);
+      // console.error("Error updating threshold:", error);
       toast.error("Failed to update threshold");
     }
   };

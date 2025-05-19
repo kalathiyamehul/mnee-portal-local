@@ -43,7 +43,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      console.error("Error exporting CSV:", error);
+      // console.error("Error exporting CSV:", error);
       toast.error("Failed to export CSV");
     } finally {
       setLoading(false);
@@ -89,7 +89,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
       });
       doc.save(`${filename}.pdf`);
     } catch (error) {
-      console.error("Error exporting PDF:", error);
+      // console.error("Error exporting PDF:", error);
       toast.error("Failed to export PDF");
     } finally {
       setLoading(false);
