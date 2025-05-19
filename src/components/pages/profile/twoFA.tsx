@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { MdClose } from "react-icons/md";
 
 const Button = (props: any) => (
   <button
@@ -110,7 +111,18 @@ export default function TwoFA() {
       )}
 
       {_2faStatus !== "enabled" && qrData && (
-        <div className="space-y-6 p-4 bg-base-100 rounded-lg w-11/12">
+        <div className="space-y-6 p-4 bg-base-100 rounded-lg w-11/12 relative">
+          <button 
+            className="absolute top-2 right-2 btn btn-ghost btn-sm"
+            onClick={() => {
+              setQRData(undefined);
+              setQRSecret(undefined);
+              set2FAStatus('disabled');
+              setErrorText(undefined);
+            }}
+          >
+            <MdClose className="size-5" />
+          </button>
           <div className="space-y-2">
             <h4 className="font-medium">Step 1: Scan QR Code</h4>
             <div className="alert alert-info">

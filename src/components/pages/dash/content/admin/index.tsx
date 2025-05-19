@@ -96,6 +96,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     hasRejectFreezePer,
   };
 
+  // console.log("statusData: ", statusData);
+
   // Restrictions Permissions object
   const restrictionsPermissions = {
     // Freeze

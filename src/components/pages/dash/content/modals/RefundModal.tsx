@@ -30,7 +30,7 @@ export const RefundModal = ({
     setIsLoading(true);
     try {
       const outpoint = `${utxo.txid}_${utxo.vout}`;
-      console.log('Creating refund request:', { outpoint, refundAddress });
+      // console.log('Creating refund request:', { outpoint, refundAddress });
       
       const response = await fetch('/api/refund', {
         method: 'POST',
@@ -38,7 +38,7 @@ export const RefundModal = ({
         body: JSON.stringify({ outpoint, refundAddress }),
       });
 
-      console.log('Refund response:', { status: response.status });
+      // console.log('Refund response:', { status: response.status });
       const data = await response.json();
 
       if (!response.ok) {

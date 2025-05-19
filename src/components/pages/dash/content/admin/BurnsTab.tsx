@@ -113,7 +113,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
       ),
     }));
 
-    console.log({ burnsWithRequests });
+    // console.log({ burnsWithRequests });
     // Add burn UTXOs with APPROVED status
     const completedBurnRequests = statusData?.burnRequests || [];
     for (const utxo of burnUtxos) {

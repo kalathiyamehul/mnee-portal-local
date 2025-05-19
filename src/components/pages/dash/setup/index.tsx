@@ -34,7 +34,7 @@ export default function Setup() {
         toast.error('Invalid token ID');
         return;
       }
-      console.log({txid, vout})
+      // console.log({txid, vout})
       setLoading(true);
       try {
        
@@ -72,7 +72,7 @@ export default function Setup() {
       }
       
       await revalidateConfig();
-      console.log("[DEBUG] revalidated config");
+      // console.log("[DEBUG] revalidated config");
       
       toast.success('Token deployed and configured successfully');
       // Signup functionality temporarily disabled

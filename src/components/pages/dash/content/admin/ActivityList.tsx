@@ -118,7 +118,7 @@ export const ActivityList = ({
     }
   };
 
-  console.log("filteredList", filteredActivities);
+  // console.log("filteredList", filteredActivities);
 
   const [loadingReject, setLoadingReject] = useState<string | null>(null);
 
