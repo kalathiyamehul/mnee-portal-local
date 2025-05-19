@@ -70,35 +70,33 @@ export function CustomerModal({
   const validateName = (name: string) => {
     if (name.length < 2) return "Name must be at least 2 characters long";
     if (name.length > 50) return "Name must be less than 50 characters";
-    if (!/^[a-zA-Z\s'-]+$/.test(name))
-      return "Name can only contain letters, spaces, hyphens and apostrophes";
+    // Unicode letters, marks, spaces, hyphens, apostrophes
+    if (!/^[\p{L}\p{M}\s'-]+$/u.test(name)) return "Name can only contain letters, spaces, hyphens and apostrophes";
     return "";
   };
 
   const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // Fix email validation logic
-    if (!emailRegex.test(email)) return "Please enter a valid email address";
+    // Basic Unicode email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email)) return "Please enter a valid email address";
     if (email.length > 255) return "Email is too long";
     return "";
   };
 
   const validateAddress = (address: string) => {
     // Bitcoin address validation
-    if (!address.startsWith("1")) return "Invalid Ordinals Address";
-    if (!/^1[A-Za-z0-9]{25,34}$/.test(address)) {
-      return "Invalid Address Format";
-    }
     if (/\s/.test(address)) return "Address cannot contain spaces";
-    if (/[^A-Za-z0-9]/.test(address.slice(1)))
-      return "Address can only contain letters and numbers";
+    if (/[^A-Za-z0-9]/.test(address.slice(1))) return "Address can only contain letters and numbers";
+    if (!address.startsWith('1')) return "Invalid Ordinals Address";
+    if (!/^1[A-Za-z0-9]{34}$/.test(address)) {
+      return "Address Length must be 35 characters";
+    }
     return "";
   };
 
   const validateApproval = (value: number) => {
     if (value < 1) return "Minimum 1 approval required";
     if (value > 10) return "Maximum 10 approvals allowed";
-    return "";
+    return ""; // Add empty string return for valid cases
   };
 
   // Handle input changes with validation
@@ -120,7 +118,8 @@ export function CustomerModal({
         error = validateAddress(value.toString());
         break;
       case "noOfApproval":
-        error = validateApproval(Number(value));
+        const approvalError = validateApproval(Number(value));
+        error = approvalError ? approvalError.toString() : "";
         break;
     }
     setErrors((prev) => ({ ...prev, [field]: error }));
@@ -134,11 +133,12 @@ export function CustomerModal({
     const emailError = validateEmail(formData.email);
     const addressError = validateAddress(formData.address);
 
+    // Update the error state setting to handle string returns
     setErrors({
       name: nameError,
       email: emailError,
       address: addressError,
-      noOfApproval: validateApproval(formData.noOfApproval),
+      noOfApproval: validateApproval(formData.noOfApproval) || "", // Ensure string type
     });
 
     // Improved error feedback
@@ -216,13 +216,9 @@ export function CustomerModal({
                 placeholder="Enter customer name"
                 required
               />
-              {errors.name && (
-                <div className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.name}
-                  </span>
-                </div>
-              )}
+              {errors.name && <div className="label mt-1">
+                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.name}</span>
+              </div>}
             </div>
 
             <div className="form-control w-full mb-4">
@@ -237,13 +233,9 @@ export function CustomerModal({
                 placeholder="Enter customer email"
                 required
               />
-              {errors.email && (
-                <div className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.email}
-                  </span>
-                </div>
-              )}
+              {errors.email && <div className="label mt-1">
+                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.email}</span>
+              </div>}
             </div>
 
             <div className="form-control w-full mb-4">
@@ -254,17 +246,14 @@ export function CustomerModal({
                   errors.address ? "input-error" : ""
                 }`}
                 value={formData.address}
-                onChange={(e) => handleInputChange("address", e.target.value)}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                maxLength={35}
                 placeholder="Enter 1Sat Ordinals address"
                 required
               />
-              {errors.address && (
-                <div className="label">
-                  <span className="label-text-alt text-error">
-                    {errors.address}
-                  </span>
-                </div>
-              )}
+              {errors.address && <div className="label mt-1">
+                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.address}</span>
+              </div>}
             </div>
             {customer ? (
               ""
