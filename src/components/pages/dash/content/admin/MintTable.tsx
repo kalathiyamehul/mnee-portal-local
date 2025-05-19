@@ -376,26 +376,45 @@ const MintTableContent = ({
                         </button>
                       ) : (
                         <div className="flex gap-2 items-center">
-                          <button
-                            type="button"
-                            onClick={() => handleApprove(mint.id)}
-                            className="btn btn-primary btn-xs"
-                            disabled={
-                              loadingApproval === mint.id ||
-                              hasUserApproved(mint)
-                            }
-                          >
-                            {loadingApproval === mint.id ? (
-                              <>
-                                <FaSpinner className="animate-spin mr-1" />
-                                Approving...
-                              </>
-                            ) : hasUserApproved(mint) ? (
-                              "Approved"
-                            ) : (
-                              "Approve"
-                            )}
-                          </button>
+                          {hasApproveMintPer && (
+                            <button
+                              type="button"
+                              onClick={() => handleApprove(mint.id)}
+                              className="btn btn-primary btn-xs"
+                              disabled={
+                                loadingApproval === mint.id ||
+                                hasUserApproved(mint)
+                              }
+                            >
+                              {loadingApproval === mint.id ? (
+                                <>
+                                  <FaSpinner className="animate-spin mr-1" />
+                                  Approving...
+                                </>
+                              ) : hasUserApproved(mint) ? (
+                                "Approved"
+                              ) : (
+                                "Approve"
+                              )}
+                            </button>
+                          )}
+                          {hasRejectMintPer && !hasUserApproved(mint) && (
+                            <button
+                              type="button"
+                              onClick={() => handleReject(mint.id)}
+                              className="btn btn-error btn-xs"
+                              disabled={loadingApproval === mint.id}
+                            >
+                              {loadingReject === mint.id? (
+                                <>
+                                  <FaSpinner className="animate-spin mr-1" />
+                                  Rejecting...
+                                </>
+                                ) : (
+                                  "Reject"
+                              )}
+                              </button>
+                          )}
                         </div>
                       )}
                     </div>
