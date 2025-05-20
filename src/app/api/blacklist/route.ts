@@ -65,6 +65,7 @@ export async function POST(request: Request) {
         data: {
           address,
           status: 'PENDING',
+          no_of_approvals: no_of_approvals || 2,  // Default to 2 if not provided
           action: action as BlacklistAction,
           reason,  // Add reason field
           requestedBy: session.user.id,

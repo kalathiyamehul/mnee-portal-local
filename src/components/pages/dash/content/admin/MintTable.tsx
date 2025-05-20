@@ -138,7 +138,7 @@ const MintTableContent = ({
         throw new Error(data.error || "Failed to approve mint request");
       }
     } catch (error) {
-      console.error("Failed to approve mint request:", error);
+      // console.error("Failed to approve mint request:", error);
       toast.error(
         error instanceof Error
           ? error.message
@@ -172,7 +172,7 @@ const MintTableContent = ({
         throw new Error(data.error || "Failed to cancel mint request");
       }
     } catch (error) {
-      console.error("Failed to cancel mint request:", error);
+      // console.error("Failed to cancel mint request:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to cancel mint request"
       );
@@ -203,7 +203,7 @@ const MintTableContent = ({
 				throw new Error(data.error || "Failed to reject mint request");
 			}
 		} catch (error) {
-			console.error("Failed to reject mint request:", error);
+			// console.error("Failed to reject mint request:", error);
 			toast.error(error instanceof Error ? error.message : "Failed to reject mint request");
 		} finally {
 			setLoadingReject(null);
@@ -376,26 +376,45 @@ const MintTableContent = ({
                         </button>
                       ) : (
                         <div className="flex gap-2 items-center">
-                          <button
-                            type="button"
-                            onClick={() => handleApprove(mint.id)}
-                            className="btn btn-primary btn-xs"
-                            disabled={
-                              loadingApproval === mint.id ||
-                              hasUserApproved(mint)
-                            }
-                          >
-                            {loadingApproval === mint.id ? (
-                              <>
-                                <FaSpinner className="animate-spin mr-1" />
-                                Approving...
-                              </>
-                            ) : hasUserApproved(mint) ? (
-                              "Approved"
-                            ) : (
-                              "Approve"
-                            )}
-                          </button>
+                          {hasApproveMintPer && (
+                            <button
+                              type="button"
+                              onClick={() => handleApprove(mint.id)}
+                              className="btn btn-primary btn-xs"
+                              disabled={
+                                loadingApproval === mint.id ||
+                                hasUserApproved(mint)
+                              }
+                            >
+                              {loadingApproval === mint.id ? (
+                                <>
+                                  <FaSpinner className="animate-spin mr-1" />
+                                  Approving...
+                                </>
+                              ) : hasUserApproved(mint) ? (
+                                "Approved"
+                              ) : (
+                                "Approve"
+                              )}
+                            </button>
+                          )}
+                          {hasRejectMintPer && !hasUserApproved(mint) && (
+                            <button
+                              type="button"
+                              onClick={() => handleReject(mint.id)}
+                              className="btn btn-error btn-xs"
+                              disabled={loadingApproval === mint.id}
+                            >
+                              {loadingReject === mint.id? (
+                                <>
+                                  <FaSpinner className="animate-spin mr-1" />
+                                  Rejecting...
+                                </>
+                                ) : (
+                                  "Reject"
+                              )}
+                              </button>
+                          )}
                         </div>
                       )}
                     </div>

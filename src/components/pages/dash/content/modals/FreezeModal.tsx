@@ -15,6 +15,7 @@ export const FreezeModal = ({
   const [reason, setReason] = useState('');  // Add reason state
   const [freezeLoading, setFreezeLoading] = useState(false);
   const [blacklistLoading, setBlacklistLoading] = useState(false);
+  const [no_of_approvals, setnoOfApprovals] = useState<number>(2);
 
   const handleFreezeRequest = async () => {
     try {
@@ -24,6 +25,7 @@ export const FreezeModal = ({
         body: JSON.stringify({
           address,
           action: 'FREEZE',
+          no_of_approvals: no_of_approvals || 2,
           reason  // Include reason
         }),
       });
@@ -37,7 +39,7 @@ export const FreezeModal = ({
       onClose();
       toast.success('Freeze request created');
     } catch (error) {
-      console.error('Error creating freeze request:', error);
+      // console.error('Error creating freeze request:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create freeze request');
     } finally {
       setFreezeLoading(false);
@@ -52,6 +54,7 @@ export const FreezeModal = ({
         body: JSON.stringify({
           address,
           action: 'BLACKLIST',
+          no_of_approvals: no_of_approvals || 2,
           reason  // Include reason
         }),
       });
@@ -65,7 +68,7 @@ export const FreezeModal = ({
       onClose();
       toast.success('Blacklist request created');
     } catch (error) {
-      console.error('Error creating blacklist request:', error);
+      // console.error('Error creating blacklist request:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create blacklist request');
     } finally {
       setBlacklistLoading(false);
@@ -107,6 +110,29 @@ export const FreezeModal = ({
               placeholder="Reason for Freezing/Blacklisting Address"
               required
             />
+          </div>
+          <div className="form-control w-full block">
+            <div className="label my-2">
+              <span className="label-text">No of Approvals</span>
+            </div>
+            <input
+              type="number"
+              className="input input-bordered w-full max-w-md"
+              value={isNaN(no_of_approvals) ? 2 : no_of_approvals}
+              placeholder="Enter no_of_approvals value (integer)"
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                setnoOfApprovals(isNaN(value) ? 2 : Math.max(2, Math.min(value, 1000)));
+              }}
+              min="2"
+              max="1000"
+              required
+            />
+            <div className="label my-2">
+              <span className="label-text-alt text-sm text-base-content/70">
+                Minimum 2 Approvals Required
+              </span>
+            </div>
           </div>
         </div>
         <div className="modal-action">

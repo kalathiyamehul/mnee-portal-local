@@ -245,7 +245,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       fetchMetrics();
       toast.success("Request cancelled");
     } catch (error) {
-      console.error("Error cancelling request:", error);
+      // console.error("Error cancelling request:", error);
       toast.error("Failed to cancel request");
     } finally {
       setLoading(false);
@@ -299,7 +299,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       fetchMetrics();
       toast.success("Request approved");
     } catch (error) {
-      console.error("Error approving request:", error);
+      // console.error("Error approving request:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to approve request"
       );
@@ -312,9 +312,12 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     fetch("/api/dashboard")
       .then((response) => response.json())
       .then((data) => setMetrics(data))
-      .catch((error) =>
-        console.error("Failed to fetch dashboard metrics:", error)
-      );
+      .catch((error) =>{
+        // console.error("Failed to fetch dashboard metrics:", error)
+        toast.error(
+        error instanceof Error ? error.message : "Failed to fetch dashboard metrics"
+      )
+    });
   }, []);
 
   useEffect(() => {

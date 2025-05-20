@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { MNEE_API } from '@/env';
 import { checkServerEnvVars } from '@/app/api/env-check/actions';
+import toast from 'react-hot-toast';
 
 interface EnvWarningProps {
   onMissingVarsChange?: (vars: string[]) => void;
@@ -44,7 +45,8 @@ export function EnvWarning({ onMissingVarsChange }: EnvWarningProps) {
           timer = null;
         }
       } catch (error) {
-        console.error('Failed to check server env vars:', error);
+        // console.error('Failed to check server env vars:', error);
+        toast.error(error instanceof Error? error.message : 'Failed to check server env vars');
       }
     }
 

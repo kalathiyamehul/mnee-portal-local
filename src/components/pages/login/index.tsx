@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { FaSync, FaSpinner } from 'react-icons/fa';
 import { Suspense } from 'react';
+import toast from 'react-hot-toast';
 
 function LoginPageInner() {
   const [email, setEmail] = useState('');
@@ -26,7 +27,8 @@ function LoginPageInner() {
       const data = await response.json();
       setHasUsers(data.hasUsers);
     } catch (err) {
-      console.error('Error checking users:', err);
+      // console.error('Error checking users:', err);
+      toast.error('Error checking users');
       // Default to true to avoid showing the no users message if we can't check
       setHasUsers(true);
     } finally {

@@ -184,7 +184,7 @@ export function CustomerModal({
       );
       onSuccess();
     } catch (error) {
-      console.error("Error saving customer request:", error);
+      // console.error("Error saving customer request:", error);
       toast.error(
         customer
           ? "Failed to update customer"

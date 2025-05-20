@@ -51,7 +51,7 @@ export default function RolesPage() {
       setRoles(data);
     } catch (error) {
       toast.error("Failed to fetch roles");
-      console.error(error);
+      // console.error(error);
     } finally {
       setLoading(false);
     }
@@ -77,7 +77,7 @@ export default function RolesPage() {
       toast.error(
         error instanceof Error ? error.message : "Failed to create role"
       );
-      console.error(error);
+      // console.error(error);
     }
   };
 
@@ -111,7 +111,7 @@ export default function RolesPage() {
       toast.error(
         error instanceof Error ? error.message : "Failed to update role"
       );
-      console.error(error);
+      // console.error(error);
     }
   };
 
@@ -176,7 +176,7 @@ export default function RolesPage() {
       toast.error(
         error instanceof Error ? error.message : "Failed to delete role"
       );
-      console.error(error);
+      // console.error(error);
     }
   };
 

@@ -53,7 +53,7 @@ export const BurnTable = ({
 
 			toast.success('Refund request approved');
 		} catch (error) {
-			console.error('Error approving refund:', error);
+			// console.error('Error approving refund:', error);
 			toast.error(error instanceof Error ? error.message : 'Failed to approve refund request');
 		}
 	};
@@ -76,7 +76,7 @@ export const BurnTable = ({
             toast.success('Burn request settled successfully');
             // Optionally, trigger a refresh or callback here
         } catch (error) {
-            console.error('Error settling burn:', error);
+            // console.error('Error settling burn:', error);
             toast.error(error instanceof Error ? error.message : 'Failed to settle burn request');
         } finally {
             setSettlingId(null);
