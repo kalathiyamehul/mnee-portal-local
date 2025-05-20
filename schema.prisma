@@ -239,6 +239,7 @@ model RefundRequest {
   outpoint        String      
   refundAddress   String      @map("refund_address")
   amount          BigInt      @db.BigInt
+  no_of_approvals Int         @default(2)
   status          ActionStatus @default(PENDING)
   requestedBy     String      @map("requested_by")
   txid            String      @default("")
