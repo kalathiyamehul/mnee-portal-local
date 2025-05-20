@@ -70,6 +70,19 @@ export const ActivityList = ({
     return key ? permissions[key as keyof typeof permissions] : false;
   };
 
+  const hasRejectPermission = (type: string) => {
+    const permissionMap: Record<string, string> = {
+      MINT: "hasRejectMintPer",
+      BURN: "hasRejectBurnPer",
+      REFUND: "hasRejectRefundPer",
+      BLACKLIST: "hasRejectBlacklistPer",
+      FREEZE: "hasRejectFreezePer",
+      CUSTOMER: "hasRejectCustomerPer",
+    };
+    const key = permissionMap[type];
+    return key ? permissions[key as keyof typeof permissions] : false;
+  };
+
   // Helper to format data for export
   const exportData = filteredActivities.map((activity, index) => ({
     "": index + 1,
@@ -421,6 +434,42 @@ export const ActivityList = ({
                                 Approve
                               </button>
                             </div>
+                          )}
+                          {/* Add Reject button for pending mint requests not by self and not already approved */}
+                          {activity.type === "MINT" && hasRejectPermission(activity.type) && canApprove(activity) && (
+                            <button
+                              type="button"
+                              className="btn btn-error btn-xs"
+                              onClick={() => handleReject(activity.id, "MINT")}
+                              disabled={loadingReject === activity.id}
+                            >
+                              {loadingReject === activity.id ? (
+                                <>
+                                  <FaSpinner className="animate-spin mr-1" />
+                                  Rejecting...
+                                </>
+                              ) : (
+                                "Reject"
+                              )}
+                            </button>
+                          )}
+                          {/* Add Reject button for pending Burn requests not by self and not already approved */}
+                          {activity.type === "BURN" && hasRejectPermission(activity.type) && canApprove(activity) && (
+                            <button
+                              type="button"
+                              className="btn btn-error btn-xs"
+                              onClick={() => handleReject(activity.id, "BURN")}
+                              disabled={loadingReject === activity.id}
+                            >
+                              {loadingReject === activity.id ? (
+                                <>
+                                  <FaSpinner className="animate-spin mr-1" />
+                                  Rejecting...
+                                </>
+                              ) : (
+                                "Reject"
+                              )}
+                            </button>
                           )}
                         </div>
                       </td>}

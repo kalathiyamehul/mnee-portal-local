@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { address, action, reason } = await request.json();
+    const { address, action, reason, no_of_approvals } = await request.json();
 
     if (!address) {
       return NextResponse.json({ error: "Address is required" }, { status: 400 });
@@ -91,6 +91,7 @@ export async function POST(request: Request) {
           address,
           action,
           reason,  // Add reason field
+          no_of_approvals: no_of_approvals || 2,  // Default to 2 if not provided
           status: 'PENDING',
           requester: {
             connect: { id: session.user.id }

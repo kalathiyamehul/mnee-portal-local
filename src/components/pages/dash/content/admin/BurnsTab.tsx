@@ -271,6 +271,17 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
     );
   };
 
+  const canRejectBurn = (burn: BurnUtxo) => {
+    if (!burn.burnRequest || !session?.user?.email) return false;
+    return (
+      burn.burnRequest.status === "PENDING" &&
+      burn.burnRequest.requester.email !== session.user.email &&
+      !burn.burnRequest.approvals.some(
+        (approval) => approval.approver?.email === session.user.email
+      )
+    );
+  };
+
   const canApproveRefund = (burn: BurnUtxo) => {
     if (!burn.refundRequest || !session?.user?.email) return false;
     return (
@@ -473,6 +484,17 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
                               className="btn btn-success btn-sm"
                             >
                               Approve Burn
+                            </button>
+                          )}
+
+                          {/* Reject Burn button */}
+                          {canRejectBurn(burn) && !burn.refundRequest?.status && hasRejectBurnPer && (
+                            <button
+                              type="button"
+                              onClick={() => burn.burnRequest && handleApproveRefund(burn.burnRequest.id)}
+                              className="btn btn-error btn-sm"
+                            >
+                              Reject Burn
                             </button>
                           )}
 
