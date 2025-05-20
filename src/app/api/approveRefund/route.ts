@@ -174,8 +174,8 @@ export async function POST(request: Request) {
         where: { refundRequestId },
       });
 
-      // If we have 2 approvals, broadcast the transaction
-      if (approvalCount === 2) {
+      // If we have enough approvals, broadcast the transaction
+      if (approvalCount === refundRequest.no_of_approvals) {
         try {
           const txid = await broadcastRefundTransaction(refundRequest);
 
