@@ -44,7 +44,7 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
       await fetchStatus();
       toast.success("Request approved");
     } catch (error) {
-      console.error("Failed to approve request:", error);
+      // console.error("Failed to approve request:", error);
       toast.error(error instanceof Error ? error.message : "Failed to approve request");
     }
   };
@@ -68,7 +68,7 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
       await fetchStatus();
       toast.success("Request cancelled");
     } catch (error) {
-      console.error("Failed to cancel request:", error);
+      // console.error("Failed to cancel request:", error);
       toast.error(error instanceof Error ? error.message : "Failed to cancel request");
     } finally {
       setIsCancelling(false);
@@ -81,7 +81,7 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
       await onPauseToggle();
       toast.success(isPaused ? 'Resume request created' : 'Pause request created');
     } catch (error) {
-      console.error('Error toggling system pause:', error);
+      // console.error('Error toggling system pause:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to toggle system state');
     } finally {
       setIsLoading(false);

@@ -101,7 +101,7 @@ export const TokenActivityChart = ({
         setDecimals(configData.decimals || 8);
         setData(chartData.chartData);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        // console.error("Error fetching data:", error);
         toast.error(error instanceof Error ? error.message : "Failed to fetch data");
         setData([]);
       } finally {

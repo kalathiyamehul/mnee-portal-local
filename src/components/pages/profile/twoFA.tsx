@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
+import { MdClose } from "react-icons/md";
 
 const Button = (props: any) => (
   <button
@@ -29,7 +31,8 @@ export default function TwoFA() {
         const data = await response.json();
         set2FAStatus(data.enabled ? "enabled" : "disabled");
       } catch (error) {
-        console.error("Failed to check 2FA status:", error);
+        // console.error("Failed to check 2FA status:", error);
+        toast.error("Failed to check 2FA status");
         setErrorText("Failed to check 2FA status");
       } finally {
         setIsLoading(false);
@@ -61,7 +64,8 @@ export default function TwoFA() {
         setErrorText("Failed to disable 2FA");
       }
     } catch (error) {
-      console.error("Failed to disable 2FA:", error);
+      // console.error("Failed to disable 2FA:", error);
+      toast.error("Failed to disable 2FA");
       setErrorText("Failed to disable 2FA");
     }
   };
@@ -110,7 +114,18 @@ export default function TwoFA() {
       )}
 
       {_2faStatus !== "enabled" && qrData && (
-        <div className="space-y-6 p-4 bg-base-100 rounded-lg w-11/12">
+        <div className="space-y-6 p-4 bg-base-100 rounded-lg w-11/12 relative">
+          <button 
+            className="absolute top-2 right-2 btn btn-ghost btn-sm"
+            onClick={() => {
+              setQRData(undefined);
+              setQRSecret(undefined);
+              set2FAStatus('disabled');
+              setErrorText(undefined);
+            }}
+          >
+            <MdClose className="size-5" />
+          </button>
           <div className="space-y-2">
             <h4 className="font-medium">Step 1: Scan QR Code</h4>
             <div className="alert alert-info">

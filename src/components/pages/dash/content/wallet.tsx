@@ -102,7 +102,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
         toast.success("Wallet connected successfully");
       }
     } catch (error) {
-      console.error("Error connecting wallet:", error);
+      // console.error("Error connecting wallet:", error);
       toast.error(`Failed to connect wallet: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
@@ -122,7 +122,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
         setBalance(balance);
       } catch (error) {
         if (!mounted) return;
-        console.error("Error fetching BSV balance:", error);
+        // console.error("Error fetching BSV balance:", error);
         toast.error(`Failed to fetch BSV balance: ${error instanceof Error ? error.message : "Unknown error"}`);
       }
     };
@@ -397,7 +397,8 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
         // rawtx is base64 encoded
         return response.json() as Promise<{ rawtx: string }>;
       } catch (error) {
-        console.error("Error signing/submitting transaction:", error);
+        // console.error("Error signing/submitting transaction:", error);
+        toast.error("Error signing/submitting transaction");
         throw error;
       }
     },
@@ -477,7 +478,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
       transferMNEE({ recipient, amount: numAmount });
     } catch (error) {
-      console.error("Error in transfer:", error);
+      // console.error("Error in transfer:", error);
       toast.error(`Transfer failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }, [addresses, balances, transferMNEE, amount, recipient, config]);

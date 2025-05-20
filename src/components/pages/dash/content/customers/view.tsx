@@ -70,7 +70,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
         const configData = await getConfig();
         setConfig(configData);
       } catch (error) {
-        console.error('Error loading config:', error);
+        // console.error('Error loading config:', error);
         toast.error('Failed to load configuration');
       }
     };

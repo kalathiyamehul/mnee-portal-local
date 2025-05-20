@@ -37,7 +37,7 @@ export const FreezeModal = ({
       onClose();
       toast.success('Freeze request created');
     } catch (error) {
-      console.error('Error creating freeze request:', error);
+      // console.error('Error creating freeze request:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create freeze request');
     } finally {
       setFreezeLoading(false);
@@ -65,7 +65,7 @@ export const FreezeModal = ({
       onClose();
       toast.success('Blacklist request created');
     } catch (error) {
-      console.error('Error creating blacklist request:', error);
+      // console.error('Error creating blacklist request:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create blacklist request');
     } finally {
       setBlacklistLoading(false);

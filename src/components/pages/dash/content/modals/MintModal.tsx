@@ -44,7 +44,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
           maxNoOfApproval: data.maxNoOfApproval,
         });
       } catch (error) {
-        console.error("Error fetching config:", error);
+        // console.error("Error fetching config:", error);
         toast.error("Failed to fetch configuration");
       }
     };
@@ -62,7 +62,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
         const data = await response.json();
         setCustomers(data?.customers || []);
       } catch (error) {
-        console.error("Error fetching customers:", error);
+        // console.error("Error fetching customers:", error);
         toast.error("Failed to fetch customers");
       } finally {
         setLoadingCustomers(false);
@@ -114,7 +114,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
       onClose();
       toast.success("Mint request created");
     } catch (error) {
-      console.error("Error creating mint request:", error);
+      // console.error("Error creating mint request:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to create mint request"
       );

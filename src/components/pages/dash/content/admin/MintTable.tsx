@@ -138,7 +138,7 @@ const MintTableContent = ({
         throw new Error(data.error || "Failed to approve mint request");
       }
     } catch (error) {
-      console.error("Failed to approve mint request:", error);
+      // console.error("Failed to approve mint request:", error);
       toast.error(
         error instanceof Error
           ? error.message
@@ -172,7 +172,7 @@ const MintTableContent = ({
         throw new Error(data.error || "Failed to cancel mint request");
       }
     } catch (error) {
-      console.error("Failed to cancel mint request:", error);
+      // console.error("Failed to cancel mint request:", error);
       toast.error(
         error instanceof Error ? error.message : "Failed to cancel mint request"
       );
@@ -203,7 +203,7 @@ const MintTableContent = ({
 				throw new Error(data.error || "Failed to reject mint request");
 			}
 		} catch (error) {
-			console.error("Failed to reject mint request:", error);
+			// console.error("Failed to reject mint request:", error);
 			toast.error(error instanceof Error ? error.message : "Failed to reject mint request");
 		} finally {
 			setLoadingReject(null);

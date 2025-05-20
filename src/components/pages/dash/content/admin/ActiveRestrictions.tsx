@@ -63,7 +63,7 @@ export const ActiveRestrictions = ({
   //   }
   // }, [restrictions]);
 
-  console.log("restrictions", restrictions);
+  // console.log("restrictions", restrictions);
 
   const canCancel = (activity: Activity) => {
     if (!session?.user?.email) return false;
@@ -77,7 +77,6 @@ export const ActiveRestrictions = ({
     if (!session?.user?.email) return false;
     if (activity.status !== "PENDING") return false;
     if (activity.requester.email === session.user.email) return false;
-    if (activity.type === "BLACKLIST") return false;
     return !activity.approvals?.some(
       (approval) => approval.approver?.email === session.user.email
     );

@@ -34,7 +34,7 @@ export default function Setup() {
         toast.error('Invalid token ID');
         return;
       }
-      console.log({txid, vout})
+      // console.log({txid, vout})
       setLoading(true);
       try {
        
@@ -46,7 +46,7 @@ export default function Setup() {
         toast.success('Token details fetched successfully');
       } catch (error) {
         toast.error('Failed to fetch token details');
-        console.error('Error fetching token:', error);
+        // console.error('Error fetching token:', error);
       } finally {
         setLoading(false);
       }
@@ -72,7 +72,7 @@ export default function Setup() {
       }
       
       await revalidateConfig();
-      console.log("[DEBUG] revalidated config");
+      // console.log("[DEBUG] revalidated config");
       
       toast.success('Token deployed and configured successfully');
       // Signup functionality temporarily disabled
@@ -80,7 +80,7 @@ export default function Setup() {
       router.push('/login');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to deploy token');
-      console.error('Error deploying token:', error);
+      // console.error('Error deploying token:', error);
     } finally {
       setLoading(false);
     }
@@ -113,7 +113,7 @@ export default function Setup() {
       router.push('/login');
     } catch (error) {
       toast.error('Failed to save configuration 3');
-      console.error('Error saving config:', error);
+      // console.error('Error saving config:', error);
     } finally {
       setLoading(false);
     }

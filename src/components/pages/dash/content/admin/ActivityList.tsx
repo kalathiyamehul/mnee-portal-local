@@ -118,7 +118,7 @@ export const ActivityList = ({
     }
   };
 
-  console.log("filteredList", filteredActivities);
+  // console.log("filteredList", filteredActivities);
 
   const [loadingReject, setLoadingReject] = useState<string | null>(null);
 
@@ -153,7 +153,7 @@ export const ActivityList = ({
         );
       }
     } catch (error) {
-      console.error(`Failed to reject ${type.toLowerCase()} request:`, error);
+      // console.error(`Failed to reject ${type.toLowerCase()} request:`, error);
       toast.error(
         error instanceof Error
           ? error.message
