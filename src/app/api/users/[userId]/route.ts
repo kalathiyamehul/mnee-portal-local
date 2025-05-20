@@ -88,7 +88,6 @@ export async function DELETE(
     try {
         const session = await getServerSession(authOptions);
         const { userId } = context.params;
-
         if (!session) {
             return new NextResponse("Unauthorized", { status: 401 });
         }
@@ -96,31 +95,10 @@ export async function DELETE(
         // Prevent deleting the last admin user
         const userToDelete = await prisma.user.findUnique({
             where: { id: userId },
-            include: { role: true },
         });
-
         if (!userToDelete) {
-            return new NextResponse("User not found", { status: 404 });
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
-
-        // Check if this is the last admin
-        if (userToDelete.role?.name === "admin") {
-            const adminCount = await prisma.user.count({
-                where: {
-                    role: {
-                        name: "admin",
-                    },
-                },
-            });
-
-            if (adminCount <= 1) {
-                return new NextResponse(
-                    "Cannot delete the last admin user",
-                    { status: 400 }
-                );
-            }
-        }
-
         await prisma.user.delete({
             where: {
                 id: userId,
@@ -136,7 +114,10 @@ export async function DELETE(
             },
         });
 
-        return new NextResponse(null, { status: 204 });
+        return NextResponse.json({
+            message: "User deleted successfully",
+            status: 200,
+        }, { status: 200 });
     } catch (error) {
         console.error("[USER_DELETE]", error);
         return new NextResponse("Internal error", { status: 500 });
