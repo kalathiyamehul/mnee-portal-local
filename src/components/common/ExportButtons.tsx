@@ -75,6 +75,9 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
           fontSize: 8,
           cellPadding: 4,
         },
+        columnStyles: {
+          2: { cellWidth: 180 },
+        },
         headStyles: {
           fillColor: [41, 128, 185],
           textColor: 255,

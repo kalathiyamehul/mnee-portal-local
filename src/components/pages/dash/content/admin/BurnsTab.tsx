@@ -1,33 +1,39 @@
-import { useEffect, useState, useCallback } from 'react';
-import { fetchMneeUtxos } from '@/utils/api';
-import { FaSpinner, FaFire, FaCopy, FaArrowsRotate, FaCircleInfo } from 'react-icons/fa6';
-import { toToken } from 'satoshi-token';
-import type { MNEEUtxo } from '@/types';
-import { MdOutlineOpenInNew } from 'react-icons/md';
-import type { BurnUtxo } from './types';
-import { DEFAULT_DECIMALS } from '@/lib/constants';
-import { formatDistanceToNow } from 'date-fns';
-import { BurnModal } from '../modals/BurnModal';
-import { RefundModal } from '../modals/RefundModal';
-import { toast } from 'react-hot-toast';
-import { useSession } from 'next-auth/react';
-import { useSystemStatus } from '@/contexts/SystemStatusContext';
-import { BurnTable } from './BurnTable';
-import { usePermission } from '@/hooks/usePermission';
-import { Action, Resource } from '@/lib/permission';
+import { useEffect, useState, useCallback } from "react";
+import { fetchMneeUtxos } from "@/utils/api";
+import {
+  FaSpinner,
+  FaFire,
+  FaCopy,
+  FaArrowsRotate,
+  FaCircleInfo,
+} from "react-icons/fa6";
+import { toToken } from "satoshi-token";
+import type { MNEEUtxo } from "@/types";
+import { MdOutlineOpenInNew } from "react-icons/md";
+import type { BurnUtxo } from "./types";
+import { DEFAULT_DECIMALS } from "@/lib/constants";
+import { formatDistanceToNow } from "date-fns";
+import { BurnModal } from "../modals/BurnModal";
+import { RefundModal } from "../modals/RefundModal";
+import { toast } from "react-hot-toast";
+import { useSession } from "next-auth/react";
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import { BurnTable } from "./BurnTable";
+import { usePermission } from "@/hooks/usePermission";
+import { Action, Resource } from "@/lib/permission";
 
 const getRowBorderClass = (status: string | undefined) => {
   switch (status) {
-    case 'PENDING':
-      return 'border-l-4 border-l-warning';
-    case 'APPROVED':
-      return 'border-l-4 border-l-success';
-    case 'SETTLED':
-      return 'border-l-4 border-l-success';
-    case 'REFUNDED':
-      return 'border-l-4 border-l-info';
-    case 'CANCELLED':
-      return 'border-l-4 border-l-error';
+    case "PENDING":
+      return "border-l-4 border-l-warning";
+    case "APPROVED":
+      return "border-l-4 border-l-success";
+    case "SETTLED":
+      return "border-l-4 border-l-success";
+    case "REFUNDED":
+      return "border-l-4 border-l-info";
+    case "CANCELLED":
+      return "border-l-4 border-l-error";
     default:
       return "border-l-4 border-l-secondary";
   }
@@ -42,7 +48,14 @@ interface BurnsTabProps {
   hasRejectRefundPer?: boolean;
 }
 
-export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer, hasApproveRefundPer, hasCreateRefundPer, hasRejectRefundPer }: BurnsTabProps) => {
+export const BurnsTab = ({
+  hasApproveBurnPer,
+  hasRejectBurnPer,
+  hasCreateBurnPer,
+  hasApproveRefundPer,
+  hasCreateRefundPer,
+  hasRejectRefundPer,
+}: BurnsTabProps) => {
   const { data: session } = useSession();
   const { statusData } = useSystemStatus();
   const [burns, setBurns] = useState<BurnUtxo[]>([]);
@@ -54,7 +67,6 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
   const [decimals, setDecimals] = useState(8);
   const [selectedBurn, setSelectedBurn] = useState<BurnUtxo | null>(null);
   const [selectedRefund, setSelectedRefund] = useState<BurnUtxo | null>(null);
-
 
   // console.log("Permissions: ", hasCreateBurnPer, hasApproveBurnPer, hasRejectBurnPer, hasCreateRefundPer);
 
@@ -73,9 +85,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
     } catch (err) {
       // console.error("Error fetching config:", err);
       toast.error(
-        err instanceof Error
-        ? err.message
-          : "Failed to fetch config"
+        err instanceof Error ? err.message : "Failed to fetch config"
       );
       setError(err instanceof Error ? err.message : "Failed to fetch config");
       return null;
@@ -95,11 +105,7 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
       setBurnUtxos(fetchedBurnUtxos);
     } catch (err) {
       // console.error("Error fetching UTXOs:", err);
-      toast.error(
-        err instanceof Error
-        ? err.message
-          : "Failed to fetch UTXOs"
-      );
+      toast.error(err instanceof Error ? err.message : "Failed to fetch UTXOs");
       setError(err instanceof Error ? err.message : "Failed to fetch UTXOs");
     }
   }, []);
@@ -323,9 +329,21 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
   }, [updateBurns, decimals]);
 
   // Split burns into pending/active and completed
-  const activeBurns = burns.filter(burn => !burn.burnRequest || ['PENDING', 'CANCELLED'].includes(burn.burnRequest.status));
-  const completedBurns = burns.filter(burn => burn.burnRequest && ['APPROVED', 'REFUNDED', 'SETTLED'].includes(burn.burnRequest.status));
-  const showActions = hasApproveBurnPer || hasRejectBurnPer || hasApproveRefundPer || hasRejectRefundPer;
+  const activeBurns = burns.filter(
+    (burn) =>
+      !burn.burnRequest ||
+      ["PENDING", "CANCELLED"].includes(burn.burnRequest.status)
+  );
+  const completedBurns = burns.filter(
+    (burn) =>
+      burn.burnRequest &&
+      ["APPROVED", "REFUNDED", "SETTLED"].includes(burn.burnRequest.status)
+  );
+  const showActions =
+    hasApproveBurnPer ||
+    hasRejectBurnPer ||
+    hasApproveRefundPer ||
+    hasRejectRefundPer;
 
   return (
     <div className="p-4 space-y-8">
@@ -373,23 +391,27 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
                           <span className="font-mono text-sm">
                             {burn.txid.slice(0, 8)}...{burn.txid.slice(-8)}
                           </span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => handleCopyTxid(burn.txid)}
-                              className="btn btn-ghost btn-xs btn-square"
-                            >
-                              <FaCopy className="w-3 h-3" />
-                            </button>
-                            <a
-                              href={`https://whatsonchain.com/tx/${burn.txid}?tab=m8eqcrbs`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="btn btn-ghost btn-xs btn-square"
-                            >
-                              <MdOutlineOpenInNew className="w-3 h-3" />
-                            </a>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyTxid(burn.txid)}
+                            className="btn btn-ghost btn-xs btn-square"
+                          >
+                            <FaCopy className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <div
+                          className="tooltip tooltip-bottom"
+                          data-tip="View on WhatsOnChain"
+                        >
+                          <a
+                            href={`https://whatsonchain.com/tx/${burn.txid}?tab=m8eqcrbs`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-link btn-xs p-0"
+                          >
+                            View on Explorer{" "}
+                            <MdOutlineOpenInNew className="w-3 h-3" />
+                          </a>
                         </div>
                       </td>
                       <td className="font-medium">
@@ -431,16 +453,18 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
                       <td>
                         <div className="flex items-center gap-2">
                           {/* Show Burn button only if no pending requests */}
-                          {(!burn.burnRequest || burn.burnRequest.status === 'CANCELLED') && 
-                           !burn.refundRequest?.status && hasCreateBurnPer && (
-                            <button
-                              type="button"
-                              onClick={() => handleCreateBurnRequest(burn)}
-                              className="btn btn-error btn-sm gap-1"
-                            >
-                              <FaFire className="w-3 h-3" /> Burn
-                            </button>
-                          )}
+                          {(!burn.burnRequest ||
+                            burn.burnRequest.status === "CANCELLED") &&
+                            !burn.refundRequest?.status &&
+                            hasCreateBurnPer && (
+                              <button
+                                type="button"
+                                onClick={() => handleCreateBurnRequest(burn)}
+                                className="btn btn-error btn-sm gap-1"
+                              >
+                                <FaFire className="w-3 h-3" /> Burn
+                              </button>
+                            )}
 
                           {/* Cancel Burn button */}
                           {canCancel(burn) && (
@@ -477,40 +501,63 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
                           )}
 
                           {/* Approve Burn button */}
-                          {canApproveBurn(burn) && !burn.refundRequest?.status && hasApproveBurnPer && (
-                            <button
-                              type="button"
-                              onClick={() => burn.burnRequest && handleApproveBurn(burn.burnRequest.id)}
-                              className="btn btn-success btn-sm"
-                            >
-                              Approve Burn
-                            </button>
-                          )}
+                          {canApproveBurn(burn) &&
+                            !burn.refundRequest?.status &&
+                            hasApproveBurnPer && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  burn.burnRequest &&
+                                  handleApproveBurn(burn.burnRequest.id)
+                                }
+                                className="btn btn-success btn-sm"
+                              >
+                                Approve Burn
+                              </button>
+                            )}
 
                           {/* Reject Burn button */}
-                          {canRejectBurn(burn) && !burn.refundRequest?.status && hasRejectBurnPer && (
-                            <button
-                              type="button"
-                              onClick={() => burn.burnRequest && handleApproveRefund(burn.burnRequest.id)}
-                              className="btn btn-error btn-sm"
-                            >
-                              Reject Burn
-                            </button>
-                          )}
+                          {canRejectBurn(burn) &&
+                            !burn.refundRequest?.status &&
+                            hasRejectBurnPer && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  burn.burnRequest &&
+                                  handleApproveRefund(burn.burnRequest.id)
+                                }
+                                className="btn btn-error btn-sm"
+                              >
+                                Reject Burn
+                              </button>
+                            )}
 
                           {/* Refund button - only show if no pending requests */}
-                          {((!burn.refundRequest || !['DONE', 'PENDING'].includes(burn.refundRequest?.status)) && 
-                            (!burn.burnRequest || !['APPROVED', 'REFUNDED', 'PENDING'].includes(burn.burnRequest?.status))) && hasCreateRefundPer && (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedRefund(burn)}
-                              className="btn btn-primary btn-sm gap-1"
-                              disabled={burn.burnRequest?.status === 'PENDING'}
-                              title={burn.burnRequest?.status === 'PENDING' ? 'Cancel burn request first' : undefined}
-                            >
-                              Refund
-                            </button>
-                          )}
+                          {(!burn.refundRequest ||
+                            !["DONE", "PENDING"].includes(
+                              burn.refundRequest?.status
+                            )) &&
+                            (!burn.burnRequest ||
+                              !["APPROVED", "REFUNDED", "PENDING"].includes(
+                                burn.burnRequest?.status
+                              )) &&
+                            hasCreateRefundPer && (
+                              <button
+                                type="button"
+                                onClick={() => setSelectedRefund(burn)}
+                                className="btn btn-primary btn-sm gap-1"
+                                disabled={
+                                  burn.burnRequest?.status === "PENDING"
+                                }
+                                title={
+                                  burn.burnRequest?.status === "PENDING"
+                                    ? "Cancel burn request first"
+                                    : undefined
+                                }
+                              >
+                                Refund
+                              </button>
+                            )}
 
                           {/* Approve Refund button */}
                           {canApproveRefund(burn) && hasApproveRefundPer && (
@@ -525,8 +572,8 @@ export const BurnsTab = ({ hasApproveBurnPer, hasRejectBurnPer, hasCreateBurnPer
                               Approve Refund
                             </button>
                           )}
-                           {/* SETTLED Button */}
-                           {burn.burnRequest?.status === 'APPROVED' && (
+                          {/* SETTLED Button */}
+                          {burn.burnRequest?.status === "APPROVED" && (
                             <button
                               type="button"
                               className="btn btn-success btn-sm"
