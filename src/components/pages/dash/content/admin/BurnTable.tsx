@@ -8,6 +8,7 @@ import { toast } from 'react-hot-toast';
 import { formatRevalidate } from 'next/dist/server/lib/revalidate';
 import { Pagination } from "@/components/common/Pagination";
 import { useEffect, useState } from 'react';
+import { MdOutlineOpenInNew } from 'react-icons/md';
 
 interface BurnTableProps {
 	burns: BurnUtxo[];
@@ -176,19 +177,33 @@ export const BurnTable = ({
 											)}
 										</td>
 										<td>
-											<div className="flex items-center gap-2">
-												<div className="font-mono text-xs">
+											<div className="flex flex-col items-center gap-2">
+												<div className="flex font-mono text-xs">
 													{burn.txid.slice(0, 8)}...{burn.txid.slice(-8)}
+													{onCopyTxid && (
+														<button
+															type="button"
+															className="btn btn-ghost btn-xs btn-square"
+															onClick={() => onCopyTxid(burn.txid)}
+														>
+															<FaCopy className="w-3 h-3" />
+														</button>
+													)}
 												</div>
-												{onCopyTxid && (
-													<button
-														type="button"
-														className="btn btn-ghost btn-xs btn-square"
-														onClick={() => onCopyTxid(burn.txid)}
+												<div
+													className="tooltip tooltip-bottom"
+													data-tip="View on WhatsOnChain"
 													>
-														<FaCopy className="w-3 h-3" />
-													</button>
-												)}
+													<a
+														href={`https://whatsonchain.com/tx/${burn.txid}?tab=m8eqcrbs`}
+														target="_blank"
+														rel="noopener noreferrer"
+														className="btn btn-link btn-xs p-0"
+													>
+														View on Explorer{" "}
+														<MdOutlineOpenInNew className="w-3 h-3" />
+													</a>
+												</div>
 											</div>
 										</td>
 										{showRequester && burn.burnRequest?.requester && (

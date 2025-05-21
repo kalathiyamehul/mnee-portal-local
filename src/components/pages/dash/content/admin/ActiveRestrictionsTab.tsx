@@ -1,13 +1,14 @@
 import { ActiveRestrictions } from './ActiveRestrictions';
 import type { AddressStatus, Activity } from './types';
 import type { MouseEvent } from 'react';
-import { FaSnowflake, FaBan } from 'react-icons/fa6';
-import { MdRemoveCircleOutline } from 'react-icons/md';
+import { FaSnowflake, FaBan, FaCopy } from 'react-icons/fa6';
+import { MdOutlineOpenInNew, MdRemoveCircleOutline } from 'react-icons/md';
 import { formatDistanceToNow } from 'date-fns';
 import type { Session } from 'next-auth';
 import { getGravatarUrl } from '@/utils/gravatar';
 import { Pagination } from '@/components/common/Pagination';
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 
 interface ActiveRestrictionsTabProps {
   restrictions: AddressStatus[];
@@ -100,6 +101,11 @@ export const ActiveRestrictionsTab = ({
     return !activity.approvals?.some(
       (a) => a.approver?.email === session?.user?.email
     );
+  };
+
+  const handleCopyAddress = (txid: string) => {
+    navigator.clipboard.writeText(txid);
+    toast.success("Address copied to clipboard");
   };
 
   // Helper function to check approve permission for activity type
@@ -205,15 +211,40 @@ export const ActiveRestrictionsTab = ({
                   </td>
                   <td>
                     <div className="flex flex-col gap-1">
+                    <div className="flex flex-col">
+                    <div className="flex gap-1">
+                      <a
+                        href={`https://whatsonchain.com/address/${activity.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span className="font-mono text-sm">
+                          {activity.address}
+                        </span>
+                      </a>
                       <button
                         type="button"
-                        onClick={() =>
-                          activity.address && handleExplore(activity.address)
-                        }
-                        className="font-mono text-sm link link-hover text-left"
+                        onClick={() => activity.address && handleCopyAddress(activity.address)}
+                        className="btn btn-ghost btn-xs btn-square"
                       >
-                        {activity.address}
+                        <FaCopy className="w-3 h-3" />
                       </button>
+                    </div>
+                    <div
+                      className="tooltip tooltip-bottom"
+                      data-tip="View on WhatsOnChain"
+                    >
+                      <a
+                        href={`https://whatsonchain.com/address/${activity.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-link btn-xs p-0"
+                      >
+                        View on Explorer{" "}
+                        <MdOutlineOpenInNew className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
                       <div className="flex items-center gap-2">
                         <span
                           className={`badge ${getActionBadgeClass(
