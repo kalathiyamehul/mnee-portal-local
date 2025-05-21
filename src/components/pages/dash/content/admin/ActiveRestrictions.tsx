@@ -1,11 +1,12 @@
-import { FaBan, FaSnowflake } from 'react-icons/fa6';
-import { MdRemoveCircleOutline } from 'react-icons/md';
-import type { Activity, AddressStatus } from './types';
-import type { MouseEvent } from 'react';
-import { useEffect, useState } from 'react';
+import { FaBan, FaCopy, FaSnowflake } from "react-icons/fa6";
+import { MdOutlineOpenInNew, MdRemoveCircleOutline } from "react-icons/md";
+import type { Activity, AddressStatus } from "./types";
+import type { MouseEvent } from "react";
+import { useEffect, useState } from "react";
 import { getGravatarUrl } from "@/utils/gravatar";
-import type { Session } from 'next-auth';
+import type { Session } from "next-auth";
 import { Pagination } from "@/components/common/Pagination";
+import toast from "react-hot-toast";
 
 interface ActiveRestrictionsProps {
   restrictions: AddressStatus[];
@@ -37,6 +38,11 @@ interface ActiveRestrictionsProps {
     hasRejectFreezePer: boolean;
   };
 }
+
+const handleCopyAddress = (txid: string) => {
+  navigator.clipboard.writeText(txid);
+  toast.success("Address copied to clipboard");
+};
 
 export const ActiveRestrictions = ({
   restrictions,
@@ -96,7 +102,10 @@ export const ActiveRestrictions = ({
   // Paginated restrictions
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentRestrictions = restrictions.slice(indexOfFirstItem, indexOfLastItem);
+  const currentRestrictions = restrictions.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
 
   return (
     <div className="overflow-x-auto">
@@ -132,7 +141,40 @@ export const ActiveRestrictions = ({
               </td>
               <td className="w-1/6">
                 <div className="flex flex-col gap-2">
-                  <div className="font-mono text-sm">{status.address}</div>
+                  <div className="flex flex-col">
+                    <div className="flex gap-1">
+                      <a
+                        href={`https://whatsonchain.com/address/${status.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span className="font-mono text-sm">
+                          {status.address}
+                        </span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAddress(status.address)}
+                        className="btn btn-ghost btn-xs btn-square"
+                      >
+                        <FaCopy className="w-3 h-3" />
+                      </button>
+                    </div>
+                    <div
+                      className="tooltip tooltip-bottom"
+                      data-tip="View on WhatsOnChain"
+                    >
+                      <a
+                        href={`https://whatsonchain.com/address/${status.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-link btn-xs p-0"
+                      >
+                        View on Explorer{" "}
+                        <MdOutlineOpenInNew className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {status.isBlacklisted && (
                       <span className="badge badge-error badge-md gap-1">
