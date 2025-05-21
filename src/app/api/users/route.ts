@@ -4,8 +4,9 @@ import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from '@/lib/csrf';
 
-export async function GET(req: Request) {
+export const GET = withCSRF(async function (req: Request) {
     try {
         const session = await getServerSession(authOptions);
 
@@ -59,9 +60,9 @@ export async function GET(req: Request) {
         console.error("[USERS_GET]", error);
         return new NextResponse("Internal error", { status: 500 });
     }
-}
+});
 
-export async function POST(req: Request) {
+export const POST = withCSRF(async function (req: Request) {
     try {
         const session = await getServerSession(authOptions);
 
@@ -122,4 +123,4 @@ export async function POST(req: Request) {
         console.error("[USERS_POST]", error);
         return new NextResponse("Internal error", { status: 500 });
     }
-}
+});

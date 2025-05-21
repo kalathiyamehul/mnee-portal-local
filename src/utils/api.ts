@@ -4,6 +4,41 @@ import type { IndexContext } from "@/types/indexContext";
 import { Transaction, Utils } from "@bsv/sdk";
 const { toArray } = Utils;
 
+let csrfToken: string | null = null;
+
+async function getCsrfToken() {
+    if (csrfToken) return csrfToken;
+    const res = await fetch('/api/csrf');
+    const data = await res.json();
+    csrfToken = data.csrfToken;
+    return csrfToken;
+}
+
+export async function apiFetch(
+    url: string,
+    options: RequestInit = {},
+    { requireCsrf = false }: { requireCsrf?: boolean } = {}
+) {
+    const headers = new Headers(options.headers || {});
+
+    // Add CSRF token for mutating requests
+    if (requireCsrf || ['POST', 'PUT', 'DELETE', 'PATCH'].includes((options.method || 'GET').toUpperCase())) {
+        const token = await getCsrfToken();
+        headers.set('x-csrf-token', token || '');
+    }
+
+    // Always set content-type for JSON if body is present and not already set
+    if (options.body && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+    }
+
+    return fetch(url, { ...options, headers });
+}
+
+export function resetCsrfToken() {
+    csrfToken = null;
+}
+
 export const fetchConfig = async () => {
     const response = await fetch(`${MNEE_API}/v1/config`);
     if (!response.ok) {
