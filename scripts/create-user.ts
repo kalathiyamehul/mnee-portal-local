@@ -1,26 +1,31 @@
 import { prisma } from '../src/lib/prisma';
 import bcrypt from 'bcrypt';
 import { randomBytes } from 'node:crypto';
-
-// Password validation function (matching the one in resetPassword route)
-function isPasswordValid(password: string): { valid: boolean; error?: string } {
-  if (password.length < 8) {
-    return { valid: false, error: 'Password must be at least 8 characters long' };
-  }
-  return { valid: true };
-}
+import { isPasswordValid } from '../src/utils/auth';
 
 async function createUser(email: string) {
   try {
-    // Generate a secure random password (24 characters)
-    const tempPassword = randomBytes(12).toString('hex');
-    
-    // Validate the generated password
-    const validation = isPasswordValid(tempPassword);
-    if (!validation.valid) {
-      throw new Error(`Generated password is invalid: ${validation.error}`);
+    // Generate a secure random password that meets requirements
+    let tempPassword = '';
+    let validation: { valid: boolean; error?: string } = { valid: false };
+    while (!validation.valid) {
+      // 16 chars: 8 random bytes as hex, plus 1 uppercase, 1 lowercase, 1 number, 1 special char
+      const base = randomBytes(8).toString('hex');
+      const upper = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+      const lower = String.fromCharCode(97 + Math.floor(Math.random() * 26));
+      const number = String.fromCharCode(48 + Math.floor(Math.random() * 10));
+      const specials = '!@#$%^&*()_+-=~[]{}|;:,.<>?';
+      const special = specials[Math.floor(Math.random() * specials.length)];
+      // Shuffle the password
+      const arr = (base + upper + lower + number + special).split('');
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      tempPassword = arr.join('');
+      validation = isPasswordValid(tempPassword);
     }
-    
+
     // Hash the password with same cost factor as reset password route
     const hashedPassword = await bcrypt.hash(tempPassword, 12);
 

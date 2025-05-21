@@ -3,14 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import bcrypt from 'bcrypt';
-
-// Password validation function - reusing the same validation as reset password
-function isPasswordValid(password: string): { valid: boolean; error?: string } {
-    if (password.length < 8) {
-        return { valid: false, error: 'Password must be at least 8 characters long' };
-    }
-    return { valid: true };
-}
+import { isPasswordValid } from '@/utils/auth';
 
 export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
