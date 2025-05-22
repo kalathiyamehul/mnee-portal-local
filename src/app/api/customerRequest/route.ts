@@ -17,6 +17,23 @@ export const POST = withCSRF( async function(request: Request) {
     const { name, email, address, action = "CREATE", customerId } = body;
     const config = await getConfig();
 
+    // Check if customer already exists (by email or address)
+    const existingCustomer = await prisma.customer.findFirst({
+      where: {
+        OR: [
+          { email },
+          { address },
+        ],
+      },
+    });
+
+    if (existingCustomer) {
+      return NextResponse.json(
+        { error: "A customer with this email or address already exists" },
+        { status: 400 }
+      );
+    }
+
     // Validation checks...
 
     const customerRequest = await prisma.$transaction(async (tx) => {
