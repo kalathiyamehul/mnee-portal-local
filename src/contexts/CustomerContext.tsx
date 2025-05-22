@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from '@/utils/api';
 // biome-ignore lint/style/useImportType: <explanation>
 import { createContext, useContext, useCallback, useState, ReactNode, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
@@ -101,7 +102,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
 
   const createCustomer = useCallback(
     async (data: { name: string; email: string; address: string }) => {
-      const response = await fetch("/api/customers", {
+      const response = await apiFetch("/api/customers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -125,7 +126,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       id: string,
       data: { name: string; email: string; address: string }
     ) => {
-      const response = await fetch(`/api/customers/${id}`, {
+      const response = await apiFetch(`/api/customers/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

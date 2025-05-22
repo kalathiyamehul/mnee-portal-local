@@ -222,7 +222,7 @@ export default function DashboardCustomersContent() {
                 </td>
                 <td>
                   <div className="flex gap-2">
-                    {hasPermission(Resource.CUSTOMER, Action.UPDATE) && (
+                    {hasPermission(Resource.CUSTOMER, Action.UPDATE) || isSuperAdmin && (
                       <button
                         type="button"
                         onClick={(e) => {

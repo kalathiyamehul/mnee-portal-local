@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FaSpinner } from "react-icons/fa6";
 import { toast } from "react-hot-toast";
 import { useCustomer } from "@/contexts/CustomerContext";
+import { apiFetch } from "@/utils/api";
 
 interface CustomerModalProps {
   customer?: {
@@ -153,7 +154,7 @@ export function CustomerModal({
       let response;
       if (customer) {
         // Update customer
-        response = await fetch(`/api/customers/${customer.id}`, {
+        response = await apiFetch(`/api/customers/${customer.id}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -166,7 +167,7 @@ export function CustomerModal({
         });
       } else {
         // Create customer
-        response = await fetch("/api/customerRequest", {
+        response = await apiFetch("/api/customerRequest", {
           method: "POST",
           body: JSON.stringify({
             ...formData,

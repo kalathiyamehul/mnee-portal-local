@@ -18,6 +18,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { Config } from "@prisma/client";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
+import { apiFetch } from "@/utils/api";
 
 type TabType = "activity" | "restrictions" | "burns" | "mints";
 
@@ -407,7 +408,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
           ? "customerRequestId"
           : "refundRequestId";
 
-      const response = await fetch(`/api/${endpoint}`, {
+      const response = await apiFetch(`/api/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [requestType]: id }),

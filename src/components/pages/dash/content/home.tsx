@@ -96,6 +96,7 @@ interface DashboardHomeContentProps {
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
+import { apiFetch } from "@/utils/api";
 
 const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const { data: session } = useSession();
@@ -285,7 +286,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           ? "customerRequestId"
           : "burnRequestId";
 
-      const response = await fetch(`/api/${endpoint}`, {
+      const response = await apiFetch(`/api/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [requestType]: id }),
