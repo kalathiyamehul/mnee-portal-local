@@ -42,8 +42,8 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
   };
 
   const validateEmail = (email: string) => {
-    // Basic Unicode email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(email)) return "Please enter a valid email address";
+    // Allow Unicode letters, numbers, ., _, and - before @
+    if (!/^[\p{L}\p{N}._-]+@[a-zA-Z0-9.]+\.[a-zA-Z]{2,}$/u.test(email)) return "Please enter a valid email address";
     if (email.length > 255) return "Email is too long";
     return "";
   };
