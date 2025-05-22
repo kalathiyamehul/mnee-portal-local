@@ -239,6 +239,7 @@ model RefundRequest {
   outpoint        String      
   refundAddress   String      @map("refund_address")
   amount          BigInt      @db.BigInt
+  no_of_approvals Int         @default(2)
   status          ActionStatus @default(PENDING)
   requestedBy     String      @map("requested_by")
   txid            String      @default("")
@@ -313,7 +314,7 @@ model Customer {
   createdBy   String    @map("created_by")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
-
+  no_of_approvals Int   @default(2)
   // Add this relation field
   customerRequests CustomerRequest[]
   
