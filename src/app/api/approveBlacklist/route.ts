@@ -4,8 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from '@/lib/csrf';
 
-export async function POST(request: Request) {
+export const POST = withCSRF (async function(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -163,4 +164,4 @@ export async function POST(request: Request) {
       error: error instanceof Error ? error.message : 'Failed to process approval',
     }, { status: 500 });
   }
-}
+})
