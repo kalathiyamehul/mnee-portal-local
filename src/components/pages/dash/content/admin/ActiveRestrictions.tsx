@@ -288,7 +288,9 @@ export const ActiveRestrictions = ({
                                   }
                                   disabled={loading}
                                 >
-                                  Cancel
+                                  {activity.type === "FREEZE" && 'Cancel Freeze'}
+                                  {activity.type === "BLACKLIST" &&
+                                    'Cancel Blacklist'}
                                 </button>
                               )}
                               {canApprove(activity) && (
@@ -300,7 +302,9 @@ export const ActiveRestrictions = ({
                                   }
                                   disabled={loading}
                                 >
-                                  Approve
+                                  {activity.type === "FREEZE" && 'Approve Freeze'}
+                                  {activity.type === "BLACKLIST" &&
+                                    'Approve Blacklist'}
                                 </button>
                               )}
                             </div>
