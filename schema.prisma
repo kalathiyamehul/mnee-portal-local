@@ -24,6 +24,8 @@ model User {
   // Relations
   actionRequests    ActionRequest[]    @relation("UserActionRequests")
   actionApprovals   ActionApproval[]   @relation("UserActionApprovals")
+  customerRequests   CustomerRequest[]  @relation("UserCustomerRequests")
+  customerApprovals  CustomerApproval[] @relation("UserCustomerApprovals")
   freezeRequests    FreezeRequest[]    @relation("UserFreezeRequests")
   freezeApprovals   FreezeApproval[]   @relation("UserFreezeApprovals")
   blacklistRequests BlacklistRequest[] @relation("UserBlacklistRequests")
@@ -108,6 +110,46 @@ model BlacklistApproval {
 
   @@map("blacklist_approval")
 }
+
+model CustomerRequest {
+  id              String       @id @default(uuid())
+  name            String
+  email           String
+  address         String
+  status          ActionStatus @default(PENDING)
+  action          CustomerRequestAction
+  requestedBy     String       @map("requested_by")
+  no_of_approvals Int          @default(2)
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  customerId      String?      @map("customer_id")
+
+  // Relations
+  requester User               @relation("UserCustomerRequests", fields: [requestedBy], references: [id])
+  approvals CustomerApproval[]
+  customer  Customer?          @relation(fields: [customerId], references: [id])
+
+  @@map("customer_request")
+}
+
+model CustomerApproval {
+  id                  String   @id @default(uuid())
+  customerRequestId   String   @map("customer_request_id")
+  approvedBy          String   @map("approved_by")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  // Relations
+  customerRequest CustomerRequest @relation(fields: [customerRequestId], references: [id])
+  approver        User           @relation("UserCustomerApprovals", fields: [approvedBy], references: [id])
+
+  @@map("customer_approval")
+}
+
+enum CustomerRequestAction {
+  CREATE
+  UPDATE
+}
+
 
 model MintRequest {
   id              String       @id @default(uuid())
@@ -197,6 +239,7 @@ model RefundRequest {
   outpoint        String      
   refundAddress   String      @map("refund_address")
   amount          BigInt      @db.BigInt
+  no_of_approvals Int         @default(2)
   status          ActionStatus @default(PENDING)
   requestedBy     String      @map("requested_by")
   txid            String      @default("")
@@ -271,7 +314,10 @@ model Customer {
   createdBy   String    @map("created_by")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
-
+  no_of_approvals Int   @default(2)
+  // Add this relation field
+  customerRequests CustomerRequest[]
+  
   // Relations
   creator     User      @relation("UserCustomers", fields: [createdBy], references: [id])
   mintRequests MintRequest[]

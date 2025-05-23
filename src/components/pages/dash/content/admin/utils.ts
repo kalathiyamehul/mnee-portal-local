@@ -1,4 +1,4 @@
-import { FaBan, FaCoins, FaFire, FaPause, FaPlay, FaSnowflake, FaArrowRotateLeft } from 'react-icons/fa6';
+import { FaBan, FaCoins, FaFire, FaPause, FaPlay, FaSnowflake, FaArrowRotateLeft, FaUserPlus } from 'react-icons/fa6';
 import type { Activity } from './types';
 import type { IconType } from 'react-icons';
 
@@ -10,6 +10,8 @@ export const getActivityIcon = (activity: Activity): IconType => {
       return FaBan;
     case 'ACTION':
       return activity.action === 'PAUSE' ? FaPause : FaPlay;
+    case 'CUSTOMER':
+      return FaUserPlus;
     case 'MINT':
       return FaCoins;
     case 'BURN':
@@ -45,6 +47,8 @@ export const getActivityDisplayText = (activity: Activity): string => {
         return `Mint to ${activity.customer.address}`;
       }
       return `Mint to ${activity.address}`;
+    case 'CUSTOMER':
+      return "New Customer";
     case 'FREEZE':
       return "Freeze address";
     case 'BLACKLIST':

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaSpinner } from "react-icons/fa6";
 import { toast } from "react-hot-toast";
 import { useCustomer } from "@/contexts/CustomerContext";
@@ -11,25 +11,59 @@ interface CustomerModalProps {
     name: string;
     email: string;
     address: string;
+    noOfApproval: number;
   };
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalProps) {
+export function CustomerModal({
+  customer,
+  onClose,
+  onSuccess,
+}: CustomerModalProps) {
   const { createCustomer, updateCustomer } = useCustomer();
+  const [no_of_approvals, setnoOfApprovals] = useState("");
   const [loading, setLoading] = useState(false);
+  const [config, setConfig] = useState<{
+    minNoOfApproval: number;
+    maxNoOfApproval: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch("/api/config");
+        if (!response.ok) {
+          throw new Error("Failed to fetch configuration");
+        }
+        const data = await response.json();
+        setConfig({
+          minNoOfApproval: data.minNoOfApproval,
+          maxNoOfApproval: data.maxNoOfApproval,
+        });
+      } catch (error) {
+        console.error("Error fetching config:", error);
+        toast.error("Failed to fetch configuration");
+      }
+    };
+
+    fetchConfig();
+  }, []);
+
   // Add validation states
   const [errors, setErrors] = useState({
-    name: '',
-    email: '',
-    address: ''
+    name: "",
+    email: "",
+    address: "",
+    noOfApproval: "",
   });
-  
+
   const [formData, setFormData] = useState({
     name: customer?.name || "",
     email: customer?.email || "",
     address: customer?.address || "",
+    noOfApproval: customer?.noOfApproval || 2, // Add noOfApproval field with default
   });
 
   // Validation functions
@@ -59,60 +93,103 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
     return "";
   };
 
+  const validateApproval = (value: number) => {
+    if (value < 1) return "Minimum 1 approval required";
+    if (value > 10) return "Maximum 10 approvals allowed";
+    return ""; // Add empty string return for valid cases
+  };
+
   // Handle input changes with validation
-  const handleInputChange = (field: keyof typeof formData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    let error = '';
+  const handleInputChange = (
+    field: keyof typeof formData,
+    value: string | number
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
+    let error = "";
     switch (field) {
-      case 'name':
-        error = validateName(value);
+      case "name":
+        error = validateName(value.toString());
         break;
-      case 'email':
-        error = validateEmail(value);
+      case "email":
+        error = validateEmail(value.toString());
         break;
-      case 'address':
-        error = validateAddress(value);
+      case "address":
+        error = validateAddress(value.toString());
+        break;
+      case "noOfApproval":
+        const approvalError = validateApproval(Number(value));
+        error = approvalError ? approvalError.toString() : "";
         break;
     }
-    setErrors(prev => ({ ...prev, [field]: error }));
+    setErrors((prev) => ({ ...prev, [field]: error }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate all fields before submission
     const nameError = validateName(formData.name);
     const emailError = validateEmail(formData.email);
     const addressError = validateAddress(formData.address);
 
+    // Update the error state setting to handle string returns
     setErrors({
       name: nameError,
       email: emailError,
-      address: addressError
+      address: addressError,
+      noOfApproval: validateApproval(formData.noOfApproval) || "", // Ensure string type
     });
 
     // Improved error feedback
     if (nameError || emailError || addressError) {
-      const firstError = [nameError, emailError, addressError].find(e => e);
+      const firstError = [nameError, emailError, addressError].find((e) => e);
       toast.error(firstError || "Please fix the form errors");
       return;
     }
 
     setLoading(true);
-
     try {
+      let response;
       if (customer) {
-        await updateCustomer(customer.id, formData);
-        toast.success("Customer updated successfully");
+        // Update customer
+        response = await fetch(`/api/customers/${customer.id}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            address: formData.address,
+          }),
+        });
       } else {
-        await createCustomer(formData);
-        toast.success("Customer created successfully");
+        // Create customer
+        response = await fetch("/api/customerRequest", {
+          method: "POST",
+          body: JSON.stringify({
+            ...formData,
+            action: "CREATE",
+          }),
+        });
       }
+
+      if (!response.ok) throw new Error("Failed to submit request");
+
+      toast.success(
+        customer
+          ? "Customer updated successfully"
+          : "Customer request submitted for approval"
+      );
       onSuccess();
     } catch (error) {
-      // console.error("Error saving customer:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to save customer");
+      // console.error("Error saving customer request:", error);
+      toast.error(
+        customer
+          ? "Failed to update customer"
+          : "Failed to submit customer request"
+      );
     } finally {
       setLoading(false);
     }
@@ -122,18 +199,20 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
   return (
     <dialog id="customer_modal" className="modal modal-open">
       <div className="modal-box max-w-lg">
-        <h3 className="text-lg font-bold mb-6">{customer ? 'Edit' : 'Add New'} Customer</h3>
+        <h3 className="text-lg font-bold mb-6">
+          {customer ? "Edit" : "Add New"} Customer
+        </h3>
         <form onSubmit={handleSubmit}>
           <div className="space-y-6">
             <div className="form-control w-full mb-4">
-              <label className="label label-text">
-                Customer Name
-              </label>
+              <label className="label label-text">Customer Name</label>
               <input
                 type="text"
-                className={`input input-bordered w-full max-w-md ${errors.name ? 'input-error' : ''}`}
+                className={`input input-bordered w-full max-w-md ${
+                  errors.name ? "input-error" : ""
+                }`}
                 value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
+                onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="Enter customer name"
                 required
               />
@@ -143,14 +222,14 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
             </div>
 
             <div className="form-control w-full mb-4">
-              <label className="label label-text">
-                Email Address
-              </label>
+              <label className="label label-text">Email Address</label>
               <input
                 type="email"
-                className={`input input-bordered w-full max-w-md ${errors.email ? 'input-error' : ''}`}
+                className={`input input-bordered w-full max-w-md ${
+                  errors.email ? "input-error" : ""
+                }`}
                 value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
+                onChange={(e) => handleInputChange("email", e.target.value)}
                 placeholder="Enter customer email"
                 required
               />
@@ -160,12 +239,12 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
             </div>
 
             <div className="form-control w-full mb-4">
-              <label className="label label-text">
-                Ordinals Address
-              </label>
+              <label className="label label-text">Ordinals Address</label>
               <input
                 type="text"
-                className={`input input-bordered w-full max-w-md font-mono ${errors.address ? 'input-error' : ''}`}
+                className={`input input-bordered w-full max-w-md font-mono ${
+                  errors.address ? "input-error" : ""
+                }`}
                 value={formData.address}
                 onChange={(e) => handleInputChange('address', e.target.value)}
                 maxLength={35}
@@ -176,6 +255,48 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
                 <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.address}</span>
               </div>}
             </div>
+            {customer ? (
+              ""
+            ) : (
+              <div className="form-control w-full block">
+                <label className="label my-2">
+                  <span className="label-text">No of Approvals</span>
+                </label>
+                <input
+                  type="number"
+                  className="input input-bordered w-full max-w-md"
+                  value={no_of_approvals}
+                  onChange={(e) => {
+                    let value = e.target.value;
+                    // Only allow non-negative integers
+                    if (/^\d*$/.test(value)) {
+                      let num = parseInt(value, 10);
+                      if (
+                        isNaN(num) ||
+                        (config && num < config.minNoOfApproval)
+                      ) {
+                        setnoOfApprovals(
+                          config?.minNoOfApproval?.toString() || ""
+                        );
+                      } else if (
+                        config?.maxNoOfApproval &&
+                        num > config.maxNoOfApproval
+                      ) {
+                        toast.error(
+                          `No of Approvals must be less than or equal to ${config?.maxNoOfApproval}`
+                        );
+                      } else {
+                        setnoOfApprovals(value);
+                      }
+                    }
+                  }}
+                  placeholder={`Enter no_of_approvals value (between ${config?.minNoOfApproval} and ${config?.maxNoOfApproval})`}
+                  min={config?.minNoOfApproval}
+                  max={config?.maxNoOfApproval}
+                  required
+                />
+              </div>
+            )}
           </div>
 
           <div className="modal-action">
@@ -195,10 +316,12 @@ export function CustomerModal({ customer, onClose, onSuccess }: CustomerModalPro
               {loading ? (
                 <>
                   <FaSpinner className="animate-spin mr-2" />
-                  {customer ? 'Updating...' : 'Creating...'}
+                  {customer ? "Updating..." : "Creating..."}
                 </>
+              ) : customer ? (
+                "Update Customer"
               ) : (
-                customer ? 'Update Customer' : 'Create Customer'
+                "Create Customer"
               )}
             </button>
           </div>

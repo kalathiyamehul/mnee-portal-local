@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { isSystemPaused } from '@/lib/systemStatus';
+import { logActivity } from "@/lib/activityLogger";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -73,10 +74,20 @@ export async function POST(request: Request) {
       }
 
       // Create a new approval
-      await tx.actionApproval.create({
+      const approval = await tx.actionApproval.create({
         data: {
           actionRequestId,
           approvedBy: session.user.id,
+        },
+      });
+
+      await logActivity(tx, {
+        name: "System Action Request Approved",
+        action: "SYSTEM_ACTION_REQUEST_APPROVE",
+        description: `System action request ${actionRequestId} approved by user ${session.user.email}`,
+        metadata: {
+          actionRequestId,
+          approverId: session.user.id,
         },
       });
 
@@ -86,12 +97,21 @@ export async function POST(request: Request) {
       });
 
       if (approvalsCount === 2) {
-        // Update action request status to APPROVED
         await tx.actionRequest.update({
           where: { id: actionRequestId },
           data: { 
             status: 'APPROVED',
             updatedAt: new Date(),
+          },
+        });
+
+        await logActivity(tx, {
+          name: "System Action Request Fully Approved",
+          action: "SYSTEM_ACTION_REQUEST_FULLY_APPROVED",
+          description: `System action request ${actionRequestId} fully approved after reaching required approvals`,
+          metadata: {
+            actionRequestId,
+            approvalsCount,
           },
         });
 

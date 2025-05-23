@@ -22,6 +22,7 @@ export async function GET() {
       blacklistRequests,
       systemRequests,
       refundRequests,
+      customerRequests // Add this line
     ] = await Promise.all([
       isSystemPaused(prisma),
       prisma.mintRequest.findMany({
@@ -109,6 +110,20 @@ export async function GET() {
           createdAt: 'desc',
         },
       }),
+      prisma.customerRequest.findMany({
+        include: {
+          approvals: {
+            include: {
+              approver: true,
+            },
+          },
+          requester: true,
+          customer: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
     ]);
 
     // Find pending pause/resume requests from systemRequests
@@ -135,6 +150,11 @@ export async function GET() {
       freezeRequests,
       blacklistRequests,
       systemRequests,
+      customerRequests: customerRequests.map(r => ({ // Add this block
+        ...r,
+        type: 'CUSTOMER',
+        action: r.action,
+      })),
     });
   } catch (error) {
     console.error("Error fetching system status:", error);

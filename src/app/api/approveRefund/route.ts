@@ -10,6 +10,7 @@ import CosignTemplate from "@/templates/cosign";
 import { applyInscription, type Inscription } from "js-1sat-ord";
 import type { IndexContext } from "@/types/indexContext";
 import type { RefundRequest } from "@/types/refund";
+import { logActivity } from "@/lib/activityLogger";
 const { toBase64 } = Utils;
 
 async function broadcastRefundTransaction(refundRequest: RefundRequest) {
@@ -151,11 +152,21 @@ export async function POST(request: Request) {
       }
 
       // Create approval record
-      await tx.refundApproval.create({
+      const approval = await tx.refundApproval.create({
         data: {
           refundRequestId,
           approvedBy: session.user.id
         }
+      });
+
+      await logActivity(tx, {
+        name: "Refund Request Approved",
+        action: "REFUND_REQUEST_APPROVE",
+        description: `Refund request ${refundRequestId} approved by user ${session.user.email}`,
+        metadata: {
+          refundRequestId,
+          approverId: session.user.id,
+        },
       });
 
       // Check final approval count
@@ -169,13 +180,23 @@ export async function POST(request: Request) {
           const txid = await broadcastRefundTransaction(refundRequest);
 
           // Update with txid and mark as DONE
-          await tx.refundRequest.update({
+          const updatedRefund = await tx.refundRequest.update({
             where: { id: refundRequestId },
             data: {
               status: "DONE",
               txid,
               updatedAt: new Date(),
             }
+          });
+
+          await logActivity(tx, {
+            name: "Refund Request Fully Approved",
+            action: "REFUND_REQUEST_FULLY_APPROVED",
+            description: `Refund request ${refundRequestId} fully approved and transaction broadcasted`,
+            metadata: {
+              refundRequestId,
+              txid,
+            },
           });
 
           // Update any associated burn request
@@ -187,12 +208,22 @@ export async function POST(request: Request) {
           });
 
           if (burnRequest) {
-            await tx.burnRequest.update({
+            const updatedBurn = await tx.burnRequest.update({
               where: { id: burnRequest.id },
               data: {
                 status: "REFUNDED",
                 updatedAt: new Date(),
               }
+            });
+
+            await logActivity(tx, {
+              name: "Burn Request Refunded",
+              action: "BURN_REQUEST_REFUNDED",
+              description: `Burn request ${burnRequest.id} marked as REFUNDED due to refund approval`,
+              metadata: {
+                burnRequestId: burnRequest.id,
+                refundRequestId,
+              },
             });
           }
 
@@ -225,4 +256,4 @@ export async function POST(request: Request) {
       error: error instanceof Error ? error.message : "Failed to process approval"
     }, { status: 500 });
   }
-} 
+}

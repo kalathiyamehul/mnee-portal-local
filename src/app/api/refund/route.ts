@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { fetchTxo } from "@/utils/api";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -73,6 +74,17 @@ export async function POST(request: Request) {
       },
     });
 
+    await logActivity(prisma, {
+      name: "Refund Request Created",
+      action: "REFUND_REQUEST_CREATE",
+      description: `Refund request created for outpoint ${outpoint} by user ${session.user.id}`,
+      metadata: {
+        refundRequest: JSON.stringify(refundRequest, (key, value) =>
+          typeof value === 'bigint' ? value.toString() : value
+        ),
+      },
+    });
+
     return NextResponse.json({
       success: true,
       message: "Refund request created successfully",
@@ -88,4 +100,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-} 
+}

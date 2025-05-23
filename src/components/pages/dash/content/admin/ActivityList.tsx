@@ -65,6 +65,7 @@ export const ActivityList = ({
       REFUND: "hasApproveRefundPer",
       BLACKLIST: "hasApproveBlacklistPer",
       FREEZE: "hasApproveFreezePer",
+      CUSTOMER: "hasApproveCustomerPer",
     };
     const key = permissionMap[type];
     return key ? permissions[key as keyof typeof permissions] : false;
@@ -293,6 +294,13 @@ export const ActivityList = ({
                                 </p>
                                 <p className="opacity-70">
                                   Reason: {activity?.reason}
+                                </p>
+                              </div>
+                            )}
+                            {activity.type === "CUSTOMER" && (
+                              <div className="text-sm font-mono flex flex-col">
+                                <p className="opacity-70">
+                                  Name: {activity.name} {activity.email}
                                 </p>
                               </div>
                             )}

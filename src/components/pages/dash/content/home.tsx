@@ -27,6 +27,8 @@ const getActivityDisplayText = (activity: Activity) => {
       return `Mint to ${activity.address || "customer"}`;
     case "BURN":
       return `Burn from ${activity.address || "customer"}`;
+    case "CUSTOMER":
+      return `New Customer`;
     case "FREEZE":
       return activity.action === "UNFREEZE"
         ? `Unfreeze Address ${activity.address}`
@@ -94,7 +96,6 @@ interface DashboardHomeContentProps {
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
-import { sha } from "bun";
 
 const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const { data: session } = useSession();
@@ -132,96 +133,82 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           type: "BURN" as const,
           action: "BURN" as const,
         })),
-      ].sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+        ...statusData.customerRequests.map((req) => ({
+          ...req,
+          type: "CUSTOMER" as const,
+          action: "CREATE" as const,
+        })),
+      ]
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       setRequests({
-        recentMints: allActivities
-          .filter((act) => act.type === "MINT")
-          .filter((activity) => activity.status === "PENDING")
-          .slice(0, 5),
-        recentBurns: allActivities
-          .filter((act) => act.type === "BURN")
-          .filter((activity) => activity.status === "PENDING")
-          .slice(0, 5),
-        pendingActivities: allActivities
-          .filter((activity) => activity.status === "PENDING")
-          .slice(0, 5),
+        recentMints: allActivities.filter(act => act.type === "MINT").filter((activity) => activity.status === "PENDING").slice(0, 5),
+        recentBurns: allActivities.filter(act => act.type === "BURN").filter((activity) => activity.status === "PENDING").slice(0, 5),
+        pendingActivities: allActivities.filter((activity) => activity.status === "PENDING").slice(0, 5),
       });
       setLoading(false);
     }
   }, [statusData]);
   const { hasPermission } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+
   // Mint Permissions
-  const hasCreateMintPer = hasPermission(Resource.MINT, Action.CREATE) || false;
-  const hasApproveMintPer =
-    hasPermission(Resource.MINT, Action.APPROVE) || false;
-  const hasRejectMintPer = hasPermission(Resource.MINT, Action.REJECT) || false;
+	const hasCreateMintPer = isSuperAdmin? true : hasPermission(Resource.MINT, Action.CREATE) || false;
+	const hasApproveMintPer = isSuperAdmin? true : hasPermission(Resource.MINT, Action.APPROVE) || false;
+	const hasRejectMintPer = isSuperAdmin? true : hasPermission(Resource.MINT, Action.REJECT) || false;
 
-  // Burn Permissions
-  const hasCreateBurnPer = hasPermission(Resource.BURN, Action.CREATE) || false;
-  const hasApproveBurnPer =
-    hasPermission(Resource.BURN, Action.APPROVE) || false;
-  const hasRejectBurnPer = hasPermission(Resource.BURN, Action.REJECT) || false;
+	// Burn Permissions
+	const hasCreateBurnPer = isSuperAdmin? true : hasPermission(Resource.BURN, Action.CREATE) || false;
+	const hasApproveBurnPer = isSuperAdmin? true : hasPermission(Resource.BURN, Action.APPROVE) || false;
+	const hasRejectBurnPer = isSuperAdmin? true : hasPermission(Resource.BURN, Action.REJECT) || false;
 
-  // Refund Permissions
-  const hasCreateRefundPer =
-    hasPermission(Resource.REFUND, Action.CREATE) || false;
-  const hasApproveRefundPer =
-    hasPermission(Resource.REFUND, Action.APPROVE) || false;
-  const hasRejectRefundPer =
-    hasPermission(Resource.REFUND, Action.REJECT) || false;
+	// Refund Permissions
+	const hasCreateRefundPer = isSuperAdmin? true : hasPermission(Resource.REFUND, Action.CREATE) || false;
+	const hasApproveRefundPer = isSuperAdmin? true : hasPermission(Resource.REFUND, Action.APPROVE) || false;
+	const hasRejectRefundPer = isSuperAdmin? true : hasPermission(Resource.REFUND, Action.REJECT) || false;
 
-  // Blacklist Permissions
-  const hasCreateBlacklistPer =
-    hasPermission(Resource.BLACKLIST, Action.CREATE) || false;
-  const hasApproveBlacklistPer =
-    hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
-  const hasRejectBlacklistPer =
-    hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
+	// Blacklist Permissions
+	const hasCreateBlacklistPer = isSuperAdmin? true : hasPermission(Resource.BLACKLIST, Action.CREATE) || false;
+	const hasApproveBlacklistPer = isSuperAdmin? true : hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
+	const hasRejectBlacklistPer = isSuperAdmin? true : hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
 
-  // Freeze Permissions
-  const hasCreateFreezePer =
-    hasPermission(Resource.FREEZE, Action.CREATE) || false;
-  const hasApproveFreezePer =
-    hasPermission(Resource.FREEZE, Action.APPROVE) || false;
-  const hasRejectFreezePer =
-    hasPermission(Resource.FREEZE, Action.REJECT) || false;
+	// Freeze Permissions
+	const hasCreateFreezePer = isSuperAdmin? true : hasPermission(Resource.FREEZE, Action.CREATE) || false;
+	const hasApproveFreezePer = isSuperAdmin? true : hasPermission(Resource.FREEZE, Action.APPROVE) || false;
+	const hasRejectFreezePer = isSuperAdmin? true : hasPermission(Resource.FREEZE, Action.REJECT) || false;
 
-  // Permissions object
-  const permissions = {
-    // Mint
-    hasApproveMintPer,
-    hasRejectMintPer,
-    // Burn
-    hasApproveBurnPer,
-    hasRejectBurnPer,
-    // Refund
-    hasApproveRefundPer,
-    hasRejectRefundPer,
-    // Blacklist
-    hasApproveBlacklistPer,
-    hasRejectBlacklistPer,
-    // Freeze
-    hasApproveFreezePer,
-    hasRejectFreezePer,
-  };
+  // Customers Permissions
+	const hasCreateCustomerPer = isSuperAdmin? true : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
+	const hasApproveCustomerPer = isSuperAdmin? true : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+	const hasRejectCustomerPer = isSuperAdmin? true : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
 
-  const showAction =
-    permissions.hasApproveBlacklistPer ||
-    permissions.hasApproveFreezePer ||
-    permissions.hasRejectBlacklistPer ||
-    permissions.hasRejectFreezePer ||
-    permissions.hasApproveBurnPer ||
-    permissions.hasRejectBurnPer ||
-    permissions.hasApproveMintPer ||
-    permissions.hasRejectMintPer ||
-    permissions.hasApproveRefundPer ||
-    permissions.hasRejectRefundPer;
+	// Permissions object
+	const permissions = {
+		// Mint
+		hasApproveMintPer,
+		hasRejectMintPer,
+		// Burn
+		hasApproveBurnPer,
+		hasRejectBurnPer,
+		// Refund
+		hasApproveRefundPer,
+		hasRejectRefundPer,
+		// Blacklist
+		hasApproveBlacklistPer,
+		hasRejectBlacklistPer,
+		// Freeze
+		hasApproveFreezePer,
+		hasRejectFreezePer,
+    // Customers
+		hasApproveCustomerPer,
+		hasRejectCustomerPer,
+	};
 
   // Default to 'volume' if no chart is selected
   const selectedChart = (searchParams.get("chart") || "volume") as ChartType;
+  const showActions = hasApproveMintPer || hasRejectMintPer || hasApproveBurnPer || hasRejectBurnPer || hasApproveRefundPer || hasRejectRefundPer || hasApproveBlacklistPer || hasRejectBlacklistPer || hasApproveFreezePer || hasRejectFreezePer || hasApproveCustomerPer || hasRejectCustomerPer;
 
   const canCancel = useCallback(
     (activity: Activity) => {
@@ -279,6 +266,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           ? "approveMint"
           : type === "BURN"
           ? "approveBurn"
+          : type === "CUSTOMER"
+          ? "approveCustomer"
           : null;
 
       if (!endpoint) throw new Error("Invalid activity type");
@@ -292,6 +281,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           ? "blacklistRequestId"
           : type === "MINT"
           ? "mintRequestId"
+          : type === "CUSTOMER"
+          ? "customerRequestId"
           : "burnRequestId";
 
       const response = await fetch(`/api/${endpoint}`, {
@@ -579,8 +570,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           filteredActivities={requestTables?.pendingActivities || []}
           config={initialConfig}
           loading={loading}
+          showAction={showActions}
           canCancel={canCancel}
-          showAction={showAction}
           canApprove={canApprove}
           handleCancel={handleCancel}
           handleApprove={handleApprove}

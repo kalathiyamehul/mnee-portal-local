@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
 import { toTokenSat } from 'satoshi-token';
+import { logActivity } from '@/lib/activityLogger';
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -104,7 +105,16 @@ export async function POST(request: Request) {
           no_of_approvals: noOfApprovals,
         },
       });
-
+      await logActivity(tx, {
+        name: "Mint Request Created",
+        action: "MINT_REQUEST_CREATE",
+        description: "A mint request has been created",
+        metadata: {
+          mintRequest: JSON.stringify(mintRequest, (key, value) =>
+            typeof value === 'bigint' ? value.toString() : value
+          ),
+        },
+      });
       return mintRequest;
     });
 
@@ -120,4 +130,4 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-} 
+}

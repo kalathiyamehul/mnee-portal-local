@@ -19,6 +19,7 @@ import {
 	type TransferOrdTokensConfig,
 } from "js-1sat-ord";
 import CosignTemplate from "@/templates/cosign";
+import { logActivity } from "@/lib/activityLogger";
 
 type MintRequestWithRelations = Prisma.MintRequestGetPayload<{
 	include: {
@@ -183,6 +184,16 @@ export async function POST(request: Request) {
 				},
 			});
 
+			await logActivity(tx, {
+				name: "Mint Request Approved",
+				action: "MINT_REQUEST_APPROVE",
+				description: `Mint request ${mintRequestId} approved by user ${session.user.email}`,
+				metadata: {
+					mintRequestId,
+					approverId: session.user.id,
+				},
+			});
+
 			// Check if we have enough approvals
 			console.log("Checking approval count");
 			const approvalsCount = await tx.actionApproval.count({
@@ -198,19 +209,26 @@ export async function POST(request: Request) {
 					data: { status: "APPROVED" },
 				});
 
+				await logActivity(tx, {
+					name: "Mint Request Fully Approved",
+					action: "MINT_REQUEST_FULLY_APPROVED",
+					description: `Mint request ${mintRequestId} fully approved after reaching required approvals`,
+					metadata: {
+						mintRequestId,
+						approvalsCount,
+					},
+				});
+
 				try {
-					console.log("Starting MNEE mint process");
 					const { rawtx, error, success } = await mintMnee(
 						mintRequest.amount,
 						mintRequest.address,
 					);
-					console.log("MNEE mint successful, updating request status");
 
 					if (!success) {
 						throw new Error(error);
 					}
 
-					// update the request status and txid
 					await tx.mintRequest.update({
 						where: { id: mintRequestId },
 						data: {
@@ -220,15 +238,23 @@ export async function POST(request: Request) {
 						},
 					});
 
+					await logActivity(tx, {
+						name: "Mint Transaction Completed",
+						action: "MINT_TX_COMPLETED",
+						description: `Mint transaction completed for request ${mintRequestId}`,
+						metadata: {
+							mintRequestId,
+							txid: Transaction.fromHex(rawtx).id("hex"),
+						},
+					});
+
 					return { status: "DONE", approvalsCount, minterTx: rawtx };
 				} catch (error) {
-					// If minting fails, propagate the error
 					console.error("Error during minting:", error);
 					const errorMessage =
 						error instanceof Error
-							? error.message.replace(/^Error:\s*/, "") // Remove "Error: " prefix
+							? error.message.replace(/^Error:\s*/, "")
 							: "Transaction submission failed";
-
 					throw new Error(errorMessage);
 				}
 			}

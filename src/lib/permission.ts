@@ -2,6 +2,7 @@ export enum Resource {
     SUPER_ADMIN = "SUPER_ADMIN",
     WALLET = "WALLET",
     CUSTOMER = "CUSTOMER",
+    USER = "USER",
     MINT = "MINT",
     BURN = "BURN",
     FREEZE = "FREEZE",
@@ -31,30 +32,30 @@ export const RESOURCE_PERMISSIONS: ResourcePermission[] = [
     },
     {
         name: Resource.WALLET,
-        permissions: [Action.MANAGE, Action.CREATE, Action.READ, Action.UPDATE, Action.DELETE]
+        permissions: [Action.READ, Action.CREATE, Action.UPDATE, Action.DELETE]
     },
     {
         name: Resource.CUSTOMER,
-        permissions: [Action.MANAGE, Action.CREATE, Action.READ, Action.UPDATE, Action.DELETE]
+        permissions: [Action.READ, Action.CREATE, Action.UPDATE, Action.DELETE, Action.APPROVE, Action.REJECT]
     },
     {
         name: Resource.MINT,
-        permissions: [Action.MANAGE, Action.CREATE, Action.APPROVE, Action.REJECT]
+        permissions: [Action.READ, Action.CREATE, Action.APPROVE, Action.REJECT]
     },
     {
         name: Resource.BURN,
-        permissions: [Action.MANAGE, Action.CREATE, Action.APPROVE, Action.REJECT]
+        permissions: [Action.READ, Action.CREATE, Action.APPROVE, Action.REJECT]
     },
     {
         name: Resource.FREEZE,
-        permissions: [Action.MANAGE, Action.CREATE, Action.APPROVE, Action.REJECT]
+        permissions: [Action.READ, Action.CREATE, Action.APPROVE, Action.REJECT]
     },
     {
         name: Resource.BLACKLIST,
-        permissions: [Action.MANAGE, Action.CREATE, Action.APPROVE, Action.REJECT]
+        permissions: [Action.READ, Action.CREATE, Action.APPROVE, Action.REJECT]
     },
     {
         name: Resource.REFUND,
-        permissions: [Action.MANAGE, Action.CREATE, Action.APPROVE, Action.REJECT]
+        permissions: [Action.READ, Action.CREATE, Action.APPROVE, Action.REJECT]
     }
 ]

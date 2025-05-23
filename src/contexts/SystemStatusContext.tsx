@@ -15,6 +15,7 @@ interface SystemStatusData {
   mintRequests: Activity[];
   burnRequests: Activity[];
   refundRequests: Activity[];
+  customerRequests: Activity[]; // Add this line
 }
 
 interface SystemStatusContextType {
@@ -58,7 +59,8 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
         systemRequests: data.systemRequests || [],
         mintRequests: data.mintRequests || [],
         burnRequests: data.burnRequests || [],
-        refundRequests: data.refundRequests || []
+        refundRequests: data.refundRequests || [],
+        customerRequests: data.customerRequests || [], // Add this line
       });
     } catch (error) {
       // console.error('Error fetching system status:', error);
@@ -130,4 +132,4 @@ export function useSystemStatus() {
     throw new Error('useSystemStatus must be used within a SystemStatusProvider');
   }
   return context;
-} 
+}

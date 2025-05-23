@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 import type { MNEEUtxo } from "@/types";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { fetchMneeUtxos } from "@/utils/api";
+import { logActivity } from "@/lib/activityLogger";
 
 export async function POST(request: Request) {
     const session = await getServerSession(authOptions);
@@ -90,25 +91,40 @@ export async function POST(request: Request) {
             );
         }
 
-        // Create burn request
-        const burnRequestData = {
-            amount,
-            requestedBy: session.user.id,
-            outpoint,
-            status: 'PENDING' as const,
-            no_of_approvals: no_of_approvals ?? 2, // Use provided or default
-        };
+        // Create burn request and log activity in a transaction
+        const result = await prisma.$transaction(async (tx) => {
+            const burnRequestData = {
+                amount,
+                requestedBy: session.user.id,
+                outpoint,
+                status: 'PENDING' as const,
+                no_of_approvals: no_of_approvals ?? 2, // Use provided or default
+            };
 
-        const burnRequest = await prisma.burnRequest.create({
-            data: burnRequestData,
+            const burnRequest = await tx.burnRequest.create({
+                data: burnRequestData,
+            });
+
+            await logActivity(tx, {
+                name: "Burn Request Created",
+                action: "BURN_REQUEST_CREATE",
+                description: `A burn request has been created for outpoint ${outpoint}`,
+                metadata: {
+                    burnRequest: JSON.stringify(burnRequest, (key, value) =>
+                        typeof value === 'bigint' ? value.toString() : value
+                    ),
+                },
+            });
+
+            return burnRequest;
         });
-        
+
         // Convert BigInt to string for JSON serialization
         const response = {
             success: true,
             burnRequest: {
-                ...burnRequest,
-                amount: burnRequest.amount.toString(),
+                ...result,
+                amount: result.amount.toString(),
             }
         };
 

@@ -11,6 +11,7 @@ import {
   FaUsers,
   FaShieldAlt,
   FaExchangeAlt,
+  FaHistory,
 } from "react-icons/fa";
 import { TbActivityHeartbeat } from "react-icons/tb";
 import { motion } from "framer-motion";
@@ -24,19 +25,12 @@ const menuItems = [
   { name: "Customers", href: "/dash/customers", icon: FaUsers },
   { name: "Admin", href: "/dash/admin", icon: FaGear },
   { name: "Transactions", href: "/dash/transactions", icon: FaExchangeAlt },
+  { name: "Activity", href: "/dash/activity", icon: FaHistory },
   { name: "Config", href: "/dash/settings", icon: FaSliders },
   {
     name: "SuperAdmin",
     href: "/dash/super-admin",
     icon: FaShieldAlt,
-    // subItems: [
-    //   { name: "Roles", href: "/dash/super-admin", icon: FaUsers },
-    //   {
-    //     name: "Threshold Config",
-    //     href: "/dash/super-admin/threshold",
-    //     icon: FaGear,
-    //   },
-    // ],
   },
 ];
 
@@ -46,24 +40,23 @@ const Sidebar: React.FC = () => {
   const [hoveredPath, setHoveredPath] = useState(pathname);
   const { hasPermission, hasAllPermissions } =
     usePermission();
-  const canViewWallet = hasPermission(Resource.WALLET, Action.MANAGE);
-  const canViewCustomers = hasPermission(Resource.CUSTOMER, Action.MANAGE);
+  const canViewWallet = hasPermission(Resource.WALLET, Action.READ);
+  const canViewCustomers = hasPermission(Resource.CUSTOMER, Action.READ);
   const canViewSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
   const canViewAdmin = hasAllPermissions([
-    { resource: Resource.MINT, action: Action.MANAGE },
-    { resource: Resource.BURN, action: Action.MANAGE },
-    { resource: Resource.CUSTOMER, action: Action.MANAGE },
-    { resource: Resource.WALLET, action: Action.MANAGE },
-    { resource: Resource.REFUND, action: Action.MANAGE },
-    { resource: Resource.BLACKLIST, action: Action.MANAGE },
-    { resource: Resource.FREEZE, action: Action.MANAGE },
+    { resource: Resource.MINT, action: Action.CREATE },
+    { resource: Resource.BURN, action: Action.CREATE },
+    { resource: Resource.CUSTOMER, action: Action.CREATE },
+    { resource: Resource.WALLET, action: Action.CREATE },
+    { resource: Resource.REFUND, action: Action.CREATE },
+    { resource: Resource.BLACKLIST, action: Action.CREATE },
+    { resource: Resource.FREEZE, action: Action.CREATE },
   ]);
   // console.log("canViewAdmin", canViewAdmin);
   const filteredMenuItems = menuItems.filter((item) => {
-    if (item.name === "Wallet") return canViewWallet;
-    if (item.name === "Customers") return canViewCustomers;
+    if (item.name === "Wallet") return canViewSuperAdmin || canViewWallet;
+    if (item.name === "Customers") return canViewSuperAdmin || canViewCustomers;
     if (item.name === "SuperAdmin") return canViewSuperAdmin;
-    if (item.name === "Admin") return canViewAdmin;
     if (item.name === "Config") return canViewSuperAdmin;
     return true;
   });

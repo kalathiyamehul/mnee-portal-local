@@ -34,6 +34,7 @@ export default function DashboardCustomersContent() {
   );
   const [config, setConfig] = useState<Config | null>(null);
   const { hasPermission } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
   useEffect(() => {
     const init = async () => {
       try {
@@ -115,7 +116,7 @@ export default function DashboardCustomersContent() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
           <ExportButtons filename="customers" onExport={handleExport} />
-          {hasPermission(Resource.CUSTOMER, Action.CREATE) && (
+          {hasPermission(Resource.CUSTOMER, Action.CREATE) || isSuperAdmin && (
             <button
               type="button"
               onClick={() => setShowModal(true)}
@@ -232,6 +233,7 @@ export default function DashboardCustomersContent() {
                               name: customer.name,
                               email: customer.email,
                               address: customer.address,
+                              no_of_approvals: customer.noOfApprovals,
                               createdBy: customer.creator.email,
                               createdAt: new Date(customer.createdAt),
                               updatedAt: new Date(customer.createdAt),
@@ -285,8 +287,13 @@ export default function DashboardCustomersContent() {
       )}
 
       {showModal && (
+        
         <CustomerModal
-          customer={selectedCustomer || undefined}
+        customer={
+          selectedCustomer
+            ? { ...selectedCustomer, noOfApproval: selectedCustomer.no_of_approvals ?? 0 }
+            : undefined
+        }
           onClose={() => {
             setShowModal(false);
             setSelectedCustomer(null);
