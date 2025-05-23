@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
 import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
+import { withCSRF } from "@/lib/csrf";
 
 // Schema for role creation/update
 const roleSchema = z.object({
@@ -16,7 +17,7 @@ const roleSchema = z.object({
 });
 
 // GET /api/role - List all roles
-export async function GET() {
+export const GET = withCSRF(async function() {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
@@ -39,10 +40,10 @@ export async function GET() {
             { status: 500 }
         );
     }
-}
+})
 
 // POST /api/role - Create new role
-export async function POST(request: NextRequest) {
+export const POST = withCSRF(async function(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
@@ -141,10 +142,10 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         );
     }
-}
+})
 
 // PUT /api/role - Update role
-export async function PUT(request: NextRequest) {
+export const PUT = withCSRF(async function(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
@@ -242,10 +243,10 @@ export async function PUT(request: NextRequest) {
             { status: 500 }
         );
     }
-}
+})
 
 // DELETE /api/role - Delete role
-export async function DELETE(request: NextRequest) {
+export const DELETE = withCSRF(async function(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
@@ -292,4 +293,4 @@ export async function DELETE(request: NextRequest) {
             { status: 500 }
         );
     }
-}
+})

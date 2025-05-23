@@ -9,6 +9,7 @@ import { formatRevalidate } from 'next/dist/server/lib/revalidate';
 import { Pagination } from "@/components/common/Pagination";
 import { useEffect, useState } from 'react';
 import { MdOutlineOpenInNew } from 'react-icons/md';
+import { apiFetch } from '@/utils/api';
 
 interface BurnTableProps {
 	burns: BurnUtxo[];
@@ -41,7 +42,7 @@ export const BurnTable = ({
 
 	const handleApproveRefund = async (refundId: string) => {
 		try {
-			const response = await fetch('/api/approveRefund', {
+			const response = await apiFetch('/api/approveRefund', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ refundRequestId: refundId }),
@@ -62,7 +63,7 @@ export const BurnTable = ({
 	const handleSettleBurn = async (burnRequestId: string) => {
         setSettlingId(burnRequestId);
         try {
-            const response = await fetch('/api/settleBurn', {
+            const response = await apiFetch('/api/settleBurn', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ burnRequestId }),

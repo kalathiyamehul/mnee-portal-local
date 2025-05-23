@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { format, parseISO } from "date-fns";
 import { toToken } from "satoshi-token";
+import { apiFetch } from "@/utils/api";
 
 interface ChartDataPoint {
   date: string;
@@ -84,8 +85,8 @@ export const TokenActivityChart = ({
       try {
         setLoading(true);
         const [chartResponse, configResponse] = await Promise.all([
-          fetch(`/api/chart-data?type=${type}&days=${days}`),
-          fetch('/api/config')
+          apiFetch(`/api/chart-data?type=${type}&days=${days}`),
+          apiFetch('/api/config')
         ]);
 
         if (!chartResponse.ok) {

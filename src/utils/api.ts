@@ -8,7 +8,7 @@ let csrfToken: string | null = null;
 
 async function getCsrfToken() {
     if (csrfToken) return csrfToken;
-    const res = await fetch('/api/csrf');
+    const res = await apiFetch('/api/csrf');
     const data = await res.json();
     csrfToken = data.csrfToken;
     return csrfToken;

@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/utils/api";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { FaCircleInfo } from "react-icons/fa6";
@@ -33,7 +34,7 @@ export const ChangePassword = ({ onClose }: { onClose: () => void }) => {
     setIsSubmitting(true);
 
     try {
-      const res = await fetch("/api/changePassword", {
+      const res = await apiFetch("/api/changePassword", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),

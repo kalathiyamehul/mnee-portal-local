@@ -190,7 +190,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const response = await fetch("/api/config");
+        const response = await apiFetch("/api/config");
         const data = await response.json();
         if (data) {
           setConfig({
@@ -356,7 +356,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     try {
       setLoading(true);
       const requestType = `${type.toLowerCase()}RequestId`;
-      await fetch("/api/cancel", {
+      await apiFetch("/api/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [requestType]: id }),
@@ -448,7 +448,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const handleUnblacklist = async (e: React.MouseEvent, address: string) => {
     try {
       setLoading(true);
-      const response = await fetch("/api/blacklist", {
+      const response = await apiFetch("/api/blacklist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -482,7 +482,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   ) => {
     try {
       setLoading(true);
-      const response = await fetch("/api/freeze", {
+      const response = await apiFetch("/api/freeze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -511,7 +511,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const handleUnfreeze = async (address: string) => {
     try {
       setLoading(true);
-      const response = await fetch("/api/freeze", {
+      const response = await apiFetch("/api/freeze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -541,7 +541,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     e.preventDefault();
     try {
       setLoading(true);
-      const response = await fetch("/api/blacklist", {
+      const response = await apiFetch("/api/blacklist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -90,7 +90,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       const cachedCustomer = customers?.find((c) => c.id === id);
       if (cachedCustomer) return cachedCustomer;
 
-      const response = await fetch(`/api/customers/${id}`);
+      const response = await apiFetch(`/api/customers/${id}`);
       if (!response.ok) {
         throw new Error("Failed to fetch customer");
       }

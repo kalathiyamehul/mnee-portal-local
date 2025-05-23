@@ -1,3 +1,4 @@
+import { apiFetch } from '@/utils/api';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { FaSpinner, FaFire } from 'react-icons/fa6';
@@ -31,7 +32,7 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
       
       // console.log('Prepared burn payload:', payload);
 
-      const response = await fetch('/api/burn', {
+      const response = await apiFetch('/api/burn', {
         method: 'POST',
         headers: {
           'Accept': 'application/json',

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { fetchMneeUtxos } from "@/utils/api";
+import { apiFetch, fetchMneeUtxos } from "@/utils/api";
 import {
   FaSpinner,
   FaFire,
@@ -72,7 +72,7 @@ export const BurnsTab = ({
 
   const fetchBurnAddressFromConfig = useCallback(async () => {
     try {
-      const configResponse = await fetch("/api/config");
+      const configResponse = await apiFetch("/api/config");
       const config = await configResponse.json();
       if (!config?.burnAddress) {
         throw new Error("Burn address not configured");
@@ -172,7 +172,7 @@ export const BurnsTab = ({
     type: "burn" | "refund";
   }) => {
     try {
-      const response = await fetch("/api/cancel", {
+      const response = await apiFetch("/api/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
@@ -204,7 +204,7 @@ export const BurnsTab = ({
 
   const handleApproveRefund = async (refundId: string) => {
     try {
-      const response = await fetch("/api/approveRefund", {
+      const response = await apiFetch("/api/approveRefund", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refundRequestId: refundId }),
@@ -228,7 +228,7 @@ export const BurnsTab = ({
 
   const handleApproveBurn = async (burnId: string) => {
     try {
-      const response = await fetch("/api/approveBurn", {
+      const response = await apiFetch("/api/approveBurn", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ burnRequestId: burnId }),

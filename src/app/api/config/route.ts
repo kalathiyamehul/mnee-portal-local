@@ -6,12 +6,13 @@ import { PrivateKey } from "@bsv/sdk";
 import { getConfig, revalidateConfig } from "@/lib/config";
 import { Prisma } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from "@/lib/csrf";
 
 // Enable caching for this route
 export const dynamic = 'force-dynamic';
 export const revalidate = 60; // Revalidate every 60 seconds
 
-export async function GET() {
+export const GET = withCSRF(async function() {
   try {
     const config = await getConfig();
     if (!config) {
@@ -28,9 +29,9 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+})
 
-export async function POST(request: Request) {
+export const POST = withCSRF(async function (request: Request) {
   const body = await request.json();
   const { tokenId, feeAddress, decimals, latestMinterTx, noOfApproval, globalJson } = body;
 
@@ -99,9 +100,9 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+})
 
-export async function PATCH(request: Request) {
+export const PATCH = withCSRF(async function(request: Request) {
   const body = await request.json();
   const { minNoOfApproval, maxNoOfApproval, globalJson } = body;
   try {
@@ -137,9 +138,9 @@ export async function PATCH(request: Request) {
       { status: 500 }
     );
   }
-}
+})
 
-export async function DELETE() {
+export const DELETE = withCSRF(async function() {
   try {
     await prisma.$transaction(async (tx) => {
       await tx.config.deleteMany();
@@ -163,4 +164,4 @@ export async function DELETE() {
       { status: 500 }
     );
   }
-}
+})

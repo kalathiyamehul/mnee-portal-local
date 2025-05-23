@@ -2,8 +2,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import type { ActionStatus, FreezeRequestAction } from '@prisma/client';
+import { withCSRF } from '@/lib/csrf';
 
-export async function GET(request: Request) {
+export const GET = withCSRF(async function(request: Request) {
   const { searchParams } = new URL(request.url);
   const includePending = searchParams.get('includePending') === 'true';
   
@@ -31,4 +32,4 @@ export async function GET(request: Request) {
   });
 
   return NextResponse.json({ activeFreezes: freezeRequests });
-}
+})

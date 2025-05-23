@@ -238,7 +238,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     try {
       setLoading(true);
       const requestType = `${type.toLowerCase()}RequestId`;
-      await fetch("/api/cancel", {
+      await apiFetch("/api/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [requestType]: id }),
@@ -310,7 +310,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   };
 
   const fetchMetrics = useCallback(() => {
-    fetch("/api/dashboard")
+    apiFetch("/api/dashboard")
       .then((response) => response.json())
       .then((data) => setMetrics(data))
       .catch((error) =>{

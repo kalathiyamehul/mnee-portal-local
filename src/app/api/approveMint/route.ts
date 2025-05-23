@@ -29,7 +29,7 @@ type MintRequestWithRelations = Prisma.MintRequestGetPayload<{
 	};
 }>;
 
-export const POSt =  withCSRF(async function(request: Request) {
+export const POST =  withCSRF(async function(request: Request) {
 	console.log("Starting approveMint request");
 	const session = await getServerSession(authOptions);
 	console.log("Session:", { userId: session?.user?.id });

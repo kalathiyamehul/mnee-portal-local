@@ -34,7 +34,7 @@ export function CustomerModal({
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const response = await fetch("/api/config");
+        const response = await apiFetch("/api/config");
         if (!response.ok) {
           throw new Error("Failed to fetch configuration");
         }

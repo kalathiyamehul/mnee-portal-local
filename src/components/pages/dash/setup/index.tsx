@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchTransaction, ingestTxid } from '@/utils/api';
+import { apiFetch, fetchTransaction, ingestTxid } from '@/utils/api';
 import toast from 'react-hot-toast';
 import { ChooseMode } from './ChooseMode';
 import { DeployForm } from './DeployForm';
@@ -58,7 +58,7 @@ export default function Setup() {
   const handleDeploy = async (data: { feeAddress: string }) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/deploy', {
+      const response = await apiFetch('/api/deploy', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +92,7 @@ export default function Setup() {
     
     setLoading(true);
     try {
-      const response = await fetch('/api/config', {
+      const response = await apiFetch('/api/config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

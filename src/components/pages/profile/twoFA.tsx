@@ -1,5 +1,6 @@
 "use client";
 
+import { apiFetch } from "@/utils/api";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { MdClose } from "react-icons/md";
@@ -27,7 +28,7 @@ export default function TwoFA() {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const response = await fetch("/api/auth/2fa/status");
+        const response = await apiFetch("/api/auth/2fa/status");
         const data = await response.json();
         set2FAStatus(data.enabled ? "enabled" : "disabled");
       } catch (error) {
@@ -44,7 +45,7 @@ export default function TwoFA() {
 
   const handleDisable2FA = async () => {
     try {
-      const response = await fetch("/api/verify", {
+      const response = await apiFetch("/api/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -99,7 +100,7 @@ export default function TwoFA() {
           onClick={async () => {
             set2FAStatus("initializing");
             try {
-              const response = await fetch("/api/qrcode");
+              const response = await apiFetch("/api/qrcode");
               const data = await response.json();
               setQRData(data.data);
               setQRSecret(data.secret);
@@ -170,7 +171,7 @@ export default function TwoFA() {
                 className="btn btn-success btn-sm"
                 onClick={async () => {
                   try {
-                    const response = await fetch(`/api/verify`, {
+                    const response = await apiFetch(`/api/verify`, {
                       method: "POST",
                       headers: {
                         "Content-Type": "application/json",
