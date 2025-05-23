@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
+import { withCSRF } from "@/lib/csrf";
 
-export async function GET() {
+export const GET = withCSRF(async function() {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.email) {
@@ -25,4 +26,4 @@ export async function GET() {
             { status: 500 }
         );
     }
-} 
+})

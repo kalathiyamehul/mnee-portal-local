@@ -2,6 +2,7 @@ import { FaSpinner, FaArrowRotateLeft } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
 import { toast } from 'react-hot-toast';
 import { useState } from 'react';
+import { apiFetch } from '@/utils/api';
 
 interface RefundModalProps {
   onClose: () => void;
@@ -33,7 +34,7 @@ export const RefundModal = ({
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       // console.log('Creating refund request:', { outpoint, refundAddress });
       
-      const response = await fetch('/api/refund', {
+      const response = await apiFetch('/api/refund', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ outpoint, refundAddress, no_of_approvals: numApprovals }), // Add approvals to payload

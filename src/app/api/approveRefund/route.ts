@@ -11,6 +11,7 @@ import { applyInscription, type Inscription } from "js-1sat-ord";
 import type { IndexContext } from "@/types/indexContext";
 import type { RefundRequest } from "@/types/refund";
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from "@/lib/csrf";
 const { toBase64 } = Utils;
 
 async function broadcastRefundTransaction(refundRequest: RefundRequest) {
@@ -82,7 +83,7 @@ async function broadcastRefundTransaction(refundRequest: RefundRequest) {
   return txid;
 }
 
-export async function POST(request: Request) {
+export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -256,4 +257,4 @@ export async function POST(request: Request) {
       error: error instanceof Error ? error.message : "Failed to process approval"
     }, { status: 500 });
   }
-}
+})

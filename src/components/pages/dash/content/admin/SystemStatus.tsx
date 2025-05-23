@@ -3,6 +3,7 @@ import { FaCheck, FaXmark, FaSpinner } from "react-icons/fa6";
 import { toast } from "react-hot-toast";
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { useState } from "react";
+import { apiFetch } from "@/utils/api";
 
 interface SystemStatusProps {
   isPaused: boolean;
@@ -30,7 +31,7 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
     if (!pendingAction) return;
     
     try {
-      const response = await fetch("/api/approveSystem", {
+      const response = await apiFetch("/api/approveSystem", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ actionRequestId: pendingAction.id }),
@@ -54,7 +55,7 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
     
     setIsCancelling(true);
     try {
-      const response = await fetch("/api/cancel", {
+      const response = await apiFetch("/api/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ actionRequestId: pendingAction.id }),

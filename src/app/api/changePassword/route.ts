@@ -4,8 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import bcrypt from 'bcrypt';
 import { isPasswordValid } from '@/utils/auth';
+import { withCSRF } from '@/lib/csrf';
 
-export async function POST(request: Request) {
+export const POST = withCSRF(async function(request: Request) {
     const session = await getServerSession(authOptions);
     console.log('[Change Password] Session state:', {
         userId: session?.user?.id,
@@ -85,4 +86,4 @@ export async function POST(request: Request) {
             { status: 500 }
         );
     }
-} 
+})

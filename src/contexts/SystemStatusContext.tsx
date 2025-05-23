@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { Activity } from "@/components/pages/dash/content/admin/types";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
+import { apiFetch } from "@/utils/api";
 
 interface SystemStatusData {
   isPaused: boolean;
@@ -40,7 +41,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     if (!session?.user) return;
 
     try {
-      const response = await fetch('/api/status?includePending=true');
+      const response = await apiFetch('/api/status?includePending=true');
       if (response.status === 401) {
         // Handle unauthorized - clear data
         setStatusData(null);
@@ -72,7 +73,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
   const handlePauseToggle = useCallback(async () => {
     if (!statusData || !session?.user) return;
 
-    const response = await fetch('/api/pause', {
+    const response = await apiFetch('/api/pause', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: statusData.isPaused ? 'RESUME' : 'PAUSE' }),

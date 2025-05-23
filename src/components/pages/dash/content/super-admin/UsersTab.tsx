@@ -9,6 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import { FaUserPlus, FaEdit } from "react-icons/fa";
 import { getGravatarUrl } from "@/utils/gravatar";
 import { Pagination } from "@/components/common/Pagination";
+import { apiFetch } from "@/utils/api";
 
 interface User {
   id: string;
@@ -81,7 +82,7 @@ export default function UsersPage() {
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `/api/users?page=${pagination.page}&limit=${pagination.limit}`
       );
       if (!response.ok) throw new Error("Failed to fetch users");
@@ -98,7 +99,7 @@ export default function UsersPage() {
 
   const fetchRoles = async () => {
     try {
-      const response = await fetch("/api/role");
+      const response = await apiFetch("/api/role");
       if (!response.ok) throw new Error("Failed to fetch roles");
       const data = await response.json();
       setRoles(data);
@@ -110,9 +111,8 @@ export default function UsersPage() {
 
   const handleCreateUser = async () => {
     try {
-      const response = await fetch("/api/users", {
+      const response = await apiFetch("/api/users", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newUser),
       });
       const data = await response.json();
@@ -136,9 +136,8 @@ export default function UsersPage() {
     if (!editingUser) return;
 
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await apiFetch(`/api/users/${userId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: editingUser.name,
           email: editingUser.email,
@@ -168,7 +167,7 @@ export default function UsersPage() {
     if (!confirm("Are you sure you want to delete this user?")) return;
 
     try {
-      const response = await fetch(`/api/users/${userId}`, {
+      const response = await apiFetch(`/api/users/${userId}`, {
         method: "DELETE",
       });
 
@@ -508,14 +507,14 @@ export default function UsersPage() {
                       <FaEdit className="w-4 h-4" />
                       Edit
                     </button>
-                    {user.email !== session?.user?.email &&
+                    {user.email !== session?.user?.email && (
                       <button
                         className="btn btn-ghost btn-sm text-error"
                         onClick={() => handleDeleteUser(user.id)}
                       >
                         Delete
                       </button>
-                    }
+                    )}
                   </div>
                 </td>
               </tr>

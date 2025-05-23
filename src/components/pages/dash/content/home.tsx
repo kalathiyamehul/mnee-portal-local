@@ -96,6 +96,7 @@ interface DashboardHomeContentProps {
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
+import { apiFetch } from "@/utils/api";
 
 const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const { data: session } = useSession();
@@ -237,7 +238,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     try {
       setLoading(true);
       const requestType = `${type.toLowerCase()}RequestId`;
-      await fetch("/api/cancel", {
+      await apiFetch("/api/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [requestType]: id }),
@@ -285,7 +286,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           ? "customerRequestId"
           : "burnRequestId";
 
-      const response = await fetch(`/api/${endpoint}`, {
+      const response = await apiFetch(`/api/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [requestType]: id }),
@@ -309,7 +310,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   };
 
   const fetchMetrics = useCallback(() => {
-    fetch("/api/dashboard")
+    apiFetch("/api/dashboard")
       .then((response) => response.json())
       .then((data) => setMetrics(data))
       .catch((error) =>{

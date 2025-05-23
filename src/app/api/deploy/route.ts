@@ -12,13 +12,14 @@ import {
 	MNEE_TOKEN_SYM,
 } from "@/lib/constants";
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from "@/lib/csrf";
 
 const DEFAULT_FEES = [
 	{ min: 0, max: 10000, fee: 50 },
 	{ min: 10001, max: Number.MAX_SAFE_INTEGER, fee: 1000 },
 ];
 
-export async function POST(request: Request) {
+export const POST = withCSRF(async function(request: Request) {
 	console.log("deploying token");
 	try {
 		const { feeAddress } = await request.json();
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
 			{ status: 500 },
 		);
 	}
-}
+})
 
 const deployMnee = async (feeAddress: string) => {
 	try {

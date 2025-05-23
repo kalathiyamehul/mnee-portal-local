@@ -3,8 +3,9 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from "@/lib/csrf";
 
-export async function POST(
+export const POST =  withCSRF(async function(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -86,4 +87,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+})

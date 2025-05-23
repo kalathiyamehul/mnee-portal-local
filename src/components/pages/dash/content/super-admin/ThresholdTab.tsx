@@ -1,3 +1,4 @@
+import { apiFetch } from '@/utils/api'
 import React, { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 
@@ -19,7 +20,7 @@ const ThresholdTab = () => {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const response = await fetch("/api/config/database");
+        const response = await apiFetch("/api/config/database");
         if (!response.ok) {
           throw new Error("Failed to fetch configuration");
         }
@@ -46,7 +47,7 @@ const ThresholdTab = () => {
     if (!editingThreshold) return;
 
     try {
-      const response = await fetch("/api/config", {
+      const response = await apiFetch("/api/config", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

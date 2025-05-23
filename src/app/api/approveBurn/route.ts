@@ -11,9 +11,10 @@ import CosignTemplate from "@/templates/cosign";
 import { Utils } from "@bsv/sdk";
 import { isSystemPaused } from "@/lib/systemStatus";
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from "@/lib/csrf";
 const { toArray } = Utils;
 
-export async function POST(request: Request) {
+export const POST = withCSRF(async function(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -208,4 +209,4 @@ export async function POST(request: Request) {
       status: 400
     });
   }
-}
+})

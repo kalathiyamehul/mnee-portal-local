@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FaSpinner, FaSnowflake, FaLock } from 'react-icons/fa6';
 import { toast } from 'react-hot-toast';
+import { apiFetch } from '@/utils/api';
 
 interface FreezeModalProps {
   onClose: () => void;
@@ -20,7 +21,7 @@ export const FreezeModal = ({
   const handleFreezeRequest = async () => {
     try {
       setFreezeLoading(true);
-      const response = await fetch('/api/freeze', {
+      const response = await apiFetch('/api/freeze', {
         method: 'POST',
         body: JSON.stringify({
           address,
@@ -49,7 +50,7 @@ export const FreezeModal = ({
   const handleBlacklistRequest = async () => {
     try {
       setBlacklistLoading(true);
-      const response = await fetch('/api/blacklist', {
+      const response = await apiFetch('/api/blacklist', {
         method: 'POST',
         body: JSON.stringify({
           address,

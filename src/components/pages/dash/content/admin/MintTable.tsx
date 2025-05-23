@@ -18,6 +18,7 @@ import type { Config } from "@/types";
 import { getGravatarUrl } from "@/utils/gravatar";
 import { useRouter } from "next/navigation";
 import { Pagination } from "@/components/common/Pagination";
+import { apiFetch } from "@/utils/api";
 
 const statusColors: Record<string, string> = {
   PENDING: "badge-warning",
@@ -108,7 +109,7 @@ const MintTableContent = ({
   const handleApprove = async (id: string) => {
     try {
       setLoadingApproval(id);
-      const response = await fetch("/api/approveMint", {
+      const response = await apiFetch("/api/approveMint", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -151,7 +152,7 @@ const MintTableContent = ({
 
   const handleCancel = async (id: string) => {
     try {
-      const response = await fetch("/api/cancel", {
+      const response = await apiFetch("/api/cancel", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -182,7 +183,7 @@ const MintTableContent = ({
 	const handleReject = async (id: string) => {
 		try {
 			setLoadingReject(id);
-			const response = await fetch("/api/rejectMint", {
+			const response = await apiFetch("/api/rejectMint", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

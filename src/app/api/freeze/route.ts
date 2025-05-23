@@ -6,13 +6,14 @@ import { authOptions } from '@/lib/authOptions';
 import { FreezeRequestAction } from '@prisma/client';
 import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
 import { logActivity } from '@/lib/activityLogger';
+import { withCSRF } from '@/lib/csrf';
 
 // Helper function to validate FreezeRequestAction
 function isFreezeAction(action: string): action is FreezeRequestAction {
   return Object.values(FreezeRequestAction).includes(action as FreezeRequestAction);
 }
 
-export async function POST(request: Request) {
+export const POST = withCSRF(async function(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -143,4 +144,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+})

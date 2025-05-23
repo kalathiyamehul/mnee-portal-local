@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
 import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
+import { withCSRF } from "@/lib/csrf";
 
 const assignRoleSchema = z.object({
     userId: z.string().min(1, "User ID is required"),
@@ -11,7 +12,7 @@ const assignRoleSchema = z.object({
 });
 
 // POST /api/role/assign - Assign role to user
-export async function POST(request: NextRequest) {
+export const POST = withCSRF(async function(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
@@ -88,10 +89,10 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         );
     }
-}
+})
 
 // DELETE /api/role/assign - Remove role from user
-export async function DELETE(request: NextRequest) {
+export const DELETE = withCSRF(async function(request: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
@@ -144,4 +145,4 @@ export async function DELETE(request: NextRequest) {
             { status: 500 }
         );
     }
-}
+})

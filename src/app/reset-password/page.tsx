@@ -4,6 +4,7 @@ import type React from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import { apiFetch } from '@/utils/api';
 
 // Password validation function (should match server-side)
 function isPasswordValid(password: string): { valid: boolean; error?: string } {
@@ -61,7 +62,7 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      const res = await fetch("/api/resetPassword", {
+      const res = await apiFetch("/api/resetPassword", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newPassword }),

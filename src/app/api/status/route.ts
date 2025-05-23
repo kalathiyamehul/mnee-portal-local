@@ -5,8 +5,9 @@ import { isSystemPaused } from "@/lib/systemStatus";
 import { ActionStatus } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
+import { withCSRF } from '@/lib/csrf';
 
-export async function GET() {
+export const GET = withCSRF(async function() {
   // Check authentication
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -163,4 +164,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+})

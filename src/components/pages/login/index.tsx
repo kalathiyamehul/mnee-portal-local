@@ -6,6 +6,7 @@ import { signIn } from 'next-auth/react';
 import { FaSync, FaSpinner } from 'react-icons/fa';
 import { Suspense } from 'react';
 import toast from 'react-hot-toast';
+import { apiFetch } from '@/utils/api';
 
 function LoginPageInner() {
   const [email, setEmail] = useState('');
@@ -23,7 +24,7 @@ function LoginPageInner() {
   const checkUsers = useCallback(async () => {
     try {
       setChecking(true);
-      const response = await fetch('/api/users/check');
+      const response = await apiFetch('/api/users/check');
       const data = await response.json();
       setHasUsers(data.hasUsers);
     } catch (err) {
