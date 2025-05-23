@@ -314,7 +314,7 @@ model Customer {
   createdBy   String    @map("created_by")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
-
+  no_of_approvals Int   @default(2)
   // Add this relation field
   customerRequests CustomerRequest[]
   
