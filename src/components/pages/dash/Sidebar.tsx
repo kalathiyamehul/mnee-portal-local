@@ -38,11 +38,10 @@ const Sidebar: React.FC = () => {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [hoveredPath, setHoveredPath] = useState(pathname);
-  const { hasPermission, hasAllPermissions } =
-    usePermission();
+  const { hasPermission, hasAllPermissions, isSuperAdmin } = usePermission();
   const canViewWallet = hasPermission(Resource.WALLET, Action.READ);
   const canViewCustomers = hasPermission(Resource.CUSTOMER, Action.READ);
-  const canViewSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+  const canViewSuperAdmin = isSuperAdmin;
   const canViewAdmin = hasAllPermissions([
     { resource: Resource.MINT, action: Action.CREATE },
     { resource: Resource.BURN, action: Action.CREATE },

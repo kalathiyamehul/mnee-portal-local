@@ -139,77 +139,131 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           type: "CUSTOMER" as const,
           action: "CREATE" as const,
         })),
-      ]
-        .sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+      ].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
       setRequests({
-        recentMints: allActivities.filter(act => act.type === "MINT").filter((activity) => activity.status === "PENDING").slice(0, 5),
-        recentBurns: allActivities.filter(act => act.type === "BURN").filter((activity) => activity.status === "PENDING").slice(0, 5),
-        pendingActivities: allActivities.filter((activity) => activity.status === "PENDING").slice(0, 5),
+        recentMints: allActivities
+          .filter((act) => act.type === "MINT")
+          .filter((activity) => activity.status === "PENDING")
+          .slice(0, 5),
+        recentBurns: allActivities
+          .filter((act) => act.type === "BURN")
+          .filter((activity) => activity.status === "PENDING")
+          .slice(0, 5),
+        pendingActivities: allActivities
+          .filter((activity) => activity.status === "PENDING")
+          .slice(0, 5),
       });
       setLoading(false);
     }
   }, [statusData]);
-  const { hasPermission } = usePermission();
-  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+  const { hasPermission, isSuperAdmin } = usePermission();
 
   // Mint Permissions
-	const hasCreateMintPer = isSuperAdmin? true : hasPermission(Resource.MINT, Action.CREATE) || false;
-	const hasApproveMintPer = isSuperAdmin? true : hasPermission(Resource.MINT, Action.APPROVE) || false;
-	const hasRejectMintPer = isSuperAdmin? true : hasPermission(Resource.MINT, Action.REJECT) || false;
+  const hasCreateMintPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.MINT, Action.CREATE) || false;
+  const hasApproveMintPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.MINT, Action.APPROVE) || false;
+  const hasRejectMintPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.MINT, Action.REJECT) || false;
 
-	// Burn Permissions
-	const hasCreateBurnPer = isSuperAdmin? true : hasPermission(Resource.BURN, Action.CREATE) || false;
-	const hasApproveBurnPer = isSuperAdmin? true : hasPermission(Resource.BURN, Action.APPROVE) || false;
-	const hasRejectBurnPer = isSuperAdmin? true : hasPermission(Resource.BURN, Action.REJECT) || false;
+  // Burn Permissions
+  const hasCreateBurnPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BURN, Action.CREATE) || false;
+  const hasApproveBurnPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BURN, Action.APPROVE) || false;
+  const hasRejectBurnPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BURN, Action.REJECT) || false;
 
-	// Refund Permissions
-	const hasCreateRefundPer = isSuperAdmin? true : hasPermission(Resource.REFUND, Action.CREATE) || false;
-	const hasApproveRefundPer = isSuperAdmin? true : hasPermission(Resource.REFUND, Action.APPROVE) || false;
-	const hasRejectRefundPer = isSuperAdmin? true : hasPermission(Resource.REFUND, Action.REJECT) || false;
+  // Refund Permissions
+  const hasCreateRefundPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.REFUND, Action.CREATE) || false;
+  const hasApproveRefundPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.REFUND, Action.APPROVE) || false;
+  const hasRejectRefundPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.REFUND, Action.REJECT) || false;
 
-	// Blacklist Permissions
-	const hasCreateBlacklistPer = isSuperAdmin? true : hasPermission(Resource.BLACKLIST, Action.CREATE) || false;
-	const hasApproveBlacklistPer = isSuperAdmin? true : hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
-	const hasRejectBlacklistPer = isSuperAdmin? true : hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
+  // Blacklist Permissions
+  const hasCreateBlacklistPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BLACKLIST, Action.CREATE) || false;
+  const hasApproveBlacklistPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
+  const hasRejectBlacklistPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
 
-	// Freeze Permissions
-	const hasCreateFreezePer = isSuperAdmin? true : hasPermission(Resource.FREEZE, Action.CREATE) || false;
-	const hasApproveFreezePer = isSuperAdmin? true : hasPermission(Resource.FREEZE, Action.APPROVE) || false;
-	const hasRejectFreezePer = isSuperAdmin? true : hasPermission(Resource.FREEZE, Action.REJECT) || false;
+  // Freeze Permissions
+  const hasCreateFreezePer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.FREEZE, Action.CREATE) || false;
+  const hasApproveFreezePer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.FREEZE, Action.APPROVE) || false;
+  const hasRejectFreezePer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.FREEZE, Action.REJECT) || false;
 
   // Customers Permissions
-	const hasCreateCustomerPer = isSuperAdmin? true : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
-	const hasApproveCustomerPer = isSuperAdmin? true : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
-	const hasRejectCustomerPer = isSuperAdmin? true : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
+  const hasCreateCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
+  const hasApproveCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+  const hasRejectCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
 
-	// Permissions object
-	const permissions = {
-		// Mint
-		hasApproveMintPer,
-		hasRejectMintPer,
-		// Burn
-		hasApproveBurnPer,
-		hasRejectBurnPer,
-		// Refund
-		hasApproveRefundPer,
-		hasRejectRefundPer,
-		// Blacklist
-		hasApproveBlacklistPer,
-		hasRejectBlacklistPer,
-		// Freeze
-		hasApproveFreezePer,
-		hasRejectFreezePer,
+  // Permissions object
+  const permissions = {
+    // Mint
+    hasApproveMintPer,
+    hasRejectMintPer,
+    // Burn
+    hasApproveBurnPer,
+    hasRejectBurnPer,
+    // Refund
+    hasApproveRefundPer,
+    hasRejectRefundPer,
+    // Blacklist
+    hasApproveBlacklistPer,
+    hasRejectBlacklistPer,
+    // Freeze
+    hasApproveFreezePer,
+    hasRejectFreezePer,
     // Customers
-		hasApproveCustomerPer,
-		hasRejectCustomerPer,
-	};
+    hasApproveCustomerPer,
+    hasRejectCustomerPer,
+  };
 
   // Default to 'volume' if no chart is selected
   const selectedChart = (searchParams.get("chart") || "volume") as ChartType;
-  const showActions = hasApproveMintPer || hasRejectMintPer || hasApproveBurnPer || hasRejectBurnPer || hasApproveRefundPer || hasRejectRefundPer || hasApproveBlacklistPer || hasRejectBlacklistPer || hasApproveFreezePer || hasRejectFreezePer || hasApproveCustomerPer || hasRejectCustomerPer;
+  const showActions =
+    hasApproveMintPer ||
+    hasRejectMintPer ||
+    hasApproveBurnPer ||
+    hasRejectBurnPer ||
+    hasApproveRefundPer ||
+    hasRejectRefundPer ||
+    hasApproveBlacklistPer ||
+    hasRejectBlacklistPer ||
+    hasApproveFreezePer ||
+    hasRejectFreezePer ||
+    hasApproveCustomerPer ||
+    hasRejectCustomerPer;
 
   const canCancel = useCallback(
     (activity: Activity) => {
@@ -313,12 +367,14 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     apiFetch("/api/dashboard")
       .then((response) => response.json())
       .then((data) => setMetrics(data))
-      .catch((error) =>{
+      .catch((error) => {
         // console.error("Failed to fetch dashboard metrics:", error)
         toast.error(
-        error instanceof Error ? error.message : "Failed to fetch dashboard metrics"
-      )
-    });
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch dashboard metrics"
+        );
+      });
   }, []);
 
   useEffect(() => {

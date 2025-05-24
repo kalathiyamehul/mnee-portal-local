@@ -94,6 +94,7 @@ export const POST = withCSRF(async function (req: Request) {
                 email,
                 password: hashedPassword,
                 roleId,
+                requiresPasswordReset: false,
             },
             select: {
                 id: true,
@@ -105,6 +106,7 @@ export const POST = withCSRF(async function (req: Request) {
                         name: true,
                     },
                 },
+                requiresPasswordReset: false,
                 createdAt: true,
             },
         });

@@ -34,8 +34,7 @@ export default function DashboardCustomersContent() {
     null
   );
   const [config, setConfig] = useState<Config | null>(null);
-  const { hasPermission } = usePermission();
-  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+  const { hasPermission, isSuperAdmin } = usePermission();
   useEffect(() => {
     const init = async () => {
       try {
@@ -117,7 +116,8 @@ export default function DashboardCustomersContent() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
           <ExportButtons filename="customers" onExport={handleExport} />
-          {hasPermission(Resource.CUSTOMER, Action.CREATE) || isSuperAdmin && (
+          {(hasPermission(Resource.CUSTOMER, Action.CREATE) ||
+            isSuperAdmin) && (
             <button
               type="button"
               onClick={() => setShowModal(true)}
@@ -223,32 +223,33 @@ export default function DashboardCustomersContent() {
                 </td>
                 <td>
                   <div className="flex gap-2">
-                    {hasPermission(Resource.CUSTOMER, Action.UPDATE) || isSuperAdmin && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(
-                            {
-                              id: customer.id,
-                              name: customer.name,
-                              email: customer.email,
-                              address: customer.address,
-                              no_of_approvals: customer.noOfApprovals,
-                              createdBy: customer.creator.email,
-                              createdAt: new Date(customer.createdAt),
-                              updatedAt: new Date(customer.createdAt),
-                            },
-                            e
-                          );
-                        }}
-                        className="btn btn-ghost btn-sm gap-2"
-                        title="Edit customer"
-                      >
-                        <FaEdit className="w-4 h-4" />
-                        Edit
-                      </button>
-                    )}
+                    {hasPermission(Resource.CUSTOMER, Action.UPDATE) ||
+                      (isSuperAdmin && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEdit(
+                              {
+                                id: customer.id,
+                                name: customer.name,
+                                email: customer.email,
+                                address: customer.address,
+                                no_of_approvals: customer.noOfApprovals,
+                                createdBy: customer.creator.email,
+                                createdAt: new Date(customer.createdAt),
+                                updatedAt: new Date(customer.createdAt),
+                              },
+                              e
+                            );
+                          }}
+                          className="btn btn-ghost btn-sm gap-2"
+                          title="Edit customer"
+                        >
+                          <FaEdit className="w-4 h-4" />
+                          Edit
+                        </button>
+                      ))}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -288,13 +289,15 @@ export default function DashboardCustomersContent() {
       )}
 
       {showModal && (
-        
         <CustomerModal
-        customer={
-          selectedCustomer
-            ? { ...selectedCustomer, noOfApproval: selectedCustomer.no_of_approvals ?? 0 }
-            : undefined
-        }
+          customer={
+            selectedCustomer
+              ? {
+                  ...selectedCustomer,
+                  noOfApproval: selectedCustomer.no_of_approvals ?? 0,
+                }
+              : undefined
+          }
           onClose={() => {
             setShowModal(false);
             setSelectedCustomer(null);

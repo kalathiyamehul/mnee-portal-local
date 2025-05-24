@@ -42,7 +42,7 @@ interface PaginatedResponse {
 }
 
 export default function UsersPage() {
-  const { hasPermission } = usePermission();
+  const { hasPermission, isSuperAdmin } = usePermission();
   const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,9 +63,7 @@ export default function UsersPage() {
     totalPages: 1,
   });
 
-  const canManageUsers = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
-
-  if (!canManageUsers) {
+  if (!isSuperAdmin) {
     return (
       <div className="flex items-center justify-center h-full">
         <p className="text-lg text-gray-500">

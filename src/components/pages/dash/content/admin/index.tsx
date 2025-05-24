@@ -39,8 +39,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const { statusData, fetchStatus } = useSystemStatus();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { hasPermission } = usePermission();
-  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+  const { hasPermission, isSuperAdmin } = usePermission();
 
   // Mint Permissions
   const hasCreateMintPer = isSuperAdmin ? true : hasPermission(Resource.MINT, Action.CREATE) || false;
