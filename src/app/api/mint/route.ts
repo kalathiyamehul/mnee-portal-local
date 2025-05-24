@@ -6,6 +6,7 @@ import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
 import { toTokenSat } from 'satoshi-token';
 import { logActivity } from '@/lib/activityLogger';
 import { withCSRF } from '@/lib/csrf';
+import { emitMintUpdate } from '../sse/route';
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -118,7 +119,26 @@ export const POST = withCSRF(async function(request: Request) {
       });
       return mintRequest;
     });
-
+    const mint: any = await prisma.mintRequest.findUnique({
+      where: { id: result.id },
+      include: {
+        approvals: {
+          include: {
+            approver: true,
+          },
+        },
+        customer: true,
+        requester: true,
+      },
+    });
+    if (mint?.amount) {
+      mint.amount = Number(mint.amount);
+    }
+    emitMintUpdate({
+      activityId: result.id,
+      approval: mint,
+      type: "CREATE",
+    });
     return NextResponse.json({
       success: true,
       message: "Mint request created",

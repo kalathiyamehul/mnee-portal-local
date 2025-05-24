@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { logActivity } from '@/lib/activityLogger';
 import { withCSRF } from '@/lib/csrf';
+import { emitCancelUpdate } from '../sse/route';
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -13,8 +14,7 @@ export const POST = withCSRF(async function(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { actionRequestId, freezeRequestId, blacklistRequestId, mintRequestId, burnRequestId, refundRequestId, customerRequestId  } = await request.json();
-
+  const { actionRequestId, freezeRequestId, blacklistRequestId, mintRequestId, burnRequestId, refundRequestId, customerRequestId } = await request.json();
   try {
     if (actionRequestId) {
       const result = await prisma.$transaction(async (tx) => {
@@ -242,7 +242,15 @@ export const POST = withCSRF(async function(request: Request) {
     } else {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
-
+    emitCancelUpdate({
+      ...(actionRequestId && { actionRequestId }),
+      ...(freezeRequestId && { freezeRequestId }),
+      ...(blacklistRequestId && { blacklistRequestId }),
+      ...(mintRequestId && { mintRequestId }),
+      ...(burnRequestId && { burnRequestId }),
+      ...(refundRequestId && { refundRequestId }),
+      ...(customerRequestId && { customerRequestId }),
+    });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error cancelling request:', error);

@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { emitMintUpdate } from "../sse/route";
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -79,7 +80,11 @@ export const POST = withCSRF(async function(request: Request) {
 
       return { status: "REJECTED" };
     });
-
+    emitMintUpdate({
+      activityId: mintRequestId,
+      approval: undefined,
+      type: "REJECT",
+    });
     return NextResponse.json({
       success: true,
       message: "Mint request rejected",
