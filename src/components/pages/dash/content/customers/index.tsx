@@ -223,33 +223,33 @@ export default function DashboardCustomersContent() {
                 </td>
                 <td>
                   <div className="flex gap-2">
-                    {hasPermission(Resource.CUSTOMER, Action.UPDATE) ||
-                      (isSuperAdmin && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(
-                              {
-                                id: customer.id,
-                                name: customer.name,
-                                email: customer.email,
-                                address: customer.address,
-                                no_of_approvals: customer.noOfApprovals,
-                                createdBy: customer.creator.email,
-                                createdAt: new Date(customer.createdAt),
-                                updatedAt: new Date(customer.createdAt),
-                              },
-                              e
-                            );
-                          }}
-                          className="btn btn-ghost btn-sm gap-2"
-                          title="Edit customer"
-                        >
-                          <FaEdit className="w-4 h-4" />
-                          Edit
-                        </button>
-                      ))}
+                    {(hasPermission(Resource.CUSTOMER, Action.UPDATE) ||
+                      isSuperAdmin) && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(
+                            {
+                              id: customer.id,
+                              name: customer.name,
+                              email: customer.email,
+                              address: customer.address,
+                              no_of_approvals: customer.noOfApprovals,
+                              createdBy: customer.creator.email,
+                              createdAt: new Date(customer.createdAt),
+                              updatedAt: new Date(customer.createdAt),
+                            },
+                            e
+                          );
+                        }}
+                        className="btn btn-ghost btn-sm gap-2"
+                        title="Edit customer"
+                      >
+                        <FaEdit className="w-4 h-4" />
+                        Edit
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={(e) => {
