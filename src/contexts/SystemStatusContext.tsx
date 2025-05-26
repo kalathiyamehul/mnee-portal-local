@@ -5,6 +5,7 @@ import type { Activity } from "@/components/pages/dash/content/admin/types";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import { apiFetch } from "@/utils/api";
+import { EVENTS } from "@/app/api/sse/route";
 
 interface SystemStatusData {
   isPaused: boolean;
@@ -31,7 +32,11 @@ interface SystemStatusContextType {
 
 const SystemStatusContext = createContext<SystemStatusContextType | null>(null);
 
-export function SystemStatusProvider({ children }: { children: React.ReactNode }) {
+export function SystemStatusProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [statusData, setStatusData] = useState<SystemStatusData | null>(null);
   const [initialLoading, setInitialLoading] = useState(true);
   const { data: session, status } = useSession();
@@ -124,7 +129,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
       console.log("SSE connection established");
     };
 
-    eventSource.addEventListener("mintUpdate", (event) => {
+    eventSource.addEventListener(EVENTS.MINT_UPDATE, (event) => {
       try {
         const data = JSON.parse(event.data);
         const { activityId, approval, type } = data;
@@ -177,7 +182,7 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
         console.error("Error handling SSE event:", error);
       }
     });
-    eventSource.addEventListener("cancelUpdate", (event) => {
+    eventSource.addEventListener(EVENTS.CANCEL_UPDATE, (event) => {
       try {
         const data = JSON.parse(event.data);
         console.log("data", data);
@@ -282,11 +287,11 @@ export function SystemStatusProvider({ children }: { children: React.ReactNode }
     return () => {
       console.log("Closing SSE connection");
       eventSource.close();
-      eventSource.removeEventListener("mintUpdate", (event) => {
-        console.log("mintUpdate", event);
+      eventSource.removeEventListener(EVENTS.MINT_UPDATE, (event) => {
+        console.log(EVENTS.MINT_UPDATE, event);
       });
-      eventSource.removeEventListener("cancelUpdate", (event) => {
-        console.log("cancelUpdate", event);
+      eventSource.removeEventListener(EVENTS.CANCEL_UPDATE, (event) => {
+        console.log(EVENTS.CANCEL_UPDATE, event);
       });
     };
   }, [fetchStatus]);

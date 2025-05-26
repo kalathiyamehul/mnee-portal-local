@@ -7,7 +7,11 @@ if (!globalEmitter.sseEmitter) {
     globalEmitter.sseEmitter = new EventEmitter();
 }
 const emitter = globalEmitter.sseEmitter;
-
+export const EVENTS = {
+    MINT_UPDATE: "mintUpdate",
+    CANCEL_UPDATE: "cancelUpdate",
+    THREE_R_D_EVENTS_TEST: "3RDEventsTest",
+};
 export async function GET(req: NextRequest) {
     // Set headers for SSE
     const headers = new Headers({
@@ -27,23 +31,31 @@ export async function GET(req: NextRequest) {
             // Handle approval updates
             const onApprovalUpdate = (data: any) => {
                 controller.enqueue(
-                    `event: mintUpdate\ndata: ${JSON.stringify(data)}\n\n`
+                    `event: ${EVENTS.MINT_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
                 );
             };
             const onCancelUpdate = (data: any) => {
                 controller.enqueue(
-                    `event: cancelUpdate\ndata: ${JSON.stringify(data)}\n\n`
+                    `event: ${EVENTS.CANCEL_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
+                );
+            };
+            //3 rrd events test
+            const on3RDEventsTest = (data: any) => {
+                controller.enqueue(
+                    `event: ${EVENTS.THREE_R_D_EVENTS_TEST}\ndata: ${JSON.stringify(data)}\n\n`
                 );
             };
 
             // Listen for approval events
-            emitter.on("mintUpdate", onApprovalUpdate);
-            emitter.on("cancelUpdate", onCancelUpdate);
+            emitter.on(EVENTS.MINT_UPDATE, onApprovalUpdate);
+            emitter.on(EVENTS.CANCEL_UPDATE, onCancelUpdate);
+            emitter.on(EVENTS.THREE_R_D_EVENTS_TEST, on3RDEventsTest);
 
             // Clean up when the connection closes
             req.signal?.addEventListener("abort", () => {
-                emitter.off("mintUpdate", onApprovalUpdate);
-                emitter.off("cancelUpdate", onCancelUpdate);
+                emitter.off(EVENTS.MINT_UPDATE, onApprovalUpdate);
+                emitter.off(EVENTS.CANCEL_UPDATE, onCancelUpdate);
+                emitter.off(EVENTS.THREE_R_D_EVENTS_TEST, on3RDEventsTest);
                 controller.close();
             });
         }
@@ -57,9 +69,13 @@ export function emitMintUpdate(data: {
     approval: any;
     type: string;
 }) {
-    emitter.emit("mintUpdate", data);
+    emitter.emit(EVENTS.MINT_UPDATE, data);
 }
 
 export function emitCancelUpdate(data: any) {
-    emitter.emit("cancelUpdate", data);
+    emitter.emit(EVENTS.CANCEL_UPDATE, data);
+}
+
+export function emit3RDEventsTest(data: any) {
+    emitter.emit(EVENTS.THREE_R_D_EVENTS_TEST, data);
 }
