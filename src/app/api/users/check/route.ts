@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { withCSRF } from '@/lib/csrf';
 
-export async function GET() {
+export const GET = withCSRF(async function () {
   try {
     const count = await prisma.user.count();
     return NextResponse.json({ hasUsers: count > 0 });
@@ -12,4 +13,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-} 
+}); 

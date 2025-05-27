@@ -1,6 +1,7 @@
 "use client";
 
 import { Action, Resource } from "@/lib/permission";
+import { apiFetch } from "@/utils/api";
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 
@@ -41,7 +42,7 @@ export default function RolesPage() {
 
   const fetchRoles = async () => {
     try {
-      const response = await fetch("/api/role");
+      const response = await apiFetch("/api/role");
       if (!response.ok) throw new Error("Failed to fetch roles");
       const data = await response.json();
       setRoles(data);
@@ -55,7 +56,7 @@ export default function RolesPage() {
 
   const handleCreateRole = async () => {
     try {
-      const response = await fetch("/api/role", {
+      const response = await apiFetch("/api/role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newRole),
@@ -79,7 +80,7 @@ export default function RolesPage() {
 
   const handleUpdateRole = async (roleId: string) => {
     try {
-      const response = await fetch(`/api/role`, {
+      const response = await apiFetch(`/api/role`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -156,7 +157,7 @@ export default function RolesPage() {
     if (!confirm("Are you sure you want to delete this role?")) return;
 
     try {
-      const response = await fetch(`/api/role?id=${roleId}`, {
+      const response = await apiFetch(`/api/role?id=${roleId}`, {
         method: "DELETE",
       });
 

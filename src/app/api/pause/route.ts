@@ -4,8 +4,9 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from "@/lib/csrf";
 
-export async function POST(request: Request) {
+export const POST = withCSRF(async function(request: Request) {
 	const session = await getServerSession(authOptions);
 
 	if (!session?.user?.id) {
@@ -54,4 +55,4 @@ export async function POST(request: Request) {
 	});
 
 	return NextResponse.json({ actionRequest: result }, { status: 201 });
-}
+})

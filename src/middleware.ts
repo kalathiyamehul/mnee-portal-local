@@ -31,7 +31,20 @@ export default withAuth(
 	},
 	{
 		callbacks: {
-			authorized: ({ token }) => !!token,
+			authorized: ({ token }) => {
+				if (!token) return false;
+				try {
+					const exp = (typeof token === 'object' && token.exp) ? token.exp : undefined;
+					if (exp && typeof exp === 'number') {
+						if (Date.now() >= exp * 1000) {
+							return false;
+						}
+					}
+					return true;
+				} catch (e) {
+					return false;
+				}
+			},
 		},
 	}
 );

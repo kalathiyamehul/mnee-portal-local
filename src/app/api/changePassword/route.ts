@@ -3,16 +3,10 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import bcrypt from 'bcrypt';
+import { isPasswordValid } from '@/utils/auth';
+import { withCSRF } from '@/lib/csrf';
 
-// Password validation function - reusing the same validation as reset password
-function isPasswordValid(password: string): { valid: boolean; error?: string } {
-    if (password.length < 8) {
-        return { valid: false, error: 'Password must be at least 8 characters long' };
-    }
-    return { valid: true };
-}
-
-export async function POST(request: Request) {
+export const POST = withCSRF(async function(request: Request) {
     const session = await getServerSession(authOptions);
     console.log('[Change Password] Session state:', {
         userId: session?.user?.id,
@@ -92,4 +86,4 @@ export async function POST(request: Request) {
             { status: 500 }
         );
     }
-} 
+})

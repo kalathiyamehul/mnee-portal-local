@@ -20,6 +20,7 @@ import {
 } from "js-1sat-ord";
 import CosignTemplate from "@/templates/cosign";
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from "@/lib/csrf";
 
 type MintRequestWithRelations = Prisma.MintRequestGetPayload<{
 	include: {
@@ -28,7 +29,7 @@ type MintRequestWithRelations = Prisma.MintRequestGetPayload<{
 	};
 }>;
 
-export async function POST(request: Request) {
+export const POST =  withCSRF(async function(request: Request) {
 	console.log("Starting approveMint request");
 	const session = await getServerSession(authOptions);
 	console.log("Session:", { userId: session?.user?.id });
@@ -287,7 +288,7 @@ export async function POST(request: Request) {
 			},
 		);
 	}
-}
+})
 
 // Helper function to mint MNEE tokens
 const mintMnee = async (

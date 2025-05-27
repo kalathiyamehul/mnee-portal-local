@@ -64,6 +64,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
   const [activeTab, setActiveTab] = useState<'mints' | 'burns'>('mints');
   const [config, setConfig] = useState<Config | null>(null);
   const { hasPermission } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
   useEffect(() => {
     const loadConfig = async () => {
       try {
@@ -131,7 +132,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
               <p className="text-base-content/70">{customer.email}</p>
             </div>
           </div>
-          {hasPermission(Resource.CUSTOMER, Action.UPDATE) && (
+          {hasPermission(Resource.CUSTOMER, Action.UPDATE) || isSuperAdmin && (
             <button
             type="button"
             onClick={() => setShowModal(true)}

@@ -5,6 +5,7 @@ import { ActivityLog } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
+import { apiFetch } from "@/utils/api";
 
 interface ActivityContentProps {
   initialActivityLogs: ActivityLog[];
@@ -27,7 +28,7 @@ export default function DashboardActivityContent({
   const fetchActivityLogs = async (page: number, limit: number) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/activity?page=${page}&limit=${limit}`);
+      const response = await apiFetch(`/api/activity?page=${page}&limit=${limit}`);
       const data = await response.json();
       setActivityLogs(data.activityLogs);
       setPagination(data.pagination);
@@ -44,7 +45,7 @@ export default function DashboardActivityContent({
 
   // Handler for exporting activity logs
   const handleExport = async () => {
-    const response = await fetch("/api/activity?page=-1&limit=-1");
+    const response = await apiFetch("/api/activity?page=-1&limit=-1");
     if (!response.ok) {
       throw new Error("Failed to fetch customers for export");
     }

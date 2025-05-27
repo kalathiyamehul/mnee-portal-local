@@ -4,13 +4,14 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { BlacklistAction } from '@prisma/client';
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from '@/lib/csrf';
 
 // Helper function to validate BlacklistAction
 function isBlacklistAction(action: string): action is BlacklistAction {
   return Object.values(BlacklistAction).includes(action as BlacklistAction);
 }
 
-export async function POST(request: Request) {
+export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -94,4 +95,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+})

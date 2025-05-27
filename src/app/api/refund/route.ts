@@ -5,8 +5,9 @@ import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { fetchTxo } from "@/utils/api";
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from "@/lib/csrf";
 
-export async function POST(request: Request) {
+export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { outpoint, refundAddress } = await request.json();
+    const { outpoint, refundAddress, no_of_approvals } = await request.json();
 
     if (!outpoint) {
       return NextResponse.json(
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
         amount,
         requestedBy: session.user.id,
         status: "PENDING",
+        no_of_approvals: no_of_approvals ?? 2, // Use provided or default
       },
       include: {
         requester: {
@@ -100,4 +102,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
+})

@@ -22,6 +22,7 @@ import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePermission } from "@/hooks/usePermission";
 import { Resource, Action } from "@/lib/permission";
+import { apiFetch } from "@/utils/api";
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
@@ -89,7 +90,7 @@ export default function DashboardCustomersContent() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch("/api/customers?page=-1&limit=-1");
+      const response = await apiFetch("/api/customers?page=-1&limit=-1");
       if (!response.ok) {
         throw new Error("Failed to fetch customers for export");
       }
@@ -222,7 +223,7 @@ export default function DashboardCustomersContent() {
                 </td>
                 <td>
                   <div className="flex gap-2">
-                    {hasPermission(Resource.CUSTOMER, Action.UPDATE) && (
+                    {hasPermission(Resource.CUSTOMER, Action.UPDATE) || isSuperAdmin && (
                       <button
                         type="button"
                         onClick={(e) => {

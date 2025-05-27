@@ -12,6 +12,7 @@ import { useEffect, useState } from "react";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePathname } from "next/navigation";
 import { MdOutlineOpenInNew } from "react-icons/md";
+import { apiFetch } from "@/utils/api";
 
 export const ActivityList = ({
   showOnlyPending,
@@ -150,7 +151,7 @@ export const ActivityList = ({
     try {
       setLoadingReject(id);
       const endpoint = type === "MINT" ? "/api/rejectMint" : "/api/rejectBurn";
-      const response = await fetch(endpoint, {
+      const response = await apiFetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

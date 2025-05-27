@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FaSpinner } from 'react-icons/fa6';
 import { toast } from 'react-hot-toast';
+import { apiFetch } from '@/utils/api';
 
 interface Customer {
   id: string;
@@ -34,7 +35,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const response = await fetch("/api/config");
+        const response = await apiFetch("/api/config");
         if (!response.ok) {
           throw new Error("Failed to fetch configuration");
         }
@@ -55,7 +56,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await fetch("/api/customers?page=-1&limit=-1");
+        const response = await apiFetch("/api/customers?page=-1&limit=-1");
         if (!response.ok) {
           throw new Error("Failed to fetch customers");
         }
@@ -95,7 +96,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
 
     try {
       setLoading(true);
-      const response = await fetch("/api/mint", {
+      const response = await apiFetch("/api/mint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

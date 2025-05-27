@@ -1,7 +1,8 @@
+import { withCSRF } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export const GET = withCSRF(async function() {
   try {
     const [
       totalCustomers,
@@ -150,4 +151,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-} 
+})

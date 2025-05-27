@@ -10,7 +10,7 @@ import { ThemeSelector } from "@/components/ThemeSelector";
 import { useBalance } from '@/contexts/BalanceContext';
 import { MdOutlineOpenInNew } from 'react-icons/md';
 import { toast } from 'react-hot-toast';
-import { fetchMneeUtxos, ingestTxid } from '@/utils/api';
+import { apiFetch, fetchMneeUtxos, ingestTxid } from '@/utils/api';
 import type { MNEEUtxo } from "@/types";
 import { FetchStatus } from "@/types/common";
 
@@ -313,7 +313,7 @@ const DashboardSettingsContent = () => {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const response = await fetch("/api/config");
+        const response = await apiFetch("/api/config");
         const data = (await response.json()) as Config;
         setConfig({
           ...data,
@@ -358,7 +358,7 @@ const DashboardSettingsContent = () => {
   const handleSave = async (newFees?: Fee[]) => {
     try {
       setLoading(true);
-      const response = await fetch("/api/config", {
+      const response = await apiFetch("/api/config", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

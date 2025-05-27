@@ -5,8 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { isSystemPaused } from "@/lib/systemStatus";
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from "@/lib/csrf";
 
-export async function POST(request: Request) {
+export const POST = withCSRF(async function(request: Request) {
 	const session = await getServerSession(authOptions);
 	console.log('Session:', { userId: session?.user?.id });
 
@@ -177,4 +178,4 @@ export async function POST(request: Request) {
 			{ status: 500 }
 		);
 	}
-}
+})

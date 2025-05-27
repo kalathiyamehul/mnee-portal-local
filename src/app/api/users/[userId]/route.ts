@@ -4,8 +4,9 @@ import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { logActivity } from "@/lib/activityLogger";
+import { withCSRF } from '@/lib/csrf';
 
-export async function PUT(
+export const PUT = withCSRF(async function (
     req: Request,
     context: any
 ) {
@@ -79,9 +80,9 @@ export async function PUT(
         console.error("[USER_PUT]", error);
         return new NextResponse("Internal error", { status: 500 });
     }
-}
+});
 
-export async function DELETE(
+export const DELETE = withCSRF(async function (
     req: Request,
     context: any
 ) {
@@ -122,4 +123,4 @@ export async function DELETE(
         console.error("[USER_DELETE]", error);
         return new NextResponse("Internal error", { status: 500 });
     }
-}
+});

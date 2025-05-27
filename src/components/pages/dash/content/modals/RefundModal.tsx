@@ -2,6 +2,7 @@ import { FaSpinner, FaArrowRotateLeft } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
 import { toast } from 'react-hot-toast';
 import { useState } from 'react';
+import { apiFetch } from '@/utils/api';
 
 interface RefundModalProps {
   onClose: () => void;
@@ -25,6 +26,7 @@ export const RefundModal = ({
 }: RefundModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [refundAddress, setRefundAddress] = useState('');
+  const [numApprovals, setNumApprovals] = useState(2); // New: Number of approvals
 
   const handleRefund = async () => {
     setIsLoading(true);
@@ -32,10 +34,10 @@ export const RefundModal = ({
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       // console.log('Creating refund request:', { outpoint, refundAddress });
       
-      const response = await fetch('/api/refund', {
+      const response = await apiFetch('/api/refund', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ outpoint, refundAddress }),
+        body: JSON.stringify({ outpoint, refundAddress, no_of_approvals: numApprovals }), // Add approvals to payload
       });
 
       // console.log('Refund response:', { status: response.status });
@@ -74,6 +76,28 @@ export const RefundModal = ({
             <div className="text-xs opacity-50 mt-1 break-all">
               UTXO: {utxo.txid}:{utxo.vout}
             </div>
+            {/* New Field: Number of Approvals */}
+            <div className="mt-4">
+              <label className="text-sm opacity-70 mb-1 block" htmlFor="num-approvals">
+                Number of Approvals
+              </label>
+              <input
+                id="num-approvals"
+                type="number"
+                min={2}
+                className="input input-bordered w-full"
+                value={numApprovals}
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  if (val < 2) {
+                    setNumApprovals(2);
+                  } else {
+                    setNumApprovals(val);
+                  }
+                }}
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
           <div className="form-control w-full">
@@ -96,7 +120,7 @@ export const RefundModal = ({
             <div className="flex flex-col items-start gap-1">
               <div className="font-semibold">Note</div>
               <p className="text-sm">
-                This request will require approval from two administrators before the MNEE tokens are returned to the specified address. The transaction cannot be reversed once confirmed.
+                This request will require approval from {numApprovals} administrators before the MNEE tokens are returned to the specified address. The transaction cannot be reversed once confirmed.
               </p>
             </div>
           </div>
@@ -133,4 +157,4 @@ export const RefundModal = ({
       </form>
     </dialog>
   );
-}; 
+};
