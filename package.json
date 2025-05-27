@@ -16,7 +16,8 @@
     "create-user": "bun scripts/create-user.ts",
     "check-user": "bun scripts/check-user.ts",
     "delete-mint-request": "bun scripts/delete-mint-request.ts",
-    "encrypt-value": "bun scripts/encrypt-value.ts"
+    "encrypt-value": "bun scripts/encrypt-value.ts",
+    "test-rate-limiting": "bun scripts/test-rate-limiting.ts"
   },
   "dependencies": {
     "@aws-sdk/client-kms": "^3.734.0",

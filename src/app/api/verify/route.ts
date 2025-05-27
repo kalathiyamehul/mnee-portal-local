@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { withCSRF } from "@/lib/csrf";
+import { with2FARateLimit } from "@/lib/rateLimitMiddleware";
 
-export const POST = withCSRF(async function(request: Request) {
+export const POST = with2FARateLimit(withCSRF(async function (request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -69,4 +70,4 @@ export const POST = withCSRF(async function(request: Request) {
       { status: 500 }
     );
   }
-})
+}));
