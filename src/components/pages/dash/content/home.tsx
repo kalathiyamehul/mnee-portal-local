@@ -328,6 +328,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           ? "approveMint"
           : type === "BURN"
           ? "approveBurn"
+          : type === "REFUND"
+          ? "approveRefund"
           : type === "CUSTOMER"
           ? "approveCustomer"
           : null;
@@ -345,7 +347,11 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           ? "mintRequestId"
           : type === "CUSTOMER"
           ? "customerRequestId"
-          : "burnRequestId";
+          : type === "BURN"
+          ? "burnRequestId"
+          : type === "REFUND"
+          ? "refundRequestId"
+          : "refundRequestId";
 
       const response = await apiFetch(`/api/${endpoint}`, {
         method: "POST",

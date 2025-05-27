@@ -207,7 +207,7 @@ export const ActivityList = ({
 
       <div className="w-full">
         {" "}
-        {loading ? (
+        {currentActivities.length === 0 ? (
           <div className="flex justify-center items-center py-8">
             <div className="loading loading-spinner loading-lg" />
           </div>

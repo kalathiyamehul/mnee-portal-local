@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { emitburnUpdate } from "../sse/route";
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -76,7 +77,11 @@ export const POST = withCSRF(async function(request: Request) {
 
       return { status: "REJECTED" };
     });
-
+    emitburnUpdate({
+      activityId: burnRequestId,
+      approval: undefined,
+      type: "REJECT",
+    });
     return NextResponse.json({
       success: true,
       message: "Burn request rejected",

@@ -404,6 +404,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
           ? "mintRequestId"
           : type === "BURN"
           ? "burnRequestId"
+          : type === "REFUND"
+          ? "refundRequestId"
           : type === "CUSTOMER"
           ? "customerRequestId"
           : "refundRequestId";

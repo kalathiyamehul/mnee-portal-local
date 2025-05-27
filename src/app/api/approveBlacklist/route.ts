@@ -155,7 +155,7 @@ export const POST = withCSRF (async function(request: Request) {
       return { approvals, status: approvals === 2 ? 'APPROVED' : 'PENDING' };
     });
 
-    // emit Clacklist Approve event
+    // emit Blacklist Approve event
 		const approvalWithUser = await prisma.blacklistApproval.findUnique({
 			where: {
 				id: newAppeovalID!,

@@ -417,8 +417,7 @@ export function SystemStatusProvider({
     eventSource.addEventListener(EVENTS.BURN_UPDATE, (event) => {
       try {
         const data = JSON.parse(event.data);
-        const { burnRequest, type } = data;
-
+        const { burnRequest, type, activityId, approval } = data;
         // Create Burn requests
         if (type === "CREATE") {
           setStatusData((prev: any) => {
@@ -429,6 +428,44 @@ export function SystemStatusProvider({
             };
           });
         }
+        // Reject Burn requests
+        if (type === "REJECT") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              burnRequests: prev.mintRequests.filter(
+                (activity: any) => activity.id !== activityId
+              ),
+            };
+          });
+        }
+        // Approve Burn requests
+        if (type === "APPROVE") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updateActivity = (activities: Activity[]) =>
+              activities.map((activity) => {
+                const approvals: any = activity.approvals;
+                const approval_check = approvals.find(
+                  (approval_temp: any) => approval_temp.id === approval.id
+                );
+                if (activity.id === activityId && !approval_check) {
+                  approvals.push(approval);
+                  const updatedActivity = {
+                    ...activity,
+                    approvals: approvals,
+                  };
+                  return updatedActivity;
+                }
+                return activity;
+              });
+            return {
+              ...prev,
+              burnRequests: updateActivity(prev.burnRequests),
+            };
+          });
+        }
       } catch (error) {
         console.error("Error handling SSE event:", error);
       }
@@ -436,9 +473,8 @@ export function SystemStatusProvider({
     eventSource.addEventListener(EVENTS.REFUND_UPDATE, (event) => {
       try {
         const data = JSON.parse(event.data);
-        const { refundRequest, type } = data;
-
-        // Create Burn requests
+        const { refundRequest, type, activityId, approval } = data;
+        // Create Refund requests
         if (type === "CREATE") {
           setStatusData((prev: any) => {
             if (!prev) return prev;
@@ -448,6 +484,34 @@ export function SystemStatusProvider({
             };
           });
         }
+
+        // Approve Refund requests
+        if (type === "APPROVE") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updateActivity = (activities: Activity[]) =>
+              activities.map((activity) => {
+                const approvals: any = activity.approvals;
+                const approval_check = approvals.find(
+                  (approval_temp: any) => approval_temp.id === approval.id
+                );
+                if (activity.id === activityId && !approval_check) {
+                  approvals.push(approval);
+                  const updatedActivity = {
+                    ...activity,
+                    approvals: approvals,
+                  };
+                  return updatedActivity;
+                }
+                return activity;
+              });
+            return {
+              ...prev,
+              refundRequests: updateActivity(prev.refundRequests),
+            };
+          });
+        }
+
       } catch (error) {
         console.error("Error handling SSE event:", error);
       }
