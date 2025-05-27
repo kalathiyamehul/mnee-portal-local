@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/authOptions';
 import { BlacklistAction } from '@prisma/client';
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
+import { emitRestrictionsUpdate } from '../sse/route';
 
 // Helper function to validate BlacklistAction
 function isBlacklistAction(action: string): action is BlacklistAction {
@@ -85,6 +86,28 @@ export const POST = withCSRF(async function(request: Request) {
       });
 
       return blacklistRequest;
+    });
+
+    // Get the Blacklist Request
+    const blacklist: any = await prisma.blacklistRequest.findUnique({
+      where: { id: result.id },
+      include: {
+        approvals: {
+          include: {
+            approver: true,
+          },
+        },
+        requester: true,
+      },
+    });
+    if (blacklist?.amount) {
+      blacklist.amount = Number(blacklist.amount);
+    }
+
+    // Emit the Blacklist Request event
+    emitRestrictionsUpdate({
+      newRequest: blacklist,
+      type: "CREATE_BLACKLIST",
     });
 
     return NextResponse.json({ blacklistRequest: result }, { status: 201 });

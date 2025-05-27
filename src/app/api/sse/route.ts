@@ -10,7 +10,10 @@ const emitter = globalEmitter.sseEmitter;
 export const EVENTS = {
     MINT_UPDATE: "mintUpdate",
     CANCEL_UPDATE: "cancelUpdate",
-    THREE_R_D_EVENTS_TEST: "3RDEventsTest",
+    CUSTOMER_UPDATE: "customerUpdate",
+    RESTRICTIONS_UPDATE: "restrictionsUpdate",
+    BURN_UPDATE: "burnUpdate",
+    REFUND_UPDATE: "refundUpdate",
 };
 export async function GET(req: NextRequest) {
     // Set headers for SSE
@@ -39,23 +42,47 @@ export async function GET(req: NextRequest) {
                     `event: ${EVENTS.CANCEL_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
                 );
             };
-            //3 rrd events test
-            const on3RDEventsTest = (data: any) => {
+            // Customer update
+            const onCustomerUpdate = (data: any) => {
                 controller.enqueue(
-                    `event: ${EVENTS.THREE_R_D_EVENTS_TEST}\ndata: ${JSON.stringify(data)}\n\n`
+                    `event: ${EVENTS.CUSTOMER_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
                 );
             };
+            // Restrictions update
+            const onRestrictionsUpdate = (data: any) => {
+                controller.enqueue(
+                    `event: ${EVENTS.RESTRICTIONS_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
+                );
+            };
+            // Burn update
+            const onburnUpdate = (data: any) => {
+                controller.enqueue(
+                    `event: ${EVENTS.BURN_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
+                );
+            };
+            // Refund update
+            const onrefundUpdate = (data: any) => {
+                controller.enqueue(
+                    `event: ${EVENTS.REFUND_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
+                );
+            }; 
 
             // Listen for approval events
             emitter.on(EVENTS.MINT_UPDATE, onApprovalUpdate);
             emitter.on(EVENTS.CANCEL_UPDATE, onCancelUpdate);
-            emitter.on(EVENTS.THREE_R_D_EVENTS_TEST, on3RDEventsTest);
+            emitter.on(EVENTS.CUSTOMER_UPDATE, onCustomerUpdate);
+            emitter.on(EVENTS.RESTRICTIONS_UPDATE, onRestrictionsUpdate);
+            emitter.on(EVENTS.BURN_UPDATE, onburnUpdate);
+            emitter.on(EVENTS.REFUND_UPDATE, onrefundUpdate);
 
             // Clean up when the connection closes
             req.signal?.addEventListener("abort", () => {
                 emitter.off(EVENTS.MINT_UPDATE, onApprovalUpdate);
                 emitter.off(EVENTS.CANCEL_UPDATE, onCancelUpdate);
-                emitter.off(EVENTS.THREE_R_D_EVENTS_TEST, on3RDEventsTest);
+                emitter.off(EVENTS.CUSTOMER_UPDATE, onCustomerUpdate);
+                emitter.off(EVENTS.RESTRICTIONS_UPDATE, onRestrictionsUpdate);
+                emitter.off(EVENTS.BURN_UPDATE, onburnUpdate);
+                emitter.off(EVENTS.REFUND_UPDATE, onrefundUpdate);
                 controller.close();
             });
         }
@@ -76,6 +103,18 @@ export function emitCancelUpdate(data: any) {
     emitter.emit(EVENTS.CANCEL_UPDATE, data);
 }
 
-export function emit3RDEventsTest(data: any) {
-    emitter.emit(EVENTS.THREE_R_D_EVENTS_TEST, data);
+export function emitCustomerUpdate(data: any) {
+    emitter.emit(EVENTS.CUSTOMER_UPDATE, data);
+}
+
+export function emitRestrictionsUpdate(data: any) {
+    emitter.emit(EVENTS.RESTRICTIONS_UPDATE, data);
+}
+
+export function emitburnUpdate(data: any) {
+    emitter.emit(EVENTS.BURN_UPDATE, data);
+}
+
+export function emitrefundUpdate(data: any) {
+    emitter.emit(EVENTS.REFUND_UPDATE, data);
 }

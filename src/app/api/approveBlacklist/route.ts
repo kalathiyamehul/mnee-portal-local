@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/authOptions';
 import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
+import { emitRestrictionsUpdate } from '../sse/route';
 
 export const POST = withCSRF (async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -20,6 +21,7 @@ export const POST = withCSRF (async function(request: Request) {
   }
 
   try {
+    let newAppeovalID: string;
     const result = await prisma.$transaction(async (tx) => {
       console.log('Processing blacklist approval:', {
         requestId: blacklistRequestId,
@@ -108,6 +110,8 @@ export const POST = withCSRF (async function(request: Request) {
         },
       });
 
+      newAppeovalID = approval.id;
+
       await logActivity(tx, {
         name: "Blacklist Request Approved",
         action: "BLACKLIST_REQUEST_APPROVE",
@@ -150,6 +154,21 @@ export const POST = withCSRF (async function(request: Request) {
 
       return { approvals, status: approvals === 2 ? 'APPROVED' : 'PENDING' };
     });
+
+    // emit Clacklist Approve event
+		const approvalWithUser = await prisma.blacklistApproval.findUnique({
+			where: {
+				id: newAppeovalID!,
+			},
+			include: {
+				approver: true,
+			},
+		});
+		emitRestrictionsUpdate({
+			activityId: blacklistRequestId,
+			approval: approvalWithUser,
+			type: "APPROVE_BLACKLIST",
+		});
 
     return NextResponse.json({
       success: true,

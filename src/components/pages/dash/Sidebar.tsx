@@ -38,7 +38,8 @@ const Sidebar: React.FC = () => {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [hoveredPath, setHoveredPath] = useState(pathname);
-  const { hasPermission, hasAllPermissions, isSuperAdmin } = usePermission();
+  const { hasPermission, hasAllPermissions } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
   const canViewWallet = hasPermission(Resource.WALLET, Action.READ);
   const canViewCustomers = hasPermission(Resource.CUSTOMER, Action.READ);
   const canViewSuperAdmin = isSuperAdmin;

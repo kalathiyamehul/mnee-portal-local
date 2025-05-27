@@ -276,6 +276,182 @@ export function SystemStatusProvider({
         console.error("Error handling SSE event:", error);
       }
     });
+    eventSource.addEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const { activityId, approval, type } = data;
+        if (type === "APPROVE") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updateActivity = (activities: Activity[]) =>
+              activities.map((activity) => {
+                const approvals: any = activity.approvals;
+                const approval_check = approvals.find(
+                  (approval_temp: any) => approval_temp.id === approval.id
+                );
+                if (activity.id === activityId && !approval_check) {
+                  approvals.push(approval);
+                  const updatedActivity = {
+                    ...activity,
+                    approvals: approvals,
+                  };
+                  return updatedActivity;
+                }
+                return activity;
+              });
+            return {
+              ...prev,
+              customerRequests: updateActivity(prev.customerRequests),
+            };
+          });
+        }
+        if (type === "APPROVED") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+             ...prev,
+              customerRequests: prev.customerRequests.filter(
+                (activity: any) => activity.id!== activityId
+              ),
+            };
+          });
+        }
+        if (type === "CREATE") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              customerRequests: [...prev.customerRequests, approval],
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Error handling SSE event:", error);
+      }
+    })
+    eventSource.addEventListener(EVENTS.RESTRICTIONS_UPDATE, (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const { newRequest, approval, activityId, type } = data;
+
+        // Create Freeze requests
+        if (type === "CREATE_FREEZE") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              freezeRequests: [...prev.freezeRequests, newRequest],
+            };
+          });
+        }
+
+        // Approve Freeze requests
+        if (type === "APPROVE_FREEZE") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updateActivity = (activities: Activity[]) =>
+              activities.map((activity) => {
+                const approvals: any = activity.approvals;
+                const approval_check = approvals.find(
+                  (approval_temp: any) => approval_temp.id === approval.id
+                );
+                if (activity.id === activityId && !approval_check) {
+                  approvals.push(approval);
+                  const updatedActivity = {
+                    ...activity,
+                    approvals: approvals,
+                  };
+                  return updatedActivity;
+                }
+                return activity;
+              });
+            return {
+              ...prev,
+              freezeRequests: updateActivity(prev.freezeRequests),
+            };
+          });
+        }
+
+        // Create Blacklist requests
+        if (type === "CREATE_BLACKLIST") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              blacklistRequests: [...prev.blacklistRequests, newRequest],
+            };
+          });
+        }
+
+        // Approve Blacklist requests
+        if (type === "APPROVE_BLACKLIST") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updateActivity = (activities: Activity[]) =>
+              activities.map((activity) => {
+                const approvals: any = activity.approvals;
+                const approval_check = approvals.find(
+                  (approval_temp: any) => approval_temp.id === approval.id
+                );
+                if (activity.id === activityId && !approval_check) {
+                  approvals.push(approval);
+                  const updatedActivity = {
+                    ...activity,
+                    approvals: approvals,
+                  };
+                  return updatedActivity;
+                }
+                return activity;
+              });
+            return {
+              ...prev,
+              blacklistRequests: updateActivity(prev.blacklistRequests),
+            };
+          });
+        }
+
+      } catch (error) {
+        console.error("Error handling SSE event:", error);
+      }
+    })
+    eventSource.addEventListener(EVENTS.BURN_UPDATE, (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const { burnRequest, type } = data;
+
+        // Create Burn requests
+        if (type === "CREATE") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              burnRequests: [...prev.burnRequests, burnRequest],
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Error handling SSE event:", error);
+      }
+    })
+    eventSource.addEventListener(EVENTS.REFUND_UPDATE, (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const { refundRequest, type } = data;
+
+        // Create Burn requests
+        if (type === "CREATE") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              refundRequests: [...prev.refundRequests, refundRequest],
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Error handling SSE event:", error);
+      }
+    })
 
     // Handle errors
     eventSource.onerror = (error) => {

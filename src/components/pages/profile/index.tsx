@@ -11,7 +11,8 @@ import { Action, Resource } from "@/lib/permission";
 export default function ProfileScreen() {
   const { data: session } = useSession();
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const { hasAllPermissions, isSuperAdmin } = usePermission();
+  const { hasAllPermissions, hasPermission } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
   const isAdmin = hasAllPermissions([
     { resource: Resource.MINT, action: Action.CREATE },
     { resource: Resource.BURN, action: Action.CREATE },

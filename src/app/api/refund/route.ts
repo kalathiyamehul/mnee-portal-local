@@ -6,6 +6,7 @@ import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { fetchTxo } from "@/utils/api";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { emitrefundUpdate } from "../sse/route";
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -85,6 +86,29 @@ export const POST = withCSRF(async function(request: Request) {
           typeof value === 'bigint' ? value.toString() : value
         ),
       },
+    });
+
+    // Get the RefundRequest
+    const refund: any = await prisma.refundRequest.findUnique({
+      where: { id: refundRequest.id },
+      include: {
+        approvals: {
+          include: {
+            approver: true,
+          },
+        },
+        requester: true,
+      },
+    });
+
+    if (refund?.amount) {
+      refund.amount = Number(refund.amount);
+    }
+
+    // Emit the refund request update
+    emitrefundUpdate({
+      refundRequest: refund,
+      type: "CREATE",
     });
 
     return NextResponse.json({

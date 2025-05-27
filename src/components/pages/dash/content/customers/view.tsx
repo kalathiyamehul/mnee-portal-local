@@ -63,7 +63,8 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'mints' | 'burns'>('mints');
   const [config, setConfig] = useState<Config | null>(null);
-  const { hasPermission, isSuperAdmin } = usePermission();
+  const { hasPermission } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
   useEffect(() => {
     const loadConfig = async () => {
       try {

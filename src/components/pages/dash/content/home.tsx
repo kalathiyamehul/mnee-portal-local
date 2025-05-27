@@ -27,6 +27,8 @@ const getActivityDisplayText = (activity: Activity) => {
       return `Mint to ${activity.address || "customer"}`;
     case "BURN":
       return `Burn from ${activity.address || "customer"}`;
+    case "REFUND":
+      return `Refund Request`;
     case "CUSTOMER":
       return `New Customer`;
     case "FREEZE":
@@ -134,6 +136,11 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           type: "BURN" as const,
           action: "BURN" as const,
         })),
+        ...statusData.refundRequests.map((req) => ({
+         ...req,
+          type: "REFUND" as const,
+          action: "REFUND" as const,
+        })),
         ...statusData.customerRequests.map((req) => ({
           ...req,
           type: "CUSTOMER" as const,
@@ -159,8 +166,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       setLoading(false);
     }
   }, [statusData]);
-  const { hasPermission, isSuperAdmin } = usePermission();
-
+  const { hasPermission } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
   // Mint Permissions
   const hasCreateMintPer = isSuperAdmin
     ? true

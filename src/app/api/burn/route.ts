@@ -7,6 +7,7 @@ import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { fetchMneeUtxos } from "@/utils/api";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { emitburnUpdate } from "../sse/route";
 
 export const POST = withCSRF(async function(request: Request) {
     const session = await getServerSession(authOptions);
@@ -128,6 +129,12 @@ export const POST = withCSRF(async function(request: Request) {
                 amount: result.amount.toString(),
             }
         };
+
+        // Emit Burn Request
+        emitburnUpdate({
+            burnRequest: response.burnRequest,
+            type: "CREATE",
+        })
 
         return NextResponse.json(response);
     } catch (error) {

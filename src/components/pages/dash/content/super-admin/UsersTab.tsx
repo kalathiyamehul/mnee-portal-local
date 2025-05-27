@@ -42,7 +42,8 @@ interface PaginatedResponse {
 }
 
 export default function UsersPage() {
-  const { hasPermission, isSuperAdmin } = usePermission();
+  const { hasPermission } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
   const { data: session } = useSession();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
