@@ -5,6 +5,11 @@ import type { Activity } from "@/components/pages/dash/content/admin/types";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
 import { apiFetch } from "@/utils/api";
+import {
+  sanitizeError,
+  sanitizeHttpError,
+  getDisplayMessage,
+} from "@/utils/errorHandler";
 import { EVENTS } from "@/app/api/sse/route";
 
 interface SystemStatusData {
@@ -53,7 +58,11 @@ export function SystemStatusProvider({
         return;
       }
       if (!response.ok) {
-        throw new Error("Failed to fetch status");
+        const sanitizedError = await sanitizeHttpError(
+          response,
+          "Failed to fetch status"
+        );
+        throw new Error(sanitizedError.message);
       }
       const data = await response.json();
       setStatusData({
@@ -70,9 +79,11 @@ export function SystemStatusProvider({
       });
     } catch (error) {
       // console.error('Error fetching system status:', error);
-      toast.error(
-        error instanceof Error ? error.message : "Failed to fetch system status"
+      const sanitizedError = sanitizeError(
+        error,
+        "Failed to fetch system status"
       );
+      toast.error(getDisplayMessage(sanitizedError));
       setStatusData(null);
     }
   }, [session?.user]);
@@ -89,8 +100,11 @@ export function SystemStatusProvider({
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || "Failed to toggle system pause");
+      const sanitizedError = await sanitizeHttpError(
+        response,
+        "Failed to toggle system pause"
+      );
+      throw new Error(sanitizedError.message);
     }
 
     await fetchStatus();
@@ -309,9 +323,9 @@ export function SystemStatusProvider({
           setStatusData((prev: any) => {
             if (!prev) return prev;
             return {
-             ...prev,
+              ...prev,
               customerRequests: prev.customerRequests.filter(
-                (activity: any) => activity.id!== activityId
+                (activity: any) => activity.id !== activityId
               ),
             };
           });
@@ -328,7 +342,7 @@ export function SystemStatusProvider({
       } catch (error) {
         console.error("Error handling SSE event:", error);
       }
-    })
+    });
     eventSource.addEventListener(EVENTS.RESTRICTIONS_UPDATE, (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -409,11 +423,10 @@ export function SystemStatusProvider({
             };
           });
         }
-
       } catch (error) {
         console.error("Error handling SSE event:", error);
       }
-    })
+    });
     eventSource.addEventListener(EVENTS.BURN_UPDATE, (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -469,7 +482,7 @@ export function SystemStatusProvider({
       } catch (error) {
         console.error("Error handling SSE event:", error);
       }
-    })
+    });
     eventSource.addEventListener(EVENTS.REFUND_UPDATE, (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -511,11 +524,10 @@ export function SystemStatusProvider({
             };
           });
         }
-
       } catch (error) {
         console.error("Error handling SSE event:", error);
       }
-    })
+    });
 
     // Handle errors
     eventSource.onerror = (error) => {
