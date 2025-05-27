@@ -5,9 +5,9 @@ import { authOptions } from '@/lib/authOptions';
 import bcrypt from 'bcrypt';
 import { isPasswordValid } from '@/utils/auth';
 import { withCSRF } from '@/lib/csrf';
-import { withPasswordResetRateLimit } from '@/lib/rateLimitMiddleware';
+import { createPasswordResetRateLimit } from '@/lib/rateLimitHelpers';
 
-export const POST = withPasswordResetRateLimit(withCSRF(async function (request: Request) {
+export const POST = withCSRF(async function (request: Request) {
   const session = await getServerSession(authOptions);
   console.log('[Reset Password] Session state:', {
     userId: session?.user?.id,
@@ -73,4 +73,4 @@ export const POST = withPasswordResetRateLimit(withCSRF(async function (request:
       { status: 500 }
     );
   }
-}));
+}, createPasswordResetRateLimit());

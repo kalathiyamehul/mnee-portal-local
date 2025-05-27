@@ -5,10 +5,9 @@ import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/csrf';
 import { unlockAccount, resetRateLimit } from '@/lib/rateLimiter';
 import { RateLimitType } from '@prisma/client';
-import { withAPIRateLimit } from '@/lib/rateLimitMiddleware';
-
+import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 // GET - Get rate limit and lockout status
-export const GET = withAPIRateLimit(withCSRF(async function (request: Request) {
+export const GET = withCSRF(async function (request: Request) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
@@ -79,10 +78,10 @@ export const GET = withAPIRateLimit(withCSRF(async function (request: Request) {
             { status: 500 }
         );
     }
-}));
+}, createAPIRateLimit());
 
 // POST - Reset rate limits or unlock accounts
-export const POST = withAPIRateLimit(withCSRF(async function (request: Request) {
+export const POST = withCSRF(async function (request: Request) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user?.id) {
@@ -221,4 +220,4 @@ export const POST = withAPIRateLimit(withCSRF(async function (request: Request) 
             { status: 500 }
         );
     }
-})); 
+}, createAPIRateLimit()); 
