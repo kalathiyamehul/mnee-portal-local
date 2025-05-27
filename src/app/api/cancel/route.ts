@@ -93,6 +93,10 @@ export const POST = withCSRF(async function(request: Request) {
           );
         }
 
+        if (request.requestedBy !== session.user.id) {
+          return NextResponse.json({ error: 'You can only cancel your own requests' }, { status: 403 });
+        }
+
         const updated = await tx.blacklistRequest.update({
           where: { id: blacklistRequestId },
           data: { status: 'CANCELLED' },
