@@ -108,22 +108,13 @@ model AccountLockout {
 ### 1. Applying Rate Limiting to API Routes
 
 ```typescript
-import { withLoginRateLimit, withAPIRateLimit, with2FARateLimit } from '@/lib/rateLimitMiddleware';
+// src/app/api/auth/login/route.ts
+import { withCSRF } from '@/lib/csrf';
+import { createLoginRateLimit } from '@/lib/rateLimitHelpers';
 
-// For login endpoints
-export const POST = withLoginRateLimit(withCSRF(async function(request: Request) {
-  // Your login logic here
-}));
-
-// For 2FA verification
-export const POST = with2FARateLimit(withCSRF(async function(request: Request) {
-  // Your 2FA verification logic here
-}));
-
-// For general API endpoints
-export const POST = withAPIRateLimit(withCSRF(async function(request: Request) {
-  // Your API logic here
-}));
+export const POST = withCSRF(async function (request: Request) {
+  // Login logic
+}, createLoginRateLimit());
 ```
 
 ### 2. Manual Rate Limit Checks
