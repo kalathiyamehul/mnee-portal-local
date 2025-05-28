@@ -106,12 +106,12 @@ export async function sanitizeHttpError(
                 return { message: "Service temporarily unavailable", code: "SERVICE_UNAVAILABLE" };
             default:
                 // Log the full error for debugging but don't expose it
-                console.error("HTTP error:", {
-                    status: response.status,
-                    statusText: response.statusText,
-                    url: response.url,
-                    body: errorText
-                });
+                // console.error("HTTP error:", {
+                //     status: response.status,
+                //     statusText: response.statusText,
+                //     url: response.url,
+                //     body: errorText
+                // });
                 return { message: fallbackMessage, code: "UNKNOWN_ERROR" };
         }
     } catch (parseError) {
