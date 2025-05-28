@@ -139,29 +139,3 @@ export const PATCH = withCSRF(async function(request: Request) {
     );
   }
 })
-
-export const DELETE = withCSRF(async function() {
-  try {
-    await prisma.$transaction(async (tx) => {
-      await tx.config.deleteMany();
-
-      await logActivity(tx, {
-        name: "Config Cleared",
-        action: "CONFIG_DELETE",
-        description: "All configuration has been cleared.",
-        metadata: {},
-      });
-    });
-
-    return NextResponse.json(
-      { message: "Configuration cleared." },
-      { headers: { "Cache-Control": "no-store" } }
-    );
-  } catch (error) {
-    console.error("Error clearing config:", error);
-    return NextResponse.json(
-      { error: "Error clearing configuration." },
-      { status: 500 }
-    );
-  }
-})
