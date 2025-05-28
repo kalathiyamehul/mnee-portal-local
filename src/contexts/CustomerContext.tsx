@@ -1,9 +1,21 @@
 "use client";
 
 import { apiFetch } from '@/utils/api';
+import {
+  sanitizeError,
+  sanitizeHttpError,
+  getDisplayMessage,
+} from "@/utils/errorHandler";
 // biome-ignore lint/style/useImportType: <explanation>
-import { createContext, useContext, useCallback, useState, ReactNode, useMemo } from 'react';
-import { toast } from 'react-hot-toast';
+import {
+  createContext,
+  useContext,
+  useCallback,
+  useState,
+  ReactNode,
+  useMemo,
+} from "react";
+import { toast } from "react-hot-toast";
 
 interface Customer {
   id: string;
@@ -72,14 +84,23 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         `/api/customers?page=${page}&limit=${limit}`
       );
       if (!response.ok) {
-        throw new Error("Failed to fetch customers");
+        const sanitizedError = await sanitizeHttpError(
+          response,
+          "Failed to fetch customers"
+        );
+        const error = new Error(sanitizedError.message);
+        setError(error);
+        toast.error(getDisplayMessage(sanitizedError));
+        return;
       }
       const data: PaginatedResponse = await response.json();
       setCustomers(data.customers);
       setPagination(data.pagination);
     } catch (err) {
-      setError(err instanceof Error ? err : new Error("Unknown error"));
-      toast.error("Failed to fetch customers");
+      const sanitizedError = sanitizeError(err, "Failed to fetch customers");
+      const error = new Error(sanitizedError.message);
+      setError(error);
+      toast.error(getDisplayMessage(sanitizedError));
     } finally {
       setLoading(false);
     }
@@ -92,7 +113,11 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
 
       const response = await apiFetch(`/api/customers/${id}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch customer");
+        const sanitizedError = await sanitizeHttpError(
+          response,
+          "Failed to fetch customer"
+        );
+        throw new Error(sanitizedError.message);
       }
       const data = await response.json();
       return data.customer;
@@ -109,8 +134,11 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || "Failed to create customer");
+        const sanitizedError = await sanitizeHttpError(
+          response,
+          "Failed to create customer"
+        );
+        throw new Error(sanitizedError.message);
       }
 
       const newCustomer = await response.json();
@@ -133,8 +161,11 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || "Failed to update customer");
+        const sanitizedError = await sanitizeHttpError(
+          response,
+          "Failed to update customer"
+        );
+        throw new Error(sanitizedError.message);
       }
 
       const updatedCustomer = await response.json();
