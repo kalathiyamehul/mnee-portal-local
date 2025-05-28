@@ -1,6 +1,7 @@
 import { MNEE_API } from "@/env";
 import type { Config, MNEEUtxo } from "@/types";
 import type { IndexContext } from "@/types/indexContext";
+import { sanitizeHttpError } from "@/utils/errorHandler";
 import { Transaction, Utils } from "@bsv/sdk";
 const { toArray } = Utils;
 
@@ -55,7 +56,8 @@ export function resetCsrfToken() {
 export const fetchConfig = async () => {
     const response = await fetch(`${MNEE_API}/v1/config`);
     if (!response.ok) {
-        throw new Error("Failed to fetch config");
+        const sanitizedError = await sanitizeHttpError(response, "Failed to fetch config");
+        throw new Error(sanitizedError.message);
     }
     return await response.json() as Config;
 }
@@ -63,7 +65,8 @@ export const fetchConfig = async () => {
 export const fetchTxo = async (outpoint: string) => {
   const response = await fetch(`${MNEE_API}/v1/txos/${outpoint}?tags=*&txo=true`);
   if (!response.ok) {
-    throw new Error("Failed to fetch txo");
+      const sanitizedError = await sanitizeHttpError(response, "Failed to fetch txo");
+      throw new Error(sanitizedError.message);
   }
   return await response.json() as MNEEUtxo;
 }
@@ -71,7 +74,8 @@ export const fetchTxo = async (outpoint: string) => {
 export const fetchTransaction = async (txid: string) => {
     const response = await fetch(`${MNEE_API}/v1/tx/${txid}`);
     if (!response.ok) {
-        throw new Error("Failed to fetch transaction");
+        const sanitizedError = await sanitizeHttpError(response, "Failed to fetch transaction");
+        throw new Error(sanitizedError.message);
     }
 
     const { rawtx } = await response.json() as { rawtx: string };
@@ -93,7 +97,8 @@ export const fetchMneeUtxos = async (addresses: string[], ops: ('transfer' | 'bu
         body: JSON.stringify(addresses),
     });
     if (!response.ok) {
-        throw new Error("Failed to fetch UTXOs");
+        const sanitizedError = await sanitizeHttpError(response, "Failed to fetch UTXOs");
+        throw new Error(sanitizedError.message);
     }
     const json = await response.json() as MNEEUtxo[];
     // console.log('Fetched UTXOs:', json);
@@ -111,7 +116,8 @@ export const fetchVaultedMneeUtxos = async (ops: ('transfer' | 'burn' | 'deploy+
 
     const response = await fetch(`${MNEE_API}/v1/utxos/vault`);
     if (!response.ok) {
-        throw new Error("Failed to fetch UTXOs");
+        const sanitizedError = await sanitizeHttpError(response, "Failed to fetch UTXOs");
+        throw new Error(sanitizedError.message);
     }
     const json = await response.json() as MNEEUtxo[];
     // console.log('Fetched UTXOs:', json);
