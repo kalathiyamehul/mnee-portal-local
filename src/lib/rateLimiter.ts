@@ -20,12 +20,12 @@ export const RATE_LIMIT_CONFIGS: Record<RateLimitType, RateLimitConfig> = {
     LOGIN_ATTEMPT: {
         windowMs: 15 * 60 * 1000, // 15 minutes
         maxAttempts: 5, // 5 attempts per 15 minutes
-        blockDurationMs: 30 * 60 * 1000, // Block for 30 minutes
+        blockDurationMs: 5 * 60 * 1000, // Block for 30 minutes
     },
     API_REQUEST: {
         windowMs: 60 * 1000, // 1 minute
         maxAttempts: 100, // 100 requests per minute
-        blockDurationMs: 5 * 60 * 1000, // Block for 5 minutes
+        blockDurationMs: 1 * 60 * 1000, // Block for 1 minute
     },
     PASSWORD_RESET: {
         windowMs: 60 * 60 * 1000, // 1 hour
