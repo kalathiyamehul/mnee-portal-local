@@ -13,6 +13,7 @@ import type { RefundRequest } from "@/types/refund";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitrefundUpdate } from "../sse/route";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 const { toBase64 } = Utils;
 
 async function broadcastRefundTransaction(refundRequest: RefundRequest) {
@@ -276,4 +277,4 @@ export const POST = withCSRF(async function(request: Request) {
       error: error instanceof Error ? error.message : "Failed to process approval"
     }, { status: 500 });
   }
-})
+}, createAPIRateLimit())

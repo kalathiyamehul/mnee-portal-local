@@ -7,6 +7,7 @@ import { fetchTxo } from "@/utils/api";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitrefundUpdate } from "../sse/route";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -126,4 +127,4 @@ export const POST = withCSRF(async function(request: Request) {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())

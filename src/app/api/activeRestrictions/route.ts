@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import { withCSRF } from '@/lib/csrf';
+import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 export const GET = withCSRF(async function() {
   // Check authentication
@@ -106,4 +107,4 @@ export const GET = withCSRF(async function() {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())

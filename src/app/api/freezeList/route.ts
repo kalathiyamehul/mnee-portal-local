@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import type { ActionStatus, FreezeRequestAction } from '@prisma/client';
 import { withCSRF } from '@/lib/csrf';
+import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 export const GET = withCSRF(async function(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -32,4 +33,4 @@ export const GET = withCSRF(async function(request: Request) {
   });
 
   return NextResponse.json({ activeFreezes: freezeRequests });
-})
+}, createAPIRateLimit())

@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/authOptions';
 import { isSystemPaused } from '@/lib/systemStatus';
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
+import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -135,4 +136,4 @@ export const POST = withCSRF(async function(request: Request) {
       error: error instanceof Error ? error.message : 'Failed to process approval',
     }, { status: 500 });
   }
-})
+}, createAPIRateLimit())

@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/authOptions';
 import { logActivity } from '@/lib/activityLogger';
 import { withCSRF } from '@/lib/csrf';
 import { emitCancelUpdate } from '../sse/route';
+import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -260,4 +261,4 @@ export const POST = withCSRF(async function(request: Request) {
     console.error('Error cancelling request:', error);
     return NextResponse.json({ error: 'Failed to cancel request' }, { status: 500 });
   }
-})
+}, createAPIRateLimit())

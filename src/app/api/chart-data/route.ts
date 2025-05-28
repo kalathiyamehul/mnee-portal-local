@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { subDays } from 'date-fns';
 import { withCSRF } from "@/lib/csrf";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 export const GET = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -187,4 +188,4 @@ export const GET = withCSRF(async function(request: Request) {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())

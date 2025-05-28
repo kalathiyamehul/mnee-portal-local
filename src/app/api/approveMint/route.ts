@@ -22,6 +22,7 @@ import CosignTemplate from "@/templates/cosign";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitMintUpdate } from '../sse/route';
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 type MintRequestWithRelations = Prisma.MintRequestGetPayload<{
 	include: {
@@ -229,7 +230,7 @@ export const POST =  withCSRF(async function(request: Request) {
 			},
 		);
 	}
-})
+}, createAPIRateLimit())
 
 // Helper function to mint MNEE tokens
 const mintMnee = async (

@@ -297,7 +297,6 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 
   const handleCancel = async (id: string, type: Activity["type"]) => {
     try {
-      setLoading(true);
       const requestType = `${type.toLowerCase()}RequestId`;
       await apiFetch("/api/cancel", {
         method: "POST",
@@ -309,14 +308,11 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     } catch (error) {
       // console.error("Error cancelling request:", error);
       toast.error("Failed to cancel request");
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleApprove = async (id: string, type: Activity["type"]) => {
     try {
-      setLoading(true);
       const endpoint =
         type === "ACTION"
           ? "approveSystem"
@@ -371,8 +367,6 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       toast.error(
         error instanceof Error ? error.message : "Failed to approve request"
       );
-    } finally {
-      setLoading(false);
     }
   };
 
