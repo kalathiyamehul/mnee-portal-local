@@ -168,11 +168,33 @@ export const authOptions: NextAuthOptions = {
           });
           token.rolePermissions = groupedPermissions;
         } else {
-          token.rolePermissions = [];
+          token.rolePermissions = [] as any;
         }
         token.id = user.id;
         token.requiresPasswordReset = requiresPasswordReset;
       }
+
+      // Check if token was issued before password was changed (session invalidation)
+      if (token.id && token.iat) {
+        const user = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { passwordChangedAt: true }
+        });
+
+        if (user?.passwordChangedAt) {
+          const tokenIssuedAt = new Date((token.iat as number) * 1000); // Convert from Unix timestamp
+          if (tokenIssuedAt < user.passwordChangedAt) {
+            // Token was issued before password change, mark for invalidation
+            console.log('[JWT] Token marked for invalidation due to password change:', {
+              userId: token.id,
+              tokenIssuedAt,
+              passwordChangedAt: user.passwordChangedAt
+            });
+            token.invalidated = true;
+          }
+        }
+      }
+
       // On token update, refresh user data
       if (trigger === "update") {
         const freshUser = await prisma.user.findUnique({
@@ -191,6 +213,12 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      // Check if token is marked as invalidated
+      if (token.invalidated) {
+        console.log('[Session] Session invalidated due to password change for user:', token.id);
+        throw new Error('SESSION_INVALIDATED');
+      }
+
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.requiresPasswordReset = token.requiresPasswordReset as boolean;

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { FaCircleInfo } from "react-icons/fa6";
 import { IoClose } from "react-icons/io5";
+import { signOut } from "next-auth/react";
 
 export const ChangePassword = ({ onClose }: { onClose: () => void }) => {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -41,12 +42,19 @@ export const ChangePassword = ({ onClose }: { onClose: () => void }) => {
       });
 
       if (res.ok) {
-        toast.success("Password changed successfully");
+        toast.success(
+          "Password changed successfully. All sessions will be terminated for security."
+        );
         // Clear form
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
         onClose(); // Close the modal after successful password change
+
+        // Sign out after a brief delay to allow the user to see the success message
+        setTimeout(() => {
+          signOut({ callbackUrl: "/login" });
+        }, 2000);
       } else {
         const data = await res.json();
         setError(data.error || "Failed to change password");

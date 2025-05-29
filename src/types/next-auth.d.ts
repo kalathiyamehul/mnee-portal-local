@@ -19,3 +19,12 @@ declare module 'next-auth' {
     requiresPasswordReset?: boolean;
   }
 }
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    id?: string;
+    requiresPasswordReset?: boolean;
+    rolePermissions?: Record<string, string[]>;
+    invalidated?: boolean;
+  }
+}

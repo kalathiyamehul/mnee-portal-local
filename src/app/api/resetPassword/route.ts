@@ -50,12 +50,13 @@ export const POST = withCSRF(async function (request: Request) {
     });
     console.log('[Reset Password] User state before update:', beforeUser);
 
-    // Update the user's password and reset flag
+    // Update user's password and clear the reset requirement
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
-        password: hashedPassword,
+        password: hashedPassword, 
         requiresPasswordReset: false,
+        passwordChangedAt: new Date() // This will invalidate all existing JWT tokens
       },
       select: { id: true, email: true, requiresPasswordReset: true }
     });
