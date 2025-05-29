@@ -33,7 +33,20 @@ export async function apiFetch(
         headers.set('Content-Type', 'application/json');
     }
 
-    return fetch(url, { ...options, headers });
+    const response = await fetch(url, { ...options, headers });
+
+    // Handle rate limiting responses
+    if (response.status === 429) {
+        const errorData = await response.json().catch(() => ({}));
+        const retryAfter = response.headers.get('Retry-After');
+
+        throw new Error(
+            errorData.message ||
+            `Rate limit exceeded. ${retryAfter ? `Try again in ${retryAfter} seconds.` : 'Please try again later.'}`
+        );
+    }
+
+    return response;
 }
 
 export function resetCsrfToken() {

@@ -373,12 +373,48 @@ model RolePermission {
 
 
 model ActivityLog {
-  id           String    @id @default(uuid())
-  name         String?    @map("name")
-  action       String?
-  description  String?
-  metadata     Json?
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  name        String
+  action      String
+  description String
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
   @@map("activity_log")
+}
+
+// Rate limiting and brute force protection models
+model RateLimitAttempt {
+  id          String   @id @default(uuid())
+  identifier  String   // IP address or email
+  type        RateLimitType
+  attempts    Int      @default(1)
+  windowStart DateTime @default(now()) @map("window_start")
+  lastAttempt DateTime @default(now()) @map("last_attempt")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([identifier, type])
+  @@index([identifier, type, windowStart])
+  @@map("rate_limit_attempt")
+}
+
+model AccountLockout {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  failedAttempts Int     @default(0) @map("failed_attempts")
+  lockedUntil   DateTime? @map("locked_until")
+  lastFailedAt  DateTime? @map("last_failed_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([email, lockedUntil])
+  @@map("account_lockout")
+}
+
+enum RateLimitType {
+  LOGIN_ATTEMPT
+  API_REQUEST
+  PASSWORD_RESET
+  TWO_FA_ATTEMPT
 }

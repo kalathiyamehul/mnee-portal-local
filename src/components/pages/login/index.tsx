@@ -7,29 +7,32 @@ import { FaSync, FaSpinner } from 'react-icons/fa';
 import { Suspense } from 'react';
 import toast from 'react-hot-toast';
 import { apiFetch } from '@/utils/api';
+import { getDisplayMessage } from "@/utils/errorHandler";
+import { sanitizeError } from "@/utils/errorHandler";
 
 function LoginPageInner() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [hasUsers, setHasUsers] = useState<boolean | null>(null);
   const [checking, setChecking] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const success = searchParams?.get('reset') === 'success' 
-    ? 'Password reset successful. Please log in with your new password.'
-    : '';
+  const success =
+    searchParams?.get("reset") === "success"
+      ? "Password reset successful. Please log in with your new password."
+      : "";
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const checkUsers = useCallback(async () => {
     try {
       setChecking(true);
-      const response = await apiFetch('/api/users/check');
+      const response = await apiFetch("/api/users/check");
       const data = await response.json();
       setHasUsers(data.hasUsers);
     } catch (err) {
       // console.error('Error checking users:', err);
-      toast.error('Error checking users');
+      toast.error("Error checking users");
       // Default to true to avoid showing the no users message if we can't check
       setHasUsers(true);
     } finally {
@@ -41,32 +44,35 @@ function LoginPageInner() {
     checkUsers();
   }, [checkUsers]);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError('');
-    setIsSubmitting(true);
-    
-    try {
-      const res = await signIn('credentials', {
-        redirect: false,
-        email,
-        password,
-        fromReset: success ? 'true' : 'false'
-      });
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      setError("");
+      setIsSubmitting(true);
 
-      if (!res?.error) {
-        router.push('/dash');
-      } else if (res.error === 'PASSWORD_RESET_REQUIRED') {
-        router.push('/reset-password');
-      } else {
-        setError('Invalid email or password');
+      try {
+        const res = await signIn("credentials", {
+          redirect: false,
+          email,
+          password,
+          fromReset: success ? "true" : "false",
+        });
+        if (!res?.error) {
+          router.push("/dash");
+        } else if (res.error === "PASSWORD_RESET_REQUIRED") {
+          router.push("/reset-password");
+        } else {
+          setError("Invalid email or password");
+        }
+      } catch (err) {
+        const sanitizedError = sanitizeError(err as Error, "Failed to login");
+        setError(getDisplayMessage(sanitizedError));
+      } finally {
+        setIsSubmitting(false);
       }
-    } catch (err) {
-      setError('An error occurred during login');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [email, password, router, success]);
+    },
+    [email, password, router, success]
+  );
 
   if (hasUsers === false) {
     return (
@@ -74,9 +80,10 @@ function LoginPageInner() {
         <div className="w-full max-w-sm p-6 bg-base-200 rounded-lg shadow-lg">
           <h1 className="text-2xl mb-4 text-center">No Users Found</h1>
           <p className="text-center text-base-content/70 mb-6">
-            No users have been created yet. Please use the create-user script to create a user account.
+            No users have been created yet. Please use the create-user script to
+            create a user account.
           </p>
-          <button 
+          <button
             type="button"
             onClick={checkUsers}
             disabled={checking}
@@ -134,14 +141,18 @@ function LoginPageInner() {
             />
           </div>
           {error && <p className="text-error mb-4">{error}</p>}
-          <button type="submit" className="btn btn-primary w-full" disabled={isSubmitting}>
+          <button
+            type="submit"
+            className="btn btn-primary w-full"
+            disabled={isSubmitting}
+          >
             {isSubmitting ? (
               <>
                 <FaSpinner className="animate-spin mr-2" />
                 Signing In...
               </>
             ) : (
-              'Sign In'
+              "Sign In"
             )}
           </button>
         </form>

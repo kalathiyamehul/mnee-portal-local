@@ -7,6 +7,7 @@ import { getConfig, revalidateConfig } from "@/lib/config";
 import { Prisma } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 // Enable caching for this route
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,7 @@ export const GET = withCSRF(async function() {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())
 
 export const POST = withCSRF(async function (request: Request) {
   const body = await request.json();
@@ -100,7 +101,7 @@ export const POST = withCSRF(async function (request: Request) {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())
 
 export const PATCH = withCSRF(async function(request: Request) {
   const body = await request.json();
@@ -138,7 +139,7 @@ export const PATCH = withCSRF(async function(request: Request) {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())
 
 export const DELETE = withCSRF(async function() {
   try {
@@ -164,4 +165,4 @@ export const DELETE = withCSRF(async function() {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())

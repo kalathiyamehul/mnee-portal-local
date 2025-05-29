@@ -6,6 +6,7 @@ import { BlacklistAction } from '@prisma/client';
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
 import { emitRestrictionsUpdate } from '../sse/route';
+import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 // Helper function to validate BlacklistAction
 function isBlacklistAction(action: string): action is BlacklistAction {
@@ -118,4 +119,4 @@ export const POST = withCSRF(async function(request: Request) {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())
