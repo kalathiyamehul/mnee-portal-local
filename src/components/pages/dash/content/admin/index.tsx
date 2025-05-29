@@ -79,7 +79,6 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     isSuperAdmin ? true : hasPermission(Resource.FREEZE, Action.REJECT) || false;
 
   // Customer Permissions
-  const hasCreateCustomerPer = isSuperAdmin ? true : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
   const hasApproveCustomerPer = isSuperAdmin ? true : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
   const hasRejectCustomerPer = isSuperAdmin ? true : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
   // Permissions object
