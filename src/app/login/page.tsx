@@ -43,6 +43,8 @@ function LoginPageInner() {
         if (result.error === "Invalid 2FA token") {
           setError("Invalid verification code");
           setToken("");
+        } else if (result?.error.includes("Account locked")) {
+          setError("Your account has been locked");
         } else {
           setError("Invalid email or password");
         }
@@ -54,7 +56,7 @@ function LoginPageInner() {
         router.push(result.url);
       }
     } catch (error) {
-      const sanitizedError = sanitizeError(error as Error, "Failed to login");
+      const sanitizedError = sanitizeError(error, "Failed to login");
       setError(getDisplayMessage(sanitizedError));
       setIsLoading(false);
     }
