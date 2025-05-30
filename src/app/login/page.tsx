@@ -44,7 +44,9 @@ function LoginPageInner() {
           setError("Invalid verification code");
           setToken("");
         } else if (result?.error.includes("Account locked")) {
-          setError("Your account has been locked");
+          setError(result?.error);
+        } else if (result?.error.includes("Too many login attempts")) {
+          setError("Too many login attempts");
         } else {
           setError("Invalid email or password");
         }

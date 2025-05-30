@@ -55,7 +55,7 @@ export const POST = withCSRF(async function (request: Request) {
     }
 
     // Check permission to update config
-    const canUpdateConfig = await hasServerPermission(Resource.CONFIG, Action.CREATE);
+    const canUpdateConfig = await (hasServerPermission(Resource.SUPER_ADMIN, Action.MANAGE) || hasServerPermission(Resource.CONFIG, Action.CREATE) );
     if (!canUpdateConfig) {
       return NextResponse.json(
         { error: "Forbidden. You don't have permission to modify configuration." },
@@ -147,7 +147,7 @@ export const PATCH = withCSRF(async function(request: Request) {
     }
 
     // Check permission to update config
-    const canUpdateConfig = await hasServerPermission(Resource.CONFIG, Action.UPDATE);
+    const canUpdateConfig = await (hasServerPermission(Resource.SUPER_ADMIN, Action.MANAGE) || hasServerPermission(Resource.CONFIG, Action.UPDATE));
     if (!canUpdateConfig) {
       return NextResponse.json(
         { error: "Forbidden. You don't have permission to modify configuration." },
@@ -185,7 +185,10 @@ export const PATCH = withCSRF(async function(request: Request) {
       return config;
     });
 
-    return NextResponse.json({ message: "Configuration updated." });
+    // Revalidate cache after update
+    await revalidateConfig();
+    
+    return NextResponse.json({ message: "Configuration updated.", updatedConfig });
   } catch (error) {
     console.error("Error saving config:", error);
     return NextResponse.json(
