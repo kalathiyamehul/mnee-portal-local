@@ -382,7 +382,8 @@ export default function RolesTab() {
               <button
                 className="btn btn-primary"
                 onClick={handleCreateRole}
-                disabled={!newRole.name.trim()}
+                disabled={!newRole.name.trim() || !newRole.description.trim() || 
+                  !newRole.permissions.some(p => p.actions.length > 0)}
               >
                 Create Role
               </button>
@@ -486,7 +487,8 @@ export default function RolesTab() {
               <button
                 className="btn btn-primary"
                 onClick={() => handleUpdateRole(editingRole.id)}
-                disabled={!editingRole.name.trim()}
+                disabled={!editingRole.name.trim() || !editingRole?.description?.trim() || 
+                  !editingRole.permissions.some(p => p.actions.length > 0)}
               >
                 Save Changes
               </button>

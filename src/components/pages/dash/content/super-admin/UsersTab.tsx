@@ -19,6 +19,7 @@ interface User {
     id: string;
     name: string;
   } | null;
+  createdBy: string;
   createdAt: string;
   creator?: {
     name: string | null;
@@ -480,13 +481,13 @@ export default function UsersPage() {
                     <div className="avatar">
                       <div className="mask mask-squircle w-10 h-10">
                         <img
-                          src={getGravatarUrl(user.email)}
+                          src={getGravatarUrl(user.createdBy)}
                           alt="User avatar"
                         />
                       </div>
                     </div>
                     <div>
-                      <div className="font-medium">{user.email}</div>
+                      <div className="font-medium">{user.createdBy}</div>
                       <div className="text-sm text-base-content/70">
                         {formatDistanceToNow(new Date(user.createdAt), {
                           addSuffix: true,
