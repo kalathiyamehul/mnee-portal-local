@@ -1,14 +1,14 @@
-import { ActiveRestrictions } from './ActiveRestrictions';
-import type { AddressStatus, Activity } from './types';
-import type { MouseEvent } from 'react';
-import { FaSnowflake, FaBan, FaCopy } from 'react-icons/fa6';
-import { MdOutlineOpenInNew, MdRemoveCircleOutline } from 'react-icons/md';
-import { formatDistanceToNow } from 'date-fns';
-import type { Session } from 'next-auth';
-import { getGravatarUrl } from '@/utils/gravatar';
-import { Pagination } from '@/components/common/Pagination';
-import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import { ActiveRestrictions } from "./ActiveRestrictions";
+import type { AddressStatus, Activity } from "./types";
+import type { MouseEvent } from "react";
+import { FaSnowflake, FaBan, FaCopy } from "react-icons/fa6";
+import { MdOutlineOpenInNew, MdRemoveCircleOutline } from "react-icons/md";
+import { formatDistanceToNow } from "date-fns";
+import type { Session } from "next-auth";
+import { getGravatarUrl } from "@/utils/gravatar";
+import { Pagination } from "@/components/common/Pagination";
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 
 interface ActiveRestrictionsTabProps {
   restrictions: AddressStatus[];
@@ -68,7 +68,11 @@ export const ActiveRestrictionsTab = ({
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
-  const showActions = permissions.hasApproveBlacklistPer || permissions.hasApproveFreezePer || permissions.hasRejectBlacklistPer || permissions.hasRejectFreezePer;
+  const showActions =
+    permissions.hasApproveBlacklistPer ||
+    permissions.hasApproveFreezePer ||
+    permissions.hasRejectBlacklistPer ||
+    permissions.hasRejectFreezePer;
 
   const getActionBadgeClass = (activity: Activity) => {
     if (activity.type === "BLACKLIST") {
@@ -135,14 +139,17 @@ export const ActiveRestrictionsTab = ({
   // Paginated activities
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentActivities = restrictionActivities.slice(indexOfFirstItem, indexOfLastItem);
+  const currentActivities = restrictionActivities.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
 
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">Active</h2>
         {permissions.hasCreateBlacklistPer &&
-          (permissions.hasCreateFreezePer && (
+          permissions.hasCreateFreezePer && (
             <button
               type="button"
               className="btn btn-primary btn-sm"
@@ -151,7 +158,7 @@ export const ActiveRestrictionsTab = ({
               <FaSnowflake className="mr-1" />
               <span className="text-sm">Restrict</span>
             </button>
-          ))}
+          )}
       </div>
       <ActiveRestrictions
         restrictions={restrictions}
@@ -178,11 +185,11 @@ export const ActiveRestrictionsTab = ({
               <tr>
                 <th>Requester</th>
                 <th>Address</th>
-                <th>Actions</th>
+                {showActions && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
-              {restrictionActivities.map((activity) => (
+              {currentActivities.map((activity) => (
                 <tr
                   key={activity.id}
                   className={`hover ${getRowBorderClass(activity)}`}
@@ -211,40 +218,43 @@ export const ActiveRestrictionsTab = ({
                   </td>
                   <td>
                     <div className="flex flex-col gap-1">
-                    <div className="flex flex-col">
-                    <div className="flex gap-1">
-                      <a
-                        href={`https://whatsonchain.com/address/${activity.address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <span className="font-mono text-sm">
-                          {activity.address}
-                        </span>
-                      </a>
-                      <button
-                        type="button"
-                        onClick={() => activity.address && handleCopyAddress(activity.address)}
-                        className="btn btn-ghost btn-xs btn-square"
-                      >
-                        <FaCopy className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <div
-                      className="tooltip tooltip-bottom"
-                      data-tip="View on WhatsOnChain"
-                    >
-                      <a
-                        href={`https://whatsonchain.com/address/${activity.address}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn-link btn-xs p-0"
-                      >
-                        View on Explorer{" "}
-                        <MdOutlineOpenInNew className="w-3 h-3" />
-                      </a>
-                    </div>
-                  </div>
+                      <div className="flex flex-col">
+                        <div className="flex gap-1">
+                          <a
+                            href={`https://whatsonchain.com/address/${activity.address}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <span className="font-mono text-sm">
+                              {activity.address}
+                            </span>
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              activity.address &&
+                              handleCopyAddress(activity.address)
+                            }
+                            className="btn btn-ghost btn-xs btn-square"
+                          >
+                            <FaCopy className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <div
+                          className="tooltip tooltip-bottom"
+                          data-tip="View on WhatsOnChain"
+                        >
+                          <a
+                            href={`https://whatsonchain.com/address/${activity.address}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-link btn-xs p-0"
+                          >
+                            View on Explorer{" "}
+                            <MdOutlineOpenInNew className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </div>
                       <div className="flex items-center gap-2">
                         <span
                           className={`badge ${getActionBadgeClass(
@@ -275,101 +285,111 @@ export const ActiveRestrictionsTab = ({
                       </div>
                     </div>
                   </td>
-                  <td>
-                    <div className="flex flex-wrap gap-1 sm:gap-2">
-                      {activity.status === "PENDING" && (
-                        <>
-                          {canCancel(activity) && (
+                  {showActions && (
+                    <td>
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
+                        {activity.status === "PENDING" && (
+                          <>
+                            {canCancel(activity) && (
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-sm"
+                                onClick={() =>
+                                  handleCancel(activity.id, activity.type)
+                                }
+                                disabled={loading}
+                              >
+                                {activity.type === "FREEZE" && "Cancel Freeze"}
+                                {activity.type === "BLACKLIST" &&
+                                  "Cancel Blacklist"}
+                              </button>
+                            )}
+                            {canApprove(activity) &&
+                              hasApprovePermission(activity.type) && (
+                                <button
+                                  type="button"
+                                  className="btn btn-primary btn-sm"
+                                  onClick={() =>
+                                    handleApprove(activity.id, activity.type)
+                                  }
+                                  disabled={loading}
+                                >
+                                  {activity.type === "FREEZE" &&
+                                    "Approve Freeze"}
+                                  {activity.type === "BLACKLIST" &&
+                                    "Approve Blacklist"}
+                                </button>
+                              )}
+                          </>
+                        )}
+                        {activity.type === "BLACKLIST" &&
+                          activity.status === "APPROVED" &&
+                          permissions.hasCreateBlacklistPer &&
+                          (restrictions.find(
+                            (r) => r.address === activity.address
+                          )?.isBlacklisted ? (
                             <button
                               type="button"
-                              className="btn btn-ghost btn-sm"
-                              onClick={() =>
-                                handleCancel(activity.id, activity.type)
+                              className="btn btn-outline btn-sm"
+                              onClick={(e) =>
+                                activity.address &&
+                                handleUnblacklist(e, activity.address)
                               }
                               disabled={loading}
                             >
-                              {activity.type === "FREEZE" && 'Cancel Freeze'}
-                                  {activity.type === "BLACKLIST" &&
-                                    'Cancel Blacklist'}
+                              <MdRemoveCircleOutline className="w-3 h-3 mr-1" />{" "}
+                              Unblacklist
                             </button>
-                          )}
-                          {canApprove(activity) && hasApprovePermission(activity.type) && (
+                          ) : (
+                            permissions.hasCreateBlacklistPer && (
+                              <button
+                                type="button"
+                                className="btn btn-error btn-sm"
+                                onClick={(e) =>
+                                  activity.address &&
+                                  handleBlacklist(e, activity.address)
+                                }
+                                disabled={loading}
+                              >
+                                <FaBan className="w-3 h-3 mr-1" /> Blacklist
+                              </button>
+                            )
+                          ))}
+                        {activity.type === "FREEZE" &&
+                          activity.status === "APPROVED" &&
+                          permissions.hasCreateFreezePer &&
+                          (restrictions.find(
+                            (r) => r.address === activity.address
+                          )?.isFrozen ? (
                             <button
                               type="button"
-                              className="btn btn-primary btn-sm"
+                              className="btn btn-outline btn-sm"
                               onClick={() =>
-                                handleApprove(activity.id, activity.type)
+                                activity.address &&
+                                handleUnfreeze(activity.address)
                               }
                               disabled={loading}
                             >
-                              {activity.type === "FREEZE" && 'Approve Freeze'}
-                                  {activity.type === "BLACKLIST" &&
-                                    'Approve Blacklist'}
+                              <FaSnowflake className="w-3 h-3 mr-1" /> Unfreeze
                             </button>
-                          )}
-                        </>
-                      )}
-                      {activity.type === "BLACKLIST" &&
-                        activity.status === "APPROVED" &&
-                        (restrictions.find(
-                          (r) => r.address === activity.address
-                        )?.isBlacklisted ? (
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={(e) =>
-                              activity.address &&
-                              handleUnblacklist(e, activity.address)
-                            }
-                            disabled={loading}
-                          >
-                            <MdRemoveCircleOutline className="w-3 h-3 mr-1" />{" "}
-                            Unblacklist
-                          </button>
-                        ) : permissions.hasCreateBlacklistPer && (
-                          <button
-                            type="button"
-                            className="btn btn-error btn-sm"
-                            onClick={(e) =>
-                              activity.address &&
-                              handleBlacklist(e, activity.address)
-                            }
-                            disabled={loading}
-                          >
-                            <FaBan className="w-3 h-3 mr-1" /> Blacklist
-                          </button>
-                        ))}
-                      {activity.type === "FREEZE" &&
-                        activity.status === "APPROVED" &&
-                        (restrictions.find(
-                          (r) => r.address === activity.address
-                        )?.isFrozen ? (
-                          <button
-                            type="button"
-                            className="btn btn-outline btn-sm"
-                            onClick={() =>
-                              activity.address &&
-                              handleUnfreeze(activity.address)
-                            }
-                            disabled={loading}
-                          >
-                            <FaSnowflake className="w-3 h-3 mr-1" /> Unfreeze
-                          </button>
-                        ) : permissions.hasCreateFreezePer && (
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-sm"
-                            onClick={(e) =>
-                              activity.address &&
-                              handleFreezeRequest(e, activity.address)
-                            }
-                            disabled={loading}
-                          >
-                            <FaSnowflake className="w-3 h-3 mr-1" /> Freeze
-                          </button>
-                        ))}
-                    </div>
-                  </td>
+                          ) : (
+                            permissions.hasCreateFreezePer && (
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                onClick={(e) =>
+                                  activity.address &&
+                                  handleFreezeRequest(e, activity.address)
+                                }
+                                disabled={loading}
+                              >
+                                <FaSnowflake className="w-3 h-3 mr-1" /> Freeze
+                              </button>
+                            )
+                          ))}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
