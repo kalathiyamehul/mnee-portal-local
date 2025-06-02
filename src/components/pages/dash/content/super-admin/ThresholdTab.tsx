@@ -130,12 +130,27 @@ const ThresholdTab = () => {
               </label>
               <input
                 type="number"
-                min="1"
+                min="2"
                 className="input input-bordered w-full"
                 value={editingThreshold?.value}
                 onChange={(e) =>
                   setEditingThreshold((prev) =>
-                    prev ? { ...prev, value: Number(e.target.value) } : null
+                    prev ? { 
+                      ...prev, 
+                      value: Math.max(
+                        editingThreshold?.id === "1"
+                          ? 2  // Absolute minimum
+                          : editingThreshold?.id === "2"
+                            ? (thresholds.find(t => t.id === "1")?.value ?? 2) + 1  // Min = threshold1 + 1
+                            : 2,
+                        Math.min(
+                          editingThreshold?.id === "1"
+                            ? (thresholds.find(t => t.id === "2")?.value ?? Infinity) - 1  // Max = threshold2 - 1
+                            : Infinity,
+                          Number(e.target.value)
+                        )
+                      )
+                    } : null
                   )
                 }
               />

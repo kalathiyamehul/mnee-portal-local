@@ -58,7 +58,7 @@ export const POST = withCSRF(async function(request: NextRequest) {
         const role = await prisma.$transaction(async (tx) => {
             const newRole = await tx.role.create({
                 data: {
-                    name: validatedData.name,
+                    name: validatedData.name.trim(),
                     description: validatedData.description,
                 },
             });
@@ -130,10 +130,10 @@ export const POST = withCSRF(async function(request: NextRequest) {
         }
 
         // Handle unique constraint violation
-        if (error instanceof Error && error.message.includes("P2002")) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
             return NextResponse.json(
                 { error: "A role with this name already exists" },
-                { status: 400 }
+                { status: 409 }
             );
         }
 
@@ -161,7 +161,7 @@ export const PUT = withCSRF(async function(request: NextRequest) {
             const role = await tx.role.update({
                 where: { id },
                 data: {
-                    name: validatedData.name,
+                    name: validatedData.name.trim(),
                     description: validatedData.description,
                 },
             });
@@ -231,10 +231,10 @@ export const PUT = withCSRF(async function(request: NextRequest) {
         }
 
         // Handle unique constraint violation
-        if (error instanceof Error && error.message.includes("P2002")) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
             return NextResponse.json(
                 { error: "A role with this name already exists" },
-                { status: 400 }
+                { status: 409 }
             );
         }
 
