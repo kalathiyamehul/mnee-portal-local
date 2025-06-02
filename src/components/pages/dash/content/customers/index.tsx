@@ -117,7 +117,7 @@ export default function DashboardCustomersContent() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
           <ExportButtons filename="customers" onExport={handleExport} />
-          {hasPermission(Resource.CUSTOMER, Action.CREATE) || isSuperAdmin && (
+          {(hasPermission(Resource.CUSTOMER, Action.CREATE) || isSuperAdmin) && (
             <button
               type="button"
               onClick={() => setShowModal(true)}
