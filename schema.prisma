@@ -19,6 +19,7 @@ model User {
   requiresPasswordReset Boolean   @default(true) @map("requires_password_reset")
   twoFactorSecret       String?   @map("two_factor_secret")
   twoFactorEnabled      Boolean   @default(false) @map("two_factor_enabled")
+  createdBy             String?   @map("created_by")
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
