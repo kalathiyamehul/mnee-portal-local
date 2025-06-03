@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { apiFetch } from "@/utils/api";
+import toast from "react-hot-toast";
 
 interface ActivityContentProps {
   initialActivityLogs: ActivityLog[];
@@ -33,7 +34,10 @@ export default function DashboardActivityContent({
       setActivityLogs(data.activityLogs);
       setPagination(data.pagination);
     } catch (error) {
-      console.error("Error fetching activity logs:", error);
+      // console.error("Error fetching activity logs:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Error fetching activity logs"
+      );
     } finally {
       setLoading(false);
     }
