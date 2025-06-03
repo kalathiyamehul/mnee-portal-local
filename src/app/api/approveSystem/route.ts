@@ -6,9 +6,11 @@ import { authOptions } from '@/lib/authOptions';
 import { isSystemPaused } from '@/lib/systemStatus';
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
+import { getConfig } from '@/lib/config';
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
+  const config = await getConfig();
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -92,12 +94,12 @@ export const POST = withCSRF(async function(request: Request) {
         },
       });
 
-      // Check approval count (requires exactly 2 approvals)
+      // Check approval count (requires exactly minimum Threshold approvals)
       const approvalsCount = await tx.actionApproval.count({
         where: { actionRequestId },
       });
 
-      if (approvalsCount === 2) {
+      if (approvalsCount === config?.minNoOfApproval) {
         await tx.actionRequest.update({
           where: { id: actionRequestId },
           data: { 

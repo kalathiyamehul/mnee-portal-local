@@ -160,26 +160,25 @@ export const SystemStatus = ({
         </div>
 
         {(isSuperAdmin || isAdmin) && (
-          <div
-            className="tooltip tooltip-warning tooltip-left"
-            data-tip={"Toggle to Raise System Pause Request"}
-          >
+          <div>
             {isRequester && pendingAction ? (
-              <button
-                type="button"
-                onClick={handleCancelPause}
-                className="btn btn-error btn-sm gap-2"
-                disabled={isCancelling}
-              >
-                {isCancelling ? (
-                  <FaSpinner className="animate-spin w-3 h-3" />
-                ) : (
-                  <FaXmark className="w-3 h-3" />
-                )}
-                Cancel
-              </button>
+              <div className="tooltip tooltip-warning tooltip-left" data-tip={"Cancle System Pause Request"}>
+                <button
+                  type="button"
+                  onClick={handleCancelPause}
+                  className="btn btn-error btn-sm gap-2"
+                  disabled={isCancelling}
+                >
+                  {isCancelling ? (
+                    <FaSpinner className="animate-spin w-3 h-3" />
+                  ) : (
+                    <FaXmark className="w-3 h-3" />
+                  )}
+                  Cancel
+                </button>
+              </div>
             ) : (
-              <div className="form-control">
+              <div className="form-control tooltip tooltip-warning tooltip-left" data-tip={"Toggle to Raise System Pause Request"}>
                 <label className="cursor-pointer relative">
                   <input
                     type="checkbox"

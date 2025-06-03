@@ -417,7 +417,7 @@ export const ActivityList = ({
                           {activity.status === "PENDING" && needsApproval && (
                             <span className="text-xs opacity-70">
                               {activity.approvals?.length || 0}/
-                              {activity.no_of_approvals} Approvals
+                              {activity.no_of_approvals || config?.minNoOfApproval} Approvals
                             </span>
                           )}
                         </div>
