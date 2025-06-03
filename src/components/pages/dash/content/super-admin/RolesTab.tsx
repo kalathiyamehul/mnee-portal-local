@@ -310,6 +310,7 @@ export default function RolesTab() {
                 placeholder="Enter role name"
                 className="input input-bordered w-full"
                 value={newRole.name}
+                maxLength={256}
                 onChange={(e) =>
                   setNewRole((prev) => ({ ...prev, name: e.target.value }))
                 }
@@ -324,6 +325,7 @@ export default function RolesTab() {
                 placeholder="Enter role description"
                 className="textarea textarea-bordered w-full"
                 value={newRole.description}
+                maxLength={512}
                 onChange={(e) =>
                   setNewRole((prev) => ({
                     ...prev,
