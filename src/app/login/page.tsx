@@ -39,14 +39,22 @@ function LoginPageInner() {
         setIsLoading(false);
         return;
       }
+
       if (result?.error) {
         if (result.error === "Invalid 2FA token") {
           setError("Invalid verification code");
           setToken("");
         } else if (result?.error.includes("Account locked")) {
           setError(result?.error);
-        } else if (result?.error.includes("Too many login attempts")) {
-          setError("Too many login attempts");
+        } else if (result?.error.includes("Rate limit exceeded")) {
+          setError(result.error);
+        } else if (
+          result?.error.includes("Too many login attempts") ||
+          result?.error.includes("Rate limit")
+        ) {
+          setError("Too many login attempts. Please try again later.");
+        } else if (result?.error.includes("2FA attempts")) {
+          setError("Too many 2FA attempts. Please try again later.");
         } else {
           setError("Invalid email or password");
         }

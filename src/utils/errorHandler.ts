@@ -23,6 +23,11 @@ export function sanitizeError(error: unknown, fallbackMessage = "An error occurr
 
     const errorMessage = error.message.toLowerCase();
 
+    // Handle rate limit errors first (before generic validation check)
+    if (errorMessage.includes("rate limit exceeded")) {
+        return { message: error.message, code: "RATE_LIMITED" }; // Return original message with proper casing
+    }
+
     // Handle specific known error patterns that are safe to show
     if (errorMessage.includes("not found")) {
         return { message: "The requested resource was not found", code: "NOT_FOUND" };
