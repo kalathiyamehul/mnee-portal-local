@@ -137,7 +137,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           action: "BURN" as const,
         })),
         ...statusData.refundRequests.map((req) => ({
-         ...req,
+          ...req,
           type: "REFUND" as const,
           action: "REFUND" as const,
         })),
@@ -178,6 +178,9 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const hasRejectMintPer = isSuperAdmin
     ? true
     : hasPermission(Resource.MINT, Action.REJECT) || false;
+  const hasReadMintPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.MINT, Action.READ) || false;
 
   // Burn Permissions
   const hasCreateBurnPer = isSuperAdmin
@@ -189,6 +192,9 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const hasRejectBurnPer = isSuperAdmin
     ? true
     : hasPermission(Resource.BURN, Action.REJECT) || false;
+  const hasReadBurnPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BURN, Action.READ) || false;
 
   // Refund Permissions
   const hasCreateRefundPer = isSuperAdmin
@@ -200,6 +206,9 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const hasRejectRefundPer = isSuperAdmin
     ? true
     : hasPermission(Resource.REFUND, Action.REJECT) || false;
+  const hasReadRefundPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.REFUND, Action.READ) || false;
 
   // Blacklist Permissions
   const hasCreateBlacklistPer = isSuperAdmin
@@ -211,6 +220,9 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const hasRejectBlacklistPer = isSuperAdmin
     ? true
     : hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
+  const hasReadBlacklistPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BLACKLIST, Action.READ) || false;
 
   // Freeze Permissions
   const hasCreateFreezePer = isSuperAdmin
@@ -222,6 +234,9 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const hasRejectFreezePer = isSuperAdmin
     ? true
     : hasPermission(Resource.FREEZE, Action.REJECT) || false;
+  const hasReadFreezePer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.FREEZE, Action.READ) || false;
 
   // Customers Permissions
   const hasCreateCustomerPer = isSuperAdmin
@@ -233,6 +248,9 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const hasRejectCustomerPer = isSuperAdmin
     ? true
     : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
+  const hasReadCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.READ) || false;
 
   // Permissions object
   const permissions = {
@@ -564,7 +582,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
             {selectedChart === "customers" && "Customer Growth"}
             {selectedChart === "restrictions" && "Restrictions History"}
           </h2>
-          {selectedChart === "volume" && (
+          {selectedChart === "volume" && (hasCreateMintPer || hasReadMintPer) && (
             <button
               type="button"
               onClick={() => router.push("/dash/admin?tab=mints")}
@@ -573,7 +591,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
               View Mints <FaArrowRight className="w-3 h-3" />
             </button>
           )}
-          {selectedChart === "mints" && (
+          {selectedChart === "mints" && (hasCreateMintPer || hasReadMintPer) && (
             <button
               type="button"
               onClick={() => router.push("/dash/admin?tab=mints")}
@@ -582,7 +600,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
               View Mints <FaArrowRight className="w-3 h-3" />
             </button>
           )}
-          {selectedChart === "burns" && (
+          {selectedChart === "burns" && (hasCreateBurnPer || hasReadBurnPer) && (
             <button
               type="button"
               onClick={() => router.push("/dash/admin?tab=burns")}
@@ -591,7 +609,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
               View Burns <FaArrowRight className="w-3 h-3" />
             </button>
           )}
-          {selectedChart === "customers" && (
+          {selectedChart === "customers" && (hasCreateCustomerPer || hasReadCustomerPer) && (
             <button
               type="button"
               onClick={() => router.push("/dash/customers")}
@@ -600,15 +618,16 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
               View Customers <FaArrowRight className="w-3 h-3" />
             </button>
           )}
-          {selectedChart === "restrictions" && (
-            <button
-              type="button"
-              onClick={() => router.push("/dash/admin?tab=restrictions")}
-              className="btn btn-ghost btn-sm gap-2"
-            >
-              View Restrictions <FaArrowRight className="w-3 h-3" />
-            </button>
-          )}
+          {selectedChart === "restrictions" &&
+            (hasCreateFreezePer || hasReadFreezePer || hasCreateBlacklistPer || hasReadBlacklistPer) && (
+              <button
+                type="button"
+                onClick={() => router.push("/dash/admin?tab=restrictions")}
+                className="btn btn-ghost btn-sm gap-2"
+              >
+                View Restrictions <FaArrowRight className="w-3 h-3" />
+              </button>
+            )}
         </div>
         <TokenActivityChart
           type={getChartType(selectedChart)}

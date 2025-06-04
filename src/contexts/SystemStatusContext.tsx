@@ -140,7 +140,7 @@ export function SystemStatusProvider({
 
     // Connection established
     eventSource.onopen = () => {
-      console.log("SSE connection established");
+      // console.log("SSE connection established");
     };
 
     eventSource.addEventListener(EVENTS.MINT_UPDATE, (event) => {
@@ -199,7 +199,7 @@ export function SystemStatusProvider({
     eventSource.addEventListener(EVENTS.CANCEL_UPDATE, (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log("data", data);
+        // console.log("data", data);
         const {
           actionRequestId,
           freezeRequestId,
@@ -537,13 +537,13 @@ export function SystemStatusProvider({
 
     // Clean up on unmount
     return () => {
-      console.log("Closing SSE connection");
+      // console.log("Closing SSE connection");
       eventSource.close();
       eventSource.removeEventListener(EVENTS.MINT_UPDATE, (event) => {
-        console.log(EVENTS.MINT_UPDATE, event);
+        // console.log(EVENTS.MINT_UPDATE, event);
       });
       eventSource.removeEventListener(EVENTS.CANCEL_UPDATE, (event) => {
-        console.log(EVENTS.CANCEL_UPDATE, event);
+        // console.log(EVENTS.CANCEL_UPDATE, event);
       });
     };
   }, [fetchStatus]);

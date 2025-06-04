@@ -596,7 +596,7 @@ export default function UsersPage() {
                       )
                     }
                   >
-                    <option value="">No Role</option>
+                    <option value="">Super Admin</option>
                     {roles.map((role) => (
                       <option key={role.id} value={role.id}>
                         {role.name}
@@ -759,8 +759,8 @@ export default function UsersPage() {
                 <td>
                   <div className="text-sm">
                     {user.role?.name || (
-                      <span className="text-base-content/50 italic">
-                        No Role
+                      <span className="text-base-content">
+                        Super Admin
                       </span>
                     )}
                   </div>
