@@ -22,13 +22,13 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Check account lockout first
-        const lockoutCheck = await checkAccountLockout(credentials.email);
-        if (lockoutCheck.isLocked) {
-          const lockoutMessage = lockoutCheck.lockedUntil
-            ? `Account locked until ${lockoutCheck.lockedUntil.toLocaleString()}`
-            : 'Account is locked due to too many failed login attempts';
-          throw new Error(lockoutMessage);
-        }
+        // const lockoutCheck = await checkAccountLockout(credentials.email);
+        // if (lockoutCheck.isLocked) {
+        //   const lockoutMessage = lockoutCheck.lockedUntil
+        //     ? `Account locked until ${lockoutCheck.lockedUntil.toLocaleString()}`
+        //     : 'Account is locked due to too many failed login attempts';
+        //   throw new Error(lockoutMessage);
+        // }
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
@@ -48,14 +48,14 @@ export const authOptions: NextAuthOptions = {
 
         if (!user) {
           // Update failed attempts for non-existent user to prevent user enumeration
-          await checkAccountLockout(credentials.email, false);
+          // await checkAccountLockout(credentials.email, false);
           return null;
         }
 
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) {
           // Update failed attempts for invalid password
-          await checkAccountLockout(credentials.email, false);
+          // await checkAccountLockout(credentials.email, false);
           return null;
         }
 
@@ -105,7 +105,7 @@ export const authOptions: NextAuthOptions = {
           });
 
           // Reset account lockout on successful login
-          await checkAccountLockout(credentials.email, true);
+          // await checkAccountLockout(credentials.email, true);
 
           return {
             ...user,
@@ -114,7 +114,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Reset account lockout on successful login
-        await checkAccountLockout(credentials.email, true);
+        // await checkAccountLockout(credentials.email, true);
 
         return {
           id: user.id,

@@ -5,7 +5,6 @@ import { authOptions } from '@/lib/authOptions';
 import bcrypt from 'bcrypt';
 import { isPasswordValid } from '@/utils/auth';
 import { withCSRF } from '@/lib/csrf';
-import { createPasswordResetRateLimit } from '@/lib/rateLimitHelpers';
 
 export const POST = withCSRF(async function (request: Request) {
   const session = await getServerSession(authOptions);
@@ -74,4 +73,4 @@ export const POST = withCSRF(async function (request: Request) {
       { status: 500 }
     );
   }
-}, createPasswordResetRateLimit());
+});

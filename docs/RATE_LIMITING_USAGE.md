@@ -28,30 +28,6 @@ export const POST = withCSRF(handler, createAPIRateLimit());
 export const POST = withCSRF(handler, createAPIRateLimit(50));
 ```
 
-### 2. Login Rate Limiting
-```typescript
-import { createLoginRateLimit } from '@/lib/rateLimitHelpers';
-
-// 5 attempts per 15 minutes, uses email from request body
-export const POST = withCSRF(handler, createLoginRateLimit());
-```
-
-### 3. 2FA Rate Limiting
-```typescript
-import { create2FARateLimit } from '@/lib/rateLimitHelpers';
-
-// 5 attempts per 5 minutes, uses email from request body
-export const POST = withCSRF(handler, create2FARateLimit());
-```
-
-### 4. Password Reset Rate Limiting
-```typescript
-import { createPasswordResetRateLimit } from '@/lib/rateLimitHelpers';
-
-// 3 attempts per hour, uses email from request body
-export const POST = withCSRF(handler, createPasswordResetRateLimit());
-```
-
 ### 5. Custom Rate Limiting
 ```typescript
 import { createCustomRateLimit } from '@/lib/rateLimitHelpers';
@@ -145,17 +121,6 @@ import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 export const GET = withCSRF(async function (request: Request) {
   return Response.json({ data: 'example' });
 }, createAPIRateLimit());
-```
-
-### Authentication Route
-```typescript
-// src/app/api/auth/login/route.ts
-import { withCSRF } from '@/lib/csrf';
-import { createLoginRateLimit } from '@/lib/rateLimitHelpers';
-
-export const POST = withCSRF(async function (request: Request) {
-  // Login logic
-}, createLoginRateLimit());
 ```
 
 ### No Rate Limiting

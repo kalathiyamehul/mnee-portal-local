@@ -1,7 +1,6 @@
 // Import necessary modules
 import bcrypt from 'bcrypt';
 import { getUserByEmail } from '../lib/prisma';
-import { checkAccountLockout, checkRateLimit } from '../lib/rateLimiter';
 
 /**
  * Authenticates a user by email and password.
