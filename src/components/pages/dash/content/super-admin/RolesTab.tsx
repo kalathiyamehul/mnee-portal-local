@@ -188,88 +188,150 @@ export default function RolesTab() {
     setIsEditing(true);
   };
 
+  // Helper function to get dependent permissions
+  const getDependentPermissions = (
+    resource: string,
+    action: string
+  ): string[] => {
+    const dependencies: string[] = [];
+
+    // READ is required for all other actions
+    if (action !== Action.READ) {
+      dependencies.push(Action.READ);
+    }
+
+    // Resource-specific dependencies
+    switch (resource) {
+      case Resource.CUSTOMER:
+        // For customer operations, READ is essential for APPROVE, REJECT, UPDATE, DELETE
+        if (
+          [
+            Action.APPROVE,
+            Action.REJECT,
+            Action.UPDATE,
+            Action.DELETE,
+          ].includes(action as Action)
+        ) {
+          dependencies.push(Action.READ);
+        }
+        break;
+
+      case Resource.WALLET:
+        // For wallet operations, READ is essential for UPDATE, DELETE
+        if ([Action.UPDATE, Action.DELETE].includes(action as Action)) {
+          dependencies.push(Action.READ);
+        }
+        break;
+
+      case Resource.MINT:
+      case Resource.BURN:
+      case Resource.FREEZE:
+      case Resource.BLACKLIST:
+      case Resource.REFUND:
+        // For these operations, READ is essential for CREATE, APPROVE, REJECT
+        if (
+          [Action.CREATE, Action.APPROVE, Action.REJECT].includes(
+            action as Action
+          )
+        ) {
+          dependencies.push(Action.READ);
+        }
+        break;
+
+      case Resource.CONFIG:
+        // For config operations, READ is essential for UPDATE, CREATE
+        if ([Action.UPDATE, Action.CREATE].includes(action as Action)) {
+          dependencies.push(Action.READ);
+        }
+        break;
+    }
+
+    return [...new Set(dependencies)]; // Remove duplicates
+  };
+
+  // Helper function to get permissions that depend on the current action
+  const getDependentOnPermissions = (
+    resource: string,
+    action: string
+  ): string[] => {
+    const dependents: string[] = [];
+
+    // If removing READ, remove all other permissions for this resource
+    if (action === Action.READ) {
+      const resourceConfig = RESOURCE_PERMISSIONS.find(
+        (r) => r.name === resource
+      );
+      if (resourceConfig) {
+        dependents.push(
+          ...resourceConfig.permissions.filter((p: string) => p !== Action.READ)
+        );
+      }
+    }
+
+    return dependents;
+  };
+
   const handlePermissionChange = (
     resource: string,
     action: string,
     checked: boolean,
     isForEditing: boolean = false
   ) => {
+    const updatePermissions = (prev: any) => {
+      if (!prev) return null;
+
+      const updatedPermissions = [...prev.permissions];
+      const resourceIndex = updatedPermissions.findIndex(
+        (p) => p.resource === resource
+      );
+
+      if (checked) {
+        // Adding permission - check dependencies
+        const dependencies = getDependentPermissions(resource, action);
+        const actionsToAdd = [action, ...dependencies];
+
+        if (resourceIndex === -1) {
+          // Resource not found, add new resource with action and dependencies
+          updatedPermissions.push({
+            resource,
+            actions: [...new Set(actionsToAdd)],
+          });
+        } else {
+          // Resource found, add action and dependencies
+          const existingActions = updatedPermissions[resourceIndex].actions;
+          const newActions = [
+            ...new Set([...existingActions, ...actionsToAdd]),
+          ];
+          updatedPermissions[resourceIndex] = {
+            ...updatedPermissions[resourceIndex],
+            actions: newActions,
+          };
+        }
+      } else {
+        // Removing permission - check dependents
+        if (resourceIndex !== -1) {
+          const dependents = getDependentOnPermissions(resource, action);
+          const actionsToRemove = [action, ...dependents];
+
+          updatedPermissions[resourceIndex] = {
+            ...updatedPermissions[resourceIndex],
+            actions: updatedPermissions[resourceIndex].actions.filter(
+              (a: string) => !actionsToRemove.includes(a)
+            ),
+          };
+        }
+      }
+
+      return {
+        ...prev,
+        permissions: updatedPermissions,
+      };
+    };
+
     if (isForEditing && editingRole) {
-      setEditingRole((prev) => {
-        if (!prev) return null;
-
-        const updatedPermissions = [...prev.permissions];
-        const resourceIndex = updatedPermissions.findIndex(
-          (p) => p.resource === resource
-        );
-
-        if (resourceIndex === -1 && checked) {
-          // Resource not found and checkbox is checked, add new resource with action
-          updatedPermissions.push({ resource, actions: [action] });
-        } else if (resourceIndex !== -1) {
-          // Resource found
-          if (
-            checked &&
-            !updatedPermissions[resourceIndex].actions.includes(action)
-          ) {
-            // Add action to existing resource
-            updatedPermissions[resourceIndex] = {
-              ...updatedPermissions[resourceIndex],
-              actions: [...updatedPermissions[resourceIndex].actions, action],
-            };
-          } else if (!checked) {
-            // Remove action from resource
-            updatedPermissions[resourceIndex] = {
-              ...updatedPermissions[resourceIndex],
-              actions: updatedPermissions[resourceIndex].actions.filter(
-                (a) => a !== action
-              ),
-            };
-          }
-        }
-
-        return {
-          ...prev,
-          permissions: updatedPermissions,
-        };
-      });
+      setEditingRole(updatePermissions);
     } else {
-      setNewRole((prev) => {
-        const updatedPermissions = [...prev.permissions];
-        const resourceIndex = updatedPermissions.findIndex(
-          (p) => p.resource === resource
-        );
-
-        if (resourceIndex === -1 && checked) {
-          // Resource not found and checkbox is checked, add new resource with action
-          updatedPermissions.push({ resource, actions: [action] });
-        } else if (resourceIndex !== -1) {
-          // Resource found
-          if (
-            checked &&
-            !updatedPermissions[resourceIndex].actions.includes(action)
-          ) {
-            // Add action to existing resource
-            updatedPermissions[resourceIndex] = {
-              ...updatedPermissions[resourceIndex],
-              actions: [...updatedPermissions[resourceIndex].actions, action],
-            };
-          } else if (!checked) {
-            // Remove action from resource
-            updatedPermissions[resourceIndex] = {
-              ...updatedPermissions[resourceIndex],
-              actions: updatedPermissions[resourceIndex].actions.filter(
-                (a) => a !== action
-              ),
-            };
-          }
-        }
-
-        return {
-          ...prev,
-          permissions: updatedPermissions,
-        };
-      });
+      setNewRole(updatePermissions);
     }
   };
 
@@ -389,6 +451,27 @@ export default function RolesTab() {
               <label className="label">
                 <span className="label-text">Permissions</span>
               </label>
+              <div className="alert alert-info mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  className="stroke-current shrink-0 w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                <span className="text-sm">
+                  <strong>Permission Dependencies:</strong> READ permission is
+                  automatically selected when you choose other actions, as it's
+                  required for most operations. Unchecking READ will remove all
+                  other permissions for that resource.
+                </span>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {RESOURCE_PERMISSIONS.map((resource) => (
                   <div key={resource.name} className="card bg-base-200">
@@ -397,29 +480,50 @@ export default function RolesTab() {
                         {resource.name}
                       </h3>
                       <div className="space-y-2">
-                        {resource.permissions.map((action) => (
-                          <label
-                            key={action}
-                            className="flex items-center gap-2"
-                          >
-                            <input
-                              type="checkbox"
-                              className="checkbox checkbox-sm"
-                              checked={isPermissionActive(
-                                resource.name,
-                                action
-                              )}
-                              onChange={(e) =>
-                                handlePermissionChange(
-                                  resource.name,
-                                  action,
-                                  e.target.checked
-                                )
-                              }
-                            />
-                            <span className="text-sm">{action}</span>
-                          </label>
-                        ))}
+                        {resource.permissions.map((action) => {
+                          const isChecked = isPermissionActive(
+                            resource.name,
+                            action
+                          );
+                          const isReadAction = action === Action.READ;
+                          const hasOtherPermissions = resource.permissions
+                            .filter((p) => p !== Action.READ)
+                            .some((p) => isPermissionActive(resource.name, p));
+                          const isAutoSelected =
+                            isReadAction && hasOtherPermissions && isChecked;
+
+                          return (
+                            <label
+                              key={action}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                type="checkbox"
+                                className="checkbox checkbox-sm"
+                                checked={isChecked}
+                                onChange={(e) =>
+                                  handlePermissionChange(
+                                    resource.name,
+                                    action,
+                                    e.target.checked
+                                  )
+                                }
+                              />
+                              <span
+                                className={`text-sm ${
+                                  isAutoSelected ? "text-info font-medium" : ""
+                                }`}
+                              >
+                                {action}
+                                {/* {isAutoSelected && (
+                                  <span className="text-xs text-info ml-1">
+                                    (auto)
+                                  </span>
+                                )} */}
+                              </span>
+                            </label>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -511,6 +615,27 @@ export default function RolesTab() {
               <label className="label">
                 <span className="label-text">Permissions</span>
               </label>
+              <div className="alert alert-info mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  className="stroke-current shrink-0 w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                <span className="text-sm">
+                  <strong>Permission Dependencies:</strong> READ permission is
+                  automatically selected when you choose other actions, as it's
+                  required for most operations. Unchecking READ will remove all
+                  other permissions for that resource.
+                </span>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {RESOURCE_PERMISSIONS.map((resource) => (
                   <div key={resource.name} className="card bg-base-200">
@@ -519,31 +644,54 @@ export default function RolesTab() {
                         {resource.name}
                       </h3>
                       <div className="space-y-2">
-                        {resource.permissions.map((action) => (
-                          <label
-                            key={action}
-                            className="flex items-center gap-2"
-                          >
-                            <input
-                              type="checkbox"
-                              className="checkbox checkbox-sm"
-                              checked={isPermissionActive(
-                                resource.name,
-                                action,
-                                true
-                              )}
-                              onChange={(e) =>
-                                handlePermissionChange(
-                                  resource.name,
-                                  action,
-                                  e.target.checked,
-                                  true
-                                )
-                              }
-                            />
-                            <span className="text-sm">{action}</span>
-                          </label>
-                        ))}
+                        {resource.permissions.map((action) => {
+                          const isChecked = isPermissionActive(
+                            resource.name,
+                            action,
+                            true
+                          );
+                          const isReadAction = action === Action.READ;
+                          const hasOtherPermissions = resource.permissions
+                            .filter((p) => p !== Action.READ)
+                            .some((p) =>
+                              isPermissionActive(resource.name, p, true)
+                            );
+                          const isAutoSelected =
+                            isReadAction && hasOtherPermissions && isChecked;
+
+                          return (
+                            <label
+                              key={action}
+                              className="flex items-center gap-2"
+                            >
+                              <input
+                                type="checkbox"
+                                className="checkbox checkbox-sm"
+                                checked={isChecked}
+                                onChange={(e) =>
+                                  handlePermissionChange(
+                                    resource.name,
+                                    action,
+                                    e.target.checked,
+                                    true
+                                  )
+                                }
+                              />
+                              <span
+                                className={`text-sm ${
+                                  isAutoSelected ? "text-info font-medium" : ""
+                                }`}
+                              >
+                                {action}
+                                {/* {isAutoSelected && (
+                                  <span className="text-xs text-info ml-1">
+                                    (auto)
+                                  </span>
+                                )} */}
+                              </span>
+                            </label>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
