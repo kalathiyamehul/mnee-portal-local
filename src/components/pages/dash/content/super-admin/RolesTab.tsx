@@ -428,7 +428,13 @@ export default function RolesTab() {
             </div>
 
             <div className="modal-action">
-              <button className="btn" onClick={() => setIsCreating(false)}>
+              <button
+                className="btn"
+                onClick={() => {
+                  setIsCreating(false);
+                  setNewRole({ name: "", description: "", permissions: [] });
+                }}
+              >
                 Cancel
               </button>
               <button
@@ -578,8 +584,8 @@ export default function RolesTab() {
           <div key={role.id} className="card bg-base-200">
             <div className="card-body">
               <div className="flex justify-between items-start">
-                <h2 className="card-title">{role.name}</h2>
-                <div className="flex gap-2">
+                <h2 className="card-title break-words">{role.name}</h2>
+                <div className="flex gap-2 flex-shrink-0">
                   <button
                     className="btn btn-sm btn-ghost"
                     onClick={() => handleStartEditing(role)}
@@ -595,7 +601,7 @@ export default function RolesTab() {
                 </div>
               </div>
               {role.description && (
-                <p className="text-sm text-base-content/70">
+                <p className="text-sm text-base-content/70 break-words whitespace-pre-wrap">
                   {role.description}
                 </p>
               )}
@@ -611,8 +617,12 @@ export default function RolesTab() {
 
                   return (
                     <div key={resource} className="text-sm">
-                      <span className="font-medium">{resource}:</span>{" "}
-                      {resourcePermissions.join(", ")}
+                      <span className="font-medium break-words">
+                        {resource}:
+                      </span>{" "}
+                      <span className="break-words">
+                        {resourcePermissions.join(", ")}
+                      </span>
                     </div>
                   );
                 })}
