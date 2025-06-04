@@ -32,6 +32,9 @@ export const GET = withCSRF(async function() {
                         permission: true
                     }
                 }
+            },
+            orderBy: {
+                createdAt: "desc"
             }
         });
         return NextResponse.json(roles);
