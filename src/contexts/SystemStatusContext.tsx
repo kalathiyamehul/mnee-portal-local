@@ -193,7 +193,7 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
     eventSource.addEventListener(EVENTS.CANCEL_UPDATE, (event) => {
@@ -287,7 +287,7 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
     eventSource.addEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
@@ -340,7 +340,7 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
     eventSource.addEventListener(EVENTS.RESTRICTIONS_UPDATE, (event) => {
@@ -424,7 +424,7 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
     eventSource.addEventListener(EVENTS.BURN_UPDATE, (event) => {
@@ -480,7 +480,7 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
     eventSource.addEventListener(EVENTS.REFUND_UPDATE, (event) => {
@@ -525,13 +525,13 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
 
     // Handle errors
     eventSource.onerror = (error) => {
-      console.error("SSE connection error:", error);
+      // console.error("SSE connection error:", error);
       eventSource.close();
     };
 

@@ -8,7 +8,7 @@ import { withCSRF } from '@/lib/csrf';
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 import { emitPasswordChanged } from '@/lib/sseEmitter';
 
-export const POST = withCSRF(async function (request: Request) {
+export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   console.log('[Reset Password] Session state:', {
     userId: session?.user?.id,
@@ -81,4 +81,4 @@ export const POST = withCSRF(async function (request: Request) {
       { status: 500 }
     );
   }
-}, createAPIRateLimit());
+};

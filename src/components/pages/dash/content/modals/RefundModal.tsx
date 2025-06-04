@@ -45,7 +45,7 @@ export const RefundModal = ({
           setRefundAddress(data.owners[0]);
         }
       } catch (error) {
-        console.error("Error fetching UTXO data:", error);
+        // console.error("Error fetching UTXO data:", error);
         toast.error("Failed to load UTXO data");
       } finally {
         setLoadingUtxo(false);

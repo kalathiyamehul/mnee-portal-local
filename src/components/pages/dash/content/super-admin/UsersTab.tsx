@@ -301,7 +301,7 @@ export default function UsersPage() {
       toast.error(
         error instanceof Error ? error.message : "Failed to update user Password"
       );
-      console.error(error);
+      // console.error(error);
     }
   };
 
