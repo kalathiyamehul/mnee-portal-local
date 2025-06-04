@@ -6,6 +6,7 @@ import { z } from "zod";
 import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { emitUserSessionInvalidate } from "@/lib/sseEmitter";
 
 const assignRoleSchema = z.object({
     userId: z.string().min(1, "User ID is required"),
@@ -51,6 +52,7 @@ export const POST = withCSRF(async function(request: NextRequest) {
             where: { id: validatedData.userId },
             data: {
                 roleId: validatedData.roleId,
+                lastRoleUpdatedAt: new Date(),
             },
             include: {
                 role: true,
@@ -60,14 +62,31 @@ export const POST = withCSRF(async function(request: NextRequest) {
         await logActivity(prisma, {
             name: "Role Assigned",
             action: "ROLE_ASSIGN",
-            description: `Role ${validatedData.roleId} assigned to user ${validatedData.userId} by user ${session.user.id}`,
+            description: `Role ${role.name} assigned to user ${user.email} by user ${session.user.id}`,
             metadata: {
                 userId: validatedData.userId,
                 roleId: validatedData.roleId,
+                roleName: role.name,
+                userEmail: user.email,
             },
         });
 
-        return NextResponse.json(userRole, { status: 201 });
+        // Emit user session invalidation event
+        emitUserSessionInvalidate({
+            userIds: [validatedData.userId],
+            reason: 'role_assigned',
+            roleId: validatedData.roleId,
+            roleName: role.name
+        });
+
+        return NextResponse.json({
+            message: "Role assigned successfully",
+            user: {
+                id: userRole.id,
+                email: userRole.email,
+                role: userRole.role,
+            },
+        });
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json(

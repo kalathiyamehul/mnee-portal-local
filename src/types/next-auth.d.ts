@@ -26,5 +26,6 @@ declare module 'next-auth/jwt' {
     requiresPasswordReset?: boolean;
     rolePermissions?: Record<string, string[]>;
     invalidated?: boolean;
+    lastRoleUpdatedAt?: Date;
   }
 }

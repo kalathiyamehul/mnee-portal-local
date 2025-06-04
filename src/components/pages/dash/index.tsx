@@ -1,10 +1,12 @@
 "use client"
 
-import { useMemo } from "react"
-import DashboardHomeContent from "./content/home"
-import DashboardWalletContent from "./content/wallet"
-import DashboardAdminContent from "./content/admin"
-import DashboardSettingsContent from './content/settings';
+import { useMemo, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
+import { toast } from "react-hot-toast";
+import DashboardHomeContent from "./content/home";
+import DashboardWalletContent from "./content/wallet";
+import DashboardAdminContent from "./content/admin";
+import DashboardSettingsContent from "./content/settings";
 import DashboardCustomersContent from "./content/customers";
 import DashboardTransactionsContent from "./content/transactions";
 import DashboardSuperAdminContent from "./content/super-admin";
@@ -37,6 +39,65 @@ const Dashboard: React.FC<DashboardProps> = ({
   activityLogs,
   pagination,
 }) => {
+  const { data: session } = useSession();
+
+  // Listen for SSE events to handle session invalidation
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const eventSource = new EventSource("/api/sse");
+
+    const handleUserSessionInvalidate = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        const { userIds, reason, roleName } = data;
+
+        // Check if current user is affected
+        if (userIds.includes(session.user.id)) {
+          let message = "Your session has been invalidated.";
+
+          switch (reason) {
+            case "role_updated":
+              message = `Your role "${roleName}" has been updated. Please log in again.`;
+              break;
+            case "role_assigned":
+              message = `Your role has been changed to "${roleName}". Please log in again.`;
+              break;
+            case "role_deleted":
+              message = `Your role "${roleName}" has been deleted. Please log in again.`;
+              break;
+          }
+
+          toast.error(message);
+
+          // Sign out the user after a short delay
+          setTimeout(() => {
+            signOut({ callbackUrl: "/login" });
+          }, 2000);
+        }
+      } catch (error) {
+        console.error("Error parsing SSE event:", error);
+      }
+    };
+
+    eventSource.addEventListener(
+      "userSessionInvalidate",
+      handleUserSessionInvalidate
+    );
+
+    eventSource.onerror = (error) => {
+      console.error("SSE connection error:", error);
+    };
+
+    return () => {
+      eventSource.removeEventListener(
+        "userSessionInvalidate",
+        handleUserSessionInvalidate
+      );
+      eventSource.close();
+    };
+  }, [session?.user?.id]);
+
   const dashContent = useMemo(() => {
     switch (page) {
       case DashPages.HOME:

@@ -59,7 +59,21 @@ export async function GET(req: NextRequest) {
                 controller.enqueue(
                     `event: ${EVENTS.REFUND_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
                 );
-            }; 
+            };
+
+            // Role update
+            const onRoleUpdate = (data: any) => {
+                controller.enqueue(
+                    `event: ${EVENTS.ROLE_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
+                );
+            };
+
+            // User session invalidation
+            const onUserSessionInvalidate = (data: any) => {
+                controller.enqueue(
+                    `event: ${EVENTS.USER_SESSION_INVALIDATE}\ndata: ${JSON.stringify(data)}\n\n`
+                );
+            };
 
             // Listen for approval events
             emitter.on(EVENTS.MINT_UPDATE, onApprovalUpdate);
@@ -68,6 +82,8 @@ export async function GET(req: NextRequest) {
             emitter.on(EVENTS.RESTRICTIONS_UPDATE, onRestrictionsUpdate);
             emitter.on(EVENTS.BURN_UPDATE, onburnUpdate);
             emitter.on(EVENTS.REFUND_UPDATE, onrefundUpdate);
+            emitter.on(EVENTS.ROLE_UPDATE, onRoleUpdate);
+            emitter.on(EVENTS.USER_SESSION_INVALIDATE, onUserSessionInvalidate);
 
             // Clean up when the connection closes
             req.signal?.addEventListener("abort", () => {
@@ -77,6 +93,8 @@ export async function GET(req: NextRequest) {
                 emitter.off(EVENTS.RESTRICTIONS_UPDATE, onRestrictionsUpdate);
                 emitter.off(EVENTS.BURN_UPDATE, onburnUpdate);
                 emitter.off(EVENTS.REFUND_UPDATE, onrefundUpdate);
+                emitter.off(EVENTS.ROLE_UPDATE, onRoleUpdate);
+                emitter.off(EVENTS.USER_SESSION_INVALIDATE, onUserSessionInvalidate);
                 controller.close();
             });
         }
