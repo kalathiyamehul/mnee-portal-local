@@ -12,7 +12,7 @@ import { Utils } from "@bsv/sdk";
 import { isSystemPaused } from "@/lib/systemStatus";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
-import { emitburnUpdate } from "../sse/route";
+import { emitburnUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 const { toArray } = Utils;
 

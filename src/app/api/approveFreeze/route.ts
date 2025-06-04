@@ -6,7 +6,7 @@ import { authOptions } from "@/lib/authOptions";
 import { isSystemPaused } from "@/lib/systemStatus";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
-import { emitRestrictionsUpdate } from "../sse/route";
+import { emitRestrictionsUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 export const POST = withCSRF(async function(request: Request) {

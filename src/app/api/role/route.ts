@@ -6,6 +6,7 @@ import { z } from "zod";
 import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { Prisma } from "@prisma/client";
 
 // Schema for role creation/update
 const roleSchema = z.object({

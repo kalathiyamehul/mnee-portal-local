@@ -10,7 +10,7 @@ import {
   sanitizeHttpError,
   getDisplayMessage,
 } from "@/utils/errorHandler";
-import { EVENTS } from "@/app/api/sse/route";
+import { EVENTS } from "@/lib/sseEmitter";
 
 interface SystemStatusData {
   isPaused: boolean;

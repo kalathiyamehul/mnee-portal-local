@@ -7,7 +7,7 @@ import { FreezeRequestAction } from '@prisma/client';
 import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
 import { logActivity } from '@/lib/activityLogger';
 import { withCSRF } from '@/lib/csrf';
-import { emitRestrictionsUpdate } from '../sse/route';
+import { emitRestrictionsUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 // Helper function to validate FreezeRequestAction

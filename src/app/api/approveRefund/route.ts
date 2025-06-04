@@ -12,7 +12,7 @@ import type { IndexContext } from "@/types/indexContext";
 import type { RefundRequest } from "@/types/refund";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
-import { emitrefundUpdate } from "../sse/route";
+import { emitrefundUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 const { toBase64 } = Utils;
 

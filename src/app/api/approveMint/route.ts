@@ -21,8 +21,8 @@ import {
 import CosignTemplate from "@/templates/cosign";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
-import { emitMintUpdate } from '../sse/route';
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { emitMintUpdate } from "@/lib/sseEmitter";
 
 type MintRequestWithRelations = Prisma.MintRequestGetPayload<{
 	include: {

@@ -5,8 +5,8 @@ import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
-import { emitMintUpdate } from "../sse/route";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { emitMintUpdate } from "@/lib/sseEmitter";
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);

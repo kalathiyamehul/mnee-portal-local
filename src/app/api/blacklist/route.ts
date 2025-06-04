@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/authOptions';
 import { BlacklistAction } from '@prisma/client';
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
-import { emitRestrictionsUpdate } from '../sse/route';
+import { emitRestrictionsUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 // Helper function to validate BlacklistAction

@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { logActivity } from '@/lib/activityLogger';
 import { withCSRF } from '@/lib/csrf';
-import { emitCancelUpdate } from '../sse/route';
+import { emitCancelUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 export const POST = withCSRF(async function(request: Request) {
