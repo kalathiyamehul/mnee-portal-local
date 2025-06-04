@@ -144,7 +144,9 @@ export default function RolesTab() {
         throw new Error(data.error || "Failed to update role");
       }
 
-      toast.success("Role updated successfully");
+      toast.success(
+        "Role updated successfully. Affected users will be logged out automatically."
+      );
       fetchRoles();
       setIsEditing(false);
       setEditingRole(null);
@@ -349,7 +351,9 @@ export default function RolesTab() {
         throw new Error(data.error || "Failed to delete role");
       }
 
-      toast.success("Role deleted successfully");
+      toast.success(
+        "Role deleted successfully. Affected users will be logged out automatically."
+      );
       fetchRoles();
     } catch (error) {
       toast.error(

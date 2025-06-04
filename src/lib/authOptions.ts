@@ -219,13 +219,23 @@ export const authOptions: NextAuthOptions = {
       if (token.id && token.iat) {
         const user = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { passwordChangedAt: true }
+          select: {
+            passwordChangedAt: true,
+            lastRoleUpdatedAt: true
+          }
         });
 
         if (user?.passwordChangedAt) {
           const tokenIssuedAt = new Date((token.iat as number) * 1000); // Convert from Unix timestamp
           if (tokenIssuedAt < user.passwordChangedAt) {
-            // Token was issued before password change, mark for invalidation
+            token.invalidated = true;
+          }
+        }
+
+        // Check if token was issued before role was updated (session invalidation)
+        if (user?.lastRoleUpdatedAt) {
+          const tokenIssuedAt = new Date((token.iat as number) * 1000); // Convert from Unix timestamp
+          if (tokenIssuedAt < user.lastRoleUpdatedAt) {
             token.invalidated = true;
           }
         }

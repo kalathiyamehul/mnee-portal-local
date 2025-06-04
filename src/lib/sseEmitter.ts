@@ -14,6 +14,8 @@ export const EVENTS = {
     RESTRICTIONS_UPDATE: "restrictionsUpdate",
     BURN_UPDATE: "burnUpdate",
     REFUND_UPDATE: "refundUpdate",
+    ROLE_UPDATE: "roleUpdate",
+    USER_SESSION_INVALIDATE: "userSessionInvalidate",
 };
 
 // Helper functions to emit events from API routes
@@ -43,4 +45,22 @@ export function emitburnUpdate(data: any) {
 
 export function emitrefundUpdate(data: any) {
     emitter.emit(EVENTS.REFUND_UPDATE, data);
+}
+
+export function emitRoleUpdate(data: {
+    roleId: string;
+    roleName: string;
+    action: 'created' | 'updated' | 'deleted';
+    affectedUserIds?: string[];
+}) {
+    emitter.emit(EVENTS.ROLE_UPDATE, data);
+}
+
+export function emitUserSessionInvalidate(data: {
+    userIds: string[];
+    reason: 'role_updated' | 'role_assigned' | 'role_deleted';
+    roleId?: string;
+    roleName?: string;
+}) {
+    emitter.emit(EVENTS.USER_SESSION_INVALIDATE, data);
 } 
