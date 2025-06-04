@@ -38,6 +38,43 @@ export default function RolesTab() {
     (Role & { permissions: PermissionGroup[] }) | null
   >(null);
 
+  // Add validation functions
+  const validateRoleName = (name: string): boolean => {
+    // Only allow alphabetic characters and spaces, max 256 characters
+    const regex = /^[A-Za-z\s]*$/;
+    return regex.test(name) && name.length <= 256;
+  };
+
+  const validateDescription = (description: string): boolean => {
+    // Max 512 characters
+    return description.length <= 512;
+  };
+
+  const handleRoleNameChange = (value: string, isEditing: boolean = false) => {
+    if (validateRoleName(value)) {
+      if (isEditing) {
+        setEditingRole((prev) => (prev ? { ...prev, name: value } : null));
+      } else {
+        setNewRole((prev) => ({ ...prev, name: value }));
+      }
+    }
+  };
+
+  const handleDescriptionChange = (
+    value: string,
+    isEditing: boolean = false
+  ) => {
+    if (validateDescription(value)) {
+      if (isEditing) {
+        setEditingRole((prev) =>
+          prev ? { ...prev, description: value } : null
+        );
+      } else {
+        setNewRole((prev) => ({ ...prev, description: value }));
+      }
+    }
+  };
+
   useEffect(() => {
     fetchRoles();
   }, []);
@@ -304,35 +341,48 @@ export default function RolesTab() {
             <div className="form-control w-full mb-4">
               <label className="label">
                 <span className="label-text">Role Name</span>
+                <span className="label-text-alt text-xs">
+                  {newRole.name.length}/256 characters (letters and spaces only)
+                </span>
               </label>
               <input
                 type="text"
-                placeholder="Enter role name"
+                placeholder="Enter role name (letters and spaces only)"
                 className="input input-bordered w-full"
                 value={newRole.name}
-                maxLength={256}
-                onChange={(e) =>
-                  setNewRole((prev) => ({ ...prev, name: e.target.value }))
-                }
+                onChange={(e) => handleRoleNameChange(e.target.value)}
               />
+              {newRole.name && !validateRoleName(newRole.name) && (
+                <label className="label">
+                  <span className="label-text-alt text-error text-xs">
+                    Role name must contain only letters and spaces (max 256
+                    characters)
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="form-control w-full mb-4">
               <label className="label">
                 <span className="label-text">Description</span>
+                <span className="label-text-alt text-xs">
+                  {newRole.description.length}/512 characters
+                </span>
               </label>
               <textarea
                 placeholder="Enter role description"
                 className="textarea textarea-bordered w-full"
                 value={newRole.description}
-                maxLength={512}
-                onChange={(e) =>
-                  setNewRole((prev) => ({
-                    ...prev,
-                    description: e.target.value,
-                  }))
-                }
+                onChange={(e) => handleDescriptionChange(e.target.value)}
               />
+              {newRole.description &&
+                !validateDescription(newRole.description) && (
+                  <label className="label">
+                    <span className="label-text-alt text-error text-xs">
+                      Description must be 512 characters or less
+                    </span>
+                  </label>
+                )}
             </div>
 
             <div className="mb-4">
@@ -384,8 +434,12 @@ export default function RolesTab() {
               <button
                 className="btn btn-primary"
                 onClick={handleCreateRole}
-                disabled={!newRole.name.trim() || !newRole.description.trim() || 
-                  !newRole.permissions.some(p => p.actions.length > 0)}
+                disabled={
+                  !newRole.name.trim() ||
+                  !validateRoleName(newRole.name) ||
+                  !validateDescription(newRole.description) ||
+                  !newRole.permissions.some((p) => p.actions.length > 0)
+                }
               >
                 Create Role
               </button>
@@ -402,34 +456,49 @@ export default function RolesTab() {
             <div className="form-control w-full mb-4">
               <label className="label">
                 <span className="label-text">Role Name</span>
+                <span className="label-text-alt text-xs">
+                  {editingRole.name.length}/256 characters (letters and spaces
+                  only)
+                </span>
               </label>
               <input
                 type="text"
-                placeholder="Enter role name"
+                placeholder="Enter role name (letters and spaces only)"
                 className="input input-bordered w-full"
                 value={editingRole.name}
-                onChange={(e) =>
-                  setEditingRole((prev) =>
-                    prev ? { ...prev, name: e.target.value } : null
-                  )
-                }
+                onChange={(e) => handleRoleNameChange(e.target.value, true)}
               />
+              {editingRole.name && !validateRoleName(editingRole.name) && (
+                <label className="label">
+                  <span className="label-text-alt text-error text-xs">
+                    Role name must contain only letters and spaces (max 256
+                    characters)
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="form-control w-full mb-4">
               <label className="label">
                 <span className="label-text">Description</span>
+                <span className="label-text-alt text-xs">
+                  {(editingRole.description || "").length}/512 characters
+                </span>
               </label>
               <textarea
                 placeholder="Enter role description"
                 className="textarea textarea-bordered w-full"
                 value={editingRole.description || ""}
-                onChange={(e) =>
-                  setEditingRole((prev) =>
-                    prev ? { ...prev, description: e.target.value } : null
-                  )
-                }
+                onChange={(e) => handleDescriptionChange(e.target.value, true)}
               />
+              {editingRole.description &&
+                !validateDescription(editingRole.description) && (
+                  <label className="label">
+                    <span className="label-text-alt text-error text-xs">
+                      Description must be 512 characters or less
+                    </span>
+                  </label>
+                )}
             </div>
 
             <div className="mb-4">
@@ -489,8 +558,12 @@ export default function RolesTab() {
               <button
                 className="btn btn-primary"
                 onClick={() => handleUpdateRole(editingRole.id)}
-                disabled={!editingRole.name.trim() || !editingRole?.description?.trim() || 
-                  !editingRole.permissions.some(p => p.actions.length > 0)}
+                disabled={
+                  !editingRole.name.trim() ||
+                  !validateRoleName(editingRole.name) ||
+                  !validateDescription(editingRole.description || "") ||
+                  !editingRole.permissions.some((p) => p.actions.length > 0)
+                }
               >
                 Save Changes
               </button>

@@ -26,10 +26,10 @@ export interface ResourcePermission {
 }
 
 export const RESOURCE_PERMISSIONS: ResourcePermission[] = [
-    {
-        name: Resource.SUPER_ADMIN,
-        permissions: [Action.MANAGE]
-    },
+    // {
+    //     name: Resource.SUPER_ADMIN,
+    //     permissions: [Action.MANAGE]
+    // },
     {
         name: Resource.WALLET,
         permissions: [Action.READ, Action.CREATE, Action.UPDATE, Action.DELETE]
