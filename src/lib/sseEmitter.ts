@@ -16,6 +16,7 @@ export const EVENTS = {
     REFUND_UPDATE: "refundUpdate",
     ROLE_UPDATE: "roleUpdate",
     USER_SESSION_INVALIDATE: "userSessionInvalidate",
+    PASSWORD_CHANGED: "passwordChanged",
 };
 
 // Helper functions to emit events from API routes
@@ -58,9 +59,23 @@ export function emitRoleUpdate(data: {
 
 export function emitUserSessionInvalidate(data: {
     userIds: string[];
-    reason: 'role_updated' | 'role_assigned' | 'role_deleted';
+    reason: 'role_updated' | 'role_assigned' | 'role_deleted' | 'password_changed';
     roleId?: string;
     roleName?: string;
+    userEmail?: string;
 }) {
     emitter.emit(EVENTS.USER_SESSION_INVALIDATE, data);
+}
+
+export function emitPasswordChanged(data: {
+    userId: string;
+    userEmail: string;
+}) {
+    emitter.emit(EVENTS.PASSWORD_CHANGED, data);
+    // Also emit session invalidation for the user who changed password
+    emitter.emit(EVENTS.USER_SESSION_INVALIDATE, {
+        userIds: [data.userId],
+        reason: 'password_changed',
+        userEmail: data.userEmail
+    });
 } 

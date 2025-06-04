@@ -50,12 +50,12 @@ const Dashboard: React.FC<DashboardProps> = ({
     const handleUserSessionInvalidate = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
-        const { userIds, reason, roleName } = data;
-
+        const { userIds, reason, roleName, userEmail } = data;
+        
         // Check if current user is affected
         if (userIds.includes(session.user.id)) {
           let message = "Your session has been invalidated.";
-
+          
           switch (reason) {
             case "role_updated":
               message = `Your role "${roleName}" has been updated. Please log in again.`;
@@ -65,6 +65,9 @@ const Dashboard: React.FC<DashboardProps> = ({
               break;
             case "role_deleted":
               message = `Your role "${roleName}" has been deleted. Please log in again.`;
+              break;
+            case "password_changed":
+              message = `Your password has been changed. All sessions have been terminated for security.`;
               break;
           }
 

@@ -75,6 +75,13 @@ export async function GET(req: NextRequest) {
                 );
             };
 
+            // Password changed
+            const onPasswordChanged = (data: any) => {
+                controller.enqueue(
+                    `event: ${EVENTS.PASSWORD_CHANGED}\ndata: ${JSON.stringify(data)}\n\n`
+                );
+            };
+
             // Listen for approval events
             emitter.on(EVENTS.MINT_UPDATE, onApprovalUpdate);
             emitter.on(EVENTS.CANCEL_UPDATE, onCancelUpdate);
@@ -84,6 +91,7 @@ export async function GET(req: NextRequest) {
             emitter.on(EVENTS.REFUND_UPDATE, onrefundUpdate);
             emitter.on(EVENTS.ROLE_UPDATE, onRoleUpdate);
             emitter.on(EVENTS.USER_SESSION_INVALIDATE, onUserSessionInvalidate);
+            emitter.on(EVENTS.PASSWORD_CHANGED, onPasswordChanged);
 
             // Clean up when the connection closes
             req.signal?.addEventListener("abort", () => {
@@ -95,6 +103,7 @@ export async function GET(req: NextRequest) {
                 emitter.off(EVENTS.REFUND_UPDATE, onrefundUpdate);
                 emitter.off(EVENTS.ROLE_UPDATE, onRoleUpdate);
                 emitter.off(EVENTS.USER_SESSION_INVALIDATE, onUserSessionInvalidate);
+                emitter.off(EVENTS.PASSWORD_CHANGED, onPasswordChanged);
                 controller.close();
             });
         }
