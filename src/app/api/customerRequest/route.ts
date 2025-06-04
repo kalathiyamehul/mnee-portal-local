@@ -5,6 +5,8 @@ import { authOptions } from "@/lib/authOptions";
 import { getConfig } from "@/lib/config";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { emitCustomerUpdate } from "@/lib/sseEmitter";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 export const POST = withCSRF( async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -62,7 +64,26 @@ export const POST = withCSRF( async function(request: Request) {
 
       return req;
     });
-
+    const customer: any = await prisma.customerRequest.findUnique({
+      where: { id: customerRequest.id },
+      include: {
+        approvals: {
+          include: {
+            approver: true,
+          },
+        },
+        customer: true,
+        requester: true,
+      },
+    });
+    if (customer?.amount) {
+      customer.amount = Number(customer.amount);
+    }
+    emitCustomerUpdate({
+      activityId: customerRequest.id,
+      approval: customer,
+      type: "CREATE",
+    });
     return NextResponse.json(customerRequest, { status: 201 });
   } catch (error) {
     console.error("Error creating customer request:", error);
@@ -71,4 +92,4 @@ export const POST = withCSRF( async function(request: Request) {
       { status: 500 }
     );
   }
-});
+}, createAPIRateLimit());

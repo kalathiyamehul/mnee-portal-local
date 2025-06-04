@@ -6,6 +6,8 @@ import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { fetchTxo } from "@/utils/api";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { emitrefundUpdate } from "@/lib/sseEmitter";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -55,6 +57,16 @@ export const POST = withCSRF(async function(request: Request) {
     const txo = await fetchTxo(outpoint);
     const amount = BigInt(txo.data.bsv21.amt);
 
+    // Security check: Verify that the refund address is one of the original owners
+    if (!txo.owners || !txo.owners.includes(refundAddress)) {
+      return NextResponse.json(
+        {
+          error: "Refund address must be one of the original UTXO owners. Refunds can only be sent to the original sender's address."
+        },
+        { status: 403 }
+      );
+    }
+
     // Create the RefundRequest (status=PENDING)
     const refundRequest = await prisma.refundRequest.create({
       data: {
@@ -79,12 +91,37 @@ export const POST = withCSRF(async function(request: Request) {
     await logActivity(prisma, {
       name: "Refund Request Created",
       action: "REFUND_REQUEST_CREATE",
-      description: `Refund request created for outpoint ${outpoint} by user ${session.user.id}`,
+      description: `Refund request created for outpoint ${outpoint} by user ${session.user.id}. Refund address ${refundAddress} verified as original owner.`,
       metadata: {
         refundRequest: JSON.stringify(refundRequest, (key, value) =>
           typeof value === 'bigint' ? value.toString() : value
         ),
+        originalOwners: JSON.stringify(txo.owners),
+        securityCheckPassed: true,
       },
+    });
+
+    // Get the RefundRequest
+    const refund: any = await prisma.refundRequest.findUnique({
+      where: { id: refundRequest.id },
+      include: {
+        approvals: {
+          include: {
+            approver: true,
+          },
+        },
+        requester: true,
+      },
+    });
+
+    if (refund?.amount) {
+      refund.amount = Number(refund.amount);
+    }
+
+    // Emit the refund request update
+    emitrefundUpdate({
+      refundRequest: refund,
+      type: "CREATE",
     });
 
     return NextResponse.json({
@@ -102,4 +139,4 @@ export const POST = withCSRF(async function(request: Request) {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())

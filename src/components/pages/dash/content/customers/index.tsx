@@ -223,7 +223,8 @@ export default function DashboardCustomersContent() {
                 </td>
                 <td>
                   <div className="flex gap-2">
-                    {hasPermission(Resource.CUSTOMER, Action.UPDATE) || isSuperAdmin && (
+                    {(hasPermission(Resource.CUSTOMER, Action.UPDATE) ||
+                      isSuperAdmin) && (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -288,13 +289,15 @@ export default function DashboardCustomersContent() {
       )}
 
       {showModal && (
-        
         <CustomerModal
-        customer={
-          selectedCustomer
-            ? { ...selectedCustomer, noOfApproval: selectedCustomer.no_of_approvals ?? 0 }
-            : undefined
-        }
+          customer={
+            selectedCustomer
+              ? {
+                  ...selectedCustomer,
+                  noOfApproval: selectedCustomer.no_of_approvals ?? 0,
+                }
+              : undefined
+          }
           onClose={() => {
             setShowModal(false);
             setSelectedCustomer(null);

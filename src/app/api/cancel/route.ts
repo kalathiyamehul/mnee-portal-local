@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { logActivity } from '@/lib/activityLogger';
 import { withCSRF } from '@/lib/csrf';
+import { emitCancelUpdate } from "@/lib/sseEmitter";
+import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -13,8 +15,7 @@ export const POST = withCSRF(async function(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { actionRequestId, freezeRequestId, blacklistRequestId, mintRequestId, burnRequestId, refundRequestId, customerRequestId  } = await request.json();
-
+  const { actionRequestId, freezeRequestId, blacklistRequestId, mintRequestId, burnRequestId, refundRequestId, customerRequestId } = await request.json();
   try {
     if (actionRequestId) {
       const result = await prisma.$transaction(async (tx) => {
@@ -91,6 +92,10 @@ export const POST = withCSRF(async function(request: Request) {
             { error: 'Blacklist request not found' },
             { status: 404 }
           );
+        }
+
+        if (request.requestedBy !== session.user.id) {
+          return NextResponse.json({ error: 'You can only cancel your own requests' }, { status: 403 });
         }
 
         const updated = await tx.blacklistRequest.update({
@@ -242,10 +247,18 @@ export const POST = withCSRF(async function(request: Request) {
     } else {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
-
+    emitCancelUpdate({
+      ...(actionRequestId && { actionRequestId }),
+      ...(freezeRequestId && { freezeRequestId }),
+      ...(blacklistRequestId && { blacklistRequestId }),
+      ...(mintRequestId && { mintRequestId }),
+      ...(burnRequestId && { burnRequestId }),
+      ...(refundRequestId && { refundRequestId }),
+      ...(customerRequestId && { customerRequestId }),
+    });
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error cancelling request:', error);
     return NextResponse.json({ error: 'Failed to cancel request' }, { status: 500 });
   }
-})
+}, createAPIRateLimit())

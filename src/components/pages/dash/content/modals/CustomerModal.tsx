@@ -88,7 +88,7 @@ export function CustomerModal({
     if (/\s/.test(address)) return "Address cannot contain spaces";
     if (/[^A-Za-z0-9]/.test(address.slice(1))) return "Address can only contain letters and numbers";
     if (!address.startsWith('1')) return "Invalid Ordinals Address";
-    if (!/^1[A-Za-z0-9]{34}$/.test(address)) {
+    if (!/^1[A-Za-z0-9]{33,34}$/.test(address)) {
       return "Address Length must be 35 characters";
     }
     return "";

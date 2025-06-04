@@ -1,5 +1,6 @@
 import { withCSRF } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { NextResponse } from "next/server";
 
 export const GET = withCSRF(async function() {
@@ -151,4 +152,4 @@ export const GET = withCSRF(async function() {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())

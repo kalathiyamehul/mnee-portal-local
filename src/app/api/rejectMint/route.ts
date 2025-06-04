@@ -5,6 +5,8 @@ import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { emitMintUpdate } from "@/lib/sseEmitter";
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -79,7 +81,11 @@ export const POST = withCSRF(async function(request: Request) {
 
       return { status: "REJECTED" };
     });
-
+    emitMintUpdate({
+      activityId: mintRequestId,
+      approval: undefined,
+      type: "REJECT",
+    });
     return NextResponse.json({
       success: true,
       message: "Mint request rejected",
@@ -92,4 +98,4 @@ export const POST = withCSRF(async function(request: Request) {
       { status: 400 }
     );
   }
-})
+}, createAPIRateLimit())

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 export const POST = withCSRF(async function(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -55,4 +56,4 @@ export const POST = withCSRF(async function(request: Request) {
 	});
 
 	return NextResponse.json({ actionRequest: result }, { status: 201 });
-})
+}, createAPIRateLimit())

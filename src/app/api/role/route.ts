@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
 import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
 import { withCSRF } from "@/lib/csrf";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { Prisma } from "@prisma/client";
 
 // Schema for role creation/update
@@ -41,7 +42,7 @@ export const GET = withCSRF(async function() {
             { status: 500 }
         );
     }
-})
+}, createAPIRateLimit())
 
 // POST /api/role - Create new role
 export const POST = withCSRF(async function(request: NextRequest) {
@@ -143,7 +144,7 @@ export const POST = withCSRF(async function(request: NextRequest) {
             { status: 500 }
         );
     }
-})
+}, createAPIRateLimit())
 
 // PUT /api/role - Update role
 export const PUT = withCSRF(async function(request: NextRequest) {
@@ -244,7 +245,7 @@ export const PUT = withCSRF(async function(request: NextRequest) {
             { status: 500 }
         );
     }
-})
+}, createAPIRateLimit())
 
 // DELETE /api/role - Delete role
 export const DELETE = withCSRF(async function(request: NextRequest) {
@@ -294,4 +295,4 @@ export const DELETE = withCSRF(async function(request: NextRequest) {
             { status: 500 }
         );
     }
-})
+}, createAPIRateLimit())

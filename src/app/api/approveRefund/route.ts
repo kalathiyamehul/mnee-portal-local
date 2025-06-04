@@ -12,6 +12,8 @@ import type { IndexContext } from "@/types/indexContext";
 import type { RefundRequest } from "@/types/refund";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { emitrefundUpdate } from "@/lib/sseEmitter";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 const { toBase64 } = Utils;
 
 async function broadcastRefundTransaction(refundRequest: RefundRequest) {
@@ -95,6 +97,7 @@ export const POST = withCSRF(async function(request: Request) {
   }
 
   try {
+    let newAppeovalID: string;
     const result = await prisma.$transaction(async (tx) => {
       // Load refund request
       const refundRequest = await tx.refundRequest.findUnique({
@@ -159,6 +162,8 @@ export const POST = withCSRF(async function(request: Request) {
           approvedBy: session.user.id
         }
       });
+
+      newAppeovalID = approval.id;
 
       await logActivity(tx, {
         name: "Refund Request Approved",
@@ -239,6 +244,21 @@ export const POST = withCSRF(async function(request: Request) {
       return { status: "PENDING" };
     });
 
+    // Emit Approved event
+    const approvalWithUser = await prisma.refundApproval.findUnique({
+			where: {
+				id: newAppeovalID!,
+			},
+			include: {
+				approver: true,
+			},
+		});
+		emitrefundUpdate({
+			activityId: refundRequestId,
+			approval: approvalWithUser,
+			type: "APPROVE",
+		});
+
     return NextResponse.json({
       success: true,
       message: result.status === "DONE" 
@@ -257,4 +277,4 @@ export const POST = withCSRF(async function(request: Request) {
       error: error instanceof Error ? error.message : "Failed to process approval"
     }, { status: 500 });
   }
-})
+}, createAPIRateLimit())

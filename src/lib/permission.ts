@@ -8,6 +8,7 @@ export enum Resource {
     FREEZE = "FREEZE",
     BLACKLIST = "BLACKLIST",
     REFUND = "REFUND",
+    CONFIG = "CONFIG",
 }
 
 export enum Action {
@@ -57,5 +58,9 @@ export const RESOURCE_PERMISSIONS: ResourcePermission[] = [
     {
         name: Resource.REFUND,
         permissions: [Action.READ, Action.CREATE, Action.APPROVE, Action.REJECT]
+    },
+    {
+        name: Resource.CONFIG,
+        permissions: [Action.READ, Action.UPDATE, Action.CREATE]
     }
 ]

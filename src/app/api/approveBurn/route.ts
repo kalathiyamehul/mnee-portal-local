@@ -12,6 +12,8 @@ import { Utils } from "@bsv/sdk";
 import { isSystemPaused } from "@/lib/systemStatus";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { emitburnUpdate } from "@/lib/sseEmitter";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 const { toArray } = Utils;
 
 export const POST = withCSRF(async function(request: Request) {
@@ -24,6 +26,7 @@ export const POST = withCSRF(async function(request: Request) {
 
     const { burnRequestId } = await request.json();
 
+    let newAppeovalID: string;
     const result = await prisma.$transaction(async (tx) => {
       const burnRequest = await tx.burnRequest.findUnique({
         where: { id: burnRequestId },
@@ -59,12 +62,14 @@ export const POST = withCSRF(async function(request: Request) {
         throw new Error("You cannot approve your own request");
       }
 
-      await tx.burnApproval.create({
+      const approval = await tx.burnApproval.create({
         data: {
           burnRequestId,
           approvedBy: session.user.id,
         },
       });
+
+      newAppeovalID = approval.id;
 
       await logActivity(tx, {
         name: "Burn Request Approved",
@@ -195,6 +200,21 @@ export const POST = withCSRF(async function(request: Request) {
       return { status: "PENDING" };
     });
 
+    // emit Burn Approve event
+		const approvalWithUser = await prisma.burnApproval.findUnique({
+			where: {
+				id: newAppeovalID!,
+			},
+			include: {
+				approver: true,
+			},
+		});
+		emitburnUpdate({
+			activityId: burnRequestId,
+			approval: approvalWithUser,
+			type: "APPROVE",
+		});
+
     return NextResponse.json({
       success: true,
       message: result.status === "APPROVED" ? "Burn request approved" : "Approval recorded",
@@ -209,4 +229,4 @@ export const POST = withCSRF(async function(request: Request) {
       status: 400
     });
   }
-})
+}, createAPIRateLimit())

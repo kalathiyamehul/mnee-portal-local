@@ -353,7 +353,6 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
 
   const handleCancel = async (id: string, type: Activity["type"]) => {
     try {
-      setLoading(true);
       const requestType = `${type.toLowerCase()}RequestId`;
       await apiFetch("/api/cancel", {
         method: "POST",
@@ -365,14 +364,11 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     } catch (error) {
       // console.error("Error cancelling request:", error);
       toast.error("Failed to cancel request");
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleApprove = async (id: string, type: Activity['type']) => {
     try {
-      setLoading(true);
       const endpoint =
         type === "ACTION"
           ? "approveSystem"
@@ -403,6 +399,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
           ? "mintRequestId"
           : type === "BURN"
           ? "burnRequestId"
+          : type === "REFUND"
+          ? "refundRequestId"
           : type === "CUSTOMER"
           ? "customerRequestId"
           : "refundRequestId";
@@ -425,8 +423,6 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       toast.error(
         error instanceof Error ? error.message : "Failed to approve request"
       );
-    } finally {
-      setLoading(false);
     }
   };
   const requiresApproval = useCallback((_activity: Activity) => {
@@ -446,7 +442,6 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
 
   const handleUnblacklist = async (e: React.MouseEvent, address: string) => {
     try {
-      setLoading(true);
       const response = await apiFetch("/api/blacklist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -470,8 +465,6 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       toast.error(
         error instanceof Error ? error.message : "Failed to unblacklist address"
       );
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -480,7 +473,6 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     address: string
   ) => {
     try {
-      setLoading(true);
       const response = await apiFetch("/api/freeze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -502,14 +494,11 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       toast.error(
         error instanceof Error ? error.message : "Failed to freeze address"
       );
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleUnfreeze = async (address: string) => {
     try {
-      setLoading(true);
       const response = await apiFetch("/api/freeze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -531,15 +520,12 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       toast.error(
         error instanceof Error ? error.message : "Failed to unfreeze address"
       );
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleBlacklist = async (e: React.MouseEvent, address: string) => {
     e.preventDefault();
     try {
-      setLoading(true);
       const response = await apiFetch("/api/blacklist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -563,8 +549,6 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       toast.error(
         error instanceof Error ? error.message : "Failed to blacklist address"
       );
-    } finally {
-      setLoading(false);
     }
   };
 

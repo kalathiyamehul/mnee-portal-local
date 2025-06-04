@@ -13,6 +13,7 @@ import {
 } from "@/lib/constants";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 const DEFAULT_FEES = [
 	{ min: 0, max: 10000, fee: 50 },
@@ -44,7 +45,7 @@ export const POST = withCSRF(async function(request: Request) {
 			{ status: 500 },
 		);
 	}
-})
+}, createAPIRateLimit())
 
 const deployMnee = async (feeAddress: string) => {
 	try {

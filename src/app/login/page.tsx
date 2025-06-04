@@ -5,6 +5,11 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { FaSpinner } from "react-icons/fa6";
+import {
+  sanitizeHttpError,
+  sanitizeError,
+  getDisplayMessage,
+} from "@/utils/errorHandler";
 
 function LoginPageInner() {
   const router = useRouter();
@@ -38,6 +43,10 @@ function LoginPageInner() {
         if (result.error === "Invalid 2FA token") {
           setError("Invalid verification code");
           setToken("");
+        } else if (result?.error.includes("Account locked")) {
+          setError(result?.error);
+        } else if (result?.error.includes("Too many login attempts")) {
+          setError("Too many login attempts");
         } else {
           setError("Invalid email or password");
         }
@@ -49,7 +58,8 @@ function LoginPageInner() {
         router.push(result.url);
       }
     } catch (error) {
-      setError("An error occurred during login");
+      const sanitizedError = sanitizeError(error, "Failed to login");
+      setError(getDisplayMessage(sanitizedError));
       setIsLoading(false);
     }
   };
@@ -133,14 +143,16 @@ function LoginPageInner() {
             className={`btn btn-primary w-full`}
             disabled={isLoading}
           >
-            {showTwoFactor ? "Verify" : (isLoading ? (
+            {showTwoFactor ? (
+              "Verify"
+            ) : isLoading ? (
               <>
                 <FaSpinner className="animate-spin" />
                 Signing In...
               </>
             ) : (
-              'Sign In'
-            ))} 
+              "Sign In"
+            )}
           </button>
 
           {showTwoFactor && (

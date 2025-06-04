@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 export const GET = withCSRF(async function (req: Request) {
     try {
@@ -60,7 +61,7 @@ export const GET = withCSRF(async function (req: Request) {
         console.error("[USERS_GET]", error);
         return new NextResponse("Internal error", { status: 500 });
     }
-});
+}, createAPIRateLimit());
 
 export const POST = withCSRF(async function (req: Request) {
     try {
@@ -94,6 +95,7 @@ export const POST = withCSRF(async function (req: Request) {
                 email,
                 password: hashedPassword,
                 roleId,
+                requiresPasswordReset: false,
             },
             select: {
                 id: true,
@@ -105,6 +107,7 @@ export const POST = withCSRF(async function (req: Request) {
                         name: true,
                     },
                 },
+                requiresPasswordReset: false,
                 createdAt: true,
             },
         });
@@ -123,4 +126,4 @@ export const POST = withCSRF(async function (req: Request) {
         console.error("[USERS_POST]", error);
         return new NextResponse("Internal error", { status: 500 });
     }
-});
+}, createAPIRateLimit());
