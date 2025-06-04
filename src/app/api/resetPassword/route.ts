@@ -6,7 +6,7 @@ import bcrypt from 'bcrypt';
 import { isPasswordValid } from '@/utils/auth';
 import { withCSRF } from '@/lib/csrf';
 
-export const POST = withCSRF(async function (request: Request) {
+export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   console.log('[Reset Password] Session state:', {
     userId: session?.user?.id,
@@ -73,4 +73,4 @@ export const POST = withCSRF(async function (request: Request) {
       { status: 500 }
     );
   }
-});
+};
