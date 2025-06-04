@@ -18,7 +18,6 @@ export function usePermission() {
         },
         [loading, isSuperAdmin, rolePermissions]
     );
-
     const hasAnyPermission = useCallback(
         (permissions: { resource: string; action: string }[]): boolean =>
             permissions.some((p) => hasPermission(p.resource as Resource, p.action as Action)),
@@ -35,6 +34,7 @@ export function usePermission() {
         hasPermission,
         hasAnyPermission,
         hasAllPermissions,
+        isSuperAdmin,
         loading,
     };
 } 

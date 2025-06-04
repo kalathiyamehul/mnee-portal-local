@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/authOptions';
 import bcrypt from 'bcrypt';
 import { isPasswordValid } from '@/utils/auth';
 import { withCSRF } from '@/lib/csrf';
+import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 export const POST = withCSRF(async function(request: Request) {
     const session = await getServerSession(authOptions);
@@ -67,10 +68,13 @@ export const POST = withCSRF(async function(request: Request) {
 
         const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-        // Update the user's password
+        // Update the user's password and set passwordChangedAt to invalidate existing sessions
         const updatedUser = await prisma.user.update({
             where: { id: session.user.id },
-            data: { password: hashedPassword },
+            data: {
+                password: hashedPassword,
+                passwordChangedAt: new Date() // This will invalidate all existing JWT tokens
+            },
             select: { id: true, email: true }
         });
 
@@ -86,4 +90,4 @@ export const POST = withCSRF(async function(request: Request) {
             { status: 500 }
         );
     }
-})
+}, createAPIRateLimit())

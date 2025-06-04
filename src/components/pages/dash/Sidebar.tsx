@@ -38,21 +38,11 @@ const Sidebar: React.FC = () => {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [hoveredPath, setHoveredPath] = useState(pathname);
-  const { hasPermission, hasAllPermissions } =
-    usePermission();
+  const { hasPermission, hasAllPermissions } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
   const canViewWallet = hasPermission(Resource.WALLET, Action.READ);
   const canViewCustomers = hasPermission(Resource.CUSTOMER, Action.READ);
-  const canViewSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
-  const canViewAdmin = hasAllPermissions([
-    { resource: Resource.MINT, action: Action.CREATE },
-    { resource: Resource.BURN, action: Action.CREATE },
-    { resource: Resource.CUSTOMER, action: Action.CREATE },
-    { resource: Resource.WALLET, action: Action.CREATE },
-    { resource: Resource.REFUND, action: Action.CREATE },
-    { resource: Resource.BLACKLIST, action: Action.CREATE },
-    { resource: Resource.FREEZE, action: Action.CREATE },
-  ]);
-  // console.log("canViewAdmin", canViewAdmin);
+  const canViewSuperAdmin = isSuperAdmin;
   const filteredMenuItems = menuItems.filter((item) => {
     if (item.name === "Wallet") return canViewSuperAdmin || canViewWallet;
     if (item.name === "Customers") return canViewSuperAdmin || canViewCustomers;

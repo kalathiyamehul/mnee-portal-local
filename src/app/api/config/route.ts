@@ -1,12 +1,15 @@
-// src/app/api/config/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getBurnWif, getMintWif } from "@/env";
 import { PrivateKey } from "@bsv/sdk";
 import { getConfig, revalidateConfig } from "@/lib/config";
-import { Prisma } from "@prisma/client";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { hasServerPermission } from "@/lib/serverPermissions";
+import { Resource, Action } from "@/lib/permission";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/authOptions";
 
 // Enable caching for this route
 export const dynamic = 'force-dynamic';
@@ -14,6 +17,15 @@ export const revalidate = 60; // Revalidate every 60 seconds
 
 export const GET = withCSRF(async function() {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized. Please log in to access configuration." },
+        { status: 401 }
+      );
+    }
+
     const config = await getConfig();
     if (!config) {
       return NextResponse.json(
@@ -29,15 +41,34 @@ export const GET = withCSRF(async function() {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())
 
 export const POST = withCSRF(async function (request: Request) {
-  const body = await request.json();
-  const { tokenId, feeAddress, decimals, latestMinterTx, noOfApproval, globalJson } = body;
-
-  const mintAddress = PrivateKey.fromWif(await getMintWif()).toAddress();
-  const burnAddress = PrivateKey.fromWif(await getBurnWif()).toAddress();
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized. Please log in to modify configuration." },
+        { status: 401 }
+      );
+    }
+
+    // Check permission to update config
+    const canUpdateConfig = await (hasServerPermission(Resource.SUPER_ADMIN, Action.MANAGE) || hasServerPermission(Resource.CONFIG, Action.CREATE) );
+    if (!canUpdateConfig) {
+      return NextResponse.json(
+        { error: "Forbidden. You don't have permission to modify configuration." },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { tokenId, feeAddress, decimals, latestMinterTx, noOfApproval, globalJson } = body;
+
+    const mintAddress = PrivateKey.fromWif(await getMintWif()).toAddress();
+    const burnAddress = PrivateKey.fromWif(await getBurnWif()).toAddress();
+
     // Get current config to keep existing fees and values
     const currentConfig = await prisma.config.findUnique({
       where: { id: 1 }
@@ -78,11 +109,13 @@ export const POST = withCSRF(async function (request: Request) {
       await logActivity(tx, {
         name: "Config Upserted",
         action: "CONFIG_UPSERT",
-        description: "Configuration has been created or updated.",
+        description: `Configuration has been created or updated by user ${session.user.id}.`,
         metadata: {
           config: JSON.stringify(upsertedConfig, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),
+          userId: session.user.id,
+          userEmail: session.user.email,
         },
       });
 
@@ -100,12 +133,31 @@ export const POST = withCSRF(async function (request: Request) {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())
 
 export const PATCH = withCSRF(async function(request: Request) {
-  const body = await request.json();
-  const { minNoOfApproval, maxNoOfApproval, globalJson } = body;
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized. Please log in to modify configuration." },
+        { status: 401 }
+      );
+    }
+
+    // Check permission to update config
+    const canUpdateConfig = await (hasServerPermission(Resource.SUPER_ADMIN, Action.MANAGE) || hasServerPermission(Resource.CONFIG, Action.UPDATE));
+    if (!canUpdateConfig) {
+      return NextResponse.json(
+        { error: "Forbidden. You don't have permission to modify configuration." },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { minNoOfApproval, maxNoOfApproval, globalJson } = body;
+
     const updatedConfig = await prisma.$transaction(async (tx) => {
       const config = await tx.config.update({
         where: { id: 1 },
@@ -119,18 +171,24 @@ export const PATCH = withCSRF(async function(request: Request) {
       await logActivity(tx, {
         name: "Config Updated",
         action: "CONFIG_UPDATE",
-        description: "Configuration has been updated.",
+        description: `Configuration has been updated by user ${session.user.id}.`,
         metadata: {
           config: JSON.stringify(config, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),
+          userId: session.user.id,
+          userEmail: session.user.email,
+          changes: { minNoOfApproval, maxNoOfApproval, globalJson },
         },
       });
 
       return config;
     });
 
-    return NextResponse.json({ message: "Configuration updated." });
+    // Revalidate cache after update
+    await revalidateConfig();
+    
+    return NextResponse.json({ message: "Configuration updated.", updatedConfig });
   } catch (error) {
     console.error("Error saving config:", error);
     return NextResponse.json(
@@ -138,30 +196,4 @@ export const PATCH = withCSRF(async function(request: Request) {
       { status: 500 }
     );
   }
-})
-
-export const DELETE = withCSRF(async function() {
-  try {
-    await prisma.$transaction(async (tx) => {
-      await tx.config.deleteMany();
-
-      await logActivity(tx, {
-        name: "Config Cleared",
-        action: "CONFIG_DELETE",
-        description: "All configuration has been cleared.",
-        metadata: {},
-      });
-    });
-
-    return NextResponse.json(
-      { message: "Configuration cleared." },
-      { headers: { "Cache-Control": "no-store" } }
-    );
-  } catch (error) {
-    console.error("Error clearing config:", error);
-    return NextResponse.json(
-      { error: "Error clearing configuration." },
-      { status: 500 }
-    );
-  }
-})
+}, createAPIRateLimit())

@@ -2,8 +2,9 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode, useMemo } from 'react';
 import { fetchMneeUtxos , fetchConfig } from '@/utils/api';
-import { toast } from 'react-hot-toast';
-import { FetchStatus } from '@/types/common';
+import { sanitizeError, getDisplayMessage } from "@/utils/errorHandler";
+import { toast } from "react-hot-toast";
+import { FetchStatus } from "@/types/common";
 
 interface BalanceContextType {
   balances: { [address: string]: number };
@@ -16,68 +17,89 @@ const BalanceContext = createContext<BalanceContextType | undefined>(undefined);
 
 export function BalanceProvider({ children }: { children: ReactNode }) {
   const [balances, setBalances] = useState<{ [address: string]: number }>({});
-  const [balancesLoading, setBalancesLoading] = useState<FetchStatus>(FetchStatus.IDLE);
+  const [balancesLoading, setBalancesLoading] = useState<FetchStatus>(
+    FetchStatus.IDLE
+  );
   const [burnAddress, setBurnAddress] = useState<string | null>(null);
 
   const fetchBalance = useCallback(async (address: string) => {
     try {
       setBalancesLoading(FetchStatus.LOADING);
       const utxos = await fetchMneeUtxos([address]);
-      const balance = utxos.reduce((amt, o) => amt + (o.data.bsv21.amt || 0), 0);
-      
-      setBalances(prev => ({
+      const balance = utxos.reduce(
+        (amt, o) => amt + (o.data.bsv21.amt || 0),
+        0
+      );
+
+      setBalances((prev) => ({
         ...prev,
-        [address]: balance
+        [address]: balance,
       }));
       setBalancesLoading(FetchStatus.SUCCESS);
     } catch (error) {
       // console.error("Error fetching MNEE balance:", error);
-      toast.error("Failed to fetch MNEE balance");
+      const sanitizedError = sanitizeError(
+        error,
+        "Failed to fetch MNEE balance"
+      );
+      toast.error(getDisplayMessage(sanitizedError));
       setBalancesLoading(FetchStatus.ERROR);
     }
   }, []);
 
-  const fetchBalances = useCallback(async (addresses: string[]) => {
-    // console.log('fetchBalances called:', {
-    //   currentLoadingState: balancesLoading,
-    //   addressCount: addresses.length
-    // });
+  const fetchBalances = useCallback(
+    async (addresses: string[]) => {
+      // console.log('fetchBalances called:', {
+      //   currentLoadingState: balancesLoading,
+      //   addressCount: addresses.length
+      // });
 
-    // Skip if already loading
-    if (balancesLoading === FetchStatus.LOADING) {
-      // console.log('Skipping fetch - already loading');
-      return;
-    }
-    
-    try {
-      // console.log('Setting loading state...');
-      setBalancesLoading(FetchStatus.LOADING);
-      
-      // console.log('Fetching UTXOs...');
-      const utxos = await fetchMneeUtxos(addresses);
-      // console.log('UTXOs received:', utxos.length);
-      
-      const newBalances = addresses.reduce((acc, address) => {
-        const addressUtxos = utxos.filter(utxo => utxo.owners[0] === address);
-        const balance = addressUtxos.reduce((amt, o) => amt + (o.data.bsv21.amt || 0), 0);
-        return { ...acc, [address]: balance };
-      }, {});
+      // Skip if already loading
+      if (balancesLoading === FetchStatus.LOADING) {
+        // console.log('Skipping fetch - already loading');
+        return;
+      }
 
-      // console.log('Setting new balances:', newBalances);
-      setBalances(prev => ({
-        ...prev,
-        ...newBalances
-      }));
-      
-      // console.log('Setting success state...');
-      setBalancesLoading(FetchStatus.SUCCESS);
-    } catch (error) {
-      // console.error("Error fetching MNEE balances:", error);
-      toast.error("Failed to fetch MNEE balances");
-      // console.log('Setting error state...');
-      setBalancesLoading(FetchStatus.ERROR);
-    }
-  }, [balancesLoading]);
+      try {
+        // console.log('Setting loading state...');
+        setBalancesLoading(FetchStatus.LOADING);
+
+        // console.log('Fetching UTXOs...');
+        const utxos = await fetchMneeUtxos(addresses);
+        // console.log('UTXOs received:', utxos.length);
+
+        const newBalances = addresses.reduce((acc, address) => {
+          const addressUtxos = utxos.filter(
+            (utxo) => utxo.owners[0] === address
+          );
+          const balance = addressUtxos.reduce(
+            (amt, o) => amt + (o.data.bsv21.amt || 0),
+            0
+          );
+          return { ...acc, [address]: balance };
+        }, {});
+
+        // console.log('Setting new balances:', newBalances);
+        setBalances((prev) => ({
+          ...prev,
+          ...newBalances,
+        }));
+
+        // console.log('Setting success state...');
+        setBalancesLoading(FetchStatus.SUCCESS);
+      } catch (error) {
+        // console.error("Error fetching MNEE balances:", error);
+        const sanitizedError = sanitizeError(
+          error,
+          "Failed to fetch MNEE balances"
+        );
+        toast.error(getDisplayMessage(sanitizedError));
+        // console.log('Setting error state...');
+        setBalancesLoading(FetchStatus.ERROR);
+      }
+    },
+    [balancesLoading]
+  );
 
   // Fetch burn address from config and its balance
   useEffect(() => {
@@ -90,23 +112,25 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         // console.error("Error fetching config:", error);
-        toast.error("Error fetching config");
+        const sanitizedError = sanitizeError(error, "Error fetching config");
+        toast.error(getDisplayMessage(sanitizedError));
       }
     };
     init();
   }, [burnAddress, fetchBalance]);
 
-  const value = useMemo(() => ({
-    balances,
-    fetchBalance,
-    fetchBalances,
-    balancesLoading
-  }), [balances, fetchBalance, fetchBalances, balancesLoading]);
+  const value = useMemo(
+    () => ({
+      balances,
+      fetchBalance,
+      fetchBalances,
+      balancesLoading,
+    }),
+    [balances, fetchBalance, fetchBalances, balancesLoading]
+  );
 
   return (
-    <BalanceContext.Provider value={value}>
-      {children}
-    </BalanceContext.Provider>
+    <BalanceContext.Provider value={value}>{children}</BalanceContext.Provider>
   );
 }
 

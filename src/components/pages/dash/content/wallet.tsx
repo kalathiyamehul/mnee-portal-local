@@ -26,12 +26,13 @@ import {
   fetchMneeUtxos,
   fetchTransaction,
 } from "@/utils/api";
+import { sanitizeError, getDisplayMessage } from "@/utils/errorHandler";
 import CosignTemplate from "@/templates/cosign";
 import { FaSpinner } from "react-icons/fa";
 import { MNEE_API } from "@/env";
-import { DepositModal } from './modals/DepositModal';
+import { DepositModal } from "./modals/DepositModal";
 import { useRouter } from "next/navigation";
-import { useBalance } from '@/contexts/BalanceContext';
+import { useBalance } from "@/contexts/BalanceContext";
 import { FetchStatus } from "@/types/common";
 
 const { toArray, toBase64 } = Utils;
@@ -41,7 +42,10 @@ interface DashboardWalletContentProps {
   defaultAddress?: string;
 }
 
-export default function DashboardWalletContent({ defaultShowTransfer, defaultAddress }: DashboardWalletContentProps = {}) {
+export default function DashboardWalletContent({
+  defaultShowTransfer,
+  defaultAddress,
+}: DashboardWalletContentProps = {}) {
   const wallet = useYoursWallet();
   const [addresses, setAddresses] = useState<Addresses | null>(null);
   const [balance, setBalance] = useState<Balance | undefined>();
@@ -49,7 +53,9 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
   const [config, setConfig] = useState<Config | null>(null);
   const [showBsvDepositModal, setShowBsvDepositModal] = useState(false);
   const [showMneeDepositModal, setShowMneeDepositModal] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(defaultShowTransfer || false);
+  const [showTransferModal, setShowTransferModal] = useState(
+    defaultShowTransfer || false
+  );
   const [recipient, setRecipient] = useState(defaultAddress || "");
   const [amount, setAmount] = useState("");
   const router = useRouter();
@@ -65,20 +71,20 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
   const handleCloseTransferModal = useCallback(() => {
     setShowTransferModal(false);
-    router.push('/dash/wallet');
+    router.push("/dash/wallet");
   }, [router]);
 
   useEffect(() => {
     if (!showTransferModal) return;
 
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         handleCloseTransferModal();
       }
     };
 
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
   }, [handleCloseTransferModal, showTransferModal]);
 
   const connectWallet = async () => {
@@ -93,7 +99,10 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
         const addresses = await wallet.getAddresses();
 
         // make sure addresses are not empty strings
-        if (!addresses || Object.values(addresses).some(addr => addr === "")) {
+        if (
+          !addresses ||
+          Object.values(addresses).some((addr) => addr === "")
+        ) {
           throw new Error("Failed to get valid wallet addresses");
         }
         setAddresses(addresses ?? []);
@@ -103,7 +112,8 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       }
     } catch (error) {
       // console.error("Error connecting wallet:", error);
-      toast.error(`Failed to connect wallet: ${error instanceof Error ? error.message : "Unknown error"}`);
+      const sanitizedError = sanitizeError(error, "Failed to connect wallet");
+      toast.error(getDisplayMessage(sanitizedError));
     }
   };
 
@@ -123,7 +133,11 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       } catch (error) {
         if (!mounted) return;
         // console.error("Error fetching BSV balance:", error);
-        toast.error(`Failed to fetch BSV balance: ${error instanceof Error ? error.message : "Unknown error"}`);
+        const sanitizedError = sanitizeError(
+          error,
+          "Failed to fetch BSV balance"
+        );
+        toast.error(getDisplayMessage(sanitizedError));
       }
     };
 
@@ -136,12 +150,18 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
   // Effect for MNEE balance
   useEffect(() => {
-    if (!addresses || !wallet.isReady || balancesLoading === FetchStatus.LOADING) {
+    if (
+      !addresses ||
+      !wallet.isReady ||
+      balancesLoading === FetchStatus.LOADING
+    ) {
       return;
     }
 
     // Check if we have valid addresses (not empty strings)
-    const validAddresses = Object.values(addresses).filter(addr => addr !== "");
+    const validAddresses = Object.values(addresses).filter(
+      (addr) => addr !== ""
+    );
     if (validAddresses.length === 0) {
       return;
     }
@@ -149,7 +169,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
     const fire = async () => {
       await fetchBalances(validAddresses);
     };
-    
+
     if (balancesLoading === FetchStatus.IDLE) {
       fire();
     }
@@ -189,7 +209,10 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       const utxos = await fetchMneeUtxos(Object.values(addresses));
 
       // Validate that we have enough UTXOs before proceeding
-      const totalUtxoAmount = utxos.reduce((sum, utxo) => sum + (utxo.data.bsv21.amt || 0), 0);
+      const totalUtxoAmount = utxos.reduce(
+        (sum, utxo) => sum + (utxo.data.bsv21.amt || 0),
+        0
+      );
       if (totalUtxoAmount < tokenSatAmt) {
         throw new Error("Insufficient MNEE balance");
       }
@@ -200,7 +223,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
         fee = 0;
       } else {
         const foundFee = config.fees.find(
-          (fee) => tokenSatAmt >= fee.min && tokenSatAmt <= fee.max,
+          (fee) => tokenSatAmt >= fee.min && tokenSatAmt <= fee.max
         )?.fee;
         if (foundFee === undefined) {
           throw new Error("Fee ranges inadequate");
@@ -244,25 +267,26 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
         amt: tokenSatAmt.toString(),
       };
       const dataB64 = Buffer.from(JSON.stringify(inscriptionData)).toString(
-        "base64",
+        "base64"
       );
       tx.addOutput({
         lockingScript: applyInscription(
           new CosignTemplate().lock(
             recipient,
-            PublicKey.fromString(config.approver),
+            PublicKey.fromString(config.approver)
           ),
           {
             // lockingScript: applyInscription(new P2PKH().lock(recipient), {
             dataB64,
             contentType: "application/bsv-20",
-          } as Inscription,
+          } as Inscription
         ),
         satoshis: 1,
       });
 
       // Add the token fee output
-      if (fee > 0) {  // Only add fee output if there is a fee
+      if (fee > 0) {
+        // Only add fee output if there is a fee
         const feeInscriptionData = {
           p: "bsv-20",
           op: "transfer",
@@ -270,19 +294,19 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
           amt: fee.toString(),
         };
         const feeDataB64 = Buffer.from(
-          JSON.stringify(feeInscriptionData),
+          JSON.stringify(feeInscriptionData)
         ).toString("base64");
         tx.addOutput({
           lockingScript: applyInscription(
             new CosignTemplate().lock(
               config.feeAddress,
-              PublicKey.fromString(config.approver),
+              PublicKey.fromString(config.approver)
             ),
             {
               // lockingScript: applyInscription(new P2PKH().lock(config.feeAddress), {
               dataB64: feeDataB64,
               contentType: "application/bsv-20",
-            } as Inscription,
+            } as Inscription
           ),
           satoshis: 1,
         });
@@ -297,19 +321,19 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
         amt: changeTokenSatAmt.toString(),
       };
       const changeDataB64 = Buffer.from(
-        JSON.stringify(changeInscriptionData),
+        JSON.stringify(changeInscriptionData)
       ).toString("base64");
       tx.addOutput({
         lockingScript: applyInscription(
           new CosignTemplate().lock(
             addresses.ordAddress,
-            PublicKey.fromString(config.approver),
+            PublicKey.fromString(config.approver)
           ),
           {
             // lockingScript: applyInscription(new P2PKH().lock(addresses.ordAddress), {
             dataB64: changeDataB64,
             contentType: "application/bsv-20",
-          } as Inscription,
+          } as Inscription
         ),
         satoshis: 1,
       });
@@ -377,20 +401,32 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
           switch (response.status) {
             case 423:
               if (errorData.message?.includes("frozen")) {
-                throw new Error("Your address is currently frozen and cannot send tokens");
+                throw new Error(
+                  "Your address is currently frozen and cannot send tokens"
+                );
               }
               if (errorData.message?.includes("blacklisted")) {
-                throw new Error("The recipient address is blacklisted and cannot receive tokens");
+                throw new Error(
+                  "The recipient address is blacklisted and cannot receive tokens"
+                );
               }
-              throw new Error("Transaction blocked: Address is either frozen or blacklisted");
+              throw new Error(
+                "Transaction blocked: Address is either frozen or blacklisted"
+              );
 
             case 503:
               if (errorData.message?.includes("cosigner is paused")) {
-                throw new Error("Token transfers are currently paused by the administrator");
+                throw new Error(
+                  "Token transfers are currently paused by the administrator"
+                );
               }
-              throw new Error(errorData.message || "Service temporarily unavailable");
+              throw new Error(
+                errorData.message || "Service temporarily unavailable"
+              );
             default:
-              throw new Error(errorData.message || "Transaction submission failed");
+              throw new Error(
+                errorData.message || "Transaction submission failed"
+              );
           }
         }
 
@@ -422,7 +458,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
       // close the modal
       setShowTransferModal(false);
-      router.replace('/dash/wallet');
+      router.replace("/dash/wallet");
     },
     onError: (error) => {
       // console.error("Transfer error:", error);
@@ -430,13 +466,16 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       // Handle specific error messages with more user-friendly text
       let errorMessage = error.message;
       if (errorMessage.includes("frozen")) {
-        errorMessage = "Your address is currently frozen and cannot send tokens";
+        errorMessage =
+          "Your address is currently frozen and cannot send tokens";
       } else if (errorMessage.includes("blacklisted")) {
-        errorMessage = "The recipient address is blacklisted and cannot receive tokens";
+        errorMessage =
+          "The recipient address is blacklisted and cannot receive tokens";
       } else if (errorMessage.includes("Insufficient")) {
         errorMessage = "You don't have enough MNEE tokens for this transfer";
       } else if (errorMessage.includes("cosigner is paused")) {
-        errorMessage = "Token transfers are currently paused by the administrator";
+        errorMessage =
+          "Token transfers are currently paused by the administrator";
       }
 
       toast.error(errorMessage);
@@ -464,7 +503,12 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       }
 
       // Calculate total MNEE balance across all addresses
-      const totalBalance = addresses ? Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0) : 0;
+      const totalBalance = addresses
+        ? Object.values(addresses).reduce(
+            (sum, addr) => sum + (balances[addr] || 0),
+            0
+          )
+        : 0;
       if (numAmount > toToken(totalBalance, config.decimals)) {
         toast.error("Insufficient MNEE balance");
         return;
@@ -479,7 +523,8 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
       transferMNEE({ recipient, amount: numAmount });
     } catch (error) {
       // console.error("Error in transfer:", error);
-      toast.error(`Transfer failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      const sanitizedError = sanitizeError(error, "Transfer failed");
+      toast.error(getDisplayMessage(sanitizedError));
     }
   }, [addresses, balances, transferMNEE, amount, recipient, config]);
 
@@ -491,12 +536,19 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
     if (!amount || numAmount <= 0 || Number.isNaN(numAmount)) return false;
 
     // Check total MNEE balance across all addresses
-    const totalBalance = Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0);
+    const totalBalance = Object.values(addresses).reduce(
+      (sum, addr) => sum + (balances[addr] || 0),
+      0
+    );
     const mneeTokens = toToken(totalBalance, config.decimals);
     if (numAmount > mneeTokens) return false;
 
     // Check recipient
-    if (!recipient || !RegExp(/^[1][a-km-zA-HJ-NP-Z1-9]{25,34}$/).exec(recipient)) return false;
+    if (
+      !recipient ||
+      !RegExp(/^[1][a-km-zA-HJ-NP-Z1-9]{25,34}$/).exec(recipient)
+    )
+      return false;
 
     return true;
   }, [amount, balance, config, balances, addresses, recipient]);
@@ -540,7 +592,17 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
                 {balancesLoading === FetchStatus.LOADING ? (
                   <span className="loading loading-spinner loading-sm" />
                 ) : (
-                  `${config ? toToken(Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0), config.decimals) : 0} MNEE`
+                  `${
+                    config
+                      ? toToken(
+                          Object.values(addresses).reduce(
+                            (sum, addr) => sum + (balances[addr] || 0),
+                            0
+                          ),
+                          config.decimals
+                        )
+                      : 0
+                  } MNEE`
                 )}
               </div>
               <div className="stat-actions flex gap-2">
@@ -555,7 +617,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
                   type="button"
                   className="btn btn-sm"
                   onClick={() => {
-                    router.push('/dash/wallet?showTransfer=true');
+                    router.push("/dash/wallet?showTransfer=true");
                     setShowTransferModal(true);
                   }}
                 >
@@ -587,10 +649,12 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
             <dialog id="transfer_modal" className="modal modal-open">
               <div className="modal-box max-w-sm">
                 <h3 className="text-lg font-bold mb-6">Transfer MNEE</h3>
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  handleTransfer();
-                }}>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleTransfer();
+                  }}
+                >
                   <div className="space-y-4">
                     <label className="form-control w-full">
                       <div className="label">
@@ -618,9 +682,9 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
                         onChange={(e) => {
                           const value = e.target.value;
                           // Only allow numbers and a single decimal point
-                          if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                          if (value === "" || /^\d*\.?\d*$/.test(value)) {
                             // Check decimal places
-                            const parts = value.split('.');
+                            const parts = value.split(".");
                             if (parts.length === 2 && config) {
                               // If we have decimals, check if they exceed the allowed length
                               if (parts[1].length > config.decimals) {
@@ -630,7 +694,9 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
                             setAmount(value);
                           }
                         }}
-                        placeholder={`Enter amount (max ${config?.decimals || 8} decimal places)`}
+                        placeholder={`Enter amount (max ${
+                          config?.decimals || 8
+                        } decimal places)`}
                         required
                       />
                     </label>
@@ -642,7 +708,7 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
                       className="btn btn-ghost"
                       onClick={() => {
                         setShowTransferModal(false);
-                        router.push('/dash/wallet');
+                        router.push("/dash/wallet");
                       }}
                     >
                       Cancel
@@ -658,22 +724,26 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
                           Sending...
                         </>
                       ) : (
-                        'Send'
+                        "Send"
                       )}
                     </button>
                   </div>
                 </form>
               </div>
-              <form method="dialog" className="modal-backdrop" onClick={() => {
-                setShowTransferModal(false);
-                router.push('/dash/wallet');
-              }}>
+              <form
+                method="dialog"
+                className="modal-backdrop"
+                onClick={() => {
+                  setShowTransferModal(false);
+                  router.push("/dash/wallet");
+                }}
+              >
                 <button
                   type="button"
                   className="btn btn-ghost"
                   onClick={() => {
                     setShowTransferModal(false);
-                    router.push('/dash/wallet');
+                    router.push("/dash/wallet");
                   }}
                 >
                   close
@@ -684,13 +754,31 @@ export default function DashboardWalletContent({ defaultShowTransfer, defaultAdd
 
           {!canTransfer() && amount && (
             <div className="text-sm text-error mt-2">
-              {Number(amount) > (config && addresses ? toToken(Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0), config.decimals) : 0) ? (
+              {Number(amount) >
+              (config && addresses
+                ? toToken(
+                    Object.values(addresses).reduce(
+                      (sum, addr) => sum + (balances[addr] || 0),
+                      0
+                    ),
+                    config.decimals
+                  )
+                : 0) ? (
                 <>
                   Insufficient MNEE balance (
-                  {config && addresses ? `${toToken(Object.values(addresses).reduce((sum, addr) => sum + (balances[addr] || 0), 0), config.decimals)} MNEE available` : '0 MNEE available'}
+                  {config && addresses
+                    ? `${toToken(
+                        Object.values(addresses).reduce(
+                          (sum, addr) => sum + (balances[addr] || 0),
+                          0
+                        ),
+                        config.decimals
+                      )} MNEE available`
+                    : "0 MNEE available"}
                   , trying to send {amount} MNEE)
                 </>
-              ) : !recipient || !recipient.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/) ? (
+              ) : !recipient ||
+                !recipient.match(/^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/) ? (
                 "Invalid recipient address"
               ) : (
                 "Invalid amount"

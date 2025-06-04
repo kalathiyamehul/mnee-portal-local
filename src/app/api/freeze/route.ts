@@ -7,6 +7,8 @@ import { FreezeRequestAction } from '@prisma/client';
 import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
 import { logActivity } from '@/lib/activityLogger';
 import { withCSRF } from '@/lib/csrf';
+import { emitRestrictionsUpdate } from "@/lib/sseEmitter";
+import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 // Helper function to validate FreezeRequestAction
 function isFreezeAction(action: string): action is FreezeRequestAction {
@@ -119,6 +121,28 @@ export const POST = withCSRF(async function(request: Request) {
       return { request };
     });
 
+    // Get the FreezeRequest
+    const freeze: any = await prisma.freezeRequest.findUnique({
+      where: { id: result.request.id },
+      include: {
+        approvals: {
+          include: {
+            approver: true,
+          },
+        },
+        requester: true,
+      },
+    });
+    if (freeze?.amount) {
+      freeze.amount = Number(freeze.amount);
+    }
+
+    // Emit the FreezeRequest event
+    emitRestrictionsUpdate({
+      newRequest: freeze,
+      type: "CREATE_FREEZE",
+    });
+
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error in freeze request:', error instanceof Error ? {
@@ -144,4 +168,4 @@ export const POST = withCSRF(async function(request: Request) {
       { status: 500 }
     );
   }
-})
+}, createAPIRateLimit())

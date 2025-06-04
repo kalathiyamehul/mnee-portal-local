@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
 import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
 import { withCSRF } from "@/lib/csrf";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 const assignRoleSchema = z.object({
     userId: z.string().min(1, "User ID is required"),
@@ -89,7 +90,7 @@ export const POST = withCSRF(async function(request: NextRequest) {
             { status: 500 }
         );
     }
-})
+}, createAPIRateLimit())
 
 // DELETE /api/role/assign - Remove role from user
 export const DELETE = withCSRF(async function(request: NextRequest) {
@@ -145,4 +146,4 @@ export const DELETE = withCSRF(async function(request: NextRequest) {
             { status: 500 }
         );
     }
-})
+}, createAPIRateLimit())

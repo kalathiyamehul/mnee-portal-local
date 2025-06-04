@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 export const PUT = withCSRF(async function (
     req: Request,
@@ -80,7 +81,7 @@ export const PUT = withCSRF(async function (
         console.error("[USER_PUT]", error);
         return new NextResponse("Internal error", { status: 500 });
     }
-});
+}, createAPIRateLimit());
 
 export const DELETE = withCSRF(async function (
     req: Request,
@@ -123,4 +124,4 @@ export const DELETE = withCSRF(async function (
         console.error("[USER_DELETE]", error);
         return new NextResponse("Internal error", { status: 500 });
     }
-});
+}, createAPIRateLimit());

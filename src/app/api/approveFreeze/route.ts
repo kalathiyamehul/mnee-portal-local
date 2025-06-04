@@ -6,6 +6,8 @@ import { authOptions } from "@/lib/authOptions";
 import { isSystemPaused } from "@/lib/systemStatus";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
+import { emitRestrictionsUpdate } from "@/lib/sseEmitter";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 export const POST = withCSRF(async function(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -27,6 +29,7 @@ export const POST = withCSRF(async function(request: Request) {
 
 	// Use a transaction to ensure data consistency
 	try {
+		let newAppeovalID: string;
 		const result = await prisma.$transaction(async (tx) => {
 			// Get the freeze request
 			// console.log('Finding freeze request:', { freezeRequestId });
@@ -105,6 +108,8 @@ export const POST = withCSRF(async function(request: Request) {
 				},
 			});
 
+			newAppeovalID = approval.id;
+
 			await logActivity(tx, {
 				name: "Freeze Request Approved",
 				action: "FREEZE_REQUEST_APPROVE",
@@ -168,6 +173,21 @@ export const POST = withCSRF(async function(request: Request) {
 			return freezeRequest;
 		});
 
+		// emit Freeze Approve event
+		const approvalWithUser = await prisma.freezeApproval.findUnique({
+			where: {
+				id: newAppeovalID!,
+			},
+			include: {
+				approver: true,
+			},
+		});
+		emitRestrictionsUpdate({
+			activityId: freezeRequestId,
+			approval: approvalWithUser,
+			type: "APPROVE_FREEZE",
+		});
+
 		return NextResponse.json(result);
 	} catch (error) {
 		console.error('Error in freeze approval:', error);
@@ -178,4 +198,4 @@ export const POST = withCSRF(async function(request: Request) {
 			{ status: 500 }
 		);
 	}
-})
+}, createAPIRateLimit())

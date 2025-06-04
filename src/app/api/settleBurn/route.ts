@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
 import { withCSRF } from "@/lib/csrf";
+import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -86,4 +87,4 @@ export const POST = withCSRF(async function(request: Request) {
       { status: 400 }
     );
   }
-})
+}, createAPIRateLimit())
