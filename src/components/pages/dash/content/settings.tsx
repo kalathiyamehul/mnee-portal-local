@@ -249,7 +249,6 @@ const DashboardSettingsContent = () => {
   } | null>(null);
   const [burnUtxos, setBurnUtxos] = useState<MNEEUtxo[]>([]);
   const [burnLoading, setBurnLoading] = useState(false);
-  const [showSuperAdminModal, setShowSuperAdminModal] = useState(false);
 
   // Calculate burn balance from UTXOs
   const burnBalance = useMemo(() => {
@@ -450,12 +449,6 @@ const DashboardSettingsContent = () => {
           <div className="space-y-6">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-bold">Super Admin Config</h3>
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={() => setShowSuperAdminModal(true)}
-              >
-                Edit
-              </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -466,12 +459,12 @@ const DashboardSettingsContent = () => {
               <div className="font-medium">Max No. of Approval</div>
               <div>{config.maxNoOfApproval}</div>
             </div>
-              <div>
+              {/* <div>
                 <div className="font-medium">Global JSON</div>
                 <pre className="bg-base-200 rounded p-2 text-xs overflow-x-auto max-h-32">
                   {JSON.stringify(config.globalJson, null, 2)}
                 </pre>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
