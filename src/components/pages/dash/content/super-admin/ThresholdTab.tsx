@@ -131,8 +131,14 @@ const ThresholdTab = () => {
               <input
                 type="number"
                 min="2"
+                step="1"
                 className="input input-bordered w-full"
                 value={editingThreshold?.value}
+                onKeyDown={(e) => {
+                  if (e.key === "." || e.key === ",") {
+                    e.preventDefault(); // Prevents typing decimal point or comma
+                  }
+                }}
                 onChange={(e) =>
                   setEditingThreshold((prev) =>
                     prev ? { 

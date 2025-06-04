@@ -44,7 +44,7 @@ export function CustomerModal({
           maxNoOfApproval: data.maxNoOfApproval,
         });
       } catch (error) {
-        console.error("Error fetching config:", error);
+        // console.error("Error fetching config:", error);
         toast.error("Failed to fetch configuration");
       }
     };

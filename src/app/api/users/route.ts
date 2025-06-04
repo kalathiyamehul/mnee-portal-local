@@ -36,6 +36,7 @@ export const GET = withCSRF(async function (req: Request) {
                         name: true,
                     },
                 },
+                createdBy: true,
                 createdAt: true,
             },
             skip,
@@ -95,6 +96,7 @@ export const POST = withCSRF(async function (req: Request) {
                 email,
                 password: hashedPassword,
                 roleId,
+                createdBy: session.user.email,
                 requiresPasswordReset: false,
             },
             select: {
@@ -107,7 +109,6 @@ export const POST = withCSRF(async function (req: Request) {
                         name: true,
                     },
                 },
-                requiresPasswordReset: false,
                 createdAt: true,
             },
         });

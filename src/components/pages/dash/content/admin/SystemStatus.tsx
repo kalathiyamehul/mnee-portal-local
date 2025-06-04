@@ -4,6 +4,8 @@ import { toast } from "react-hot-toast";
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { useState } from "react";
 import { apiFetch } from "@/utils/api";
+import { usePermission } from "@/hooks/usePermission";
+import { Action, Resource } from "@/lib/permission";
 
 interface SystemStatusProps {
   isPaused: boolean;
@@ -12,24 +14,45 @@ interface SystemStatusProps {
   onPauseToggle: () => Promise<void>;
 }
 
-export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPauseToggle }: SystemStatusProps) => {
+export const SystemStatus = ({
+  isPaused,
+  hasPendingPause,
+  hasPendingResume,
+  onPauseToggle,
+}: SystemStatusProps) => {
   const { data: session } = useSession();
   const { statusData, fetchStatus } = useSystemStatus();
   const [isLoading, setIsLoading] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  const pendingAction = statusData?.systemRequests?.find(req => 
-    req.status === 'PENDING' && 
-    (req.action === 'PAUSE' || req.action === 'RESUME')
+  const pendingAction = statusData?.systemRequests?.find(
+    (req) =>
+      req.status === "PENDING" &&
+      (req.action === "PAUSE" || req.action === "RESUME")
   );
 
   const isRequester = pendingAction?.requester.email === session?.user?.email;
-  const canApprove = pendingAction && !isRequester && 
-    !pendingAction.approvals.some(approval => approval.approver?.email === session?.user?.email);
+  const canApprove =
+    pendingAction &&
+    !isRequester &&
+    !pendingAction.approvals.some(
+      (approval) => approval.approver?.email === session?.user?.email
+    );
+
+  const { hasPermission, hasAllPermissions } = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+  const isAdmin = hasAllPermissions([
+    { resource: Resource.MINT, action: Action.CREATE },
+    { resource: Resource.BURN, action: Action.CREATE },
+    { resource: Resource.CUSTOMER, action: Action.CREATE },
+    { resource: Resource.REFUND, action: Action.CREATE },
+    { resource: Resource.BLACKLIST, action: Action.CREATE },
+    { resource: Resource.FREEZE, action: Action.CREATE },
+  ]);
 
   const handleApprovePause = async () => {
     if (!pendingAction) return;
-    
+
     try {
       const response = await apiFetch("/api/approveSystem", {
         method: "POST",
@@ -46,13 +69,15 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
       toast.success("Request approved");
     } catch (error) {
       // console.error("Failed to approve request:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to approve request");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to approve request"
+      );
     }
   };
 
   const handleCancelPause = async () => {
     if (!pendingAction) return;
-    
+
     setIsCancelling(true);
     try {
       const response = await apiFetch("/api/cancel", {
@@ -70,7 +95,9 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
       toast.success("Request cancelled");
     } catch (error) {
       // console.error("Failed to cancel request:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to cancel request");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to cancel request"
+      );
     } finally {
       setIsCancelling(false);
     }
@@ -80,10 +107,14 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
     setIsLoading(true);
     try {
       await onPauseToggle();
-      toast.success(isPaused ? 'Resume request created' : 'Pause request created');
+      toast.success(
+        isPaused ? "Resume request created" : "Pause request created"
+      );
     } catch (error) {
       // console.error('Error toggling system pause:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to toggle system state');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to toggle system state"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -105,10 +136,18 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${hasPendingAction ? 'bg-warning' : isPaused ? 'bg-error' : 'bg-success'}`} />
+            <div
+              className={`w-3 h-3 rounded-full ${
+                hasPendingAction
+                  ? "bg-warning"
+                  : isPaused
+                  ? "bg-error"
+                  : "bg-success"
+              }`}
+            />
             <span className="font-medium">{getStatusText()}</span>
           </div>
-          {canApprove && (
+          {canApprove && (isSuperAdmin || isAdmin) && (
             <button
               type="button"
               onClick={handleApprovePause}
@@ -119,37 +158,50 @@ export const SystemStatus = ({ isPaused, hasPendingPause, hasPendingResume, onPa
             </button>
           )}
         </div>
-        {isRequester && pendingAction ? (
-          <button
-            type="button"
-            onClick={handleCancelPause}
-            className="btn btn-error btn-sm gap-2"
-            disabled={isCancelling}
-          >
-            {isCancelling ? (
-              <FaSpinner className="animate-spin w-3 h-3" />
+
+        {(isSuperAdmin || isAdmin) && (
+          <div>
+            {isRequester && pendingAction ? (
+              <div className="tooltip tooltip-warning tooltip-left" data-tip={"Cancle System Pause Request"}>
+                <button
+                  type="button"
+                  onClick={handleCancelPause}
+                  className="btn btn-error btn-sm gap-2"
+                  disabled={isCancelling}
+                >
+                  {isCancelling ? (
+                    <FaSpinner className="animate-spin w-3 h-3" />
+                  ) : (
+                    <FaXmark className="w-3 h-3" />
+                  )}
+                  Cancel
+                </button>
+              </div>
             ) : (
-              <FaXmark className="w-3 h-3" />
+              <div className="form-control tooltip tooltip-warning tooltip-left" data-tip={"Toggle to Raise System Pause Request"}>
+                <label className="cursor-pointer relative">
+                  <input
+                    type="checkbox"
+                    className={`toggle ${
+                      hasPendingAction
+                        ? "toggle-warning"
+                        : isPaused
+                        ? "toggle-error"
+                        : "toggle-success"
+                    } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                    checked={!isPaused}
+                    onChange={handleToggle}
+                    disabled={hasPendingAction || isLoading}
+                  />
+                  {isLoading && (
+                    <FaSpinner className="animate-spin w-3 h-3 absolute right-0 top-1/2 -translate-y-1/2 -translate-x-[200%] text-base-content/70" />
+                  )}
+                </label>
+              </div>
             )}
-            Cancel
-          </button>
-        ) : (
-          <div className="form-control">
-            <label className="cursor-pointer relative">
-              <input
-                type="checkbox"
-                className={`toggle ${hasPendingAction ? 'toggle-warning' : (isPaused ? 'toggle-error' : 'toggle-success')} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                checked={!isPaused}
-                onChange={handleToggle}
-                disabled={hasPendingAction || isLoading}
-              />
-              {isLoading && (
-                <FaSpinner className="animate-spin w-3 h-3 absolute right-0 top-1/2 -translate-y-1/2 -translate-x-[200%] text-base-content/70" />
-              )}
-            </label>
           </div>
         )}
       </div>
     </div>
   );
-}; 
+};

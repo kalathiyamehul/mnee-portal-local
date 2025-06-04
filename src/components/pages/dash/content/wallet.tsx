@@ -461,7 +461,7 @@ export default function DashboardWalletContent({
       router.replace("/dash/wallet");
     },
     onError: (error) => {
-      console.error("Transfer error:", error);
+      // console.error("Transfer error:", error);
 
       // Handle specific error messages with more user-friendly text
       let errorMessage = error.message;
