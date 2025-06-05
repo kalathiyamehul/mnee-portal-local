@@ -6,6 +6,7 @@ import bcrypt from 'bcrypt';
 import { isPasswordValid } from '@/utils/auth';
 import { withCSRF } from '@/lib/csrf';
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
+import { emitPasswordChanged } from '@/lib/sseEmitter';
 
 export const POST = withCSRF(async function(request: Request) {
     const session = await getServerSession(authOptions);
@@ -80,6 +81,12 @@ export const POST = withCSRF(async function(request: Request) {
 
         console.log('[Change Password] Update successful:', {
             userId: updatedUser.id
+        });
+
+        // Emit password changed event to invalidate user sessions
+        emitPasswordChanged({
+            userId: updatedUser.id,
+            userEmail: updatedUser.email
         });
 
         return NextResponse.json({ success: true });

@@ -97,31 +97,55 @@ export default function UsersPage() {
 
   const validatePassword = (password: string) => {
     if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
+      return "Password must be at least 8 characters long";
     }
     if (!/[A-Z]/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
+      return "Password must contain at least one uppercase letter";
     }
     if (!/[a-z]/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
+      return "Password must contain at least one lowercase letter";
     }
     if (!/[0-9]/.test(password)) {
-      return 'Password must contain at least one number' ;
+      return "Password must contain at least one number";
     }
     if (!/[^A-Za-z0-9]/.test(password)) {
-      return 'Password must contain at least one special character' ;
+      return "Password must contain at least one special character";
     }
     const commonPasswords = [
-      'password', '123456', '123456789', 'qwerty', 'abc123', '111111', '123123',
-      'password1', '1234', '12345', '12345678', 'iloveyou', 'admin', 'welcome',
-      'monkey', 'login', 'letmein', 'football', 'baseball', 'starwars', 'dragon',
-      'passw0rd', 'master', 'hello', 'freedom', 'whatever', 'qazwsx', 'trustno1'
+      "password",
+      "123456",
+      "123456789",
+      "qwerty",
+      "abc123",
+      "111111",
+      "123123",
+      "password1",
+      "1234",
+      "12345",
+      "12345678",
+      "iloveyou",
+      "admin",
+      "welcome",
+      "monkey",
+      "login",
+      "letmein",
+      "football",
+      "baseball",
+      "starwars",
+      "dragon",
+      "passw0rd",
+      "master",
+      "hello",
+      "freedom",
+      "whatever",
+      "qazwsx",
+      "trustno1",
     ];
     if (commonPasswords.includes(password.toLowerCase())) {
-      return 'Password is too common. Please choose a more secure password.' ;
+      return "Password is too common. Please choose a more secure password.";
     }
     return;
-  }
+  };
 
   if (!isSuperAdmin) {
     return (
@@ -299,9 +323,11 @@ export default function UsersPage() {
       setEditingUser(null);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update user Password"
+        error instanceof Error
+          ? error.message
+          : "Failed to update user Password"
       );
-      console.error(error);
+      // console.error(error);
     }
   };
 
@@ -376,8 +402,11 @@ export default function UsersPage() {
                     maxLength={513}
                     value={newUser.name}
                     onChange={(e) => {
-                      setNewUser(prev => ({ ...prev, name: e.target.value }));
-                      setErrors(prev => ({...prev, name: validateName(e.target.value)}));
+                      setNewUser((prev) => ({ ...prev, name: e.target.value }));
+                      setErrors((prev) => ({
+                        ...prev,
+                        name: validateName(e.target.value),
+                      }));
                     }}
                     placeholder="Enter name"
                     required
@@ -401,8 +430,14 @@ export default function UsersPage() {
                     value={newUser.email}
                     maxLength={256}
                     onChange={(e) => {
-                      setNewUser(prev => ({ ...prev, email: e.target.value }));
-                      setErrors(prev => ({...prev, email: validateEmail(e.target.value)}));
+                      setNewUser((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }));
+                      setErrors((prev) => ({
+                        ...prev,
+                        email: validateEmail(e.target.value),
+                      }));
                     }}
                     placeholder="Enter email"
                     required
@@ -430,13 +465,14 @@ export default function UsersPage() {
                       setNewUser((prev) => ({
                         ...prev,
                         password: newPassword,
-                      }))
-                      
+                      }));
+
                       // Validate on every change
-                      const error = newPassword.trim() === "" 
-                        ? "" 
-                        : validatePassword(newPassword);
-                      setErrors(prev => ({...prev, password: error || ""}));
+                      const error =
+                        newPassword.trim() === ""
+                          ? ""
+                          : validatePassword(newPassword);
+                      setErrors((prev) => ({ ...prev, password: error || "" }));
                     }}
                     placeholder="Set password"
                     required
@@ -479,8 +515,13 @@ export default function UsersPage() {
                   className="btn btn-ghost"
                   onClick={() => {
                     setIsCreating(false);
-                    setNewUser({name:"",email:"",password:"",roleId:""})
-                    setErrors({name: "", password: "", email: ""});
+                    setNewUser({
+                      name: "",
+                      email: "",
+                      password: "",
+                      roleId: "",
+                    });
+                    setErrors({ name: "", password: "", email: "" });
                   }}
                 >
                   Cancel
@@ -492,7 +533,10 @@ export default function UsersPage() {
                     !newUser.name.trim() ||
                     !newUser.email.trim() ||
                     !newUser.password.trim() ||
-                    !newUser.roleId || !!errors.name || !!errors.email || !!errors.password
+                    !newUser.roleId ||
+                    !!errors.name ||
+                    !!errors.email ||
+                    !!errors.password
                   }
                 >
                   Create User
@@ -532,7 +576,10 @@ export default function UsersPage() {
                       setEditingUser((prev) =>
                         prev ? { ...prev, name: e.target.value } : null
                       );
-                      setErrors(prev => ({...prev, name: validateName(e.target.value)}));
+                      setErrors((prev) => ({
+                        ...prev,
+                        name: validateName(e.target.value),
+                      }));
                     }}
                     placeholder="Enter name"
                     required
@@ -555,11 +602,14 @@ export default function UsersPage() {
                     }`}
                     value={editingUser.email || ""}
                     maxLength={256}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setEditingUser((prev) =>
                         prev ? { ...prev, email: e.target.value } : null
                       );
-                      setErrors(prev => ({...prev, email: validateEmail(e.target.value)}));
+                      setErrors((prev) => ({
+                        ...prev,
+                        email: validateEmail(e.target.value),
+                      }));
                     }}
                     placeholder="Enter email"
                     required
@@ -596,7 +646,7 @@ export default function UsersPage() {
                       )
                     }
                   >
-                    <option value="">No Role</option>
+                    <option value="">Super Admin</option>
                     {roles.map((role) => (
                       <option key={role.id} value={role.id}>
                         {role.name}
@@ -613,7 +663,7 @@ export default function UsersPage() {
                   onClick={() => {
                     setIsEditing(false);
                     setEditingUser(null);
-                    setErrors({name: "", password: "", email: ""});
+                    setErrors({ name: "", password: "", email: "" });
                   }}
                 >
                   Cancel
@@ -645,18 +695,18 @@ export default function UsersPage() {
       )}
 
       {/* Reset Password Modal */}
-      {isResetting && editingUser &&(
-         <div className="modal modal-open">
-         <div className="modal-box max-w-lg">
-           <h3 className="text-lg font-bold mb-6">Reset User Password</h3>
-           <form
-             onSubmit={(e) => {
-               e.preventDefault();
-               handleResetUserPassword(editingUser.id);
-             }}
-           >
-             <div className="space-y-6">
-             <div className="form-control w-full">
+      {isResetting && editingUser && (
+        <div className="modal modal-open">
+          <div className="modal-box max-w-lg">
+            <h3 className="text-lg font-bold mb-6">Reset User Password</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleResetUserPassword(editingUser.id);
+              }}
+            >
+              <div className="space-y-6">
+                <div className="form-control w-full">
                   <label className="label label-text">Reset Password</label>
                   <input
                     type="password"
@@ -667,13 +717,16 @@ export default function UsersPage() {
                     maxLength={100}
                     onChange={(e) => {
                       const newPassword = e.target.value;
-                      setEditingUser(prev => prev ? {...prev, password: newPassword} : null);
-                      
+                      setEditingUser((prev) =>
+                        prev ? { ...prev, password: newPassword } : null
+                      );
+
                       // Validate on every change
-                      const error = newPassword.trim() === "" 
-                        ? "" 
-                        : validatePassword(newPassword);
-                      setErrors(prev => ({...prev, password: error || ""}));
+                      const error =
+                        newPassword.trim() === ""
+                          ? ""
+                          : validatePassword(newPassword);
+                      setErrors((prev) => ({ ...prev, password: error || "" }));
                     }}
                     placeholder="Set new password"
                     required
@@ -686,40 +739,38 @@ export default function UsersPage() {
                     </div>
                   )}
                 </div>
-             </div>
+              </div>
 
-             <div className="modal-action">
-               <button
-                 type="button"
-                 className="btn btn-ghost"
-                 onClick={() => {
-                   setIsResetting(false);
-                   setEditingUser(null);
-                   setErrors({name: "", password: "", email: ""});
-                 }}
-               >
-                 Cancel
-               </button>
-               <button
-                 type="submit"
-                 className="btn btn-primary"
-                 disabled={
-                   !editingUser.password?.trim() || !!errors.password
-                 }
-               >
-                 Reset Password
-               </button>
-             </div>
-           </form>
-         </div>
-         <div
-           className="modal-backdrop"
-           onClick={() => {
-             setIsEditing(false);
-             setEditingUser(null);
-           }}
-         ></div>
-       </div>
+              <div className="modal-action">
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => {
+                    setIsResetting(false);
+                    setEditingUser(null);
+                    setErrors({ name: "", password: "", email: "" });
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={!editingUser.password?.trim() || !!errors.password}
+                >
+                  Reset Password
+                </button>
+              </div>
+            </form>
+          </div>
+          <div
+            className="modal-backdrop"
+            onClick={() => {
+              setIsEditing(false);
+              setEditingUser(null);
+            }}
+          ></div>
+        </div>
       )}
 
       {/* Users List */}
@@ -759,9 +810,7 @@ export default function UsersPage() {
                 <td>
                   <div className="text-sm">
                     {user.role?.name || (
-                      <span className="text-base-content/50 italic">
-                        No Role
-                      </span>
+                      <span className="text-base-content">Super Admin</span>
                     )}
                   </div>
                 </td>
@@ -786,38 +835,38 @@ export default function UsersPage() {
                   </div>
                 </td>
                 <td>
-                  <div className="flex gap-1">
-                  <button
-                      className="btn btn-ghost btn-xs gap-2"
-                      onClick={() => {
-                        setEditingUser(user);
-                        setOriginalUser(user);
-                        setIsResetting(true);
-                      }}
-                    >
-                      <MdLockReset className="w-4 h-4" />
-                      Reset Password
-                    </button>
-                    <button
-                      className="btn btn-ghost btn-xs gap-2"
-                      onClick={() => {
-                        setEditingUser(user);
-                        setOriginalUser(user);
-                        setIsEditing(true);
-                      }}
-                    >
-                      <FaEdit className="w-4 h-4" />
-                      Edit
-                    </button>
-                    {user.email !== session?.user?.email && (
+                  {user.email !== session?.user?.email && (
+                    <div className="flex gap-1">
+                      <button
+                        className="btn btn-ghost btn-xs gap-2"
+                        onClick={() => {
+                          setEditingUser(user);
+                          setOriginalUser(user);
+                          setIsResetting(true);
+                        }}
+                      >
+                        <MdLockReset className="w-4 h-4" />
+                        Reset Password
+                      </button>
+                      <button
+                        className="btn btn-ghost btn-xs gap-2"
+                        onClick={() => {
+                          setEditingUser(user);
+                          setOriginalUser(user);
+                          setIsEditing(true);
+                        }}
+                      >
+                        <FaEdit className="w-4 h-4" />
+                        Edit
+                      </button>
                       <button
                         className="btn btn-ghost btn-xs text-error"
                         onClick={() => handleDeleteUser(user.id)}
                       >
                         Delete
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

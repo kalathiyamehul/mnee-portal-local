@@ -110,11 +110,11 @@ model AccountLockout {
 ```typescript
 // src/app/api/auth/login/route.ts
 import { withCSRF } from '@/lib/csrf';
-import { createLoginRateLimit } from '@/lib/rateLimitHelpers';
+import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 
 export const POST = withCSRF(async function (request: Request) {
   // Login logic
-}, createLoginRateLimit());
+}, createAPIRateLimit());
 ```
 
 ### 2. Manual Rate Limit Checks

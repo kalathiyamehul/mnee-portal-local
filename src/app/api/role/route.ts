@@ -7,6 +7,7 @@ import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { Prisma } from "@prisma/client";
+import { emitRoleUpdate, emitUserSessionInvalidate } from "@/lib/sseEmitter";
 
 // Schema for role creation/update
 const roleSchema = z.object({
@@ -32,6 +33,9 @@ export const GET = withCSRF(async function() {
                         permission: true
                     }
                 }
+            },
+            orderBy: {
+                createdAt: "desc"
             }
         });
         return NextResponse.json(roles);
@@ -121,6 +125,13 @@ export const POST = withCSRF(async function(request: NextRequest) {
             throw new Error("Failed to create role");
         }
 
+        // Emit role update event
+        emitRoleUpdate({
+            roleId: role.id,
+            roleName: role.name,
+            action: 'created'
+        });
+
         return NextResponse.json(role, { status: 201 });
     } catch (error) {
         if (error instanceof z.ZodError) {
@@ -158,6 +169,12 @@ export const PUT = withCSRF(async function(request: NextRequest) {
         const validatedData = roleSchema.parse(updateData);
 
         const updatedRole = await prisma.$transaction(async (tx) => {
+            // Get users with this role before updating
+            const usersWithRole = await tx.user.findMany({
+                where: { roleId: id },
+                select: { id: true }
+            });
+
             // Update role basic info
             const role = await tx.role.update({
                 where: { id },
@@ -205,24 +222,63 @@ export const PUT = withCSRF(async function(request: NextRequest) {
                 });
             }
 
+            // Update lastRoleUpdatedAt for all users with this role
+            if (usersWithRole.length > 0) {
+                await tx.user.updateMany({
+                    where: { roleId: id },
+                    data: { lastRoleUpdatedAt: new Date() }
+                });
+            }
+
+            await logActivity(tx, {
+                name: "Role Updated",
+                action: "ROLE_UPDATE",
+                description: `Role ${role.name} updated by user ${session.user.id}`,
+                metadata: {
+                    roleId: id,
+                    affectedUsers: usersWithRole.length,
+                },
+            });
+
             // Return role with permissions
-            return tx.role.findUnique({
-                where: { id: role.id },
-                include: {
-                    rolePermissions: {
-                        include: {
-                            permission: true
+            return {
+                role: await tx.role.findUnique({
+                    where: { id: role.id },
+                    include: {
+                        rolePermissions: {
+                            include: {
+                                permission: true
+                            }
                         }
                     }
-                }
-            });
+                }),
+                affectedUserIds: usersWithRole.map(u => u.id)
+            };
         }, { timeout: 300000 });
 
-        if (!updatedRole) {
+        if (!updatedRole.role) {
             throw new Error("Failed to update role");
         }
 
-        return NextResponse.json(updatedRole);
+        // Emit role update event
+        emitRoleUpdate({
+            roleId: updatedRole.role.id,
+            roleName: updatedRole.role.name,
+            action: 'updated',
+            affectedUserIds: updatedRole.affectedUserIds
+        });
+
+        // Emit user session invalidation event for affected users
+        if (updatedRole.affectedUserIds.length > 0) {
+            emitUserSessionInvalidate({
+                userIds: updatedRole.affectedUserIds,
+                reason: 'role_updated',
+                roleId: updatedRole.role.id,
+                roleName: updatedRole.role.name
+            });
+        }
+
+        return NextResponse.json(updatedRole.role);
     } catch (error) {
         if (error instanceof z.ZodError) {
             return NextResponse.json(
@@ -266,7 +322,34 @@ export const DELETE = withCSRF(async function(request: NextRequest) {
         }
 
         // Delete role and its permissions in a transaction
-        await prisma.$transaction(async (tx) => {
+        const deletionResult = await prisma.$transaction(async (tx) => {
+            // Get users with this role before deleting
+            const usersWithRole = await tx.user.findMany({
+                where: { roleId: id },
+                select: { id: true }
+            });
+
+            // Get role info before deletion
+            const roleToDelete = await tx.role.findUnique({
+                where: { id },
+                select: { name: true }
+            });
+
+            if (!roleToDelete) {
+                throw new Error("Role not found");
+            }
+
+            // Update lastRoleUpdatedAt for all users with this role and remove role assignment
+            if (usersWithRole.length > 0) {
+                await tx.user.updateMany({
+                    where: { roleId: id },
+                    data: {
+                        roleId: null,
+                        lastRoleUpdatedAt: new Date()
+                    }
+                });
+            }
+
             // Delete role permissions first
             await tx.rolePermission.deleteMany({
                 where: { roleId: id },
@@ -280,12 +363,37 @@ export const DELETE = withCSRF(async function(request: NextRequest) {
             await logActivity(tx, {
                 name: "Role Deleted",
                 action: "ROLE_DELETE",
-                description: `Role ${id} deleted by user ${session.user.id}`,
+                description: `Role ${roleToDelete.name} deleted by user ${session.user.id}`,
                 metadata: {
                     roleId: id,
+                    roleName: roleToDelete.name,
+                    affectedUsers: usersWithRole.length,
                 },
             });
+
+            return {
+                roleName: roleToDelete.name,
+                affectedUserIds: usersWithRole.map(u => u.id)
+            };
         });
+
+        // Emit role update event
+        emitRoleUpdate({
+            roleId: id,
+            roleName: deletionResult.roleName,
+            action: 'deleted',
+            affectedUserIds: deletionResult.affectedUserIds
+        });
+
+        // Emit user session invalidation event for affected users
+        if (deletionResult.affectedUserIds.length > 0) {
+            emitUserSessionInvalidate({
+                userIds: deletionResult.affectedUserIds,
+                reason: 'role_deleted',
+                roleId: id,
+                roleName: deletionResult.roleName
+            });
+        }
 
         return NextResponse.json({ message: "Role deleted successfully" });
     } catch (error) {

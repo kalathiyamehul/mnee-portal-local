@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
         return;
       }
 
-      const res = await apiFetch("/api/resetPassword", {
+      const res = await fetch("/api/resetPassword", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ newPassword }),
@@ -73,10 +73,14 @@ export default function ResetPasswordPage() {
         await signOut({ redirect: false });
         // Small delay to ensure everything is cleared
         await new Promise((resolve) => setTimeout(resolve, 500));
-        router.push("/login?reset=success");
+        router.push("/login?reset=false");
       } else {
-        const data = await res.json();
-        setError(data.error || "Failed to reset password");
+        try {
+          const data = await res.json();
+          setError(data.error || "Failed to reset password");
+        } catch (err) {
+          setError("Failed to reset password. Please try again later.");
+        }
       }
     } catch (err) {
       setError("Failed to reset password");
@@ -151,4 +155,4 @@ export default function ResetPasswordPage() {
       </form>
     </div>
   );
-} 
+}

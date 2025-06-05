@@ -6,6 +6,7 @@ import { hash } from "bcryptjs";
 import { logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { emitUserSessionInvalidate } from "@/lib/sseEmitter";
 
 export const PUT = withCSRF(async function (
     req: Request,
@@ -48,6 +49,17 @@ export const PUT = withCSRF(async function (
             updateData.password = await hash(password, 12);
         }
 
+        // Check if role is being changed
+        const currentUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { roleId: true }
+        });
+
+        const isRoleChanged = currentUser?.roleId !== roleId;
+        if (isRoleChanged) {
+            updateData.lastRoleUpdatedAt = new Date();
+        }
+
         const user = await prisma.user.update({
             where: {
                 id: userId,
@@ -70,11 +82,22 @@ export const PUT = withCSRF(async function (
         await logActivity(prisma, {
             name: "User Updated",
             action: "USER_UPDATE",
-            description: `User ${userId} updated by user ${session.user.email}`,
+            description: `User ${user.id} updated by user ${session.user.id}`,
             metadata: {
                 user: JSON.stringify(user),
+                roleChanged: isRoleChanged,
             },
         });
+
+        // Emit user session invalidation event if role was changed
+        if (isRoleChanged) {
+            emitUserSessionInvalidate({
+                userIds: [userId],
+                reason: 'role_assigned',
+                roleId: roleId,
+                roleName: user.role?.name || 'No Role'
+            });
+        }
 
         return NextResponse.json(user);
     } catch (error) {

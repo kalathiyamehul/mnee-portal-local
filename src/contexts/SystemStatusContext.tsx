@@ -140,7 +140,7 @@ export function SystemStatusProvider({
 
     // Connection established
     eventSource.onopen = () => {
-      console.log("SSE connection established");
+      // console.log("SSE connection established");
     };
 
     eventSource.addEventListener(EVENTS.MINT_UPDATE, (event) => {
@@ -193,13 +193,13 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
     eventSource.addEventListener(EVENTS.CANCEL_UPDATE, (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log("data", data);
+        // console.log("data", data);
         const {
           actionRequestId,
           freezeRequestId,
@@ -287,7 +287,7 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
     eventSource.addEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
@@ -340,7 +340,7 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
     eventSource.addEventListener(EVENTS.RESTRICTIONS_UPDATE, (event) => {
@@ -424,7 +424,7 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
     eventSource.addEventListener(EVENTS.BURN_UPDATE, (event) => {
@@ -480,7 +480,7 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
     eventSource.addEventListener(EVENTS.REFUND_UPDATE, (event) => {
@@ -525,25 +525,25 @@ export function SystemStatusProvider({
           });
         }
       } catch (error) {
-        console.error("Error handling SSE event:", error);
+        // console.error("Error handling SSE event:", error);
       }
     });
 
     // Handle errors
     eventSource.onerror = (error) => {
-      console.error("SSE connection error:", error);
+      // console.error("SSE connection error:", error);
       eventSource.close();
     };
 
     // Clean up on unmount
     return () => {
-      console.log("Closing SSE connection");
+      // console.log("Closing SSE connection");
       eventSource.close();
       eventSource.removeEventListener(EVENTS.MINT_UPDATE, (event) => {
-        console.log(EVENTS.MINT_UPDATE, event);
+        // console.log(EVENTS.MINT_UPDATE, event);
       });
       eventSource.removeEventListener(EVENTS.CANCEL_UPDATE, (event) => {
-        console.log(EVENTS.CANCEL_UPDATE, event);
+        // console.log(EVENTS.CANCEL_UPDATE, event);
       });
     };
   }, [fetchStatus]);
