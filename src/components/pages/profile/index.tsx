@@ -44,7 +44,7 @@ export default function ProfileScreen() {
                 </h2>
                 <p className="text-xl-content/70">{session?.user?.email}</p>
                 <p className="text-xl-content/70">
-                  Role: {isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "User"}
+                  Role: {isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "Viewer"}
                 </p>
               </div>
             </div>
