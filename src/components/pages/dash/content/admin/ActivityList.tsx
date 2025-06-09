@@ -76,10 +76,6 @@ export const ActivityList = ({
     const permissionMap: Record<string, string> = {
       MINT: "hasRejectMintPer",
       BURN: "hasRejectBurnPer",
-      REFUND: "hasRejectRefundPer",
-      BLACKLIST: "hasRejectBlacklistPer",
-      FREEZE: "hasRejectFreezePer",
-      CUSTOMER: "hasRejectCustomerPer",
     };
     const key = permissionMap[type];
     return key ? permissions[key as keyof typeof permissions] : false;

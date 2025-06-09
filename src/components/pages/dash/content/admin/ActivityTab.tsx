@@ -25,13 +25,9 @@ interface ActivityTabProps {
     hasApproveBurnPer: boolean;
     hasRejectBurnPer: boolean;
     hasApproveRefundPer: boolean;
-    hasRejectRefundPer: boolean;
     hasApproveBlacklistPer: boolean;
-    hasRejectBlacklistPer: boolean;
     hasApproveFreezePer: boolean;
-    hasRejectFreezePer: boolean;
     hasApproveCustomerPer: boolean;
-    hasRejectCustomerPer: boolean;
   };
 }
 
@@ -57,10 +53,8 @@ export const ActivityTab = ({
     permissions.hasApproveFreezePer ||
     permissions.hasApproveMintPer ||
     permissions.hasApproveRefundPer ||
-    permissions.hasRejectRefundPer ||
+    permissions.hasApproveCustomerPer ||
     permissions.hasRejectBurnPer ||
-    permissions.hasRejectFreezePer ||
-    permissions.hasRejectBlacklistPer ||
     permissions.hasRejectMintPer;
 
   return (

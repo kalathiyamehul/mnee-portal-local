@@ -42,12 +42,13 @@ const Sidebar: React.FC = () => {
   const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
   const canViewWallet = hasPermission(Resource.WALLET, Action.READ);
   const canViewCustomers = hasPermission(Resource.CUSTOMER, Action.READ);
+  const canViewConfig = hasPermission(Resource.CONFIG, Action.READ);
   const canViewSuperAdmin = isSuperAdmin;
   const filteredMenuItems = menuItems.filter((item) => {
     if (item.name === "Wallet") return canViewSuperAdmin || canViewWallet;
     if (item.name === "Customers") return canViewSuperAdmin || canViewCustomers;
     if (item.name === "SuperAdmin") return canViewSuperAdmin;
-    if (item.name === "Config") return canViewSuperAdmin;
+    if (item.name === "Config") return canViewSuperAdmin || canViewConfig;
     return true;
   });
 

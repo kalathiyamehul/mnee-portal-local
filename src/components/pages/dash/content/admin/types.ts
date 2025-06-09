@@ -190,13 +190,9 @@ export interface ActivityListProps {
 		hasApproveBurnPer: boolean;
 		hasRejectBurnPer: boolean;
 		hasApproveRefundPer: boolean;
-		hasRejectRefundPer: boolean;
 		hasApproveBlacklistPer: boolean;
-		hasRejectBlacklistPer: boolean;
 		hasApproveFreezePer: boolean;
-		hasRejectFreezePer: boolean;
 		hasApproveCustomerPer: boolean;
-		hasRejectCustomerPer: boolean;
 	  };
 }
 
