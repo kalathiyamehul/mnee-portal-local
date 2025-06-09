@@ -150,16 +150,27 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
+      const filteredActivities = allActivities.filter((activity) => {
+        switch (activity.type) {
+          case 'MINT': return (hasReadMintPer || hasCreateMintPer || hasApproveMintPer || hasRejectMintPer);
+          case 'BURN': return (hasReadBurnPer || hasCreateBurnPer || hasApproveBurnPer || hasRejectBurnPer);
+          case 'REFUND': return (hasReadRefundPer || hasApproveRefundPer || hasCreateRefundPer);
+          case 'BLACKLIST': return (hasReadBlacklistPer || hasCreateBlacklistPer || hasApproveBlacklistPer);
+          case 'FREEZE': return (hasReadFreezePer || hasCreateFreezePer || hasApproveFreezePer);
+          case 'CUSTOMER': return (hasReadCustomerPer || hasCreateCustomerPer || hasApproveCustomerPer);
+          default: return false;
+        }
+      });
       setRequests({
-        recentMints: allActivities
+        recentMints: filteredActivities
           .filter((act) => act.type === "MINT")
           .filter((activity) => activity.status === "PENDING")
           .slice(0, 5),
-        recentBurns: allActivities
+        recentBurns: filteredActivities
           .filter((act) => act.type === "BURN")
           .filter((activity) => activity.status === "PENDING")
           .slice(0, 5),
-        pendingActivities: allActivities
+        pendingActivities: filteredActivities
           .filter((activity) => activity.status === "PENDING")
           .slice(0, 5),
       });
@@ -203,9 +214,6 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const hasApproveRefundPer = isSuperAdmin
     ? true
     : hasPermission(Resource.REFUND, Action.APPROVE) || false;
-  const hasRejectRefundPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.REFUND, Action.REJECT) || false;
   const hasReadRefundPer = isSuperAdmin
     ? true
     : hasPermission(Resource.REFUND, Action.READ) || false;
@@ -217,9 +225,6 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const hasApproveBlacklistPer = isSuperAdmin
     ? true
     : hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
-  const hasRejectBlacklistPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
   const hasReadBlacklistPer = isSuperAdmin
     ? true
     : hasPermission(Resource.BLACKLIST, Action.READ) || false;
@@ -231,9 +236,6 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const hasApproveFreezePer = isSuperAdmin
     ? true
     : hasPermission(Resource.FREEZE, Action.APPROVE) || false;
-  const hasRejectFreezePer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.FREEZE, Action.REJECT) || false;
   const hasReadFreezePer = isSuperAdmin
     ? true
     : hasPermission(Resource.FREEZE, Action.READ) || false;
@@ -245,9 +247,6 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const hasApproveCustomerPer = isSuperAdmin
     ? true
     : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
-  const hasRejectCustomerPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
   const hasReadCustomerPer = isSuperAdmin
     ? true
     : hasPermission(Resource.CUSTOMER, Action.READ) || false;
@@ -255,23 +254,25 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   // Permissions object
   const permissions = {
     // Mint
+    hasReadMintPer,
     hasApproveMintPer,
     hasRejectMintPer,
     // Burn
+    hasReadBurnPer,
     hasApproveBurnPer,
     hasRejectBurnPer,
     // Refund
+    hasReadRefundPer,
     hasApproveRefundPer,
-    hasRejectRefundPer,
     // Blacklist
+    hasReadBlacklistPer,
     hasApproveBlacklistPer,
-    hasRejectBlacklistPer,
     // Freeze
+    hasReadFreezePer,
     hasApproveFreezePer,
-    hasRejectFreezePer,
     // Customers
+    hasReadCustomerPer,
     hasApproveCustomerPer,
-    hasRejectCustomerPer,
   };
 
   // Default to 'volume' if no chart is selected
@@ -282,13 +283,9 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     hasApproveBurnPer ||
     hasRejectBurnPer ||
     hasApproveRefundPer ||
-    hasRejectRefundPer ||
     hasApproveBlacklistPer ||
-    hasRejectBlacklistPer ||
     hasApproveFreezePer ||
-    hasRejectFreezePer ||
-    hasApproveCustomerPer ||
-    hasRejectCustomerPer;
+    hasApproveCustomerPer;
 
   const canCancel = useCallback(
     (activity: Activity) => {
@@ -698,7 +695,6 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
             hasApproveBurnPer={hasApproveBurnPer}
             hasRejectBurnPer={hasRejectBurnPer}
             hasApproveRefundPer={hasApproveRefundPer}
-            hasRejectRefundPer={hasRejectRefundPer}
           />
         </div>
       </div>

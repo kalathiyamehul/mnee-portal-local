@@ -32,12 +32,12 @@ interface ActiveRestrictionsTabProps {
   handleApprove: (id: string, type: Activity["type"]) => Promise<void>;
   session: Session;
   permissions: {
+    hasReadBlacklistPer: boolean;
     hasCreateBlacklistPer: boolean;
     hasApproveBlacklistPer: boolean;
-    hasRejectBlacklistPer: boolean;
+    hasReadFreezePer: boolean;
     hasCreateFreezePer: boolean;
     hasApproveFreezePer: boolean;
-    hasRejectFreezePer: boolean;
   };
 }
 
@@ -70,9 +70,7 @@ export const ActiveRestrictionsTab = ({
 
   const showActions =
     permissions.hasApproveBlacklistPer ||
-    permissions.hasApproveFreezePer ||
-    permissions.hasRejectBlacklistPer ||
-    permissions.hasRejectFreezePer;
+    permissions.hasApproveFreezePer
 
   const getActionBadgeClass = (activity: Activity) => {
     if (activity.type === "BLACKLIST") {

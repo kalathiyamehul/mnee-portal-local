@@ -32,10 +32,8 @@ interface ActiveRestrictionsProps {
   permissions: {
     hasCreateBlacklistPer: boolean;
     hasApproveBlacklistPer: boolean;
-    hasRejectBlacklistPer: boolean;
     hasCreateFreezePer: boolean;
     hasApproveFreezePer: boolean;
-    hasRejectFreezePer: boolean;
   };
 }
 
