@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
-import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
+import { ActivityAction, logActivity } from "@/lib/activityLogger"; // <-- Add this import
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { emitUserSessionInvalidate } from "@/lib/sseEmitter";
@@ -60,14 +60,12 @@ export const POST = withCSRF(async function(request: NextRequest) {
         });
 
         await logActivity(prisma, {
-            name: "Role Assigned",
-            action: "ROLE_ASSIGN",
-            description: `Role ${role.name} assigned to user ${user.email} by user ${session.user.id}`,
+            action: ActivityAction.ROLE_ASSIGNED,
             metadata: {
                 userId: validatedData.userId,
                 roleId: validatedData.roleId,
                 roleName: role.name,
-                userEmail: user.email,
+                otherUserEmail: user.email,
             },
         });
 
@@ -129,6 +127,18 @@ export const DELETE = withCSRF(async function(request: NextRequest) {
                 { status: 400 }
             );
         }
+        
+        // Check if User Exists
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+        });
+
+        if (!user) {
+            return NextResponse.json(
+                { error: "User not found" },
+                { status: 404 }
+            );
+        }
 
         // Delete the role assignment
         await prisma.user.update({
@@ -141,12 +151,11 @@ export const DELETE = withCSRF(async function(request: NextRequest) {
         });
 
         await logActivity(prisma, {
-            name: "Role Removed",
-            action: "ROLE_REMOVE",
-            description: `Role ${roleId} removed from user ${userId} by user ${session.user.id}`,
+            action: ActivityAction.ROLE_REMOVED,
             metadata: {
                 userId,
                 roleId,
+                otherUserEmail: user.email,
             },
         });
 

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { getConfig } from "@/lib/config";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitCustomerUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
@@ -52,10 +52,9 @@ export const POST = withCSRF( async function(request: Request) {
       });
 
       await logActivity(tx, {
-        name: "Customer Request Created",
-        action: "CUSTOMER_REQUEST_CREATE",
-        description: `Customer request created for ${email}`,
+        action: ActivityAction.CUSTOMER_REQUEST_CREATE,
         metadata: {
+          customerEmail: email,
           customerRequest: JSON.stringify(req, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),

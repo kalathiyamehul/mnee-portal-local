@@ -11,7 +11,7 @@ import {
 	MNEE_TOKEN_MAX,
 	MNEE_TOKEN_SYM,
 } from "@/lib/constants";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
@@ -120,9 +120,7 @@ const deployMnee = async (feeAddress: string) => {
 			});
 
 			await logActivity(prisma, {
-				name: "Token Deployed",
-				action: "TOKEN_DEPLOY",
-				description: `Token deployed with tokenId ${tokenId}`,
+				action: ActivityAction.TOKEN_DEPLOYED,
 				metadata: {
 					tokenId,
 					feeAddress,
@@ -135,9 +133,7 @@ const deployMnee = async (feeAddress: string) => {
 			console.error("Failed to update config:", error);
 
 			await logActivity(prisma, {
-				name: "Token Deployed (Config Update Failed)",
-				action: "TOKEN_DEPLOY_CONFIG_FAIL",
-				description: `Token deployed with tokenId ${tokenId}, but config update failed`,
+				action: ActivityAction.TOKEN_DEPLOY_CONFIG_FAIL,
 				metadata: {
 					tokenId,
 					feeAddress,

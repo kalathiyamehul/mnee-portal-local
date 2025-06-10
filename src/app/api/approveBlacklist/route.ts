@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
 import { emitRestrictionsUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
@@ -114,10 +114,10 @@ export const POST = withCSRF(async function(request: Request) {
       newAppeovalID = approval.id;
 
       await logActivity(tx, {
-        name: "Blacklist Request Approved",
-        action: "BLACKLIST_REQUEST_APPROVE",
-        description: `Blacklist request ${blacklistRequestId} approved by user ${session.user.email}`,
+        action: ActivityAction.BLACKLIST_REQUEST_APPROVE,
         metadata: {
+          blacklistRequestId,
+          address: blacklistRequest.address,
           blacklistRequest: JSON.stringify(blacklistRequest, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),
@@ -143,10 +143,9 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          name: "Blacklist Request Fully Approved",
-          action: "BLACKLIST_REQUEST_FULLY_APPROVED",
-          description: `Blacklist request ${blacklistRequestId} fully approved after reaching required approvals`,
+          action: ActivityAction.BLACKLIST_REQUEST_FULLY_APPROVED,
           metadata: {
+            address: blacklistRequest.address,
             blacklistRequestId: blacklistRequestId,
             approvals: approvals,
           },

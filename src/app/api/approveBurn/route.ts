@@ -10,7 +10,7 @@ import type { Inscription } from "js-1sat-ord";
 import CosignTemplate from "@/templates/cosign";
 import { Utils } from "@bsv/sdk";
 import { isSystemPaused } from "@/lib/systemStatus";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitburnUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
@@ -72,10 +72,9 @@ export const POST = withCSRF(async function(request: Request) {
       newAppeovalID = approval.id;
 
       await logActivity(tx, {
-        name: "Burn Request Approved",
-        action: "BURN_REQUEST_APPROVE",
-        description: `Burn request ${burnRequestId} approved by user ${session.user.email}`,
+        action: ActivityAction.BURN_REQUEST_APPROVE,
         metadata: {
+          burnRequestId,
           burnRequest: JSON.stringify(burnRequest, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),
@@ -87,7 +86,7 @@ export const POST = withCSRF(async function(request: Request) {
         include: { approvals: true },
       });
 
-      if (updatedBurnRequest?.approvals.length === 2) {
+      if (updatedBurnRequest?.approvals.length === updatedBurnRequest?.no_of_approvals) {
         // Fetching remote config
         const remoteConfig = await fetchConfig();
 
@@ -184,9 +183,7 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          name: "Burn Request Fully Approved",
-          action: "BURN_REQUEST_FULLY_APPROVED",
-          description: `Burn request ${burnRequestId} fully approved and transaction created`,
+          action: ActivityAction.BURN_REQUEST_FULLY_APPROVED,
           metadata: {
             burnRequestId: burnRequestId,
             txid: cosignTx.id('hex'),

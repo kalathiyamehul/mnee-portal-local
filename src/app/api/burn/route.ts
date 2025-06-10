@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/authOptions";
 import type { MNEEUtxo } from "@/types";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { fetchMneeUtxos } from "@/utils/api";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitburnUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
@@ -109,13 +109,12 @@ export const POST = withCSRF(async function(request: Request) {
             });
 
             await logActivity(tx, {
-                name: "Burn Request Created",
-                action: "BURN_REQUEST_CREATE",
-                description: `A burn request has been created for outpoint ${outpoint}`,
+                action: ActivityAction.BURN_REQUEST_CREATE,
                 metadata: {
                     burnRequest: JSON.stringify(burnRequest, (key, value) =>
                         typeof value === 'bigint' ? value.toString() : value
                     ),
+                    outpoint
                 },
             });
 

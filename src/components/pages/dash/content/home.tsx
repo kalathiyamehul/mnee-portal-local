@@ -158,6 +158,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           case 'BLACKLIST': return (hasReadBlacklistPer || hasCreateBlacklistPer || hasApproveBlacklistPer);
           case 'FREEZE': return (hasReadFreezePer || hasCreateFreezePer || hasApproveFreezePer);
           case 'CUSTOMER': return (hasReadCustomerPer || hasCreateCustomerPer || hasApproveCustomerPer);
+          case 'ACTION': return true;
           default: return false;
         }
       });

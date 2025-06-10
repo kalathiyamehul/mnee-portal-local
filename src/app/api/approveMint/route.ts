@@ -19,7 +19,7 @@ import {
 	type TransferOrdTokensConfig,
 } from "js-1sat-ord";
 import CosignTemplate from "@/templates/cosign";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { emitMintUpdate } from "@/lib/sseEmitter";
@@ -120,12 +120,11 @@ export const POST =  withCSRF(async function(request: Request) {
 			});
 
 			await logActivity(tx, {
-				name: "Mint Request Approved",
-				action: "MINT_REQUEST_APPROVE",
-				description: `Mint request ${mintRequestId} approved by user ${session.user.email}`,
+				action: ActivityAction.MINT_REQUEST_APPROVE,
 				metadata: {
 					mintRequestId,
 					approverId: session.user.id,
+					approverEmail: session.user.email,
 				},
 			});
 
@@ -141,9 +140,7 @@ export const POST =  withCSRF(async function(request: Request) {
 				});
 
 				await logActivity(tx, {
-					name: "Mint Request Fully Approved",
-					action: "MINT_REQUEST_FULLY_APPROVED",
-					description: `Mint request ${mintRequestId} fully approved after reaching required approvals`,
+					action: ActivityAction.MINT_REQUEST_FULLY_APPROVED,
 					metadata: {
 						mintRequestId,
 						approvalsCount,
@@ -170,9 +167,7 @@ export const POST =  withCSRF(async function(request: Request) {
 					});
 
 					await logActivity(tx, {
-						name: "Mint Transaction Completed",
-						action: "MINT_TX_COMPLETED",
-						description: `Mint transaction completed for request ${mintRequestId}`,
+						action: ActivityAction.MINT_TX_COMPLETED,
 						metadata: {
 							mintRequestId,
 							txid: Transaction.fromHex(rawtx).id("hex"),
