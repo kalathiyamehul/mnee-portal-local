@@ -21,6 +21,7 @@ import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { BurnTable } from "./BurnTable";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
+import { Pagination } from "@/components/common/Pagination";
 
 const getRowBorderClass = (status: string | undefined) => {
   switch (status) {
@@ -67,6 +68,8 @@ export const BurnsTab = ({
   const [decimals, setDecimals] = useState(8);
   const [selectedBurn, setSelectedBurn] = useState<BurnUtxo | null>(null);
   const [selectedRefund, setSelectedRefund] = useState<BurnUtxo | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   // console.log("Permissions: ", hasCreateBurnPer, hasApproveBurnPer, hasRejectBurnPer, hasCreateRefundPer);
 
@@ -339,6 +342,20 @@ export const BurnsTab = ({
       burn.burnRequest &&
       ["APPROVED", "REFUNDED", "SETTLED"].includes(burn.burnRequest.status)
   );
+
+  const totalItems = activeBurns.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+  // Reset page when activeBurns change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeBurns.length]);
+
+  // Paginated burns
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentBurns = activeBurns.slice(indexOfFirstItem, indexOfLastItem);
+
   const showActions =
     hasApproveBurnPer ||
     hasRejectBurnPer ||
@@ -377,7 +394,7 @@ export const BurnsTab = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {activeBurns.map((burn) => (
+                  {currentBurns.map((burn) => (
                     <tr
                       key={`${burn.txid}_${burn.vout}_${
                         burn.burnRequest?.id || "new"
@@ -587,6 +604,17 @@ export const BurnsTab = ({
                   ))}
                 </tbody>
               </table>
+              {totalItems > itemsPerPage && (
+                <div className="mt-4">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={totalItems}
+                    onPageChange={setCurrentPage}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
