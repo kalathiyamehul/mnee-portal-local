@@ -67,6 +67,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     isSuperAdmin ? true : hasPermission(Resource.REFUND, Action.APPROVE) || false;
 
   // Blacklist Permissions
+  console.log(isSuperAdmin);
   const hasReadBlacklistPer =
     isSuperAdmin? true : hasPermission(Resource.BLACKLIST, Action.READ) || false;
   const hasCreateBlacklistPer =
@@ -603,29 +604,35 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
             >
               Activity
             </button>
-            {(hasReadBlacklistPer || hasApproveBlacklistPer || hasCreateBlacklistPer || hasReadFreezePer || hasApproveFreezePer || hasCreateFreezePer) && <button
-              type="button"
-              className={`tab ${
-                activeTab === "restrictions" ? "tab-active" : ""
-              }`}
-              onClick={() => handleTabChange("restrictions")}
-            >
-              Restrictions
-            </button>}
-            {(hasReadBurnPer || hasApproveBurnPer || hasRejectBurnPer || hasCreateBurnPer) && <button
-              type="button"
-              className={`tab ${activeTab === "burns" ? "tab-active" : ""}`}
-              onClick={() => handleTabChange("burns")}
-            >
-              Burns
-            </button>}
-            {(hasReadMintPer || hasApproveMintPer || hasCreateMintPer || hasRejectMintPer) && <button
-              type="button"
-              className={`tab ${activeTab === "mints" ? "tab-active" : ""}`}
-              onClick={() => handleTabChange("mints")}
-            >
-              Mints
-            </button>}
+            {(hasReadBlacklistPer || hasReadFreezePer) && (
+              <button
+                type="button"
+                className={`tab ${
+                  activeTab === "restrictions" ? "tab-active" : ""
+                }`}
+                onClick={() => handleTabChange("restrictions")}
+              >
+                Restrictions
+              </button>
+            )}
+            {hasReadBurnPer && (
+              <button
+                type="button"
+                className={`tab ${activeTab === "burns" ? "tab-active" : ""}`}
+                onClick={() => handleTabChange("burns")}
+              >
+                Burns
+              </button>
+            )}
+            {hasReadMintPer && (
+              <button
+                type="button"
+                className={`tab ${activeTab === "mints" ? "tab-active" : ""}`}
+                onClick={() => handleTabChange("mints")}
+              >
+                Mints
+              </button>
+            )}
           </div>
         </div>
 
@@ -667,7 +674,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 handleCancel={handleCancel}
                 handleApprove={handleApprove}
                 session={session}
-				        permissions={restrictionsPermissions}
+                permissions={restrictionsPermissions}
               />
             )}
             {activeTab === "burns" && (
@@ -675,7 +682,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 hasApproveBurnPer={hasApproveBurnPer}
                 hasRejectBurnPer={hasRejectBurnPer}
                 hasApproveRefundPer={hasApproveRefundPer}
-				        hasCreateBurnPer={hasCreateBurnPer}
+                hasCreateBurnPer={hasCreateBurnPer}
               />
             )}
             {activeTab === "mints" && (
