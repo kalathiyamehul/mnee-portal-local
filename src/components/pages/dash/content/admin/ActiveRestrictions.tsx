@@ -80,6 +80,8 @@ export const ActiveRestrictions = ({
   const canApprove = (activity: Activity) => {
     if (!session?.user?.email) return false;
     if (activity.status !== "PENDING") return false;
+    if (activity.type === "BLACKLIST" && !permissions.hasApproveBlacklistPer) return false;
+    if (activity.type === "FREEZE" && !permissions.hasApproveFreezePer) return false;
     if (activity.requester.email === session.user.email) return false;
     return !activity.approvals?.some(
       (approval) => approval.approver?.email === session.user.email
@@ -224,7 +226,7 @@ export const ActiveRestrictions = ({
                           <FaBan className="w-3 h-3 mr-1" /> Blacklist
                         </button>
                       )}
-                    {status.isBlacklisted && !status.hasPendingBlacklist && (
+                    {status.isBlacklisted && !status.hasPendingBlacklist && permissions.hasCreateBlacklistPer && (
                       <button
                         type="button"
                         className="btn btn-outline btn-sm"
@@ -235,7 +237,7 @@ export const ActiveRestrictions = ({
                         Unblacklist
                       </button>
                     )}
-                    {status.isFrozen && !status.hasPendingFreeze && (
+                    {status.isFrozen && !status.hasPendingFreeze && permissions.hasCreateFreezePer &&(
                       <button
                         type="button"
                         className="btn btn-sm btn-error"
@@ -291,7 +293,7 @@ export const ActiveRestrictions = ({
                                     'Cancel Blacklist'}
                                 </button>
                               )}
-                              {canApprove(activity) && (
+                              {canApprove(activity) && (permissions.hasApproveBlacklistPer || permissions.hasApproveFreezePer) && (
                                 <button
                                   type="button"
                                   className="btn btn-success btn-sm"

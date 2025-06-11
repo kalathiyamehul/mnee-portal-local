@@ -43,12 +43,30 @@ const Sidebar: React.FC = () => {
   const canViewWallet = hasPermission(Resource.WALLET, Action.READ);
   const canViewCustomers = hasPermission(Resource.CUSTOMER, Action.READ);
   const canViewConfig = hasPermission(Resource.CONFIG, Action.READ);
+  const canAdminView =
+    (hasPermission(Resource.CUSTOMER, Action.READ) ||
+    hasPermission(Resource.MINT, Action.READ) ||
+    hasPermission(Resource.BURN, Action.READ) ||
+    hasPermission(Resource.REFUND, Action.READ) ||
+    hasPermission(Resource.FREEZE, Action.READ) ||
+    hasPermission(Resource.BLACKLIST, Action.READ) ||
+    hasPermission(Resource.SYSTEM, Action.READ))
+  const canViewTransactions = hasPermission(Resource.TRANSACTIONS, Action.READ);
+  const canViewActivityLogs = hasPermission(
+    Resource.ACTIVITY_LOGS,
+    Action.READ
+  );
   const canViewSuperAdmin = isSuperAdmin;
   const filteredMenuItems = menuItems.filter((item) => {
     if (item.name === "Wallet") return canViewSuperAdmin || canViewWallet;
     if (item.name === "Customers") return canViewSuperAdmin || canViewCustomers;
     if (item.name === "SuperAdmin") return canViewSuperAdmin;
     if (item.name === "Config") return canViewSuperAdmin || canViewConfig;
+    if (item.name === "Admin") return canViewSuperAdmin || canAdminView;
+    if (item.name === "Transactions")
+      return canViewSuperAdmin || canViewTransactions;
+    if (item.name === "Activity")
+      return canViewSuperAdmin || canViewActivityLogs;
     return true;
   });
 
@@ -60,38 +78,35 @@ const Sidebar: React.FC = () => {
           <ul className="menu px-2 py-2 w-full [&_li>*]:!bg-transparent [&_li>*:hover]:!bg-transparent [&_li>*:focus]:!bg-transparent [&_li>.active]:!bg-transparent [&_li>*]:!outline-none [&_li>*]:!shadow-none">
             {filteredMenuItems.map((item) => {
               const isActive = item.href === pathname;
-              if (
-                item.name === "SuperAdmin" &&
-                canViewSuperAdmin
-              ) {
+              if (item.name === "SuperAdmin" && canViewSuperAdmin) {
                 return (
                   <li key={item.href}>
                     <Link
-                    href={item.href}
-                    className={`
+                      href={item.href}
+                      className={`
                       relative group flex items-center gap-2 px-3 py-2 rounded-lg
                       ${isActive ? "font-medium" : "text-base-content/70"}
                     `}
-                    onMouseOver={() => setHoveredPath(item.href)}
-                    onMouseLeave={() => setHoveredPath(pathname)}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    <span className="text-sm">{item.name}</span>
-                    {item.href === hoveredPath && (
-                      <motion.div
-                        className="absolute inset-0 bg-base-content/10 rounded-lg -z-10"
-                        layoutId="sidebar"
-                        aria-hidden="true"
-                        transition={{
-                          type: "spring",
-                          bounce: 0.15,
-                          stiffness: 100,
-                          damping: 15,
-                          duration: 0.5,
-                        }}
-                      />
-                    )}
-                  </Link>
+                      onMouseOver={() => setHoveredPath(item.href)}
+                      onMouseLeave={() => setHoveredPath(pathname)}
+                    >
+                      <item.icon className="w-4 h-4" />
+                      <span className="text-sm">{item.name}</span>
+                      {item.href === hoveredPath && (
+                        <motion.div
+                          className="absolute inset-0 bg-base-content/10 rounded-lg -z-10"
+                          layoutId="sidebar"
+                          aria-hidden="true"
+                          transition={{
+                            type: "spring",
+                            bounce: 0.15,
+                            stiffness: 100,
+                            damping: 15,
+                            duration: 0.5,
+                          }}
+                        />
+                      )}
+                    </Link>
                   </li>
                 );
               }

@@ -152,13 +152,22 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       );
       const filteredActivities = allActivities.filter((activity) => {
         switch (activity.type) {
-          case 'MINT': return (hasReadMintPer || hasCreateMintPer || hasApproveMintPer || hasRejectMintPer);
-          case 'BURN': return (hasReadBurnPer || hasCreateBurnPer || hasApproveBurnPer || hasRejectBurnPer);
-          case 'REFUND': return (hasReadRefundPer || hasApproveRefundPer || hasCreateRefundPer);
-          case 'BLACKLIST': return (hasReadBlacklistPer || hasCreateBlacklistPer || hasApproveBlacklistPer);
-          case 'FREEZE': return (hasReadFreezePer || hasCreateFreezePer || hasApproveFreezePer);
-          case 'CUSTOMER': return (hasReadCustomerPer || hasCreateCustomerPer || hasApproveCustomerPer);
-          default: return false;
+          case "MINT":
+            return hasReadMintPer;
+          case "BURN":
+            return hasReadBurnPer;
+          case "REFUND":
+            return hasReadRefundPer;
+          case "BLACKLIST":
+            return hasReadBlacklistPer;
+          case "FREEZE":
+            return hasReadFreezePer;
+          case "CUSTOMER":
+            return hasReadCustomerPer;
+          case "ACTION":
+            return hasReadActionPer;
+          default:
+            return false;
         }
       });
       setRequests({
@@ -251,6 +260,19 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     ? true
     : hasPermission(Resource.CUSTOMER, Action.READ) || false;
 
+  // System Actions Permissions
+  const hasReadActionPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.SYSTEM, Action.READ) || false;
+
+  const hasPauseActionPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.SYSTEM, Action.PAUSE) || false;
+
+  const hasResumeActionPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.SYSTEM, Action.RESUME) || false;
+
   // Permissions object
   const permissions = {
     // Mint
@@ -273,6 +295,10 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     // Customers
     hasReadCustomerPer,
     hasApproveCustomerPer,
+    // System Actions
+    hasReadActionPer,
+    hasPauseActionPer,
+    hasResumeActionPer,
   };
 
   // Default to 'volume' if no chart is selected
@@ -285,7 +311,9 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     hasApproveRefundPer ||
     hasApproveBlacklistPer ||
     hasApproveFreezePer ||
-    hasApproveCustomerPer;
+    hasApproveCustomerPer ||
+    hasPauseActionPer ||
+    hasResumeActionPer;
 
   const canCancel = useCallback(
     (activity: Activity) => {
@@ -579,7 +607,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
             {selectedChart === "customers" && "Customer Growth"}
             {selectedChart === "restrictions" && "Restrictions History"}
           </h2>
-          {selectedChart === "volume" && (hasCreateMintPer || hasReadMintPer) && (
+          {selectedChart === "volume" && hasReadMintPer && (
             <button
               type="button"
               onClick={() => router.push("/dash/admin?tab=mints")}
@@ -588,7 +616,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
               View Mints <FaArrowRight className="w-3 h-3" />
             </button>
           )}
-          {selectedChart === "mints" && (hasCreateMintPer || hasReadMintPer) && (
+          {selectedChart === "mints" && hasReadMintPer && (
             <button
               type="button"
               onClick={() => router.push("/dash/admin?tab=mints")}
@@ -597,7 +625,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
               View Mints <FaArrowRight className="w-3 h-3" />
             </button>
           )}
-          {selectedChart === "burns" && (hasCreateBurnPer || hasReadBurnPer) && (
+          {selectedChart === "burns" && hasReadBurnPer && (
             <button
               type="button"
               onClick={() => router.push("/dash/admin?tab=burns")}
@@ -606,7 +634,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
               View Burns <FaArrowRight className="w-3 h-3" />
             </button>
           )}
-          {selectedChart === "customers" && (hasCreateCustomerPer || hasReadCustomerPer) && (
+          {selectedChart === "customers" && hasReadCustomerPer && (
             <button
               type="button"
               onClick={() => router.push("/dash/customers")}
@@ -616,7 +644,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
             </button>
           )}
           {selectedChart === "restrictions" &&
-            (hasCreateFreezePer || hasReadFreezePer || hasCreateBlacklistPer || hasReadBlacklistPer) && (
+            (hasReadFreezePer || hasReadBlacklistPer) && (
               <button
                 type="button"
                 onClick={() => router.push("/dash/admin?tab=restrictions")}
@@ -636,33 +664,52 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       <div className="w-full">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Pending Activities</h2>
-          <button
+          {(hasReadActionPer ||
+        hasReadBlacklistPer ||
+        hasReadFreezePer ||
+        hasReadBurnPer ||
+        hasReadMintPer ||
+        hasReadRefundPer ||
+        hasReadCustomerPer) && <button
             type="button"
             onClick={() => router.push("/dash/admin?tab=activity")}
             className="btn btn-ghost btn-sm gap-2"
           >
             View Activity <FaArrowRight className="w-3 h-3" />
-          </button>
+          </button>}
         </div>
-        <ActivityList
-          showOnlyPending={true}
-          setShowOnlyPending={() => {}}
-          filteredActivities={requestTables?.pendingActivities || []}
-          config={initialConfig}
-          loading={loading}
-          showAction={showActions}
-          canCancel={canCancel}
-          canApprove={canApprove}
-          handleCancel={handleCancel}
-          handleApprove={handleApprove}
-          getActivityIcon={getActivityIcon}
-          getActivityDisplayText={getActivityDisplayText}
-          requiresApproval={requiresApproval}
-          getApprovalCount={getApprovalCount}
-          showPendingSwitch={false}
-          showRequester={true}
-          permissions={permissions}
-        />
+        {(hasReadActionPer ||
+        hasReadBlacklistPer ||
+        hasReadFreezePer ||
+        hasReadBurnPer ||
+        hasReadMintPer ||
+        hasReadRefundPer ||
+        hasReadCustomerPer) ? (
+          <ActivityList
+            showOnlyPending={true}
+            setShowOnlyPending={() => {}}
+            filteredActivities={requestTables?.pendingActivities || []}
+            config={initialConfig}
+            loading={loading}
+            showAction={showActions}
+            canCancel={canCancel}
+            canApprove={canApprove}
+            handleCancel={handleCancel}
+            handleApprove={handleApprove}
+            getActivityIcon={getActivityIcon}
+            getActivityDisplayText={getActivityDisplayText}
+            requiresApproval={requiresApproval}
+            getApprovalCount={getApprovalCount}
+            showPendingSwitch={false}
+            showRequester={true}
+            permissions={permissions}
+          />
+        ) : (
+          <div className="text-center text-base-content/70 flex justify-center items-center h-24 gap-4">
+            <FaCircleExclamation className="w-5 h-5" />
+            <p>You do not have permission to view this tab.</p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -681,7 +728,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
         </div>
 
         <div className="w-full">
-          <BurnTable
+          {hasReadBurnPer && <BurnTable
             title="Recent Burns"
             burns={formattedBurns}
             decimals={initialConfig.decimals}
@@ -695,7 +742,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
             hasApproveBurnPer={hasApproveBurnPer}
             hasRejectBurnPer={hasRejectBurnPer}
             hasApproveRefundPer={hasApproveRefundPer}
-          />
+          />}
         </div>
       </div>
     </div>

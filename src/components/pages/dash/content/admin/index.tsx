@@ -43,49 +43,90 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
 
   // Mint Permissions
-  const hasReadMintPer =
-    isSuperAdmin? true : hasPermission(Resource.MINT, Action.READ) || false;
-  const hasCreateMintPer = isSuperAdmin ? true : hasPermission(Resource.MINT, Action.CREATE) || false;
-  const hasApproveMintPer =
-    isSuperAdmin ? true : hasPermission(Resource.MINT, Action.APPROVE) || false;
-  const hasRejectMintPer = isSuperAdmin ? true : hasPermission(Resource.MINT, Action.REJECT) || false;
+  const hasReadMintPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.MINT, Action.READ) || false;
+  const hasCreateMintPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.MINT, Action.CREATE) || false;
+  const hasApproveMintPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.MINT, Action.APPROVE) || false;
+  const hasRejectMintPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.MINT, Action.REJECT) || false;
 
   // Burn Permissions
-  const hasReadBurnPer =
-    isSuperAdmin? true : hasPermission(Resource.BURN, Action.READ) || false;
-  const hasCreateBurnPer = isSuperAdmin ? true : hasPermission(Resource.BURN, Action.CREATE) || false;
-  const hasApproveBurnPer =
-    isSuperAdmin ? true : hasPermission(Resource.BURN, Action.APPROVE) || false;
-  const hasRejectBurnPer = isSuperAdmin ? true : hasPermission(Resource.BURN, Action.REJECT) || false;
+  const hasReadBurnPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BURN, Action.READ) || false;
+  const hasCreateBurnPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BURN, Action.CREATE) || false;
+  const hasApproveBurnPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BURN, Action.APPROVE) || false;
+  const hasRejectBurnPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BURN, Action.REJECT) || false;
 
   // Refund Permissions
-  const hasReadRefundPer =
-  isSuperAdmin? true : hasPermission(Resource.REFUND, Action.READ) || false;
-  const hasCreateRefundPer =
-    isSuperAdmin ? true : hasPermission(Resource.REFUND, Action.CREATE) || false;
-  const hasApproveRefundPer =
-    isSuperAdmin ? true : hasPermission(Resource.REFUND, Action.APPROVE) || false;
+  const hasReadRefundPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.REFUND, Action.READ) || false;
+  const hasCreateRefundPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.REFUND, Action.CREATE) || false;
+  const hasApproveRefundPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.REFUND, Action.APPROVE) || false;
 
   // Blacklist Permissions
-  const hasReadBlacklistPer =
-    isSuperAdmin? true : hasPermission(Resource.BLACKLIST, Action.READ) || false;
-  const hasCreateBlacklistPer =
-    isSuperAdmin ? true : hasPermission(Resource.BLACKLIST, Action.CREATE) || false;
-  const hasApproveBlacklistPer =
-    isSuperAdmin ? true : hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
+  const hasReadBlacklistPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BLACKLIST, Action.READ) || false;
+  const hasCreateBlacklistPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BLACKLIST, Action.CREATE) || false;
+  const hasApproveBlacklistPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
 
   // Freeze Permissions
-  const hasReadFreezePer =
-    isSuperAdmin? true : hasPermission(Resource.FREEZE, Action.READ) || false;
-  const hasCreateFreezePer =
-    isSuperAdmin ? true : hasPermission(Resource.FREEZE, Action.CREATE) || false;
-  const hasApproveFreezePer =
-    isSuperAdmin ? true : hasPermission(Resource.FREEZE, Action.APPROVE) || false;
+  const hasReadFreezePer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.FREEZE, Action.READ) || false;
+  const hasCreateFreezePer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.FREEZE, Action.CREATE) || false;
+  const hasApproveFreezePer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.FREEZE, Action.APPROVE) || false;
 
   // Customer Permissions
-  const hasReadCustomerPer = isSuperAdmin? true : hasPermission(Resource.CUSTOMER, Action.READ) || false;
-  const hasCreateCustomerPer = isSuperAdmin? true : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
-  const hasApproveCustomerPer = isSuperAdmin ? true : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+  const hasReadCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.READ) || false;
+  const hasCreateCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
+  const hasApproveCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+
+  // System Actions Permissions
+  const hasReadActionPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.SYSTEM, Action.READ) || false;
+
+  const hasPauseActionPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.SYSTEM, Action.PAUSE) || false;
+
+  const hasResumeActionPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.SYSTEM, Action.RESUME) || false;
+
   // Permissions object
   const permissions = {
     // Mint
@@ -108,6 +149,10 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     // Customer
     hasReadCustomerPer,
     hasApproveCustomerPer,
+    // System
+    hasReadActionPer,
+    hasPauseActionPer,
+    hasResumeActionPer,
   };
 
   // Restrictions Permissions object
@@ -122,7 +167,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     hasApproveBlacklistPer,
   };
 
-//   console.log("Permissions: ", permissions);
+  //   console.log("Permissions: ", permissions);
 
   useEffect(() => {
     setActiveTab(defaultTab as TabType);
@@ -187,13 +232,22 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
 
       const filteredActivities = allActivities.filter((activity) => {
         switch (activity.type) {
-          case 'MINT': return (hasReadMintPer || hasCreateMintPer || hasApproveMintPer || hasRejectMintPer);
-          case 'BURN': return (hasReadBurnPer || hasCreateBurnPer || hasApproveBurnPer || hasRejectBurnPer);
-          case 'REFUND': return (hasReadRefundPer || hasApproveRefundPer || hasCreateRefundPer);
-          case 'BLACKLIST': return (hasReadBlacklistPer || hasCreateBlacklistPer || hasApproveBlacklistPer);
-          case 'FREEZE': return (hasReadFreezePer || hasCreateFreezePer || hasApproveFreezePer);
-          case 'CUSTOMER': return (hasReadCustomerPer || hasCreateCustomerPer || hasApproveCustomerPer);
-          default: return false;
+          case "MINT":
+            return hasReadMintPer;
+          case "BURN":
+            return hasReadBurnPer;
+          case "REFUND":
+            return hasReadRefundPer;
+          case "BLACKLIST":
+            return hasReadBlacklistPer;
+          case "FREEZE":
+            return hasReadFreezePer;
+          case "CUSTOMER":
+            return hasReadCustomerPer;
+          case "ACTION":
+            return hasReadActionPer;
+          default:
+            return false;
         }
       });
 
@@ -302,7 +356,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         addressMap.set(address, {
           address,
           isBlacklisted,
-          reason : activity?.reason || '',
+          reason: activity?.reason || "",
           isFrozen,
           hasPendingFreeze: !!pendingFreeze,
           hasPendingBlacklist: !!pendingBlacklist,
@@ -384,7 +438,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     }
   };
 
-  const handleApprove = async (id: string, type: Activity['type']) => {
+  const handleApprove = async (id: string, type: Activity["type"]) => {
     try {
       const endpoint =
         type === "ACTION"
@@ -596,36 +650,42 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
             {getTabTitle(activeTab)}
           </h2>
           <div className="tabs tabs-boxed mt-4">
-            <button
+            {(hasReadActionPer || hasReadBlacklistPer || hasReadFreezePer || hasReadBurnPer || hasReadMintPer || hasReadRefundPer || hasReadCustomerPer) && <button
               type="button"
               className={`tab ${activeTab === "activity" ? "tab-active" : ""}`}
               onClick={() => handleTabChange("activity")}
             >
               Activity
-            </button>
-            {(hasReadBlacklistPer || hasApproveBlacklistPer || hasCreateBlacklistPer || hasReadFreezePer || hasApproveFreezePer || hasCreateFreezePer) && <button
-              type="button"
-              className={`tab ${
-                activeTab === "restrictions" ? "tab-active" : ""
-              }`}
-              onClick={() => handleTabChange("restrictions")}
-            >
-              Restrictions
             </button>}
-            {(hasReadBurnPer || hasApproveBurnPer || hasRejectBurnPer || hasCreateBurnPer) && <button
-              type="button"
-              className={`tab ${activeTab === "burns" ? "tab-active" : ""}`}
-              onClick={() => handleTabChange("burns")}
-            >
-              Burns
-            </button>}
-            {(hasReadMintPer || hasApproveMintPer || hasCreateMintPer || hasRejectMintPer) && <button
-              type="button"
-              className={`tab ${activeTab === "mints" ? "tab-active" : ""}`}
-              onClick={() => handleTabChange("mints")}
-            >
-              Mints
-            </button>}
+            {(hasReadBlacklistPer || hasReadFreezePer) && (
+              <button
+                type="button"
+                className={`tab ${
+                  activeTab === "restrictions" ? "tab-active" : ""
+                }`}
+                onClick={() => handleTabChange("restrictions")}
+              >
+                Restrictions
+              </button>
+            )}
+            {hasReadBurnPer && (
+              <button
+                type="button"
+                className={`tab ${activeTab === "burns" ? "tab-active" : ""}`}
+                onClick={() => handleTabChange("burns")}
+              >
+                Burns
+              </button>
+            )}
+            {hasReadMintPer && (
+              <button
+                type="button"
+                className={`tab ${activeTab === "mints" ? "tab-active" : ""}`}
+                onClick={() => handleTabChange("mints")}
+              >
+                Mints
+              </button>
+            )}
           </div>
         </div>
 
@@ -667,7 +727,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 handleCancel={handleCancel}
                 handleApprove={handleApprove}
                 session={session}
-				        permissions={restrictionsPermissions}
+                permissions={restrictionsPermissions}
               />
             )}
             {activeTab === "burns" && (
@@ -675,7 +735,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 hasApproveBurnPer={hasApproveBurnPer}
                 hasRejectBurnPer={hasRejectBurnPer}
                 hasApproveRefundPer={hasApproveRefundPer}
-				        hasCreateBurnPer={hasCreateBurnPer}
+                hasCreateBurnPer={hasCreateBurnPer}
               />
             )}
             {activeTab === "mints" && (
@@ -694,6 +754,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         <FreezeModal
           onClose={() => setShowFreezeModal(false)}
           onSuccess={fetchStatus}
+          canFreeze={hasCreateFreezePer}
+          canBlacklist={hasCreateBlacklistPer}
         />
       )}
       {showMintModal && (
