@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
@@ -114,10 +114,9 @@ export const POST = withCSRF(async function (req: Request) {
         });
 
         await logActivity(prisma, {
-            name: "User Created",
-            action: "USER_CREATE",
-            description: `User ${user.id} created by user ${session.user.id}`,
+            action: ActivityAction.USER_CREATED,
             metadata: {
+                newUserEmail: user.email,
                 user: JSON.stringify(user),
             },
         });

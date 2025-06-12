@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { z } from "zod";
-import { logActivity } from "@/lib/activityLogger"; // <-- Add this import
+import { ActivityAction, logActivity } from "@/lib/activityLogger"; // <-- Add this import
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { Prisma } from "@prisma/client";
@@ -110,10 +110,9 @@ export const POST = withCSRF(async function(request: NextRequest) {
             });
 
             await logActivity(tx, {
-                name: "Role Created",
-                action: "ROLE_CREATE",
-                description: `Role ${newRole.name} created by user ${session.user.id}`,
+                action: ActivityAction.ROLE_CREATED,
                 metadata: {
+                    roleName: newRole.name,
                     role: JSON.stringify(createdRole),
                 },
             });
@@ -231,11 +230,10 @@ export const PUT = withCSRF(async function(request: NextRequest) {
             }
 
             await logActivity(tx, {
-                name: "Role Updated",
-                action: "ROLE_UPDATE",
-                description: `Role ${role.name} updated by user ${session.user.id}`,
+                action: ActivityAction.ROLE_UPDATED,
                 metadata: {
                     roleId: id,
+                    roleName: role.name,
                     affectedUsers: usersWithRole.length,
                 },
             });

@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { isSystemPaused } from '@/lib/systemStatus';
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
 import { getConfig } from '@/lib/config';
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
@@ -86,9 +86,7 @@ export const POST = withCSRF(async function(request: Request) {
       });
 
       await logActivity(tx, {
-        name: "System Action Request Approved",
-        action: "SYSTEM_ACTION_REQUEST_APPROVE",
-        description: `System action request ${actionRequestId} approved by user ${session.user.email}`,
+        action: ActivityAction.SYSTEM_ACTION_REQUEST_APPROVE,
         metadata: {
           actionRequestId,
           approverId: session.user.id,
@@ -110,9 +108,7 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          name: "System Action Request Fully Approved",
-          action: "SYSTEM_ACTION_REQUEST_FULLY_APPROVED",
-          description: `System action request ${actionRequestId} fully approved after reaching required approvals`,
+          action: ActivityAction.SYSTEM_ACTION_REQUEST_FULLY_APPROVED,
           metadata: {
             actionRequestId,
             approvalsCount,

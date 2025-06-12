@@ -3,10 +3,11 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
-import { logActivity } from '@/lib/activityLogger';
+import { ActivityAction, logActivity } from '@/lib/activityLogger';
 import { withCSRF } from '@/lib/csrf';
 import { emitCancelUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
+import Email from 'next-auth/providers/email';
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -37,10 +38,9 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          name: "Action Request Cancelled",
-          action: "ACTION_REQUEST_CANCEL",
-          description: `Action request ${actionRequestId} cancelled by user ${session.user.id}`,
+          action: ActivityAction.ACTION_REQUEST_CANCEL,
           metadata: {
+            actionRequestId,
             request: JSON.stringify(updated, (key, value) =>
               typeof value === 'bigint' ? value.toString() : value
             ),
@@ -69,10 +69,10 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          name: "Freeze Request Cancelled",
-          action: "FREEZE_REQUEST_CANCEL",
-          description: `Freeze request ${freezeRequestId} cancelled by user ${session.user.id}`,
+          action: ActivityAction.FREEZE_REQUEST_CANCEL,
           metadata: {
+            freezeRequestId,
+            address: request.address,
             request: JSON.stringify(updated, (key, value) =>
               typeof value === 'bigint' ? value.toString() : value
             ),
@@ -104,10 +104,10 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          name: "Blacklist Request Cancelled",
-          action: "BLACKLIST_REQUEST_CANCEL",
-          description: `Blacklist request ${blacklistRequestId} cancelled by user ${session.user.id}`,
+          action: ActivityAction.BLACKLIST_REQUEST_CANCEL,
           metadata: {
+            blacklistRequestId,
+            address: request.address,
             request: JSON.stringify(updated, (key, value) =>
               typeof value === 'bigint' ? value.toString() : value
             ),
@@ -136,10 +136,9 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          name: "Mint Request Cancelled",
-          action: "MINT_REQUEST_CANCEL",
-          description: `Mint request ${mintRequestId} cancelled by user ${session.user.id}`,
+          action: ActivityAction.MINT_REQUEST_CANCEL,
           metadata: {
+            mintRequestId,
             request: JSON.stringify(updated, (key, value) =>
               typeof value === 'bigint' ? value.toString() : value
             ),
@@ -168,10 +167,9 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          name: "Burn Request Cancelled",
-          action: "BURN_REQUEST_CANCEL",
-          description: `Burn request ${burnRequestId} cancelled by user ${session.user.id}`,
+          action: ActivityAction.BURN_REQUEST_CANCEL,
           metadata: {
+            burnRequestId,
             request: JSON.stringify(updated, (key, value) =>
               typeof value === 'bigint' ? value.toString() : value
             ),
@@ -200,10 +198,10 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          name: "Customer Request Cancelled",
-          action: "CUSTOMER_REQUEST_CANCEL",
-          description: `Customer request ${customerRequestId} cancelled by user ${session.user.id}`,
+          action: ActivityAction.CUSTOMER_REQUEST_CANCEL,
           metadata: {
+            customerRequestId,
+            customerEmail: request.email,
             request: JSON.stringify(updated, (key, value) =>
               typeof value === 'bigint' ? value.toString() : value
             ),
@@ -232,10 +230,9 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          name: "Refund Request Cancelled",
-          action: "REFUND_REQUEST_CANCEL",
-          description: `Refund request ${refundRequestId} cancelled by user ${session.user.id}`,
+          action: ActivityAction.REFUND_REQUEST_CANCEL,
           metadata: {
+            refundRequestId,
             request: JSON.stringify(updated, (key, value) =>
               typeof value === 'bigint' ? value.toString() : value
             ),

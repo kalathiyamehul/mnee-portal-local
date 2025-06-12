@@ -10,7 +10,7 @@ import CosignTemplate from "@/templates/cosign";
 import { applyInscription, type Inscription } from "js-1sat-ord";
 import type { IndexContext } from "@/types/indexContext";
 import type { RefundRequest } from "@/types/refund";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitrefundUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
@@ -166,9 +166,7 @@ export const POST = withCSRF(async function(request: Request) {
       newAppeovalID = approval.id;
 
       await logActivity(tx, {
-        name: "Refund Request Approved",
-        action: "REFUND_REQUEST_APPROVE",
-        description: `Refund request ${refundRequestId} approved by user ${session.user.email}`,
+        action: ActivityAction.REFUND_REQUEST_APPROVE,
         metadata: {
           refundRequestId,
           approverId: session.user.id,
@@ -196,9 +194,7 @@ export const POST = withCSRF(async function(request: Request) {
           });
 
           await logActivity(tx, {
-            name: "Refund Request Fully Approved",
-            action: "REFUND_REQUEST_FULLY_APPROVED",
-            description: `Refund request ${refundRequestId} fully approved and transaction broadcasted`,
+            action: ActivityAction.REFUND_REQUEST_FULLY_APPROVED,
             metadata: {
               refundRequestId,
               txid,
@@ -223,9 +219,7 @@ export const POST = withCSRF(async function(request: Request) {
             });
 
             await logActivity(tx, {
-              name: "Burn Request Refunded",
-              action: "BURN_REQUEST_REFUNDED",
-              description: `Burn request ${burnRequest.id} marked as REFUNDED due to refund approval`,
+              action: ActivityAction.BURN_REQUEST_REFUNDED,
               metadata: {
                 burnRequestId: burnRequest.id,
                 refundRequestId,

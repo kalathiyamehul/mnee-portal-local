@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getBurnWif, getMintWif } from "@/env";
 import { PrivateKey } from "@bsv/sdk";
 import { getConfig, revalidateConfig } from "@/lib/config";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { hasServerPermission } from "@/lib/serverPermissions";
@@ -107,15 +107,11 @@ export const POST = withCSRF(async function (request: Request) {
       });
 
       await logActivity(tx, {
-        name: "Config Upserted",
-        action: "CONFIG_UPSERT",
-        description: `Configuration has been created or updated by user ${session.user.id}.`,
+        action: ActivityAction.CONFIG_UPSERT,
         metadata: {
           config: JSON.stringify(upsertedConfig, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),
-          userId: session.user.id,
-          userEmail: session.user.email,
         },
       });
 
@@ -169,15 +165,11 @@ export const PATCH = withCSRF(async function(request: Request) {
       });
 
       await logActivity(tx, {
-        name: "Config Updated",
-        action: "CONFIG_UPDATE",
-        description: `Configuration has been updated by user ${session.user.id}.`,
+        action: ActivityAction.CONFIG_UPDATED,
         metadata: {
           config: JSON.stringify(config, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),
-          userId: session.user.id,
-          userEmail: session.user.email,
           changes: { minNoOfApproval, maxNoOfApproval, globalJson },
         },
       });

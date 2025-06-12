@@ -237,9 +237,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
                     if (isNaN(num) || num < config.minNoOfApproval) {
                       setnoOfApprovals(config.minNoOfApproval.toString());
                     } else if (num > config.maxNoOfApproval) {
-                      toast.error(
-                        `No of Approvals must be between ${config.minNoOfApproval} and ${config.maxNoOfApproval}`
-                      );
+                      setnoOfApprovals(config.maxNoOfApproval.toString());
                     } else {
                       setnoOfApprovals(value);
                     }
