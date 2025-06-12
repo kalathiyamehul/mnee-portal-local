@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { FreezeRequestAction } from '@prisma/client';
 import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
-import { logActivity } from '@/lib/activityLogger';
+import { ActivityAction, logActivity } from '@/lib/activityLogger';
 import { withCSRF } from '@/lib/csrf';
 import { emitRestrictionsUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
@@ -111,10 +111,10 @@ export const POST = withCSRF(async function(request: Request) {
         },
       });
       await logActivity(tx, {
-        name: "Freeze Request Created",
-        action: "FREEZE_REQUEST_CREATE",
-        description: `A freeze request has been created for address ${address}`,
+        action: ActivityAction.FREEZE_REQUEST_CREATE,
         metadata: {
+          freezeRequestId: request.id,
+          address,
           freezeRequest: JSON.stringify(request),
         },
       });

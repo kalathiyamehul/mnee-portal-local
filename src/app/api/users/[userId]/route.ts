@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { emitUserSessionInvalidate } from "@/lib/sseEmitter";
@@ -80,10 +80,9 @@ export const PUT = withCSRF(async function (
         });
 
         await logActivity(prisma, {
-            name: "User Updated",
-            action: "USER_UPDATE",
-            description: `User ${user.id} updated by user ${session.user.id}`,
+            action: ActivityAction.USER_UPDATED,
             metadata: {
+                otherUserId: user.id,
                 user: JSON.stringify(user),
                 roleChanged: isRoleChanged,
             },
@@ -131,11 +130,10 @@ export const DELETE = withCSRF(async function (
         });
 
         await logActivity(prisma, {
-            name: "User Deleted",
-            action: "USER_DELETE",
-            description: `User ${userId} deleted by user ${session.user.id}`,
+            action: ActivityAction.USER_DELETED,
             metadata: {
                 userId,
+                deletedUserEmail: userToDelete.email,
             },
         });
 

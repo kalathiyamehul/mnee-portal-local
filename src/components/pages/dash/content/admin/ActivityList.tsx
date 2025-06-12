@@ -69,7 +69,7 @@ export const ActivityList = ({
       CUSTOMER: "hasApproveCustomerPer",
     };
     const key = permissionMap[type];
-    return key ? permissions[key as keyof typeof permissions] : false;
+    return key ? permissions[key as keyof typeof permissions] : type === 'ACTION' ? true : false;
   };
 
   const hasRejectPermission = (type: string) => {

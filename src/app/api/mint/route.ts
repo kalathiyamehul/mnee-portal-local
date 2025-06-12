@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { performSystemChecks, SystemOperation } from '@/lib/systemStatus';
 import { toTokenSat } from 'satoshi-token';
-import { logActivity } from '@/lib/activityLogger';
+import { ActivityAction, logActivity } from '@/lib/activityLogger';
 import { withCSRF } from '@/lib/csrf';
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 import { emitMintUpdate } from '@/lib/sseEmitter';
@@ -109,10 +109,9 @@ export const POST = withCSRF(async function(request: Request) {
         },
       });
       await logActivity(tx, {
-        name: "Mint Request Created",
-        action: "MINT_REQUEST_CREATE",
-        description: "A mint request has been created",
+        action: ActivityAction.MINT_REQUEST_CREATE,
         metadata: {
+          mintRequestId: mintRequest.id,
           mintRequest: JSON.stringify(mintRequest, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),
