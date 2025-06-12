@@ -371,9 +371,7 @@ export const DELETE = withCSRF(async function(request: NextRequest) {
             });
 
             await logActivity(tx, {
-                name: "Role Deleted",
-                action: "ROLE_DELETE",
-                description: `Role ${roleCheck.role.name} deleted by user ${session.user.id}`,
+                action: ActivityAction.ROLE_DELETED,
                 metadata: {
                     roleId: id,
                     roleName: roleCheck.role.name,
