@@ -668,7 +668,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 Restrictions
               </button>
             )}
-            {hasReadBurnPer && (
+            {(hasReadBurnPer || hasReadRefundPer) && (
               <button
                 type="button"
                 className={`tab ${activeTab === "burns" ? "tab-active" : ""}`}

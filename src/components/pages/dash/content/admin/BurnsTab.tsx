@@ -590,7 +590,7 @@ export const BurnsTab = ({
                             </button>
                           )}
                           {/* SETTLED Button */}
-                          {burn.burnRequest?.status === "APPROVED" && (
+                          {burn.burnRequest?.status === "APPROVED" && hasCreateRefundPer && (
                             <button
                               type="button"
                               className="btn btn-success btn-sm"
