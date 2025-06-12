@@ -70,7 +70,7 @@ export const ActiveRestrictionsTab = ({
 
   const showActions =
     permissions.hasApproveBlacklistPer ||
-    permissions.hasApproveFreezePer
+    permissions.hasApproveFreezePer || permissions.hasCreateFreezePer || permissions.hasCreateBlacklistPer;
 
   const getActionBadgeClass = (activity: Activity) => {
     if (activity.type === "BLACKLIST") {
@@ -99,6 +99,8 @@ export const ActiveRestrictionsTab = ({
 
   const canApprove = (activity: Activity) => {
     if (activity.status !== "PENDING") return false;
+    if (activity.type === "BLACKLIST" && !permissions.hasApproveBlacklistPer) return false;
+    if (activity.type === "FREEZE" && !permissions.hasApproveFreezePer) return false;
     if (activity.requester.email === session?.user?.email) return false;
     return !activity.approvals?.some(
       (a) => a.approver?.email === session?.user?.email
@@ -108,19 +110,6 @@ export const ActiveRestrictionsTab = ({
   const handleCopyAddress = (txid: string) => {
     navigator.clipboard.writeText(txid);
     toast.success("Address copied to clipboard");
-  };
-
-  // Helper function to check approve permission for activity type
-  const hasApprovePermission = (type: string) => {
-    const permissionMap: Record<string, string> = {
-      MINT: "hasApproveMintPer",
-      BURN: "hasApproveBurnPer",
-      REFUND: "hasApproveRefundPer",
-      BLACKLIST: "hasApproveBlacklistPer",
-      FREEZE: "hasApproveFreezePer",
-    };
-    const key = permissionMap[type];
-    return key ? permissions[key as keyof typeof permissions] : false;
   };
 
   // Pagination state for history table
@@ -146,8 +135,7 @@ export const ActiveRestrictionsTab = ({
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">Active</h2>
-        {permissions.hasCreateBlacklistPer &&
-          permissions.hasCreateFreezePer && (
+        {(permissions.hasCreateBlacklistPer || permissions.hasCreateFreezePer) && (
             <button
               type="button"
               className="btn btn-primary btn-sm"
@@ -302,8 +290,7 @@ export const ActiveRestrictionsTab = ({
                                   "Cancel Blacklist"}
                               </button>
                             )}
-                            {canApprove(activity) &&
-                              hasApprovePermission(activity.type) && (
+                            {canApprove(activity) && (permissions.hasApproveBlacklistPer || permissions.hasApproveFreezePer) && (
                                 <button
                                   type="button"
                                   className="btn btn-primary btn-sm"
@@ -358,7 +345,7 @@ export const ActiveRestrictionsTab = ({
                           permissions.hasCreateFreezePer &&
                           (restrictions.find(
                             (r) => r.address === activity.address
-                          )?.isFrozen ? (
+                          )?.isFrozen && permissions.hasCreateFreezePer ? (
                             <button
                               type="button"
                               className="btn btn-outline btn-sm"

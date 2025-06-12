@@ -6,11 +6,18 @@ import { apiFetch } from "@/utils/api";
 interface FreezeModalProps {
   onClose: () => void;
   onSuccess: () => Promise<void>;
+  canFreeze: boolean;
+  canBlacklist: boolean;
 }
 
-export const FreezeModal = ({ onClose, onSuccess }: FreezeModalProps) => {
-  const [address, setAddress] = useState("");
-  const [reason, setReason] = useState(""); // Add reason state
+export const FreezeModal = ({
+  onClose,
+  onSuccess,
+  canFreeze,
+  canBlacklist
+}: FreezeModalProps) => {
+  const [address, setAddress] = useState('');
+  const [reason, setReason] = useState('');  // Add reason state
   const [freezeLoading, setFreezeLoading] = useState(false);
   const [blacklistLoading, setBlacklistLoading] = useState(false);
   const [config, setConfig] = useState<{
@@ -112,14 +119,8 @@ export const FreezeModal = ({ onClose, onSuccess }: FreezeModalProps) => {
       <div className="modal-box max-w-lg">
         <h3 className="text-lg font-bold mb-6">Restrict Address</h3>
         <div className="mb-6 space-y-2 text-sm opacity-70">
-          <p>
-            <FaSnowflake className="inline mr-2" /> Freeze: Prevents an address
-            from sending funds
-          </p>
-          <p>
-            <FaLock className="inline mr-2" /> Blacklist: Prevents an address
-            from receiving funds
-          </p>
+          {canFreeze && <p><FaSnowflake className="inline mr-2" /> Freeze: Prevents an address from sending funds</p>}
+          {canBlacklist && <p><FaLock className="inline mr-2" /> Blacklist: Prevents an address from receiving funds</p>}
         </div>
         <div className="space-y-4">
           <div className="form-control w-full block">
@@ -145,7 +146,7 @@ export const FreezeModal = ({ onClose, onSuccess }: FreezeModalProps) => {
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               maxLength={100}
-              placeholder="Reason for Freezing/Blacklisting Address"
+              placeholder={`Reason for ${canFreeze ? 'Freezing' : ''}${(canFreeze && canBlacklist)? '/' : ''}${canBlacklist ? 'Blacklisting' : ''} Address`}
               required
             />
           </div>
@@ -188,30 +189,22 @@ export const FreezeModal = ({ onClose, onSuccess }: FreezeModalProps) => {
           <button type="button" className="btn btn-ghost" onClick={onClose}>
             Cancel
           </button>
-          <button
+          {canBlacklist && <button
             type="button"
             className="btn btn-error"
             onClick={handleBlacklistRequest}
             disabled={blacklistLoading || !address}
           >
-            {blacklistLoading ? (
-              <FaSpinner className="animate-spin mr-2" />
-            ) : (
-              "Blacklist"
-            )}
-          </button>
-          <button
+            {blacklistLoading ? <FaSpinner className="animate-spin mr-2" /> : 'Blacklist'}
+          </button>}
+          {canFreeze && <button
             type="button"
             className="btn btn-primary"
             onClick={handleFreezeRequest}
             disabled={freezeLoading || !address}
           >
-            {freezeLoading ? (
-              <FaSpinner className="animate-spin mr-2" />
-            ) : (
-              "Freeze"
-            )}
-          </button>
+            {freezeLoading ? <FaSpinner className="animate-spin mr-2" /> : 'Freeze'}
+          </button>}
         </div>
       </div>
     </dialog>

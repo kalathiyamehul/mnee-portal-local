@@ -57,19 +57,25 @@ export const ActivityList = ({
   );
 
   // console.log("permissions", permissions)
+  const permissionMap: Record<string, string | string[]> = {
+    MINT: "hasApproveMintPer",
+    BURN: "hasApproveBurnPer",
+    REFUND: "hasApproveRefundPer",
+    BLACKLIST: "hasApproveBlacklistPer",
+    FREEZE: "hasApproveFreezePer",
+    CUSTOMER: "hasApproveCustomerPer",
+    ACTION: ["hasPauseActionPer", "hasApproveActionPer"], // Array of possible permissions
+  };
 
   // Helper function to check approve permission for activity type
   const hasApprovePermission = (type: string) => {
-    const permissionMap: Record<string, string> = {
-      MINT: "hasApproveMintPer",
-      BURN: "hasApproveBurnPer",
-      REFUND: "hasApproveRefundPer",
-      BLACKLIST: "hasApproveBlacklistPer",
-      FREEZE: "hasApproveFreezePer",
-      CUSTOMER: "hasApproveCustomerPer",
-    };
     const key = permissionMap[type];
-    return key ? permissions[key as keyof typeof permissions] : type === 'ACTION' ? true : false;
+    
+    if (Array.isArray(key)) {
+      return key.some(k => permissions[k as keyof typeof permissions]);
+    }
+    
+    return key ? permissions[key as keyof typeof permissions] : false;
   };
 
   const hasRejectPermission = (type: string) => {

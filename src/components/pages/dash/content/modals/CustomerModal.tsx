@@ -78,7 +78,7 @@ export function CustomerModal({
 
   const validateEmail = (email: string) => {
     // Allow Unicode letters, numbers, ., _, and - before @
-    if (!/^[\p{L}\p{N}._-]+@[a-zA-Z0-9.]+\.[a-zA-Z]{2,}$/u.test(email)) return "Please enter a valid email address";
+    if (!/^[\p{L}\p{N}._-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}$/u.test(email)) return "Please enter a valid email address";
     if (email.length > 255) return "Email is too long";
     return "";
   };
@@ -225,7 +225,7 @@ export function CustomerModal({
             <div className="form-control w-full mb-4">
               <label className="label label-text">Email Address</label>
               <input
-                type="email"
+                type="text"
                 className={`input input-bordered w-full max-w-md ${
                   errors.email ? "input-error" : ""
                 }`}

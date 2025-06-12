@@ -319,15 +319,9 @@ export const DELETE = withCSRF(async function(request: NextRequest) {
             );
         }
 
-        // Delete role and its permissions in a transaction
-        const deletionResult = await prisma.$transaction(async (tx) => {
-            // Get users with this role before deleting
-            const usersWithRole = await tx.user.findMany({
-                where: { roleId: id },
-                select: { id: true }
-            });
-
-            // Get role info before deletion
+        // Check if role exists and get users with this role
+        const roleCheck = await prisma.$transaction(async (tx) => {
+        // Get role info
             const roleToDelete = await tx.role.findUnique({
                 where: { id },
                 select: { name: true }
@@ -337,17 +331,35 @@ export const DELETE = withCSRF(async function(request: NextRequest) {
                 throw new Error("Role not found");
             }
 
-            // Update lastRoleUpdatedAt for all users with this role and remove role assignment
-            if (usersWithRole.length > 0) {
-                await tx.user.updateMany({
-                    where: { roleId: id },
-                    data: {
-                        roleId: null,
-                        lastRoleUpdatedAt: new Date()
-                    }
-                });
-            }
+            // Get users with this role
+            const usersWithRole = await tx.user.findMany({
+                where: { roleId: id },
+                select: { id: true, email: true, name: true }
+            });
 
+            return {
+                role: roleToDelete,
+                users: usersWithRole
+            };
+        });
+
+        // Validate that no users are assigned to this role
+        if (roleCheck.users.length > 0) {
+            return NextResponse.json(
+                {
+                    error: `This role is currently assigned to ${roleCheck.users.length} user(s). Please reassign or remove these users before deleting the role.`,
+                    assignedUsers: roleCheck.users.map(user => ({
+                        id: user.id,
+                        name: user.name,
+                        email: user.email
+                    }))
+                },
+                { status: 409 }
+            );
+        }
+
+        // Delete role and its permissions in a transaction
+        await prisma.$transaction(async (tx) => {
             // Delete role permissions first
             await tx.rolePermission.deleteMany({
                 where: { roleId: id },
@@ -362,34 +374,19 @@ export const DELETE = withCSRF(async function(request: NextRequest) {
                 action: ActivityAction.ROLE_DELETED,
                 metadata: {
                     roleId: id,
-                    roleName: roleToDelete.name,
-                    affectedUsers: usersWithRole.length,
+                    roleName: roleCheck.role.name,
+                    affectedUsers: 0, // No users affected since we validated none exist
                 },
             });
-
-            return {
-                roleName: roleToDelete.name,
-                affectedUserIds: usersWithRole.map(u => u.id)
-            };
         });
 
         // Emit role update event
         emitRoleUpdate({
             roleId: id,
-            roleName: deletionResult.roleName,
+            roleName: roleCheck.role.name,
             action: 'deleted',
-            affectedUserIds: deletionResult.affectedUserIds
+            affectedUserIds: [] // No users affected since we validated none exist
         });
-
-        // Emit user session invalidation event for affected users
-        if (deletionResult.affectedUserIds.length > 0) {
-            emitUserSessionInvalidate({
-                userIds: deletionResult.affectedUserIds,
-                reason: 'role_deleted',
-                roleId: id,
-                roleName: deletionResult.roleName
-            });
-        }
 
         return NextResponse.json({ message: "Role deleted successfully" });
     } catch (error) {
