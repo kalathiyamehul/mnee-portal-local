@@ -4,7 +4,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { isSystemPaused } from "@/lib/systemStatus";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitRestrictionsUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
@@ -111,10 +111,9 @@ export const POST = withCSRF(async function(request: Request) {
 			newAppeovalID = approval.id;
 
 			await logActivity(tx, {
-				name: "Freeze Request Approved",
-				action: "FREEZE_REQUEST_APPROVE",
-				description: `Freeze request ${freezeRequestId} approved by user ${session.user.email}`,
+				action: ActivityAction.FREEZE_REQUEST_APPROVE,
 				metadata: {
+					freezeRequestId,
 					freezeRequest: JSON.stringify(freezeRequest, (key, value) =>
 						typeof value === 'bigint' ? value.toString() : value
 					),
@@ -158,9 +157,7 @@ export const POST = withCSRF(async function(request: Request) {
 				});
 
 				await logActivity(tx, {
-					name: "Freeze Request Fully Approved",
-					action: "FREEZE_REQUEST_FULLY_APPROVED",
-					description: `Freeze request ${freezeRequestId} fully approved after reaching required approvals`,
+					action: ActivityAction.FREEZE_REQUEST_FULLY_APPROVED,
 					metadata: {
 						freezeRequestId: freezeRequestId,
 						approvals: updatedApprovals,

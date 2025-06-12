@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import { fetchTxo } from "@/utils/api";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitrefundUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
@@ -89,10 +89,10 @@ export const POST = withCSRF(async function(request: Request) {
     });
 
     await logActivity(prisma, {
-      name: "Refund Request Created",
-      action: "REFUND_REQUEST_CREATE",
-      description: `Refund request created for outpoint ${outpoint} by user ${session.user.id}. Refund address ${refundAddress} verified as original owner.`,
+      action: ActivityAction.REFUND_REQUEST_CREATE,
       metadata: {
+        refundAddress,
+        outpoint,
         refundRequest: JSON.stringify(refundRequest, (key, value) =>
           typeof value === 'bigint' ? value.toString() : value
         ),

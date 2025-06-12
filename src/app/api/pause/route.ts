@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
@@ -45,9 +45,7 @@ export const POST = withCSRF(async function(request: Request) {
 	});
 
 	await logActivity(prisma, {
-		name: `System ${action} Requested`,
-		action: `SYSTEM_${action}_REQUEST`,
-		description: `System ${action} requested by user ${session.user.id}`,
+		action: action === "PAUSE" ? ActivityAction.SYSTEM_PAUSE_REQUEST : ActivityAction.SYSTEM_RESUME_REQUEST,
 		metadata: {
 			actionRequest: JSON.stringify(result, (key, value) =>
 				typeof value === 'bigint' ? value.toString() : value

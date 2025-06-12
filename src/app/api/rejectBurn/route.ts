@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitburnUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
@@ -65,14 +65,12 @@ export const POST = withCSRF(async function(request: Request) {
       });
 
       await logActivity(tx, {
-        name: "Burn Request Rejected",
-        action: "BURN_REQUEST_REJECT",
-        description: `Burn request ${burnRequestId} rejected by user ${session.user.id}`,
+        action: ActivityAction.BURN_REQUEST_REJECT,
         metadata: {
+          burnRequestId,
           burnRequest: JSON.stringify(updated, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
-          ),
-          reason,
+          )
         },
       });
 

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import { BlacklistAction } from '@prisma/client';
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
 import { emitRestrictionsUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
@@ -76,10 +76,10 @@ export const POST = withCSRF(async function(request: Request) {
       });
 
       await logActivity(tx, {
-        name: "Blacklist Request Created",
-        action: "BLACKLIST_REQUEST_CREATE",
-        description: `A blacklist request has been created for address ${address} with action ${action}`,
+        action: ActivityAction.BLACKLIST_REQUEST_CREATE,
         metadata: {
+          blacklistRequestId: blacklistRequest.id,
+          address,
           blacklistRequest: JSON.stringify(blacklistRequest, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),

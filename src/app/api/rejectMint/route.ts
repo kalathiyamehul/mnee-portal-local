@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { emitMintUpdate } from "@/lib/sseEmitter";
@@ -68,10 +68,9 @@ export const POST = withCSRF(async function(request: Request) {
       });
 
       await logActivity(tx, {
-        name: "Mint Request Rejected",
-        action: "MINT_REQUEST_REJECT",
-        description: `Mint request ${mintRequestId} rejected by user ${session.user.id}`,
+        action: ActivityAction.MINT_REQUEST_REJECT,
         metadata: {
+          mintRequestId,
           mintRequest: JSON.stringify(updated, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),

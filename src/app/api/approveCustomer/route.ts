@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitCustomerUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
@@ -48,10 +48,9 @@ export const POST = withCSRF(async function(request: Request) {
         },
       });
       await logActivity(tx, {
-        name: "Customer Request Approved",
-        action: "CUSTOMER_REQUEST_APPROVE",
-        description: `Customer request ${customerRequestId} approved by user ${session.user.email}`,
+        action: ActivityAction.CUSTOMER_REQUEST_APPROVE,
         metadata: {
+          customerEmail: customerRequest.email,
           customerRequestId,
           approverId: session.user.id,
         },
@@ -66,10 +65,9 @@ export const POST = withCSRF(async function(request: Request) {
           data: { status: "APPROVED" },
         });
         await logActivity(tx, {
-          name: "Customer Request Fully Approved",
-          action: "CUSTOMER_REQUEST_FULLY_APPROVED",
-          description: `Customer request ${customerRequestId} fully approved after reaching required approvals`,
+          action: ActivityAction.CUSTOMER_REQUEST_FULLY_APPROVED,
           metadata: {
+            customerEmail: customerRequest.email,
             customerRequestId,
             approvalsCount,
           },
@@ -84,10 +82,9 @@ export const POST = withCSRF(async function(request: Request) {
             },
           });
           await logActivity(tx, {
-            name: "Customer Created Successfully!",
-            action: "CUSTOMER_CREATE",
-            description: `Customer created from approved request ${customerRequestId}`,
+            action: ActivityAction.NEW_CUSTOMER_CREATED,
             metadata: {
+              customerEmail: createdCustomer.email,
               customer: JSON.stringify(createdCustomer, (key, value) =>
                 typeof value === 'bigint' ? value.toString() : value
               ),

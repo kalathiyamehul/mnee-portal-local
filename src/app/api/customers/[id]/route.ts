@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { logActivity } from "@/lib/activityLogger";
+import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
@@ -67,10 +67,9 @@ export const POST =  withCSRF(async function(
       });
 
       await logActivity(tx, {
-        name: "Customer Updated",
-        action: "CUSTOMER_UPDATE",
-        description: `Customer ${id} updated by user ${session.user.email}`,
+        action: ActivityAction.CUSTOMER_UPDATE,
         metadata: {
+          customerId: id,
           customer: JSON.stringify(updated, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),
