@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/authOptions";
 import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { emitSystemUpdate } from "@/lib/sseEmitter";
 
 export const POST = withCSRF(async function(request: Request) {
 	const session = await getServerSession(authOptions);
@@ -52,6 +53,24 @@ export const POST = withCSRF(async function(request: Request) {
 			),
 		},
 	});
+
+	const newActionRequest: any = await prisma.actionRequest.findUnique({
+		where: { id: result.id },
+		include: {
+		  approvals: {
+			include: {
+			  approver: true,
+			},
+		  },
+		  requester: true,
+		},
+	  });
+
+	// Emit system update event
+    emitSystemUpdate({
+        actionRequest: newActionRequest,
+        type: "CREATE",
+    });
 
 	return NextResponse.json({ actionRequest: result }, { status: 201 });
 }, createAPIRateLimit())

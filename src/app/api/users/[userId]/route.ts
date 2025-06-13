@@ -23,7 +23,7 @@ export const PUT = withCSRF(async function (
         const body = await req.json();
         const { name, email, password, roleId } = body;
 
-        if (!name || !email) {
+        if (!email) {
             return new NextResponse("Missing required fields", { status: 400 });
         }
 

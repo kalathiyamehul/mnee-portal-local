@@ -123,8 +123,6 @@ export const POST =  withCSRF(async function(request: Request) {
 				action: ActivityAction.MINT_REQUEST_APPROVE,
 				metadata: {
 					mintRequestId,
-					approverId: session.user.id,
-					approverEmail: session.user.email,
 				},
 			});
 

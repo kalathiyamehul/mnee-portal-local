@@ -64,7 +64,7 @@ export const ActivityList = ({
     BLACKLIST: "hasApproveBlacklistPer",
     FREEZE: "hasApproveFreezePer",
     CUSTOMER: "hasApproveCustomerPer",
-    ACTION: ["hasPauseActionPer", "hasApproveActionPer"], // Array of possible permissions
+    ACTION: "hasManageSystemPer", // Array of possible permissions
   };
 
   // Helper function to check approve permission for activity type
@@ -103,7 +103,7 @@ export const ActivityList = ({
         : activity.type === "REFUND" && activity.outpoint
         ? `Outpoint: ${activity.outpoint}`
         : activity.reason || "",
-    Requested_by: activity.requester.name || activity.requester.email,
+    Requested_by: activity?.requester?.name || activity?.requester?.email,
     Status: activity.status,
     Approver: activity.approvals?.map((a) => a.approver?.email).join(", "),
     Created: new Date(activity.createdAt).toLocaleString(),

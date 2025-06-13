@@ -8,6 +8,7 @@ import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from '@/lib/csrf';
 import { getConfig } from '@/lib/config';
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
+import { emitSystemUpdate } from '@/lib/sseEmitter';
 
 export const POST = withCSRF(async function(request: Request) {
   const session = await getServerSession(authOptions);
@@ -20,6 +21,7 @@ export const POST = withCSRF(async function(request: Request) {
   const { actionRequestId } = await request.json();
 
   try {
+    let newAppeovalID: string;
     const result = await prisma.$transaction(async (tx) => {
       // Verify the approving user exists
       const approvingUser = await tx.user.findUnique({
@@ -85,6 +87,8 @@ export const POST = withCSRF(async function(request: Request) {
         },
       });
 
+      newAppeovalID = approval.id;
+
       await logActivity(tx, {
         action: ActivityAction.SYSTEM_ACTION_REQUEST_APPROVE,
         metadata: {
@@ -115,11 +119,30 @@ export const POST = withCSRF(async function(request: Request) {
           },
         });
 
+        emitSystemUpdate({
+          activityId: actionRequestId,
+          type: "APPROVED",
+        })
         return { status: 'APPROVED', approvalsCount };
       }
 
       return { status: 'PENDING', approvalsCount };
     });
+
+    // emit Freeze Approve event
+		const approvalWithUser = await prisma.actionApproval.findUnique({
+			where: {
+				id: newAppeovalID!,
+			},
+			include: {
+				approver: true,
+			},
+		});
+		emitSystemUpdate({
+			activityId: actionRequestId,
+			approval: approvalWithUser,
+			type: "APPROVE",
+		});
 
     return NextResponse.json({ 
       success: true,
