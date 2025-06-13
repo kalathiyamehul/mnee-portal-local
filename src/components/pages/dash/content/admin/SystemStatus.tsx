@@ -24,6 +24,9 @@ export const SystemStatus = ({
   const { statusData, fetchStatus } = useSystemStatus();
   const [isLoading, setIsLoading] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
+  const { hasPermission} = usePermission();
+  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+  const canManageSystem = hasPermission(Resource.SYSTEM, Action.MANAGE);  
 
   const pendingAction = statusData?.systemRequests?.find(
     (req) =>
@@ -38,17 +41,6 @@ export const SystemStatus = ({
     !pendingAction.approvals.some(
       (approval) => approval.approver?.email === session?.user?.email
     );
-
-  const { hasPermission, hasAllPermissions } = usePermission();
-  const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
-  const isAdmin = hasAllPermissions([
-    { resource: Resource.MINT, action: Action.CREATE },
-    { resource: Resource.BURN, action: Action.CREATE },
-    { resource: Resource.CUSTOMER, action: Action.CREATE },
-    { resource: Resource.REFUND, action: Action.CREATE },
-    { resource: Resource.BLACKLIST, action: Action.CREATE },
-    { resource: Resource.FREEZE, action: Action.CREATE },
-  ]);
 
   const handleApprovePause = async () => {
     if (!pendingAction) return;
@@ -147,7 +139,7 @@ export const SystemStatus = ({
             />
             <span className="font-medium">{getStatusText()}</span>
           </div>
-          {canApprove && (isSuperAdmin || isAdmin) && (
+          {canApprove && (isSuperAdmin || canManageSystem) && (
             <button
               type="button"
               onClick={handleApprovePause}
@@ -159,7 +151,7 @@ export const SystemStatus = ({
           )}
         </div>
 
-        {(isSuperAdmin || isAdmin) && (
+        {(isSuperAdmin || canManageSystem) && (
           <div>
             {isRequester && pendingAction ? (
               <div className="tooltip tooltip-warning tooltip-left" data-tip={"Cancle System Pause Request"}>

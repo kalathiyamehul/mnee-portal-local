@@ -119,13 +119,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     ? true
     : hasPermission(Resource.SYSTEM, Action.READ) || false;
 
-  const hasPauseActionPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.SYSTEM, Action.PAUSE) || false;
-
-  const hasResumeActionPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.SYSTEM, Action.RESUME) || false;
+  const hasManageSystemPer = isSuperAdmin ? true : hasPermission(Resource.SYSTEM, Action.MANAGE) || false;
 
   // Permissions object
   const permissions = {
@@ -151,8 +145,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     hasApproveCustomerPer,
     // System
     hasReadActionPer,
-    hasPauseActionPer,
-    hasResumeActionPer,
+    hasManageSystemPer,
   };
 
   // Restrictions Permissions object

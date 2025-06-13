@@ -22,8 +22,6 @@ export enum Action {
     DELETE = "DELETE",
     REJECT = "REJECT",
     APPROVE = "APPROVE",
-    PAUSE = "PAUSE",
-    RESUME = "RESUME",
 }
 
 export interface ResourcePermission {
@@ -78,6 +76,6 @@ export const RESOURCE_PERMISSIONS: ResourcePermission[] = [
     },
     {
         name: Resource.SYSTEM,
-        permissions: [Action.READ, Action.PAUSE, Action.RESUME]
+        permissions: [Action.READ, Action.MANAGE]
     }
 ]

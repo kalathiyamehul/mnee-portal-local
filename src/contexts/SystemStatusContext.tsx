@@ -214,7 +214,7 @@ export function SystemStatusProvider({
             if (!prev) return prev;
             return {
               ...prev,
-              mintRequests: prev.mintRequests.filter(
+              systemRequests: prev.systemRequests.filter(
                 (activity: any) => activity.id !== actionRequestId
               ),
             };
@@ -528,6 +528,61 @@ export function SystemStatusProvider({
         // console.error("Error handling SSE event:", error);
       }
     });
+    eventSource.addEventListener(EVENTS.SYSTEM_UPDATE, (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const { actionRequest, activityId, type, approval } = data;
+        // Create System requests
+        if (type === "CREATE") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              systemRequests: [...prev.systemRequests, actionRequest],
+            };
+          });
+        }
+        // Approve System requests
+        if (type === "APPROVE") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updateActivity = (activities: Activity[]) =>
+              activities.map((activity) => {
+                const approvals: any = activity.approvals;
+                const approval_check = approvals.find(
+                  (approval_temp: any) => approval_temp.id === approval.id
+                );
+                if (activity.id === activityId && !approval_check) {
+                  approvals.push(approval);
+                  const updatedActivity = {
+                    ...activity,
+                    approvals: approvals,
+                  };
+                  return updatedActivity;
+                }
+                return activity;
+              });
+            return {
+              ...prev,
+              systemRequests: updateActivity(prev.systemRequests),
+            };
+          });
+        }
+        if (type === "APPROVED") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              systemRequests: prev.systemRequests.filter(
+                (activity: any) => activity.id !== activityId
+              ),
+            };
+          });
+        }
+      } catch (error) {
+        console.error("Error handling SSE event:", error);
+      }
+    })
 
     // Handle errors
     eventSource.onerror = (error) => {

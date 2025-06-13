@@ -68,6 +68,13 @@ export async function GET(req: NextRequest) {
                 );
             };
 
+            // System update
+            const onSystemUpdate = (data: any) => {
+                controller.enqueue(
+                    `event: ${EVENTS.SYSTEM_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
+                );
+            };
+
             // User session invalidation
             const onUserSessionInvalidate = (data: any) => {
                 controller.enqueue(
@@ -92,6 +99,8 @@ export async function GET(req: NextRequest) {
             emitter.on(EVENTS.ROLE_UPDATE, onRoleUpdate);
             emitter.on(EVENTS.USER_SESSION_INVALIDATE, onUserSessionInvalidate);
             emitter.on(EVENTS.PASSWORD_CHANGED, onPasswordChanged);
+            emitter.on(EVENTS.SYSTEM_UPDATE, onSystemUpdate);
+
 
             // Clean up when the connection closes
             req.signal?.addEventListener("abort", () => {
@@ -104,6 +113,7 @@ export async function GET(req: NextRequest) {
                 emitter.off(EVENTS.ROLE_UPDATE, onRoleUpdate);
                 emitter.off(EVENTS.USER_SESSION_INVALIDATE, onUserSessionInvalidate);
                 emitter.off(EVENTS.PASSWORD_CHANGED, onPasswordChanged);
+                emitter.off(EVENTS.SYSTEM_UPDATE, onSystemUpdate);
                 controller.close();
             });
         }

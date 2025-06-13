@@ -130,9 +130,24 @@ export const POST = withCSRF(async function(request: Request) {
             }
         };
 
+        const burn: any = await prisma.burnRequest.findUnique({
+            where: { id: result.id },
+            include: {
+              approvals: {
+                include: {
+                  approver: true,
+                },
+              },
+              requester: true,
+            },
+          });
+          if (burn?.amount) {
+            burn.amount = Number(burn.amount);
+          }
+
         // Emit Burn Request
         emitburnUpdate({
-            burnRequest: response.burnRequest,
+            burnRequest: burn,
             type: "CREATE",
         })
 

@@ -265,13 +265,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     ? true
     : hasPermission(Resource.SYSTEM, Action.READ) || false;
 
-  const hasPauseActionPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.SYSTEM, Action.PAUSE) || false;
-
-  const hasResumeActionPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.SYSTEM, Action.RESUME) || false;
+  const hasManageSystemPer = isSuperAdmin ? true : hasPermission(Resource.SYSTEM, Action.MANAGE) || false;
 
   // Permissions object
   const permissions = {
@@ -297,8 +291,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     hasApproveCustomerPer,
     // System Actions
     hasReadActionPer,
-    hasPauseActionPer,
-    hasResumeActionPer,
+    hasManageSystemPer,
   };
 
   // Default to 'volume' if no chart is selected
@@ -312,8 +305,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     hasApproveBlacklistPer ||
     hasApproveFreezePer ||
     hasApproveCustomerPer ||
-    hasPauseActionPer ||
-    hasResumeActionPer;
+    hasManageSystemPer;
 
   const canCancel = useCallback(
     (activity: Activity) => {

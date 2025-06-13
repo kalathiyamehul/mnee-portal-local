@@ -17,6 +17,7 @@ export const EVENTS = {
     ROLE_UPDATE: "roleUpdate",
     USER_SESSION_INVALIDATE: "userSessionInvalidate",
     PASSWORD_CHANGED: "passwordChanged",
+    SYSTEM_UPDATE: "systemUpdate",
 };
 
 // Helper functions to emit events from API routes
@@ -79,3 +80,7 @@ export function emitPasswordChanged(data: {
         userEmail: data.userEmail
     });
 } 
+
+export function emitSystemUpdate(data: any) {
+    emitter.emit(EVENTS.SYSTEM_UPDATE, data);
+}

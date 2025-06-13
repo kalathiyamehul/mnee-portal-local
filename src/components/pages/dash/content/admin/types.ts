@@ -193,6 +193,7 @@ export interface ActivityListProps {
 		hasApproveBlacklistPer: boolean;
 		hasApproveFreezePer: boolean;
 		hasApproveCustomerPer: boolean;
+		hasManageSystemPer: boolean;
 	  };
 }
 
