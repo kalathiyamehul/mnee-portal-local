@@ -475,7 +475,7 @@ export const BurnsTab = ({
                           {/* Show Burn button only if no pending requests */}
                           {(!burn.burnRequest ||
                             burn.burnRequest.status === "CANCELLED") &&
-                            burn.refundRequest?.status === "CANCELLED" &&
+                            (!burn.refundRequest?.status || burn.refundRequest?.status === "CANCELLED") &&
                             hasCreateBurnPer && (
                               <button
                                 type="button"
