@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import type { Activity } from "@/components/pages/dash/content/admin/types";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
@@ -175,11 +182,38 @@ export function SystemStatusProvider({
         if (type === "REJECT") {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedMint = prev.mintRequests.map((activity: any) => {
+              if (activity.id === activityId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              mintRequests: prev.mintRequests.filter(
-                (activity: any) => activity.id !== activityId
-              ),
+              mintRequests: updatedMint,
+            };
+          });
+        }
+        if (type === "APPROVED") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedMint = prev.mintRequests.map((activity: any) => {
+              if (activity.id === activityId) {
+                return {
+                  ...activity,
+                  status: "DONE",
+                };
+              }
+              return activity;
+            });
+
+            return {
+              ...prev,
+              mintRequests: updatedMint,
             };
           });
         }
@@ -245,11 +279,19 @@ export function SystemStatusProvider({
         if (mintRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedMint = prev.mintRequests.map((activity: any) => {
+              if (activity.id === mintRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              mintRequests: prev.mintRequests.filter(
-                (activity: any) => activity.id !== mintRequestId
-              ),
+              mintRequests: updatedMint,
             };
           });
         }
@@ -453,6 +495,26 @@ export function SystemStatusProvider({
             };
           });
         }
+        // Approved Burn requests
+        if (type === "APPROVED") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedBurns = prev.burnRequests.map((activity: any) => {
+              if (activity.id === activityId) {
+                return {
+                  ...activity,
+                  status: "APPROVED",
+                };
+              }
+              return activity;
+            });
+
+            return {
+              ...prev,
+              burnRequests: updatedBurns,
+            };
+          });
+        }
         // Approve Burn requests
         if (type === "APPROVE") {
           setStatusData((prev: any) => {
@@ -582,7 +644,7 @@ export function SystemStatusProvider({
       } catch (error) {
         console.error("Error handling SSE event:", error);
       }
-    })
+    });
 
     // Handle errors
     eventSource.onerror = (error) => {
@@ -602,13 +664,13 @@ export function SystemStatusProvider({
       });
       eventSource.removeEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
         // console.log(EVENTS.CUSTOMER_UPDATE, event);
-      })
+      });
       eventSource.removeEventListener(EVENTS.RESTRICTIONS_UPDATE, (event) => {
         // console.log(EVENTS.RESTRICTIONS_UPDATE, event);
-      })
+      });
       eventSource.removeEventListener(EVENTS.BURN_UPDATE, (event) => {
         // console.log(EVENTS.BURN_UPDATE, event);
-      })
+      });
       eventSource.removeEventListener(EVENTS.REFUND_UPDATE, (event) => {
         // console.log(EVENTS.REFUND_UPDATE, event);
       });
@@ -640,7 +702,9 @@ export function SystemStatusProvider({
 export function useSystemStatus() {
   const context = useContext(SystemStatusContext);
   if (!context) {
-    throw new Error('useSystemStatus must be used within a SystemStatusProvider');
+    throw new Error(
+      "useSystemStatus must be used within a SystemStatusProvider"
+    );
   }
   return context;
 }

@@ -155,7 +155,7 @@ export const POST =  withCSRF(async function(request: Request) {
 						throw new Error(error);
 					}
 
-					await tx.mintRequest.update({
+					const mintedRequest = await tx.mintRequest.update({
 						where: { id: mintRequestId },
 						data: {
 							status: "DONE",
@@ -170,6 +170,12 @@ export const POST =  withCSRF(async function(request: Request) {
 							mintRequestId,
 							txid: Transaction.fromHex(rawtx).id("hex"),
 						},
+					});
+
+					emitMintUpdate({
+						activityId: requestId,
+						approval: mintedRequest,
+						type: "APPROVED",
 					});
 
 					return { status: "DONE", approvalsCount, minterTx: rawtx, approval };
