@@ -11,17 +11,8 @@ import { Action, Resource } from "@/lib/permission";
 export default function ProfileScreen() {
   const { data: session } = useSession();
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const { hasAllPermissions, hasPermission } = usePermission();
+  const { hasPermission } = usePermission();
   const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
-  const isAdmin = hasAllPermissions([
-    { resource: Resource.MINT, action: Action.CREATE },
-    { resource: Resource.BURN, action: Action.CREATE },
-    { resource: Resource.CUSTOMER, action: Action.CREATE },
-    { resource: Resource.REFUND, action: Action.CREATE },
-    { resource: Resource.BLACKLIST, action: Action.CREATE },
-    { resource: Resource.FREEZE, action: Action.CREATE },
-  ]);
-
   return (
     <div className="container p-4 space-y-6 animate-fade-in">
       <h1 className="text-2xl font-bold">Profile Settings</h1>
@@ -44,7 +35,7 @@ export default function ProfileScreen() {
                 </h2>
                 <p className="text-xl-content/70">{session?.user?.email}</p>
                 <p className="text-xl-content/70">
-                  Role: {isSuperAdmin ? "Super Admin" : isAdmin ? "Admin" : "Viewer"}
+                  Role: {isSuperAdmin ? "Super Admin" : session?.user?.roleName}
                 </p>
               </div>
             </div>
