@@ -38,7 +38,8 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          action: ActivityAction.ACTION_REQUEST_CANCEL,
+          action: request.action === "PAUSE" ? ActivityAction.SYSTEM_PAUSE_REQUEST_CANCEL : ActivityAction.SYSTEM_RESUME_REQUEST_CANCEL,
+
           metadata: {
             actionRequestId,
             request: JSON.stringify(updated, (key, value) =>

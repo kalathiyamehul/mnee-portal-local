@@ -725,10 +725,11 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
             )}
             {activeTab === "burns" && (
               <BurnsTab
+                hasCreateBurnPer={hasCreateBurnPer}
                 hasApproveBurnPer={hasApproveBurnPer}
                 hasRejectBurnPer={hasRejectBurnPer}
+                hasCreateRefundPer={hasCreateRefundPer}
                 hasApproveRefundPer={hasApproveRefundPer}
-                hasCreateBurnPer={hasCreateBurnPer}
               />
             )}
             {activeTab === "mints" && (

@@ -90,12 +90,12 @@ export const POST = withCSRF(async function(request: Request) {
       newAppeovalID = approval.id;
 
       await logActivity(tx, {
-        action: ActivityAction.SYSTEM_ACTION_REQUEST_APPROVE,
-        metadata: {
-          actionRequestId,
-          approverId: session.user.id,
-        },
-      });
+          action: actionRequest.action === "PAUSE" ? ActivityAction.SYSTEM_PAUSE_REQUEST_APPROVE : ActivityAction.SYSTEM_RESUME_REQUEST_APPROVE,
+          metadata: {
+            actionRequestId,
+            approverId: session.user.id,
+          },
+        }); 
 
       // Check approval count (requires exactly minimum Threshold approvals)
       const approvalsCount = await tx.actionApproval.count({
@@ -112,7 +112,7 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          action: ActivityAction.SYSTEM_ACTION_REQUEST_FULLY_APPROVED,
+          action: actionRequest.action === "PAUSE" ? ActivityAction.SYSTEM_PAUSE_REQUEST_FULLY_APPROVED : ActivityAction.SYSTEM_RESUME_REQUEST_FULLY_APPROVED,
           metadata: {
             actionRequestId,
             approvalsCount,

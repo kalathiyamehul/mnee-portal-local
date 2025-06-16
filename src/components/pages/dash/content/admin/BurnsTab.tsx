@@ -334,8 +334,11 @@ export const BurnsTab = ({
   // Split burns into pending/active and completed
   const activeBurns = burns.filter(
     (burn) =>
-      !burn.burnRequest ||
-      ["PENDING", "CANCELLED"].includes(burn.burnRequest.status)
+      burn?.data?.bsv21?.op !== "burn" &&
+      (
+        !burn.burnRequest ||
+        ["PENDING", "CANCELLED"].includes(burn.burnRequest.status)
+      )
   );
   const completedBurns = burns.filter(
     (burn) =>

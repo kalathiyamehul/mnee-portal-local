@@ -48,10 +48,13 @@ export enum ActivityAction {
 
   // System Action Request
   SYSTEM_PAUSE_REQUEST = 'SYSTEM_PAUSE_REQUEST',
+  SYSTEM_PAUSE_REQUEST_APPROVE = 'SYSTEM_PAUSE_REQUEST_APPROVE',
+  SYSTEM_PAUSE_REQUEST_FULLY_APPROVED = 'SYSTEM_PAUSE_REQUEST_FULLY_APPROVED',
   SYSTEM_RESUME_REQUEST = 'SYSTEM_RESUME_REQUEST',
-  ACTION_REQUEST_CANCEL = 'ACTION_REQUEST_CANCEL',
-  SYSTEM_ACTION_REQUEST_APPROVE = 'SYSTEM_ACTION_REQUEST_APPROVE',
-  SYSTEM_ACTION_REQUEST_FULLY_APPROVED = 'SYSTEM_ACTION_REQUEST_FULLY_APPROVED',
+  SYSTEM_RESUME_REQUEST_APPROVE = 'SYSTEM_RESUME_REQUEST_APPROVE',
+  SYSTEM_RESUME_REQUEST_FULLY_APPROVED = 'SYSTEM_RESUME_REQUEST_FULLY_APPROVED',
+  SYSTEM_PAUSE_REQUEST_CANCEL = 'SYSTEM_PAUSE_REQUEST_CANCEL',
+  SYSTEM_RESUME_REQUEST_CANCEL = 'SYSTEM_RESUME_REQUEST_CANCEL',
 
   // Config Actions
   CONFIG_UPDATED = 'CONFIG_UPDATED',
@@ -258,20 +261,35 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
         name: 'System Resume Request',
         description: `System resume request was created by ${metadata.userEmail}`,
       };
-    case ActivityAction.ACTION_REQUEST_CANCEL:
+    case ActivityAction.SYSTEM_PAUSE_REQUEST_CANCEL:
       return {
-        name: 'Action Request Cancelled',
-        description: `Action request ${metadata.actionRequestId} was cancelled by ${metadata.userEmail}`,
+        name: 'System Pause Request Cancelled',
+        description: `System pause request ${metadata.actionRequestId} was cancelled by ${metadata.userEmail}`,
       };
-    case ActivityAction.SYSTEM_ACTION_REQUEST_APPROVE:
+    case ActivityAction.SYSTEM_RESUME_REQUEST_CANCEL:
       return {
-        name: 'System Action Request Approved',
-        description: `System action request ${metadata.actionRequestId} was approved by ${metadata.userEmail}`,
+        name: 'System Resume Request Cancelled',
+        description: `System resume request ${metadata.actionRequestId} was cancelled by ${metadata.userEmail}`,
       };
-    case ActivityAction.SYSTEM_ACTION_REQUEST_FULLY_APPROVED:
+    case ActivityAction.SYSTEM_PAUSE_REQUEST_APPROVE:
       return {
-        name: 'System Action Request Fully Approved',
-        description: `System action request ${metadata.actionRequestId} fully approved after reaching required approvals`,
+        name: 'System Pause Request Approved',
+        description: `System pause request ${metadata.actionRequestId} was approved by ${metadata.userEmail}`,
+      };
+    case ActivityAction.SYSTEM_PAUSE_REQUEST_FULLY_APPROVED:
+      return {
+        name: 'System Pause Request Fully Approved',
+        description: `System pause request ${metadata.actionRequestId} fully approved after reaching required approvals`,
+      };
+    case ActivityAction.SYSTEM_RESUME_REQUEST_APPROVE:
+      return {
+        name: 'System Resume Request Approved',
+        description: `System resume request ${metadata.actionRequestId} was approved by ${metadata.userEmail}`,
+      };
+    case ActivityAction.SYSTEM_RESUME_REQUEST_FULLY_APPROVED:
+      return {
+        name: 'System Resume Request Fully Approved',
+        description: `System resume request ${metadata.actionRequestId} fully approved after reaching required approvals`,
       };
 
     // Config Actions

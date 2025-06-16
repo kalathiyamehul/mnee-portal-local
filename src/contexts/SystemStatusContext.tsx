@@ -600,6 +600,21 @@ export function SystemStatusProvider({
       eventSource.removeEventListener(EVENTS.CANCEL_UPDATE, (event) => {
         // console.log(EVENTS.CANCEL_UPDATE, event);
       });
+      eventSource.removeEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
+        // console.log(EVENTS.CUSTOMER_UPDATE, event);
+      })
+      eventSource.removeEventListener(EVENTS.RESTRICTIONS_UPDATE, (event) => {
+        // console.log(EVENTS.RESTRICTIONS_UPDATE, event);
+      })
+      eventSource.removeEventListener(EVENTS.BURN_UPDATE, (event) => {
+        // console.log(EVENTS.BURN_UPDATE, event);
+      })
+      eventSource.removeEventListener(EVENTS.REFUND_UPDATE, (event) => {
+        // console.log(EVENTS.REFUND_UPDATE, event);
+      });
+      eventSource.removeEventListener(EVENTS.SYSTEM_UPDATE, (event) => {
+        // console.log(EVENTS.SYSTEM_UPDATE, event);
+      });
     };
   }, [fetchStatus]);
 
