@@ -267,8 +267,8 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       // Check if token is marked as invalidated
-      if (token.invalidated) {
-        throw new Error('SESSION_INVALIDATED');
+      if (!token || token.invalidated) {
+        throw new Error('SESSION_EXPIRED');
       }
       if (session.user && token) {
         session.user.id = token.id as string;
