@@ -85,7 +85,7 @@ export const authOptions: NextAuthOptions = {
             requiresPasswordReset: true,
             twoFactorEnabled: true,
             twoFactorSecret: true,
-          }
+          },
         });
 
         if (!user) {
@@ -183,6 +183,13 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         const { roleId, requiresPasswordReset } = user as typeof user & { roleId?: string; requiresPasswordReset?: boolean };
         if (roleId) {
+          const role = await prisma.role.findUnique({
+            where: { id: roleId },
+            select: {
+              name: true,
+            },
+          });
+          token.roleName = role?.name;
           const rolePermissions = await prisma.rolePermission.findMany({
             where: {
               roleId: roleId,
@@ -263,11 +270,11 @@ export const authOptions: NextAuthOptions = {
       if (token.invalidated) {
         throw new Error('SESSION_INVALIDATED');
       }
-
       if (session.user && token) {
         session.user.id = token.id as string;
         session.user.requiresPasswordReset = token.requiresPasswordReset as boolean;
         session.user.rolePermissions = token.rolePermissions as Record<string, string[]>;
+        session.user.roleName = token.roleName as string;
       }
       return session;
     },

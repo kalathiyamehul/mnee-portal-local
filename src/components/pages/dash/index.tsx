@@ -89,7 +89,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     );
 
     eventSource.onerror = (error) => {
-      console.error("SSE connection error:", error);
+      // console.error("SSE connection error:", error);
+      eventSource.close();
     };
 
     return () => {

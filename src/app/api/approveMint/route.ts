@@ -172,6 +172,12 @@ export const POST =  withCSRF(async function(request: Request) {
 						},
 					});
 
+					emitMintUpdate({
+						activityId: requestId,
+						approval: "Mint Request Fully Approved",
+						type: "APPROVED",
+					});
+
 					return { status: "DONE", approvalsCount, minterTx: rawtx, approval };
 				} catch (error) {
 					console.error("Error during minting:", error);
