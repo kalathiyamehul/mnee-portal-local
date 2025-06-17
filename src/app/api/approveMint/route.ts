@@ -155,7 +155,7 @@ export const POST =  withCSRF(async function(request: Request) {
 						throw new Error(error);
 					}
 
-					const mintedRequest = await tx.mintRequest.update({
+					await tx.mintRequest.update({
 						where: { id: mintRequestId },
 						data: {
 							status: "DONE",
@@ -174,7 +174,7 @@ export const POST =  withCSRF(async function(request: Request) {
 
 					emitMintUpdate({
 						activityId: requestId,
-						approval: mintedRequest,
+						approval: "Mint Request Fully Approved",
 						type: "APPROVED",
 					});
 
