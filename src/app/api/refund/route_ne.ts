@@ -57,6 +57,16 @@ export const POST = withCSRF(async function(request: Request) {
     const txo = await fetchTxo(outpoint);
     const amount = BigInt(txo.data.bsv21.amt);
 
+    // Security check: Verify that the refund address is one of the original owners
+    if (!txo.owners || !txo.owners.includes(refundAddress)) {
+      return NextResponse.json(
+        {
+          error: "Refund address must be one of the original UTXO owners. Refunds can only be sent to the original sender's address."
+        },
+        { status: 403 }
+      );
+    }
+
     // Create the RefundRequest (status=PENDING)
     const refundRequest = await prisma.refundRequest.create({
       data: {

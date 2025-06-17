@@ -56,11 +56,26 @@ export const authOptions: NextAuthOptions = {
 
         const clientIP = getClientIPFromNextAuthReq(req);
         const rateLimitResult = await checkRateLimit(clientIP, 'LOGIN_ATTEMPT');
-
         if (rateLimitResult.blocked) {
           const resetTime = rateLimitResult.blockUntil || rateLimitResult.resetTime;
           const retryAfter = Math.ceil((resetTime.getTime() - Date.now()) / 1000);
-          const errorMessage = `Rate limit exceeded. Try again in ${retryAfter} seconds.`;
+          // Format the exact time when user can try again
+          const canRetryAt = new Date(resetTime.getTime());
+          const timeString = canRetryAt.toLocaleTimeString('en-US', {
+            hour12: true,
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit'
+          });
+
+          // Create a more user-friendly message
+          let errorMessage;
+          if (retryAfter > 60) {
+            const minutes = Math.ceil(retryAfter / 60);
+            errorMessage = `Rate limit exceeded. Too many login attempts. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''} (at ${timeString}).`;
+          } else {
+            errorMessage = `Rate limit exceeded. Too many login attempts. Please try again in ${retryAfter} second${retryAfter > 1 ? 's' : ''} (at ${timeString}).`;
+          }
           throw new Error(errorMessage);
         }
         // Check account lockout first
@@ -267,8 +282,8 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       // Check if token is marked as invalidated
-      if (token.invalidated) {
-        throw new Error('SESSION_INVALIDATED');
+      if (!token || token.invalidated) {
+        throw new Error('SESSION_EXPIRED');
       }
       if (session.user && token) {
         session.user.id = token.id as string;

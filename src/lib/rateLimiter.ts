@@ -20,7 +20,7 @@ export const RATE_LIMIT_CONFIGS: Record<RateLimitType, RateLimitConfig> = {
     LOGIN_ATTEMPT: {
         windowMs: 15 * 60 * 1000, // 15 minutes
         maxAttempts: 5, // 5 attempts per 15 minutes
-        blockDurationMs: 5 * 60 * 1000, // Block for 30 minutes
+        blockDurationMs: 5 * 60 * 1000, // Block for 5 minutes
     },
     API_REQUEST: {
         windowMs: 60 * 1000, // 1 minute
@@ -55,39 +55,33 @@ export async function checkRateLimit(
         // Clean up old records first
         await cleanupOldRateLimitRecords(type, windowStart);
 
-        // Get or create rate limit record
-        const record = await prisma.rateLimitAttempt.upsert({
+        // First, get the existing record without updating it
+        const existingRecord = await prisma.rateLimitAttempt.findUnique({
             where: {
                 identifier_type: {
                     identifier,
                     type,
                 },
             },
-            update: {
-                attempts: {
-                    increment: 1,
-                },
-                lastAttempt: now,
-            },
-            create: {
-                identifier,
-                type,
-                attempts: 1,
-                windowStart: now,
-                lastAttempt: now,
-            },
         });
 
         // Check if we need to reset the window
-        if (record.windowStart < windowStart) {
-            const updatedRecord = await prisma.rateLimitAttempt.update({
+        if (!existingRecord || existingRecord.windowStart < windowStart) {
+            const record = await prisma.rateLimitAttempt.upsert({
                 where: {
                     identifier_type: {
                         identifier,
                         type,
                     },
                 },
-                data: {
+                update: {
+                    attempts: 1,
+                    windowStart: now,
+                    lastAttempt: now,
+                },
+                create: {
+                    identifier,
+                    type,
                     attempts: 1,
                     windowStart: now,
                     lastAttempt: now,
@@ -102,7 +96,63 @@ export async function checkRateLimit(
             };
         }
 
-        // Check if limit exceeded
+        // Check if currently blocked and if block period has expired
+        if (existingRecord.attempts > finalConfig.maxAttempts) {
+            const blockUntil = finalConfig.blockDurationMs
+                ? new Date(existingRecord.lastAttempt.getTime() + finalConfig.blockDurationMs)
+                : new Date(existingRecord.windowStart.getTime() + finalConfig.windowMs);
+
+            // If block period has expired, reset the attempts
+            if (now >= blockUntil) {
+                await prisma.rateLimitAttempt.update({
+                    where: {
+                        identifier_type: {
+                            identifier,
+                            type,
+                        },
+                    },
+                    data: {
+                        attempts: 1,
+                        windowStart: now,
+                        lastAttempt: now,
+                    },
+                });
+
+                return {
+                    success: true,
+                    remaining: finalConfig.maxAttempts - 1,
+                    resetTime: new Date(now.getTime() + finalConfig.windowMs),
+                    blocked: false,
+                };
+            }
+
+            // Still blocked
+            return {
+                success: false,
+                remaining: 0,
+                resetTime: new Date(existingRecord.windowStart.getTime() + finalConfig.windowMs),
+                blocked: true,
+                blockUntil,
+            };
+        }
+
+        // Not blocked, increment attempts
+        const record = await prisma.rateLimitAttempt.update({
+            where: {
+                identifier_type: {
+                    identifier,
+                    type,
+                },
+            },
+            data: {
+                attempts: {
+                    increment: 1,
+                },
+                lastAttempt: now,
+            },
+        });
+
+        // Check if this attempt exceeds the limit
         if (record.attempts > finalConfig.maxAttempts) {
             const blockUntil = finalConfig.blockDurationMs
                 ? new Date(record.lastAttempt.getTime() + finalConfig.blockDurationMs)
