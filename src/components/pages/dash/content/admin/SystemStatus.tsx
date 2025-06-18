@@ -154,7 +154,7 @@ export const SystemStatus = ({
         {(isSuperAdmin || canManageSystem) && (
           <div>
             {isRequester && pendingAction ? (
-              <div className="tooltip tooltip-warning tooltip-left" data-tip={"Cancle System Pause Request"}>
+              <div className="tooltip tooltip-warning tooltip-left" data-tip={"Cancel System Pause Request"}>
                 <button
                   type="button"
                   onClick={handleCancelPause}
