@@ -12,6 +12,7 @@ import { Pagination } from "@/components/common/Pagination";
 import { apiFetch } from "@/utils/api";
 import { password } from "bun";
 import { MdLockReset } from "react-icons/md";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 interface User {
   id: string;
@@ -69,6 +70,7 @@ export default function UsersPage() {
     limit: 6,
     totalPages: 1,
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   // Add validation states
   const [errors, setErrors] = useState({
@@ -708,35 +710,50 @@ export default function UsersPage() {
               <div className="space-y-6">
                 <div className="form-control w-full">
                   <label className="label label-text">Reset Password</label>
-                  <input
-                    type="password"
-                    className={`input input-bordered w-full max-w-md ${
-                      errors.password ? "input-error" : ""
-                    }`}
-                    value={editingUser.password}
-                    maxLength={100}
-                    onChange={(e) => {
-                      const newPassword = e.target.value;
-                      setEditingUser((prev) =>
-                        prev ? { ...prev, password: newPassword } : null
-                      );
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className={`input input-bordered w-full max-w-md ${
+                        errors.password ? "input-error" : ""
+                      }`}
+                      value={editingUser.password ?? ""}
+                      maxLength={100}
+                      onChange={(e) => {
+                        const newPassword = e.target.value;
+                        setEditingUser((prev) =>
+                          prev ? { ...prev, password: newPassword } : null
+                        );
 
-                      // Validate on every change
-                      const error =
-                        newPassword.trim() === ""
-                          ? ""
-                          : validatePassword(newPassword);
-                      setErrors((prev) => ({ ...prev, password: error || "" }));
-                    }}
-                    placeholder="Set new password"
-                    required
-                  />
+                        // Validate on every change
+                        const error =
+                          newPassword.trim() === ""
+                            ? ""
+                            : validatePassword(newPassword);
+                        setErrors((prev) => ({
+                          ...prev,
+                          password: error || "",
+                        }));
+                      }}
+                      placeholder="Set new password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-8 top-3 z-50 text-gray-500"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <FiEyeOff size={18} className="text-gray-300"/>
+                      ) : (
+                        <FiEye size={18} className="text-gray-300"/>
+                      )}
+                    </button>
+                  </div>
                   {errors.password && (
-                    <div className="label mt-1">
-                      <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">
-                        {errors.password}
-                      </span>
-                    </div>
+                    <div className="text-error text-sm mt-2">{errors.password}</div>
                   )}
                 </div>
               </div>
@@ -749,6 +766,7 @@ export default function UsersPage() {
                     setIsResetting(false);
                     setEditingUser(null);
                     setErrors({ name: "", password: "", email: "" });
+                    setShowPassword(false);
                   }}
                 >
                   Cancel
@@ -766,8 +784,10 @@ export default function UsersPage() {
           <div
             className="modal-backdrop"
             onClick={() => {
-              setIsEditing(false);
+              setIsResetting(false);
               setEditingUser(null);
+              setShowPassword(false);
+              setErrors({ name: "", password: "", email: "" });
             }}
           ></div>
         </div>
