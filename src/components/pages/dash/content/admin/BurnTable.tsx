@@ -22,9 +22,9 @@ interface BurnTableProps {
 	showActions?: boolean;
 	hasApproveBurnPer?: boolean;
 	hasRejectBurnPer?: boolean;
-    hasRejectRefundPer?: boolean;
     hasApproveRefundPer?: boolean;
 	hasCreateRefundPer?: boolean;
+	hasSettleBurnPer?: boolean;
 }
 
 export const BurnTable = ({
@@ -36,8 +36,8 @@ export const BurnTable = ({
 	showActions,
 	title = "Burns",
 	showRequester = true,
-    hasApproveRefundPer,
-	hasCreateRefundPer,
+    hasSettleBurnPer,
+	hasApproveRefundPer,
 }: BurnTableProps) => {
 	const { data: session } = useSession();
 	const [settlingId, setSettlingId] = React.useState<string | null>(null);
@@ -249,7 +249,7 @@ export const BurnTable = ({
 												</button>
 											)}
 											 {/* SETTLED Button */}
-											 {canSettle(burn) && hasCreateRefundPer && (
+											 {canSettle(burn) && hasSettleBurnPer && (
                                                 <button
                                                     type="button"
                                                     className="btn btn-primary btn-sm"
