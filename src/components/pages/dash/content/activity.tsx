@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ActivityLog } from "@prisma/client";
-import { formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { apiFetch } from "@/utils/api";
@@ -78,22 +78,18 @@ export default function DashboardActivityContent({
         <table className="table w-full">
           <thead>
             <tr>
-              <th>Name</th>
               <th>Action</th>
-              <th>Description</th>
+              <th style={{ maxWidth: '600px' }}>Description</th>
               <th>Time</th>
             </tr>
           </thead>
           <tbody>
             {activityLogs.map((log) => (
               <tr key={log.id}>
-                <td>{log.name || "-"}</td>
                 <td>{log.action || "-"}</td>
-                <td>{log.description || "-"}</td>
+                <td style={{ maxWidth: '600px' }}>{log.description || "-"}</td>
                 <td>
-                  {formatDistanceToNow(new Date(log.createdAt), {
-                    addSuffix: true,
-                  })}
+                  {format(new Date(log.createdAt), "dd/MM/yyyy, HH:mm:ss")}
                 </td>
               </tr>
             ))}
