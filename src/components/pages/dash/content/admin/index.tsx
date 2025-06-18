@@ -121,6 +121,9 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
 
   const hasManageSystemPer = isSuperAdmin ? true : hasPermission(Resource.SYSTEM, Action.MANAGE) || false;
 
+  // Settle Permission
+  const hasSettleBurnPer = isSuperAdmin ? true : (hasCreateBurnPer || hasApproveBurnPer) || false;
+
   // Permissions object
   const permissions = {
     // Mint
@@ -730,6 +733,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 hasRejectBurnPer={hasRejectBurnPer}
                 hasCreateRefundPer={hasCreateRefundPer}
                 hasApproveRefundPer={hasApproveRefundPer}
+                hasSettleBurnPer={hasSettleBurnPer}
               />
             )}
             {activeTab === "mints" && (

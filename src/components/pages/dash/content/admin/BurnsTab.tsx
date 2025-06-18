@@ -47,6 +47,7 @@ interface BurnsTabProps {
   hasCreateRefundPer?: boolean;
   hasApproveRefundPer?: boolean;
   hasRejectRefundPer?: boolean;
+  hasSettleBurnPer?: boolean;
 }
 
 export const BurnsTab = ({
@@ -56,6 +57,7 @@ export const BurnsTab = ({
   hasApproveRefundPer,
   hasCreateRefundPer,
   hasRejectRefundPer,
+  hasSettleBurnPer,
 }: BurnsTabProps) => {
   const { data: session } = useSession();
   const { statusData } = useSystemStatus();
@@ -593,7 +595,7 @@ export const BurnsTab = ({
                             </button>
                           )}
                           {/* SETTLED Button */}
-                          {burn.burnRequest?.status === "APPROVED" && hasCreateRefundPer && (
+                          {burn.burnRequest?.status === "APPROVED" && hasSettleBurnPer && (
                             <button
                               type="button"
                               className="btn btn-success btn-sm"
@@ -630,8 +632,8 @@ export const BurnsTab = ({
             alwaysShow={true}
             hasApproveBurnPer={hasApproveBurnPer}
             hasRejectBurnPer={hasRejectBurnPer}
-            hasRejectRefundPer={hasRejectRefundPer}
             hasApproveRefundPer={hasApproveRefundPer}
+            hasSettleBurnPer={hasSettleBurnPer}
           />
         </div>
 

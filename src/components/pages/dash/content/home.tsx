@@ -267,6 +267,9 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 
   const hasManageSystemPer = isSuperAdmin ? true : hasPermission(Resource.SYSTEM, Action.MANAGE) || false;
 
+  // Settle Permission
+  const hasSettleBurnPer = isSuperAdmin ? true : (hasCreateBurnPer || hasApproveBurnPer) || false;
+
   // Permissions object
   const permissions = {
     // Mint
@@ -731,9 +734,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
             alwaysShow={true}
             showViewAll={true}
             showRequester={false}
-            hasApproveBurnPer={hasApproveBurnPer}
-            hasRejectBurnPer={hasRejectBurnPer}
-            hasApproveRefundPer={hasApproveRefundPer}
+            hasSettleBurnPer={hasSettleBurnPer}
           />}
         </div>
       </div>
