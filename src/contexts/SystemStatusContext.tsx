@@ -332,6 +332,108 @@ export function SystemStatusProvider({
         // console.error("Error handling SSE event:", error);
       }
     });
+    eventSource.addEventListener(EVENTS.REJECT_UPDATE, (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        // console.log("data", data);
+        const {
+          actionRequestId,
+          freezeRequestId,
+          blacklistRequestId,
+          mintRequestId,
+          burnRequestId,
+          refundRequestId,
+          customerRequestId,
+        } = data;
+        if (actionRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              systemRequests: prev.systemRequests.filter(
+                (activity: any) => activity.id !== actionRequestId
+              ),
+            };
+          });
+        }
+        if (freezeRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              freezeRequests: prev.freezeRequests.filter(
+                (activity: any) => activity.id !== freezeRequestId
+              ),
+            };
+          });
+        }
+        if (blacklistRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              blacklistRequests: prev.blacklistRequests.filter(
+                (activity: any) => activity.id !== blacklistRequestId
+              ),
+            };
+          });
+        }
+        if (mintRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedMint = prev.mintRequests.map((activity: any) => {
+              if (activity.id === mintRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
+            return {
+              ...prev,
+              mintRequests: updatedMint,
+            };
+          });
+        }
+        if (burnRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              burnRequests: prev.burnRequests.filter(
+                (activity: any) => activity.id !== burnRequestId
+              ),
+            };
+          });
+        }
+        if (refundRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              refundRequests: prev.refundRequests.filter(
+                (activity: any) => activity.id !== refundRequestId
+              ),
+            };
+          });
+        }
+        if (customerRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              customerRequests: prev.customerRequests.filter(
+                (activity: any) => activity.id !== customerRequestId
+              ),
+            };
+          });
+        }
+      } catch (error) {
+        // console.error("Error handling SSE event:", error);
+      }
+    });
     eventSource.addEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
       try {
         const data = JSON.parse(event.data);
