@@ -12,7 +12,7 @@ import { emitRoleUpdate, emitUserSessionInvalidate } from "@/lib/sseEmitter";
 // Schema for role creation/update
 const roleSchema = z.object({
     name: z.string().min(1, "Role name is required"),
-    description: z.string().optional(),
+    description: z.string().optional().default(''),
     permissions: z.array(z.object({
         resource: z.string(),
         actions: z.array(z.string())
