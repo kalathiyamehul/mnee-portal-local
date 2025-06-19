@@ -19,6 +19,10 @@ import { getActivityIcon } from "./admin/utils";
 import { useSession } from "next-auth/react";
 import type { Config } from "@prisma/client";
 import { toToken } from "satoshi-token";
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import { usePermission } from "@/hooks/usePermission";
+import { Action, Resource } from "@/lib/permission";
+import { apiFetch } from "@/utils/api";
 
 // Utility functions
 const getActivityDisplayText = (activity: Activity) => {
@@ -94,12 +98,6 @@ interface DashboardHomeContentProps {
   initialConfig: Config;
 }
 
-// Add this import at the top with other imports
-import { useSystemStatus } from "@/contexts/SystemStatusContext";
-import { usePermission } from "@/hooks/usePermission";
-import { Action, Resource } from "@/lib/permission";
-import { apiFetch } from "@/utils/api";
-
 const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const { data: session } = useSession();
   const router = useRouter();
@@ -172,13 +170,9 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       });
       setRequests({
         recentMints: filteredActivities
-          .filter((act) => act.type === "MINT")
-          .filter((activity) => activity.status === "PENDING")
-          .slice(0, 5),
+          .filter((act) => act.type === "MINT").slice(0, 5),
         recentBurns: filteredActivities
-          .filter((act) => act.type === "BURN")
-          .filter((activity) => activity.status === "PENDING")
-          .slice(0, 5),
+          .filter((act) => act.type === "BURN").slice(0, 5),
         pendingActivities: filteredActivities
           .filter((activity) => activity.status === "PENDING")
           .slice(0, 5),
@@ -498,20 +492,6 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     router.push(`?${params.toString()}`);
   };
 
-  const mappedBurns =
-    metrics?.recentBurns.map(
-      (burn) =>
-        ({
-          ...burn,
-          type: "BURN" as const,
-          action: "BURN" as const,
-          address: burn.outpoint?.split("_")[0] || "",
-          amount: burn.amount.toString(),
-          updatedAt: burn.createdAt,
-          requestedBy: burn.requester.email,
-          requiresApproval: true,
-        } as Activity)
-    ) || [];
   return (
     <div className="p-4 space-y-8 animate-fade-in">
       <div className="stats shadow w-full">
@@ -709,17 +689,17 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="w-full">
-          <MintTable
+          {hasReadMintPer && <MintTable
             title="Recent Mints"
             mints={requestTables?.recentMints || []}
             limit={5}
             showViewAll={true}
-            onUpdate={fetchMetrics}
+            showActions={false}
             showRequester={false}
             mode="all"
             hasApproveMintPer={hasApproveMintPer}
             hasRejectMintPer={hasRejectMintPer}
-          />
+          />}
         </div>
 
         <div className="w-full">
