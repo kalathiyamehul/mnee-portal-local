@@ -172,7 +172,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
         recentMints: filteredActivities
           .filter((act) => act.type === "MINT").slice(0, 5),
         recentBurns: filteredActivities
-          .filter((act) => act.type === "BURN").slice(0, 5),
+          .filter((act) => act.type === "BURN" && (act.status !== "REJECTED" && act.status !== "CANCELLED")).slice(0, 5),
         pendingActivities: filteredActivities
           .filter((activity) => activity.status === "PENDING")
           .slice(0, 5),
@@ -429,7 +429,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   }
 
   // Format burns for the BurnTable component
-  const formattedBurns: BurnUtxo[] = (metrics.recentBurns || [])
+  const formattedBurns: BurnUtxo[] = (requestTables?.recentBurns || [])
     .map((burn) => {
       const [txid, vout] = (burn.outpoint || "").split("_");
       if (!txid || !vout) return null;
@@ -447,7 +447,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           id: burn.id,
           status: burn.status,
           createdAt: burn.createdAt,
-          amount: burn.amount.toString(),
+          amount: burn?.amount?.toString(),
           requester: burn.requester,
           outpoint: burn.outpoint,
           updatedAt: burn.createdAt,
