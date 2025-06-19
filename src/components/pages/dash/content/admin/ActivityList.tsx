@@ -90,7 +90,10 @@ export const ActivityList = ({
   // Helper to format data for export
   const exportData = filteredActivities.map((activity, index) => ({
     "": index + 1,
-    Activity: getActivityDisplayText(activity),
+    Activity: getActivityDisplayText(activity) + "\n" + `${toToken(
+      activity.amount as string,
+      config?.decimals || DEFAULT_DECIMALS
+    )} MNEE`,
     Details:
       activity.type === "MINT" && activity.customer
         ? `Customer: ${activity.customer.name} \n${activity.customer.email}`
@@ -262,7 +265,7 @@ export const ActivityList = ({
                           <div className="flex flex-col gap-1">
                             <div>{displayText}</div>
                             {(activity.type === "MINT" ||
-                              activity.type === "BURN") && (
+                              activity.type === "BURN" || activity.type === "REFUND") && (
                               <div className="text-sm font-mono">
                                 {toToken(
                                   activity.amount as string,
