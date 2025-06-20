@@ -348,33 +348,55 @@ export function SystemStatusProvider({
         if (actionRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedCustomer = prev.customerRequests.map((activity: any) => {
+              if (activity.id === customerRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
             return {
               ...prev,
-              systemRequests: prev.systemRequests.filter(
-                (activity: any) => activity.id !== actionRequestId
-              ),
+              systemRequests: updatedCustomer,
             };
           });
         }
         if (freezeRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedFreeze = prev.freezeRequests.map((activity: any) => {
+              if (activity.id === freezeRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
             return {
               ...prev,
-              freezeRequests: prev.freezeRequests.filter(
-                (activity: any) => activity.id !== freezeRequestId
-              ),
+              freezeRequests: updatedFreeze,
+
             };
           });
         }
         if (blacklistRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedBlacklist = prev.blacklistRequests.map((activity: any) => {
+              if (activity.id === blacklistRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
             return {
               ...prev,
-              blacklistRequests: prev.blacklistRequests.filter(
-                (activity: any) => activity.id !== blacklistRequestId
-              ),
+              blacklistRequests: updatedBlacklist,
             };
           });
         }
@@ -385,7 +407,7 @@ export function SystemStatusProvider({
               if (activity.id === mintRequestId) {
                 return {
                   ...activity,
-                  status: "CANCELLED",
+                  status: "REJECTED",
                 };
               }
               return activity;
@@ -400,33 +422,54 @@ export function SystemStatusProvider({
         if (burnRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedBurn = prev.burnRequests.map((activity: any) => {
+              if (activity.id === burnRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
             return {
               ...prev,
-              burnRequests: prev.burnRequests.filter(
-                (activity: any) => activity.id !== burnRequestId
-              ),
+              burnRequests: updatedBurn,
             };
           });
         }
         if (refundRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedRefund = prev.refundRequests.map((activity: any) => {
+              if (activity.id === refundRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
             return {
               ...prev,
-              refundRequests: prev.refundRequests.filter(
-                (activity: any) => activity.id !== refundRequestId
-              ),
+              refundRequests: updatedRefund,
             };
           });
         }
         if (customerRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedCustomer = prev.customerRequests.map((activity: any) => {
+              if (activity.id === customerRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
             return {
               ...prev,
-              customerRequests: prev.customerRequests.filter(
-                (activity: any) => activity.id !== customerRequestId
-              ),
+              customerRequests: updatedCustomer
             };
           });
         }
@@ -763,6 +806,9 @@ export function SystemStatusProvider({
       });
       eventSource.removeEventListener(EVENTS.CANCEL_UPDATE, (event) => {
         // console.log(EVENTS.CANCEL_UPDATE, event);
+      });
+      eventSource.removeEventListener(EVENTS.REJECT_UPDATE, (event) => {
+        // console.log(EVENTS.REJECT_UPDATE, event);
       });
       eventSource.removeEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
         // console.log(EVENTS.CUSTOMER_UPDATE, event);

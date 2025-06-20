@@ -183,7 +183,7 @@ const MintTableContent = ({
 	const handleReject = async (id: string) => {
 		try {
 			setLoadingReject(id);
-			const response = await apiFetch("/api/rejectMint", {
+			const response = await apiFetch("/api/reject", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

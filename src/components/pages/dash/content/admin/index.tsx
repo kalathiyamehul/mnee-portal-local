@@ -80,6 +80,9 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const hasApproveRefundPer = isSuperAdmin
     ? true
     : hasPermission(Resource.REFUND, Action.APPROVE) || false;
+  const hasRejectRefundPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.REFUND, Action.REJECT) || false;
 
   // Blacklist Permissions
   const hasReadBlacklistPer = isSuperAdmin
@@ -91,6 +94,9 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const hasApproveBlacklistPer = isSuperAdmin
     ? true
     : hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
+  const hasRejectBlacklistPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
 
   // Freeze Permissions
   const hasReadFreezePer = isSuperAdmin
@@ -102,6 +108,10 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const hasApproveFreezePer = isSuperAdmin
     ? true
     : hasPermission(Resource.FREEZE, Action.APPROVE) || false;
+  const hasRejectFreezePer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.FREEZE, Action.REJECT) || false;
+
 
   // Customer Permissions
   const hasReadCustomerPer = isSuperAdmin
@@ -113,6 +123,9 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const hasApproveCustomerPer = isSuperAdmin
     ? true
     : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+  const hasRejectCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
 
   // System Actions Permissions
   const hasReadActionPer = isSuperAdmin
@@ -137,15 +150,19 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     // Refund
     hasReadRefundPer,
     hasApproveRefundPer,
+    hasRejectRefundPer,
     // Blacklist
     hasReadBlacklistPer,
     hasApproveBlacklistPer,
+    hasRejectBlacklistPer,
     // Freeze
     hasReadFreezePer,
     hasApproveFreezePer,
+    hasRejectFreezePer,
     // Customer
     hasReadCustomerPer,
     hasApproveCustomerPer,
+    hasRejectCustomerPer,
     // System
     hasReadActionPer,
     hasManageSystemPer,
@@ -157,10 +174,12 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     hasReadFreezePer,
     hasCreateFreezePer,
     hasApproveFreezePer,
+    hasRejectFreezePer,
     // Blacklist
     hasReadBlacklistPer,
     hasCreateBlacklistPer,
     hasApproveBlacklistPer,
+    hasRejectBlacklistPer,    
   };
 
   //   console.log("Permissions: ", permissions);
@@ -406,6 +425,18 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     [session]
   );
 
+  const canReject = useCallback(
+    (activity: Activity) => {
+      if (!session?.user?.email) return false;
+      return (
+        activity.status === "PENDING" &&
+        activity.requester.email !== session.user.email &&
+        !activity.approvals.some((approval: { approver?: { email: string } }) => approval.approver?.email === session.user.email)
+      );
+    },
+    [session]
+  );
+
   const canApprove = useCallback(
     (activity: Activity) => {
       if (!session?.user?.email) return false;
@@ -431,6 +462,21 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     } catch (error) {
       // console.error("Error cancelling request:", error);
       toast.error("Failed to cancel request");
+    }
+  };
+
+  const handleReject = async (id: string, type: Activity["type"]) => {
+    try {
+      const requestType = `${type.toLowerCase()}RequestId`;
+      await apiFetch("/api/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [requestType]: id }),
+      });
+      toast.success("Request Rejected");
+    } catch (error) {
+      // console.error("Error Rejecting request:", error);
+      toast.error("Failed to Reject request");
     }
   };
 
@@ -699,9 +745,11 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 filteredActivities={filteredActivities}
                 loading={loading}
                 canCancel={canCancel}
+                canReject={canReject}
                 canApprove={canApprove}
                 onCancel={handleCancel}
                 onApprove={handleApprove}
+                onReject={handleReject}
                 requiresApproval={requiresApproval}
                 getApprovalCount={getApprovalCount}
                 config={config}
@@ -717,6 +765,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 handleUnblacklist={handleUnblacklist}
                 handleBlacklist={handleBlacklist}
                 handleFreezeRequest={handleFreezeRequest}
+                canReject={canReject}
+                handleReject={handleReject}
                 handleUnfreeze={handleUnfreeze}
                 showModal={showModal}
                 activities={activities}
@@ -733,6 +783,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 hasRejectBurnPer={hasRejectBurnPer}
                 hasCreateRefundPer={hasCreateRefundPer}
                 hasApproveRefundPer={hasApproveRefundPer}
+                hasRejectRefundPer={hasRejectRefundPer}
                 hasSettleBurnPer={hasSettleBurnPer}
               />
             )}

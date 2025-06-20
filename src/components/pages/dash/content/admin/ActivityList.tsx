@@ -22,8 +22,10 @@ export const ActivityList = ({
   loading,
   showAction,
   canCancel,
+  canReject,
   canApprove,
   handleCancel,
+  handleReject,
   handleApprove,
   getActivityIcon,
   getActivityDisplayText,
@@ -82,6 +84,11 @@ export const ActivityList = ({
     const permissionMap: Record<string, string> = {
       MINT: "hasRejectMintPer",
       BURN: "hasRejectBurnPer",
+      REFUND: "hasRejectRefundPer",
+      BLACKLIST: "hasRejectBlacklistPer",
+      FREEZE: "hasRejectFreezePer",
+      CUSTOMER: "hasRejectCustomerPer",
+      ACTION: "hasManageSystemPer",
     };
     const key = permissionMap[type];
     return key ? permissions[key as keyof typeof permissions] : false;
@@ -90,16 +97,22 @@ export const ActivityList = ({
   // Helper to format data for export
   const exportData = filteredActivities.map((activity, index) => ({
     "": index + 1,
-    Activity: getActivityDisplayText(activity) + "\n" + `${toToken(
-      activity.amount as string,
-      config?.decimals || DEFAULT_DECIMALS
-    )} MNEE`,
+    Activity:
+      getActivityDisplayText(activity) + 
+      (['MINT', 'BURN', 'REFUND'].includes(activity.type) 
+        ? `\n${toToken(
+            (activity?.amount ?? '0').toString(),
+            config?.decimals || DEFAULT_DECIMALS
+          )} MNEE`
+        : ''),
     Details:
       activity.type === "MINT" && activity.customer
         ? `Customer: ${activity.customer.name} \n${activity.customer.email}`
         : activity.type === "BURN" && activity.outpoint
         ? `Outpoint: ${activity.outpoint}`
-        : activity.type === "FREEZE" || activity.type === "BLACKLIST"
+        : activity.type === "CUSTOMER" 
+        ? `Name: ${activity.name} \nEmail: ${activity.email}`
+        :activity.type === "FREEZE" || activity.type === "BLACKLIST"
         ? `${
             activity.address ? `Address: ${activity.address}` : ""
           } \nReason: ${activity.reason || ""}`
@@ -148,51 +161,6 @@ export const ActivityList = ({
   };
 
   // console.log("filteredList", filteredActivities);
-
-  const [loadingReject, setLoadingReject] = useState<string | null>(null);
-
-  // Implement handleReject
-  const handleReject = async (id: string, type: "MINT" | "BURN") => {
-    try {
-      setLoadingReject(id);
-      const endpoint = type === "MINT" ? "/api/rejectMint" : "/api/rejectBurn";
-      const response = await apiFetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          [`${type.toLowerCase()}RequestId`]: id,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(
-          data.error || `Failed to reject ${type.toLowerCase()} request`
-        );
-      }
-
-      if (data.success) {
-        toast.success(data.message || `${type} request rejected`);
-      } else {
-        throw new Error(
-          data.error || `Failed to reject ${type.toLowerCase()} request`
-        );
-      }
-    } catch (error) {
-      // console.error(`Failed to reject ${type.toLowerCase()} request:`, error);
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : `Failed to reject ${type.toLowerCase()} request`
-      );
-    } finally {
-      setLoadingReject(null);
-    }
-  };
-
   return (
     <div className="space-y-4">
       {showPendingSwitch && (
@@ -265,7 +233,8 @@ export const ActivityList = ({
                           <div className="flex flex-col gap-1">
                             <div>{displayText}</div>
                             {(activity.type === "MINT" ||
-                              activity.type === "BURN" || activity.type === "REFUND") && (
+                              activity.type === "BURN" ||
+                              activity.type === "REFUND") && (
                               <div className="text-sm font-mono">
                                 {toToken(
                                   activity.amount as string,
@@ -303,13 +272,13 @@ export const ActivityList = ({
                                 </p>
                               </div>
                             )}
-                            {activity.type === "CUSTOMER" && (
-                              <div className="text-sm font-mono flex flex-col">
-                                <p className="opacity-70">
-                                  Name: {activity.name} {activity.email}
-                                </p>
-                              </div>
-                            )}
+                          {activity.type === "CUSTOMER" && (
+                            <div className="text-sm font-mono flex flex-col">
+                              <p className="opacity-70">
+                                Name: {activity.name} {activity.email}
+                              </p>
+                            </div>
+                          )}
                           {activity.type === "BURN" && activity.outpoint && (
                             <div className="text-sm font-mono">
                               <span className="opacity-70">Outpoint:</span>{" "}
@@ -422,7 +391,9 @@ export const ActivityList = ({
                           {activity.status === "PENDING" && needsApproval && (
                             <span className="text-xs opacity-70">
                               {activity.approvals?.length || 0}/
-                              {activity.no_of_approvals || config?.minNoOfApproval} Approvals
+                              {activity.no_of_approvals ||
+                                config?.minNoOfApproval}{" "}
+                              Approvals
                             </span>
                           )}
                         </div>
@@ -455,50 +426,17 @@ export const ActivityList = ({
                                   </button>
                                 </div>
                               )}
-                            {/* Add Reject button for pending mint requests not by self and not already approved */}
-                            {activity.type === "MINT" &&
-                              hasRejectPermission(activity.type) &&
-                              canApprove(activity) && (
-                                <button
-                                  type="button"
-                                  className="btn btn-error btn-xs"
-                                  onClick={() =>
-                                    handleReject(activity.id, "MINT")
-                                  }
-                                  disabled={loadingReject === activity.id}
-                                >
-                                  {loadingReject === activity.id ? (
-                                    <>
-                                      <FaSpinner className="animate-spin mr-1" />
-                                      Rejecting...
-                                    </>
-                                  ) : (
-                                    "Reject"
-                                  )}
-                                </button>
-                              )}
-                            {/* Add Reject button for pending Burn requests not by self and not already approved */}
-                            {activity.type === "BURN" &&
-                              hasRejectPermission(activity.type) &&
-                              canApprove(activity) && (
-                                <button
-                                  type="button"
-                                  className="btn btn-error btn-xs"
-                                  onClick={() =>
-                                    handleReject(activity.id, "BURN")
-                                  }
-                                  disabled={loadingReject === activity.id}
-                                >
-                                  {loadingReject === activity.id ? (
-                                    <>
-                                      <FaSpinner className="animate-spin mr-1" />
-                                      Rejecting...
-                                    </>
-                                  ) : (
-                                    "Reject"
-                                  )}
-                                </button>
-                              )}
+                            {/* Reject Button */}
+                            {canReject(activity) && hasRejectPermission(activity.type) && (
+                              <button
+                              type="button"
+                              className="btn btn-error btn-xs"
+                              onClick={() =>
+                                handleReject(activity.id, activity.type)
+                              }
+                            >
+                              Reject
+                            </button>)}
                           </div>
                         </td>
                       )}

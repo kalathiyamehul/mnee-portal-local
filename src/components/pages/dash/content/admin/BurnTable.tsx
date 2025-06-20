@@ -23,6 +23,7 @@ interface BurnTableProps {
 	hasApproveBurnPer?: boolean;
 	hasRejectBurnPer?: boolean;
     hasApproveRefundPer?: boolean;
+	hasRejectRefundPer?: boolean;
 	hasCreateRefundPer?: boolean;
 	hasSettleBurnPer?: boolean;
 }
@@ -38,6 +39,8 @@ export const BurnTable = ({
 	showRequester = true,
     hasSettleBurnPer,
 	hasApproveRefundPer,
+	hasRejectBurnPer,
+	hasRejectRefundPer,
 }: BurnTableProps) => {
 	const { data: session } = useSession();
 	const [settlingId, setSettlingId] = React.useState<string | null>(null);
@@ -61,6 +64,35 @@ export const BurnTable = ({
 			toast.error(error instanceof Error ? error.message : 'Failed to approve refund request');
 		}
 	};
+
+	const handleRejectRefund = async (refundId: string) => {
+		console.log("Refund Request ID:", refundId)
+		try {
+		  const response = await apiFetch("/api/reject", {
+			method: "POST",
+			headers: {
+			  "Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+			  refundRequestId: refundId,
+			}),
+		  });
+	
+		  if (!response.ok) {
+			const data = await response.json();
+			throw new Error(data.error || "Failed to reject refund request");
+		  }
+	
+		  toast.success("Refund request Rejected");
+		} catch (error) {
+		  // console.error("Error approving burn:", error);
+		  toast.error(
+			error instanceof Error
+			  ? error.message
+			  : "Failed to Reject refund request"
+		  );
+		}
+	  };
 
 	const handleSettleBurn = async (burnRequestId: string) => {
         setSettlingId(burnRequestId);
@@ -94,10 +126,15 @@ export const BurnTable = ({
 			!burn.refundRequest.approvals.some((approval: { approver?: { email: string } }) => approval.approver?.email === session.user.email);
 	};
 
-	const canSettle = (burn: BurnUtxo) => {
-		if (!burn.burnRequest || !session?.user?.email) return false;
-		return burn.burnRequest.status === 'APPROVED'
-	};
+	const canRejectRefund = (burn: BurnUtxo) => {
+		if (!burn.refundRequest || !session?.user?.email) return false;
+		return (
+		  burn.refundRequest.status === "PENDING" &&
+		  burn.refundRequest.requester.email !== session.user.email &&
+		  !burn.refundRequest.approvals.some((approval: { approver?: { email: string } }) => approval.approver?.email === session.user.email)
+		);
+	  };
+
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
 	const itemsPerPage = 6;
@@ -245,6 +282,19 @@ export const BurnTable = ({
 													className="btn btn-success btn-sm"
 												>
 													Approve Refund
+												</button>
+											)}
+											{/* Reject Refund */}
+											{canRejectRefund(burn) && hasRejectRefundPer && (
+												<button
+												type="button"
+												onClick={() =>
+													burn.refundRequest &&
+													handleRejectRefund(burn.refundRequest.id)
+												}
+												className="btn btn-error btn-sm"
+												>
+												Reject Refund
 												</button>
 											)}
 											 {/* SETTLED Button */}

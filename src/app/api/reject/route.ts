@@ -255,7 +255,7 @@ export const POST = withCSRF(async function(request: Request) {
     });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error cancelling request:', error);
-    return NextResponse.json({ error: 'Failed to cancel request' }, { status: 500 });
+    console.error('Error Rejecting request:', error);
+    return NextResponse.json({ error: 'Failed to Rejecting request' }, { status: 500 });
   }
 }, createAPIRateLimit())
