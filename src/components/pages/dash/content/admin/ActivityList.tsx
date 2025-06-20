@@ -90,16 +90,22 @@ export const ActivityList = ({
   // Helper to format data for export
   const exportData = filteredActivities.map((activity, index) => ({
     "": index + 1,
-    Activity: getActivityDisplayText(activity) + "\n" + `${activity?.amount && toToken(
-      (activity?.amount ?? '0').toString(),
-      config?.decimals || DEFAULT_DECIMALS
-    )} MNEE`,
+    Activity:
+      getActivityDisplayText(activity) + 
+      (['MINT', 'BURN', 'REFUND'].includes(activity.type) 
+        ? `\n${toToken(
+            (activity?.amount ?? '0').toString(),
+            config?.decimals || DEFAULT_DECIMALS
+          )} MNEE`
+        : ''),
     Details:
       activity.type === "MINT" && activity.customer
         ? `Customer: ${activity.customer.name} \n${activity.customer.email}`
         : activity.type === "BURN" && activity.outpoint
         ? `Outpoint: ${activity.outpoint}`
-        : activity.type === "FREEZE" || activity.type === "BLACKLIST"
+        : activity.type === "CUSTOMER" 
+        ? `Name: ${activity.name} \nEmail: ${activity.email}`
+        :activity.type === "FREEZE" || activity.type === "BLACKLIST"
         ? `${
             activity.address ? `Address: ${activity.address}` : ""
           } \nReason: ${activity.reason || ""}`
