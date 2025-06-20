@@ -90,8 +90,8 @@ export const ActivityList = ({
   // Helper to format data for export
   const exportData = filteredActivities.map((activity, index) => ({
     "": index + 1,
-    Activity: getActivityDisplayText(activity) + "\n" + `${toToken(
-      activity.amount as string,
+    Activity: getActivityDisplayText(activity) + "\n" + `${activity?.amount && toToken(
+      (activity?.amount ?? '0').toString(),
       config?.decimals || DEFAULT_DECIMALS
     )} MNEE`,
     Details:
@@ -267,10 +267,10 @@ export const ActivityList = ({
                             {(activity.type === "MINT" ||
                               activity.type === "BURN" || activity.type === "REFUND") && (
                               <div className="text-sm font-mono">
-                                {toToken(
-                                  activity.amount as string,
+                                {activity?.amount && toToken(
+                                  (activity?.amount ?? '0').toString(),
                                   config?.decimals || DEFAULT_DECIMALS
-                                )}{" "}
+                                )}
                                 MNEE
                               </div>
                             )}
