@@ -215,6 +215,35 @@ export const BurnsTab = ({
     }
   };
 
+  const handleRejectBurn = async (burnId: string) => {
+    console.log("Burn Request ID:", burnId)
+    try {
+      const response = await apiFetch("/api/rejectBurn", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          burnRequestId: burnId,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to reject burn request");
+      }
+
+      toast.success("Burn request Rejected");
+    } catch (error) {
+      // console.error("Error approving burn:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to Reject burn request"
+      );
+    }
+  };
+
   const handleApproveRefund = async (refundId: string) => {
     try {
       const response = await apiFetch("/api/approveRefund", {
@@ -345,8 +374,10 @@ export const BurnsTab = ({
   const activeBurns = burns.filter(
     (burn) =>
       burn?.data?.bsv21?.op !== "burn" &&
-      (!burn.burnRequest ||
-        ["PENDING", "CANCELLED"].includes(burn.burnRequest.status))
+      (
+        !burn.burnRequest ||
+        ["PENDING", "CANCELLED", "REJECTED"].includes(burn.burnRequest.status)
+      )
   );
   const completedBurns = burns.filter(
     (burn) =>
@@ -476,12 +507,12 @@ export const BurnsTab = ({
                                 ? "badge-ghost"
                                 : burn.burnRequest.status === "CANCELLED"
                                 ? "badge-secondary"
+                                : burn.burnRequest.status === "REJECTED"
+                                ? "badge-secondary"
                                 : "badge-warning"
                             } badge-sm`}
                           >
-                            {burn.burnRequest.status === "CANCELLED"
-                              ? "AVAILABLE"
-                              : burn.burnRequest.status}
+                            {(burn.burnRequest.status === "CANCELLED" || burn.burnRequest.status === "REJECTED" ) ? "AVAILABLE" : burn.burnRequest.status}
                           </span>
                         ) : (
                           <span className="badge badge-secondary badge-sm animate-pulse">
@@ -493,9 +524,8 @@ export const BurnsTab = ({
                         <div className="flex items-center gap-2">
                           {/* Show Burn button only if no pending requests */}
                           {(!burn.burnRequest ||
-                            burn.burnRequest.status === "CANCELLED") &&
-                            (!burn.refundRequest?.status ||
-                              burn.refundRequest?.status === "CANCELLED") &&
+                            burn.burnRequest.status === "CANCELLED" || burn.burnRequest.status === "REJECTED") &&
+                            (!burn.refundRequest?.status || burn.refundRequest?.status === "CANCELLED") &&
                             hasCreateBurnPer && (
                               <button
                                 type="button"
@@ -564,7 +594,7 @@ export const BurnsTab = ({
                                 type="button"
                                 onClick={() =>
                                   burn.burnRequest &&
-                                  handleApproveRefund(burn.burnRequest.id)
+                                  handleRejectBurn(burn.burnRequest.id)
                                 }
                                 className="btn btn-error btn-sm"
                               >
