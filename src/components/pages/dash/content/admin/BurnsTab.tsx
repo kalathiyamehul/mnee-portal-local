@@ -388,7 +388,7 @@ export const BurnsTab = ({
   const refundsHistory = refunds.filter((refund) => {
     return (
       refund &&
-      ["DONE", "APPROVED", "REFUNDED", "SETTLED"].includes(refund.status)
+      ["DONE", "APPROVED", "REFUNDED", "SETTLED", "CANCELLED", "REJECTED"].includes(refund.status)
     );
   });
 

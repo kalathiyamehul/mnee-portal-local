@@ -88,8 +88,15 @@ export const RefundTable = ({
 										</td>
 										<td>
 											{refund && (
-												<div className={`badge ml-2 badge-secondary`}>
-											        REFUNDED
+												<div className={`badge ${
+													refund.status === 'APPROVED' && 'badge-success' ||
+													refund.status === 'DONE' && 'badge-success' ||
+													refund.status === 'SETTLED' && 'badge-success' ||
+													refund.status === 'REFUNDED' && 'badge-info' ||
+													refund.status === 'CANCELLED' && 'badge-error' ||
+													refund.status === "REJECTED" && 'badge-error'
+												}`}>
+													{refund.status}
 												</div>
 											)}
 										</td>
