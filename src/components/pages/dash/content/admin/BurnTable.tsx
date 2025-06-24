@@ -96,8 +96,7 @@ export const BurnTable = ({
 
 	const canSettle = (burn: BurnUtxo) => {
 		if (!burn.burnRequest || !session?.user?.email) return false;
-		return burn.burnRequest.status === 'APPROVED' && 
-			burn.burnRequest.requester.email !== session.user.email
+		return burn.burnRequest.status === 'APPROVED'
 	};
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
@@ -249,7 +248,7 @@ export const BurnTable = ({
 												</button>
 											)}
 											 {/* SETTLED Button */}
-											 {canSettle(burn) && hasSettleBurnPer && (
+											 {burn.burnRequest?.status === 'APPROVED' && hasSettleBurnPer && (
                                                 <button
                                                     type="button"
                                                     className="btn btn-primary btn-sm"

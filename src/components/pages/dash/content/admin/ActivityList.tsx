@@ -90,13 +90,22 @@ export const ActivityList = ({
   // Helper to format data for export
   const exportData = filteredActivities.map((activity, index) => ({
     "": index + 1,
-    Activity: getActivityDisplayText(activity),
+    Activity:
+      getActivityDisplayText(activity) + 
+      (['MINT', 'BURN', 'REFUND'].includes(activity.type) 
+        ? `\n${toToken(
+            (activity?.amount ?? '0').toString(),
+            config?.decimals || DEFAULT_DECIMALS
+          )} MNEE`
+        : ''),
     Details:
       activity.type === "MINT" && activity.customer
         ? `Customer: ${activity.customer.name} \n${activity.customer.email}`
         : activity.type === "BURN" && activity.outpoint
         ? `Outpoint: ${activity.outpoint}`
-        : activity.type === "FREEZE" || activity.type === "BLACKLIST"
+        : activity.type === "CUSTOMER" 
+        ? `Name: ${activity.name} \nEmail: ${activity.email}`
+        :activity.type === "FREEZE" || activity.type === "BLACKLIST"
         ? `${
             activity.address ? `Address: ${activity.address}` : ""
           } \nReason: ${activity.reason || ""}`
@@ -262,12 +271,12 @@ export const ActivityList = ({
                           <div className="flex flex-col gap-1">
                             <div>{displayText}</div>
                             {(activity.type === "MINT" ||
-                              activity.type === "BURN") && (
+                              activity.type === "BURN" || activity.type === "REFUND") && (
                               <div className="text-sm font-mono">
-                                {toToken(
-                                  activity.amount as string,
+                                {activity?.amount && toToken(
+                                  (activity?.amount ?? '0').toString(),
                                   config?.decimals || DEFAULT_DECIMALS
-                                )}{" "}
+                                )}
                                 MNEE
                               </div>
                             )}
