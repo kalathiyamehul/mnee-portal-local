@@ -164,3 +164,4 @@ bun run delete-mint-request -i 123e4567-e89b-12d3-a456-426614174000
 ```
 
 This will permanently remove the specified mint request from the database. Use with caution as this action cannot be undone.
+
