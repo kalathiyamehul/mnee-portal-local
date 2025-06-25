@@ -7,6 +7,7 @@ import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { apiFetch } from "@/utils/api";
 import toast from "react-hot-toast";
+import { MdOutlineOpenInNew } from "react-icons/md";
 
 interface ActivityContentProps {
   initialActivityLogs: ActivityLog[];
@@ -81,6 +82,7 @@ export default function DashboardActivityContent({
               <th>Action</th>
               <th style={{ maxWidth: '600px' }}>Description</th>
               <th>Time</th>
+              <th>Track</th>
             </tr>
           </thead>
           <tbody>
@@ -91,6 +93,7 @@ export default function DashboardActivityContent({
                 <td>
                   {format(new Date(log.createdAt), "dd/MM/yyyy, HH:mm:ss")}
                 </td>
+                <td>{log.redirectUrl && <a href={log.redirectUrl} className="btn btn-link btn-sm">View <MdOutlineOpenInNew className="w-3 h-3" /></a>}</td>
               </tr>
             ))}
           </tbody>

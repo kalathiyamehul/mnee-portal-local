@@ -380,6 +380,7 @@ model ActivityLog {
   name        String
   action      String
   description String
+  redirectUrl String   @default("")
   metadata    Json?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
