@@ -179,25 +179,6 @@ export function SystemStatusProvider({
             };
           });
         }
-        if (type === "REJECT") {
-          setStatusData((prev: any) => {
-            if (!prev) return prev;
-            const updatedMint = prev.mintRequests.map((activity: any) => {
-              if (activity.id === activityId) {
-                return {
-                  ...activity,
-                  status: "REJECTED",
-                };
-              }
-              return activity;
-            });
-
-            return {
-              ...prev,
-              mintRequests: updatedMint,
-            };
-          });
-        }
         if (type === "APPROVED") {
           setStatusData((prev: any) => {
             if (!prev) return prev;
@@ -625,18 +606,6 @@ export function SystemStatusProvider({
             return {
               ...prev,
               burnRequests: [...prev.burnRequests, burnRequest],
-            };
-          });
-        }
-        // Reject Burn requests
-        if (type === "REJECT") {
-          setStatusData((prev: any) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              burnRequests: prev.mintRequests.filter(
-                (activity: any) => activity.id !== activityId
-              ),
             };
           });
         }
