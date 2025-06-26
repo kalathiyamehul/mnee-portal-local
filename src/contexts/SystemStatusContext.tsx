@@ -147,7 +147,7 @@ export function SystemStatusProvider({
 
     // Connection established
     eventSource.onopen = () => {
-      // console.log("SSE connection established");
+      // console.log("SSE connection established"); 
     };
 
     eventSource.addEventListener(EVENTS.MINT_UPDATE, (event) => {
@@ -246,33 +246,57 @@ export function SystemStatusProvider({
         if (actionRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedSystem = prev.systemRequests.map((activity: any) => {
+              if (activity.id === actionRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              systemRequests: prev.systemRequests.filter(
-                (activity: any) => activity.id !== actionRequestId
-              ),
+              systemRequests: updatedSystem,
             };
           });
         }
         if (freezeRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedFreeze = prev.freezeRequests.map((activity: any) => {
+              if (activity.id === freezeRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              freezeRequests: prev.freezeRequests.filter(
-                (activity: any) => activity.id !== freezeRequestId
-              ),
+              freezeRequests: updatedFreeze,
             };
           });
         }
         if (blacklistRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedBlacklist = prev.blacklistRequests.map((activity: any) => {
+              if (activity.id === blacklistRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              blacklistRequests: prev.blacklistRequests.filter(
-                (activity: any) => activity.id !== blacklistRequestId
-              ),
+              blacklistRequests: updatedBlacklist,
             };
           });
         }
@@ -298,33 +322,57 @@ export function SystemStatusProvider({
         if (burnRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedBurn = prev.burnRequests.map((activity: any) => {
+              if (activity.id === burnRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              burnRequests: prev.burnRequests.filter(
-                (activity: any) => activity.id !== burnRequestId
-              ),
+              burnRequests: updatedBurn,
             };
           });
         }
         if (refundRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedRefund = prev.refundRequests.map((activity: any) => {
+              if (activity.id === refundRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              refundRequests: prev.refundRequests.filter(
-                (activity: any) => activity.id !== refundRequestId
-              ),
+              refundRequests: updatedRefund,
             };
           });
         }
         if (customerRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedCustomers = prev.customerRequests.map((activity: any) => {
+              if (activity.id === customerRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              customerRequests: prev.customerRequests.filter(
-                (activity: any) => activity.id !== customerRequestId
-              ),
+              customerRequests: updatedCustomers,
             };
           });
         }
@@ -364,11 +412,19 @@ export function SystemStatusProvider({
         if (type === "APPROVED") {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedCustomers = prev.customerRequests.map((activity: any) => {
+              if (activity.id === activityId) {
+                return {
+                  ...activity,
+                  status: "APPROVED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              customerRequests: prev.customerRequests.filter(
-                (activity: any) => activity.id !== activityId
-              ),
+              customerRequests: updatedCustomers,
             };
           });
         }
@@ -583,6 +639,27 @@ export function SystemStatusProvider({
             return {
               ...prev,
               refundRequests: updateActivity(prev.refundRequests),
+            };
+          });
+        }
+
+        // Fully Approved
+        if (type === "APPROVED") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedRefund = prev.refundRequests.map((activity: any) => {
+              if (activity.id === activityId) {
+                return {
+                  ...activity,
+                  status: "DONE",
+                };
+              }
+              return activity;
+            });
+
+            return {
+              ...prev,
+              refundRequests: updatedRefund,
             };
           });
         }
