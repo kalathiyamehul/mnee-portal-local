@@ -66,10 +66,10 @@ export const RESOURCE_PERMISSIONS: ResourcePermission[] = [
         name: Resource.ACTIVITY_LOGS,
         permissions: [Action.READ]
     },
-    // {
-    //     name: Resource.TRANSACTIONS,
-    //     permissions: [Action.READ]
-    // },
+    {
+        name: Resource.TRANSACTIONS,
+        permissions: [Action.READ]
+    },
     {
         name: Resource.SYSTEM,
         permissions: [Action.READ, Action.MANAGE]

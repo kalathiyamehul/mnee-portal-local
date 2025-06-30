@@ -14,6 +14,7 @@ import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitrefundUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { recordTransaction, TransactionType } from "@/lib/recordTransactions";
 const { toBase64 } = Utils;
 
 async function broadcastRefundTransaction(refundRequest: RefundRequest) {
@@ -225,6 +226,14 @@ export const POST = withCSRF(async function(request: Request) {
                 refundRequestId,
               },
             });
+
+            await recordTransaction(tx, {
+						requestId: refundRequestId || '',
+						txid: txid,
+						requestedBy: refundRequest.requestedBy,
+						timestamp: new Date(),
+						type: TransactionType.REFUND,
+					})
           }
 
           return { status: "DONE", txid };

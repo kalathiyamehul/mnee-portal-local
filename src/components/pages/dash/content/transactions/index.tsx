@@ -1,28 +1,27 @@
 "use client";
 
+import { apiFetch } from "@/utils/api";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { FaFilter } from "react-icons/fa6";
 
 type Transaction = {
   txid: string;
-  outpoint: string;
-  blockHeight: number;
   timestamp: string;
   status: string;
-  type: "MINT" | "BURN" | "FREEZE" | "BLACKLIST" | "REFUND";
+  requestedBy: string;
+  type: "MINT" | "BURN" | "REFUND";
 };
 
 export default function DashboardTransactionsContent() {
   // Add type to dummy data
-  const [transactions] = useState<Transaction[]>([]);
-  const [loading] = useState(false);
+  const [transactions, setTransections] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Filter state
   const [filters, setFilters] = useState<Record<string, boolean>>({
     MINT: true,
     BURN: true,
-    FREEZE: true,
-    BLACKLIST: true,
     REFUND: true,
   });
   const [showDropdown, setShowDropdown] = useState(false);
@@ -34,6 +33,31 @@ export default function DashboardTransactionsContent() {
       [type]: !prev[type],
     }));
   };
+
+  useEffect(() => {
+    const fetchTransections = async (page: number, limit: number) => {
+      try {
+        setLoading(true);
+        const response = await apiFetch(
+          `/api/transactionRecords?page=${page}&limit=${limit}`
+        );
+        const data = await response.json();
+        console.log("Transaction Data:", data)
+        setTransections(data.transactionRecords);
+      } catch (error) {
+        // console.error("Error fetching Transaction Records:", error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Error fetching activity logs"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTransections(1, 10);
+  }, []);
 
   // Filtered transactions
   const filteredTransactions = transactions.filter((tx) => filters[tx.type]);
@@ -68,7 +92,7 @@ export default function DashboardTransactionsContent() {
           </button>
           {showDropdown && (
             <div className="absolute z-10 mt-2 w-fit bg-base-100 border border-base-300 rounded-lg shadow-lg p-3">
-              {["MINT", "BURN", "FREEZE", "BLACKLIST", "REFUND"].map((type) => (
+              {["MINT", "BURN", "REFUND"].map((type) => (
                 <label
                   key={type}
                   className="flex items-center gap-2 py-1 cursor-pointer"
@@ -91,12 +115,10 @@ export default function DashboardTransactionsContent() {
           <thead>
             <tr>
               <th>TxID</th>
-              <th>Outpoint</th>
-              <th>Block Height</th>
+              <th>Request ID</th>
               <th>Timestamp</th>
-              <th>Status</th>
               <th>Type</th>
-              <th>Explorer</th>
+              <th>Approvers</th>
             </tr>
           </thead>
           <tbody>
@@ -114,14 +136,10 @@ export default function DashboardTransactionsContent() {
               </tr>
             ) : (
               filteredTransactions.map((tx) => (
-                <tr key={tx.outpoint}>
+                <tr key={tx.txid}>
                   <td className="font-mono text-xs">
                     {tx.txid.slice(0, 8)}...{tx.txid.slice(-8)}
                   </td>
-                  <td className="font-mono text-xs">
-                    {tx.outpoint.slice(0, 10)}...{tx.outpoint.slice(-10)}
-                  </td>
-                  <td>{tx.blockHeight}</td>
                   <td>{new Date(tx.timestamp).toLocaleString()}</td>
                   <td>
                     <span
