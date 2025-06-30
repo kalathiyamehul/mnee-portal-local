@@ -23,6 +23,9 @@ import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePermission } from "@/hooks/usePermission";
 import { Resource, Action } from "@/lib/permission";
 import { apiFetch } from "@/utils/api";
+import { CustomerHistory } from "./CustomerHistory";
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import type { Activity } from "./types";
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
@@ -33,9 +36,43 @@ export default function DashboardCustomersContent() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
+  const [customersRequests, setCustomerRequests] = useState<Activity[]>([]);
+  const { statusData, fetchStatus } = useSystemStatus();
   const [config, setConfig] = useState<Config | null>(null);
   const { hasPermission } = usePermission();
   const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+
+  // Customer Permissions
+  const hasCreateCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
+  const hasApproveCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+  const hasRejectCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
+  const hasUpdateCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.UPDATE) || false;
+
+  useEffect(() => {
+    if (statusData) {
+      const CustomersActivities: Activity[] = [
+        ...statusData.customerRequests.map((req) => ({
+          ...req,
+          type: "CUSTOMER" as const,
+          action: req.action,
+        })),
+      ].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      setCustomerRequests(CustomersActivities);
+    }
+  }, [statusData]);
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -117,7 +154,7 @@ export default function DashboardCustomersContent() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
           <ExportButtons filename="customers" onExport={handleExport} />
-          {(hasPermission(Resource.CUSTOMER, Action.CREATE) || isSuperAdmin) && (
+          {hasCreateCustomerPer && (
             <button
               type="button"
               onClick={() => setShowModal(true)}
@@ -223,8 +260,7 @@ export default function DashboardCustomersContent() {
                 </td>
                 <td>
                   <div className="flex gap-2">
-                    {(hasPermission(Resource.CUSTOMER, Action.UPDATE) ||
-                      isSuperAdmin) && (
+                    {hasUpdateCustomerPer && (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -287,6 +323,18 @@ export default function DashboardCustomersContent() {
           onPageChange={handlePageChange}
         />
       )}
+
+      <CustomerHistory
+        title="Customer Request History"
+        customers={customersRequests}
+        alwaysShow={true}
+        showActions={true}
+        fetchCustomers={fetchCustomers}
+        enablePagination={true}
+        itemsPerPage={6}
+        hasApproveCustomerPer = {hasApproveCustomerPer}
+        hasRejectCustomerPer = {hasRejectCustomerPer}
+      />
 
       {showModal && (
         <CustomerModal
