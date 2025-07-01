@@ -218,7 +218,7 @@ export const BurnsTab = ({
   const handleRejectBurn = async (burnId: string) => {
     console.log("Burn Request ID:", burnId)
     try {
-      const response = await apiFetch("/api/rejectBurn", {
+      const response = await apiFetch("/api/reject", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -240,6 +240,35 @@ export const BurnsTab = ({
         error instanceof Error
           ? error.message
           : "Failed to Reject burn request"
+      );
+    }
+  };
+
+  const handleRejectRefund = async (refundId: string) => {
+    console.log("Refund Request ID:", refundId)
+    try {
+      const response = await apiFetch("/api/reject", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          refundRequestId: refundId,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to reject refund request");
+      }
+
+      toast.success("Refund request Rejected");
+    } catch (error) {
+      // console.error("Error approving burn:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to Reject refund request"
       );
     }
   };
@@ -338,6 +367,14 @@ export const BurnsTab = ({
       !burn.refundRequest.approvals.some(
         (approval) => approval.approver?.email === session.user.email
       )
+    );
+  };
+
+  const canRejectRefund = (burn: BurnUtxo) => {
+    if (!burn.refundRequest || !session?.user?.email) return false;
+    return (
+      burn.refundRequest.status === "PENDING" &&
+      burn.refundRequest.requester.email !== session.user.email && !burn.refundRequest.approvals.some((approval: { approver?: { email: string } }) => approval.approver?.email === session.user.email)
     );
   };
 
@@ -642,6 +679,20 @@ export const BurnsTab = ({
                               Approve Refund
                             </button>
                           )}
+                          {/* Reject Refund */}
+                          {canRejectRefund(burn) && hasRejectRefundPer && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                burn.refundRequest &&
+                                handleRejectRefund(burn.refundRequest.id)
+                              }
+                              className="btn btn-error btn-sm"
+                            >
+                              Reject Refund
+                            </button>
+                          )}
+
                           {/* SETTLED Button */}
                           {burn.burnRequest?.status === "APPROVED" &&
                             hasSettleBurnPer && (
@@ -758,6 +809,8 @@ export const BurnsTab = ({
             alwaysShow={true}
             hasApproveBurnPer={hasApproveBurnPer}
             hasRejectBurnPer={hasRejectBurnPer}
+            hasApproveRefundPer={hasApproveRefundPer}
+            hasRejectRefundPer={hasRejectRefundPer}
             hasSettleBurnPer={hasSettleBurnPer}
           />
           <RefundTable

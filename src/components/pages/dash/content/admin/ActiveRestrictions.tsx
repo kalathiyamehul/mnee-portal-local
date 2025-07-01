@@ -26,14 +26,18 @@ interface ActiveRestrictionsProps {
   handleUnfreeze: (address: string, reason: string) => Promise<void>;
   activities: Activity[];
   handleCancel: (id: string, type: Activity["type"]) => Promise<void>;
+  handleReject: (id: string, type: Activity["type"]) => Promise<void>;
+  canReject: (activity: Activity) => boolean;
   handleApprove: (id: string, type: Activity["type"]) => Promise<void>;
   session: Session;
   showActions?: boolean;
   permissions: {
     hasCreateBlacklistPer: boolean;
     hasApproveBlacklistPer: boolean;
+    hasRejectBlacklistPer: boolean;
     hasCreateFreezePer: boolean;
     hasApproveFreezePer: boolean;
+    hasRejectFreezePer: boolean;
   };
 }
 
@@ -49,6 +53,8 @@ export const ActiveRestrictions = ({
   handleBlacklist,
   handleFreezeRequest,
   handleUnfreeze,
+  handleReject,
+  canReject,
   activities,
   showActions,
   handleCancel,
@@ -305,6 +311,20 @@ export const ActiveRestrictions = ({
                                   {activity.type === "FREEZE" && (restrictions.find((r) => r.address === activity.address)?.isFrozen ? "Approve Unfreeze" : "Approve Freeze")}
                                   {activity.type === "BLACKLIST" &&
                                     (restrictions.find((r) => r.address === activity.address)?.isBlacklisted ? "Approve Unblacklist" : "Approve Blacklist")}
+                                </button>
+                              )}
+                              {canReject(activity) && (permissions.hasRejectBlacklistPer || permissions.hasRejectFreezePer) && (
+                                <button
+                                  type="button"
+                                  className="btn btn-error btn-sm"
+                                  onClick={() =>
+                                    handleReject(activity.id, activity.type)
+                                  }
+                                  disabled={loading}
+                                >
+                                  {activity.type === "FREEZE" && 'Reject Freeze'}
+                                  {activity.type === "BLACKLIST" &&
+                                    'Reject Blacklist'}
                                 </button>
                               )}
                             </div>

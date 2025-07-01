@@ -23,6 +23,7 @@ export enum ActivityAction {
   REFUND_REQUEST_CREATE = 'REFUND_REQUEST_CREATE',
   REFUND_REQUEST_CANCEL = 'REFUND_REQUEST_CANCEL',
   REFUND_REQUEST_APPROVE = 'REFUND_REQUEST_APPROVE',
+  REFUND_REQUEST_REJECT = 'REFUND_REQUEST_REJECT',
   REFUND_REQUEST_FULLY_APPROVED = 'REFUND_REQUEST_FULLY_APPROVED',
   REFUND_TX_COMPLETED = 'REFUND_TX_COMPLETED',
   BURN_REQUEST_REFUNDED = 'BURN_REQUEST_REFUNDED',
@@ -31,6 +32,7 @@ export enum ActivityAction {
   CUSTOMER_REQUEST_CREATE = 'CUSTOMER_REQUEST_CREATE',
   CUSTOMER_REQUEST_CANCEL = 'CUSTOMER_REQUEST_CANCEL',
   CUSTOMER_REQUEST_APPROVE = 'CUSTOMER_REQUEST_APPROVE',
+  CUSTOMER_REQUEST_REJECT = 'CUSTOMER_REQUEST_REJECT',
   CUSTOMER_REQUEST_FULLY_APPROVED = 'CUSTOMER_REQUEST_FULLY_APPROVED',
   NEW_CUSTOMER_CREATED = 'NEW_CUSTOMER_CREATED',
   CUSTOMER_UPDATE = 'CUSTOMER_UPDATE',
@@ -39,20 +41,24 @@ export enum ActivityAction {
   FREEZE_REQUEST_CREATE = 'FREEZE_REQUEST_CREATE',
   FREEZE_REQUEST_CANCEL = 'FREEZE_REQUEST_CANCEL',
   FREEZE_REQUEST_APPROVE = 'FREEZE_REQUEST_APPROVE',
+  FREEZE_REQUEST_REJECT = 'FREEZE_REQUEST_REJECT',
   FREEZE_REQUEST_FULLY_APPROVED = 'FREEZE_REQUEST_FULLY_APPROVED',
 
   // Blacklist Actions
   BLACKLIST_REQUEST_CREATE = 'BLACKLIST_REQUEST_CREATE',
   BLACKLIST_REQUEST_CANCEL = 'BLACKLIST_REQUEST_CANCEL',
   BLACKLIST_REQUEST_APPROVE = 'BLACKLIST_REQUEST_APPROVE',
+  BLACKLIST_REQUEST_REJECT = 'BLACKLIST_REQUEST_REJECT',
   BLACKLIST_REQUEST_FULLY_APPROVED = 'BLACKLIST_REQUEST_FULLY_APPROVED',
 
   // System Action Request
   SYSTEM_PAUSE_REQUEST = 'SYSTEM_PAUSE_REQUEST',
   SYSTEM_PAUSE_REQUEST_APPROVE = 'SYSTEM_PAUSE_REQUEST_APPROVE',
+  SYSTEM_PAUSE_REQUEST_REJECT = 'SYSTEM_PAUSE_REQUEST_REJECT',
   SYSTEM_PAUSE_REQUEST_FULLY_APPROVED = 'SYSTEM_PAUSE_REQUEST_FULLY_APPROVED',
   SYSTEM_RESUME_REQUEST = 'SYSTEM_RESUME_REQUEST',
   SYSTEM_RESUME_REQUEST_APPROVE = 'SYSTEM_RESUME_REQUEST_APPROVE',
+  SYSTEM_RESUME_REQUEST_REJECT = 'SYSTEM_RESUME_REQUEST_REJECT',
   SYSTEM_RESUME_REQUEST_FULLY_APPROVED = 'SYSTEM_RESUME_REQUEST_FULLY_APPROVED',
   SYSTEM_PAUSE_REQUEST_CANCEL = 'SYSTEM_PAUSE_REQUEST_CANCEL',
   SYSTEM_RESUME_REQUEST_CANCEL = 'SYSTEM_RESUME_REQUEST_CANCEL',
@@ -74,7 +80,6 @@ export enum ActivityAction {
   USER_CREATED = 'USER_CREATED',
   USER_UPDATED = 'USER_UPDATED',
   USER_DELETED = 'USER_DELETED',
-  
 }
 
 type ActivityDetails = {
@@ -180,6 +185,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
         description: `Refund request ${metadata.refundRequestId} was approved by ${metadata.userEmail}`,
         redirect_url: '/dash/admin?tab=burns'
       };
+      case ActivityAction.REFUND_REQUEST_REJECT:
+        return {
+          name: 'Refund Request Rejected',
+          description: `Refund request ${metadata.refundRequestId} was rejected by ${metadata.userEmail}`,
+        };
     case ActivityAction.REFUND_REQUEST_FULLY_APPROVED:
       return {
         name: 'Refund Request Fully Approved',
@@ -216,6 +226,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
         name: 'Customer Request Approval',
         description: `Customer request ${metadata.customerEmail} was approved by ${metadata.userEmail}`,
         redirect_url: '/dash/customers'
+      };
+    case ActivityAction.CUSTOMER_REQUEST_REJECT:
+      return {
+        name: 'Customer Request Rejected',
+        description: `Customer request ${metadata.customerEmail} was rejected by ${metadata.userEmail}`,
       };
     case ActivityAction.CUSTOMER_REQUEST_FULLY_APPROVED:
       return {
@@ -255,6 +270,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
         description: `Freeze request ${metadata.freezeRequestId} was approved by ${metadata.userEmail}`,
         redirect_url: '/dash/admin?tab=restrictions'
       };
+    case ActivityAction.FREEZE_REQUEST_REJECT:
+      return{
+        name: 'Freeze Request Rejected',
+        description: `Freeze request ${metadata.freezeRequestId} was rejected by ${metadata.userEmail}`,
+      };
     case ActivityAction.FREEZE_REQUEST_FULLY_APPROVED:
       return {
         name: 'Freeze Request Fully Approved',
@@ -280,6 +300,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
         name: 'Blacklist Request Approval',
         description: `Blacklist request for Address: ${metadata.address} was approved by ${metadata.userEmail}`,
         redirect_url: '/dash/admin?tab=restrictions'
+      };
+    case ActivityAction.BLACKLIST_REQUEST_REJECT:
+      return {
+        name: 'Blacklist Request Rejected',
+        description: `Blacklist request for Address: ${metadata.address} was rejected by ${metadata.userEmail}`,
       };
     case ActivityAction.BLACKLIST_REQUEST_FULLY_APPROVED:
       return {
@@ -314,6 +339,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
         name: 'System Pause Request Approved',
         description: `System pause request ${metadata.actionRequestId} was approved by ${metadata.userEmail}`,
       };
+    case ActivityAction.SYSTEM_PAUSE_REQUEST_REJECT:
+      return {
+        name: 'System Pause Request Rejected',
+        description: `System pause request ${metadata.actionRequestId} was rejected by ${metadata.userEmail}`,
+      };
     case ActivityAction.SYSTEM_PAUSE_REQUEST_FULLY_APPROVED:
       return {
         name: 'System Pause Request Fully Approved',
@@ -323,6 +353,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'System Resume Request Approved',
         description: `System resume request ${metadata.actionRequestId} was approved by ${metadata.userEmail}`,
+      };
+    case ActivityAction.SYSTEM_RESUME_REQUEST_REJECT:
+      return {
+        name: 'System Resume Request Rejected',
+        description: `System resume request ${metadata.actionRequestId} was rejected by ${metadata.userEmail}`,
       };
     case ActivityAction.SYSTEM_RESUME_REQUEST_FULLY_APPROVED:
       return {

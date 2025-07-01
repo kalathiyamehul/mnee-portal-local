@@ -175,8 +175,10 @@ export interface ActivityListProps {
 	loading: boolean;
 	showAction: boolean;
 	canCancel: (activity: Activity) => boolean;
+	canReject: (activity: Activity) => boolean;
 	canApprove: (activity: Activity) => boolean;
 	handleCancel: (id: string, type: Activity['type']) => Promise<void>;
+	handleReject: (id: string, type: Activity['type']) => Promise<void>;
 	handleApprove: (id: string, type: Activity['type']) => Promise<void>;
 	getActivityIcon: (activity: Activity) => IconType;
 	getActivityDisplayText: (activity: Activity) => string;
@@ -190,9 +192,13 @@ export interface ActivityListProps {
 		hasApproveBurnPer: boolean;
 		hasRejectBurnPer: boolean;
 		hasApproveRefundPer: boolean;
+		hasRejectRefundPer: boolean;
 		hasApproveBlacklistPer: boolean;
+		hasRejectBlacklistPer: boolean;
 		hasApproveFreezePer: boolean;
+		hasRejectFreezePer: boolean;
 		hasApproveCustomerPer: boolean;
+		hasRejectCustomerPer: boolean;
 		hasManageSystemPer: boolean;
 	  };
 }

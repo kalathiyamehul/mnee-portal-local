@@ -14,14 +14,17 @@ export enum SystemOperation {
   // Refund operations
   REFUND_REQUEST_CREATE = 'refund request creation',
   REFUND_REQUEST_APPROVE = 'refund request approval',
+  REFUND_REQUEST_REJECT = 'refund request rejection',
   
   // Freeze operations
   FREEZE_REQUEST_CREATE = 'freeze request creation',
   FREEZE_REQUEST_APPROVE = 'freeze request approval',
+  FREEZE_REQUEST_REJECT = 'freeze request rejection',
   
   // Blacklist operations
   BLACKLIST_REQUEST_CREATE = 'blacklist request creation',
   BLACKLIST_REQUEST_APPROVE = 'blacklist request approval',
+  BLACKLIST_REQUEST_REJECT = 'blacklist request rejection',
 
   // SETTLED operations
   SETTLED_AFTER_BURN = 'SETTLED after burn',
@@ -37,6 +40,10 @@ const BLACKLIST_RESTRICTED_OPERATIONS = new Set([
   SystemOperation.BURN_REQUEST_REJECT,
   SystemOperation.REFUND_REQUEST_CREATE,
   SystemOperation.REFUND_REQUEST_APPROVE,
+  SystemOperation.REFUND_REQUEST_REJECT,
+  SystemOperation.FREEZE_REQUEST_CREATE,
+  SystemOperation.FREEZE_REQUEST_APPROVE,
+  SystemOperation.FREEZE_REQUEST_REJECT,
   SystemOperation.SETTLED_AFTER_BURN
 ]);
 
