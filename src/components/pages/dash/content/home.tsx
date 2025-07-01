@@ -37,12 +37,12 @@ const getActivityDisplayText = (activity: Activity) => {
       return `New Customer`;
     case "FREEZE":
       return activity.action === "UNFREEZE"
-        ? `Unfreeze Address ${activity.address}`
-        : `Freeze Address ${activity.address}`;
+        ? `Unfreeze Address`
+        : `Freeze Address`;
     case "BLACKLIST":
       return activity.action === "UNBLACKLIST"
-        ? `Unblacklist Address ${activity.address}`
-        : `Blacklist Address ${activity.address}`;
+        ? `Unblacklist Address`
+        : `Blacklist Address`;
     case "ACTION":
       return activity.action || "Unknown Action";
     default:
@@ -173,13 +173,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
           .filter((act) => act.type === "MINT")
           .slice(0, 5),
         recentBurns: filteredActivities
-          .filter(
-            (act) =>
-              act.type === "BURN" &&
-              act.status !== "REJECTED" &&
-              act.status !== "CANCELLED"
-          )
-          .slice(0, 5),
+          .filter((act) => act.type === "BURN").slice(0, 5),
         pendingActivities: filteredActivities
           .filter((activity) => activity.status === "PENDING")
           .slice(0, 5),

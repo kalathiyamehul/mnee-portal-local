@@ -72,11 +72,11 @@ export const ActivityList = ({
   // Helper function to check approve permission for activity type
   const hasApprovePermission = (type: string) => {
     const key = permissionMap[type];
-    
+
     if (Array.isArray(key)) {
-      return key.some(k => permissions[k as keyof typeof permissions]);
+      return key.some((k) => permissions[k as keyof typeof permissions]);
     }
-    
+
     return key ? permissions[key as keyof typeof permissions] : false;
   };
 
@@ -98,21 +98,21 @@ export const ActivityList = ({
   const exportData = filteredActivities.map((activity, index) => ({
     "": index + 1,
     Activity:
-      getActivityDisplayText(activity) + 
-      (['MINT', 'BURN', 'REFUND'].includes(activity.type) 
+      getActivityDisplayText(activity) +
+      (["MINT", "BURN", "REFUND"].includes(activity.type)
         ? `\n${toToken(
-            (activity?.amount ?? '0').toString(),
+            (activity?.amount ?? "0").toString(),
             config?.decimals || DEFAULT_DECIMALS
           )} MNEE`
-        : ''),
+        : ""),
     Details:
       activity.type === "MINT" && activity.customer
         ? `Customer: ${activity.customer.name} \n${activity.customer.email}`
         : activity.type === "BURN" && activity.outpoint
         ? `Outpoint: ${activity.outpoint}`
-        : activity.type === "CUSTOMER" 
+        : activity.type === "CUSTOMER"
         ? `Name: ${activity.name} \nEmail: ${activity.email}`
-        :activity.type === "FREEZE" || activity.type === "BLACKLIST"
+        : activity.type === "FREEZE" || activity.type === "BLACKLIST"
         ? `${
             activity.address ? `Address: ${activity.address}` : ""
           } \nReason: ${activity.reason || ""}`
@@ -136,6 +136,7 @@ export const ActivityList = ({
         return "badge-warning";
       case "APPROVED":
       case "DONE":
+      case "SETTLED":
         return "badge-success";
       case "REJECTED":
       case "CANCELLED":
@@ -151,6 +152,7 @@ export const ActivityList = ({
         return "border-l-4 border-l-warning";
       case "APPROVED":
       case "DONE":
+      case "SETTLED":
         return "border-l-4 border-l-success";
       case "REJECTED":
       case "CANCELLED":
@@ -236,10 +238,11 @@ export const ActivityList = ({
                               activity.type === "BURN" ||
                               activity.type === "REFUND") && (
                               <div className="text-sm font-mono">
-                                {toToken(
-                                  activity.amount as string,
-                                  config?.decimals || DEFAULT_DECIMALS
-                                )}{" "}
+                                {activity?.amount &&
+                                  toToken(
+                                    (activity?.amount ?? "0").toString(),
+                                    config?.decimals || DEFAULT_DECIMALS
+                                  )}{" "}
                                 MNEE
                               </div>
                             )}
@@ -296,12 +299,11 @@ export const ActivityList = ({
                                 })()}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="hover:underline"
+                                className="btn btn-link btn-xs px-0"
                                 title={activity.outpoint}
                               >
-                                {activity.outpoint.split("_")[0].slice(0, 8)}...
-                                {activity.outpoint.split("_")[0].slice(-8)}_
-                                {activity.outpoint.split("_")[1]}
+                                View on Explorer{" "}
+                                <MdOutlineOpenInNew className="w-3 h-3" />
                               </a>
                             </div>
                           )}

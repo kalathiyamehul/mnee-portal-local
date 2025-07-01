@@ -22,7 +22,7 @@ async function broadcastRefundTransaction(refundRequest: RefundRequest) {
     throw new Error("Config not found");
   }
 
-  const [sourceTXID, voutStr] = refundRequest.outpoint.split('_');
+  const [sourceTXID, voutStr] = refundRequest.outpoint.split("_");
   const vout = Number.parseInt(voutStr, 10);
 
   if (!sourceTXID || Number.isNaN(vout)) {
@@ -39,26 +39,35 @@ async function broadcastRefundTransaction(refundRequest: RefundRequest) {
     sourceTXID,
     sourceOutputIndex: vout,
     sourceTransaction,
-    unlockingScriptTemplate: new CosignTemplate().userUnlock(burnPk, "all", true),
+    unlockingScriptTemplate: new CosignTemplate().userUnlock(
+      burnPk,
+      "all",
+      true
+    ),
   });
 
   // get the parsed MNEEUtxo for the amount
   const txo = await fetchTxo(refundRequest.outpoint);
   const amount = txo.data.bsv21.amt;
-  const cosignScript = new CosignTemplate().lock(refundRequest.refundAddress, PublicKey.fromString(config.approver));
+  const cosignScript = new CosignTemplate().lock(
+    refundRequest.refundAddress,
+    PublicKey.fromString(config.approver)
+  );
   const inscriptionData = {
     p: "bsv-20",
     op: "transfer",
     id: config.tokenId,
     amt: amount.toString(),
   };
-  const dataB64 = Buffer.from(JSON.stringify(inscriptionData)).toString("base64");
+  const dataB64 = Buffer.from(JSON.stringify(inscriptionData)).toString(
+    "base64"
+  );
   const inscription = {
     dataB64,
-    contentType: "application/bsv-20"
+    contentType: "application/bsv-20",
   } as Inscription;
   const lockingScript = applyInscription(cosignScript, inscription);
-  
+
   // Add output to the refund address
   tx.addOutput({
     lockingScript,
@@ -81,11 +90,11 @@ async function broadcastRefundTransaction(refundRequest: RefundRequest) {
     throw new Error("Failed to broadcast refund transaction");
   }
 
-  const { txid } = await broadcastResponse.json() as IndexContext;
+  const { txid } = (await broadcastResponse.json()) as IndexContext;
   return txid;
 }
 
-export const POST = withCSRF(async function(request: Request) {
+export const POST = withCSRF(async function (request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -93,7 +102,10 @@ export const POST = withCSRF(async function(request: Request) {
 
   const { refundRequestId } = await request.json();
   if (!refundRequestId) {
-    return NextResponse.json({ error: "Missing refundRequestId" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing refundRequestId" },
+      { status: 400 }
+    );
   }
 
   try {
@@ -109,19 +121,19 @@ export const POST = withCSRF(async function(request: Request) {
                 select: {
                   id: true,
                   email: true,
-                  name: true
-                }
-              }
-            }
+                  name: true,
+                },
+              },
+            },
           },
           requester: {
             select: {
               id: true,
               email: true,
-              name: true
-            }
-          }
-        }
+              name: true,
+            },
+          },
+        },
       });
 
       if (!refundRequest) {
@@ -135,7 +147,9 @@ export const POST = withCSRF(async function(request: Request) {
       // If system is paused, disallow approvals
       const paused = await isSystemPaused(tx);
       if (paused) {
-        throw new Error("System is paused. Cannot approve refund requests at this time.");
+        throw new Error(
+          "System is paused. Cannot approve refund requests at this time."
+        );
       }
 
       // Prevent self-approval
@@ -148,7 +162,7 @@ export const POST = withCSRF(async function(request: Request) {
         where: {
           refundRequestId,
           approvedBy: session.user.id,
-        }
+        },
       });
 
       if (existingApproval) {
@@ -159,8 +173,8 @@ export const POST = withCSRF(async function(request: Request) {
       const approval = await tx.refundApproval.create({
         data: {
           refundRequestId,
-          approvedBy: session.user.id
-        }
+          approvedBy: session.user.id,
+        },
       });
 
       newAppeovalID = approval.id;
@@ -180,6 +194,20 @@ export const POST = withCSRF(async function(request: Request) {
 
       // If we have enough approvals, broadcast the transaction
       if (approvalCount === refundRequest.no_of_approvals) {
+        // Update request Status to Approved
+        await tx.refundRequest.update({
+          where: { id: refundRequestId },
+          data: { status: "APPROVED" },
+        });
+
+        await logActivity(tx, {
+          action: ActivityAction.REFUND_REQUEST_FULLY_APPROVED,
+          metadata: {
+            refundRequestId,
+            approvalCount,
+          },
+        });
+
         try {
           const txid = await broadcastRefundTransaction(refundRequest);
 
@@ -190,23 +218,30 @@ export const POST = withCSRF(async function(request: Request) {
               status: "DONE",
               txid,
               updatedAt: new Date(),
-            }
+            },
           });
 
           await logActivity(tx, {
-            action: ActivityAction.REFUND_REQUEST_FULLY_APPROVED,
+            action: ActivityAction.REFUND_TX_COMPLETED,
             metadata: {
               refundRequestId,
               txid,
+              updatedRefund,
             },
+          });
+
+          emitrefundUpdate({
+            activityId: refundRequestId,
+            approval: "Refund Request Fully Approved",
+            type: "APPROVED",
           });
 
           // Update any associated burn request
           const burnRequest = await tx.burnRequest.findFirst({
             where: {
               outpoint: refundRequest.outpoint,
-              status: "PENDING"
-            }
+              status: "PENDING",
+            },
           });
 
           if (burnRequest) {
@@ -215,7 +250,7 @@ export const POST = withCSRF(async function(request: Request) {
               data: {
                 status: "REFUNDED",
                 updatedAt: new Date(),
-              }
+              },
             });
 
             await logActivity(tx, {
@@ -231,7 +266,11 @@ export const POST = withCSRF(async function(request: Request) {
         } catch (error) {
           // If broadcasting fails, keep as APPROVED
           console.error("Failed to broadcast refund:", error);
-          return { status: "APPROVED", error: error instanceof Error ? error.message : "Failed to broadcast" };
+          return {
+            status: "APPROVED",
+            error:
+              error instanceof Error ? error.message : "Failed to broadcast",
+          };
         }
       }
 
@@ -240,35 +279,40 @@ export const POST = withCSRF(async function(request: Request) {
 
     // Emit Approved event
     const approvalWithUser = await prisma.refundApproval.findUnique({
-			where: {
-				id: newAppeovalID!,
-			},
-			include: {
-				approver: true,
-			},
-		});
-		emitrefundUpdate({
-			activityId: refundRequestId,
-			approval: approvalWithUser,
-			type: "APPROVE",
-		});
+      where: {
+        id: newAppeovalID!,
+      },
+      include: {
+        approver: true,
+      },
+    });
+    emitrefundUpdate({
+      activityId: refundRequestId,
+      approval: approvalWithUser,
+      type: "APPROVE",
+    });
 
     return NextResponse.json({
       success: true,
-      message: result.status === "DONE" 
-        ? "Refund processed successfully" 
-        : result.status === "APPROVED" 
-          ? "Refund approved but failed to broadcast" 
+      message:
+        result.status === "DONE"
+          ? "Refund processed successfully"
+          : result.status === "APPROVED"
+          ? "Refund approved but failed to broadcast"
           : "Approval recorded",
       status: result.status,
       ...(result.txid && { txid: result.txid }),
-      ...(result.error && { error: result.error })
+      ...(result.error && { error: result.error }),
     });
   } catch (error) {
     console.error("Error processing approval:", error);
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : "Failed to process approval"
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to process approval",
+      },
+      { status: 500 }
+    );
   }
-}, createAPIRateLimit())
+}, createAPIRateLimit());

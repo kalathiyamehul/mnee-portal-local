@@ -553,7 +553,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     return activity.approvals?.length || 0;
   }, []);
 
-  const handleUnblacklist = async (e: React.MouseEvent, address: string) => {
+  const handleUnblacklist = async (e: React.MouseEvent, address: string, reason: string) => {
     try {
       const response = await apiFetch("/api/blacklist", {
         method: "POST",
@@ -561,6 +561,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         body: JSON.stringify({
           address,
           action: "UNBLACKLIST",
+          reason: reason,
         }),
       });
 
@@ -583,7 +584,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
 
   const handleFreezeRequest = async (
     e: React.MouseEvent<HTMLButtonElement>,
-    address: string
+    address: string, reason: string
   ) => {
     try {
       const response = await apiFetch("/api/freeze", {
@@ -592,6 +593,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         body: JSON.stringify({
           address,
           action: "FREEZE",
+          reason: reason,
         }),
       });
 
@@ -610,7 +612,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     }
   };
 
-  const handleUnfreeze = async (address: string) => {
+  const handleUnfreeze = async (address: string, reason: string) => {
     try {
       const response = await apiFetch("/api/freeze", {
         method: "POST",
@@ -618,6 +620,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         body: JSON.stringify({
           address,
           action: "UNFREEZE",
+          reason: reason
         }),
       });
 
@@ -636,7 +639,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     }
   };
 
-  const handleBlacklist = async (e: React.MouseEvent, address: string) => {
+  const handleBlacklist = async (e: React.MouseEvent, address: string, reason: string) => {
     e.preventDefault();
     try {
       const response = await apiFetch("/api/blacklist", {
@@ -645,6 +648,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         body: JSON.stringify({
           address,
           action: "BLACKLIST",
+          reason: reason,
         }),
       });
 
