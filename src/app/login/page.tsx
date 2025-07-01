@@ -5,7 +5,6 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { FaSpinner } from "react-icons/fa6";
-import { FiEye, FiEyeOff } from "react-icons/fi";
 import {
   sanitizeHttpError,
   sanitizeError,
@@ -22,7 +21,6 @@ function LoginPageInner() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -112,37 +110,17 @@ function LoginPageInner() {
                 <label htmlFor="password" className="sr-only">
                   Password
                 </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    id="password"
-                    name="password"
-                    autoComplete="current-password"
-                    required
-                    className="input input-bordered w-full"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setShowPassword(!showPassword)
-                    }
-                    className="absolute right-4 top-3 z-50 text-gray-500"
-                    aria-label={
-                      showPassword
-                        ? "Hide password"
-                        : "Show password"
-                    }
-                  >
-                    {showPassword ? (
-                      <FiEyeOff size={18} className="text-gray-300" />
-                    ) : (
-                      <FiEye size={18} className="text-gray-300" />
-                    )}
-                  </button>
-                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className="input input-bordered w-full"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
               </div>
             </div>
           ) : (
