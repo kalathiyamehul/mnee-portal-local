@@ -50,9 +50,13 @@ export const getActivityDisplayText = (activity: Activity): string => {
     case 'CUSTOMER':
       return "New Customer";
     case 'FREEZE':
-      return "Freeze address";
+      return activity.action === "UNFREEZE"
+        ? `Unfreeze Address`
+        : `Freeze Address`;
     case 'BLACKLIST':
-      return `${activity.action === 'BLACKLIST' ? 'Blacklist' : 'Unblacklist'} address`;
+      return activity.action === "UNBLACKLIST"
+        ? `Unblacklist Address`
+        : `Blacklist Address`;
     case 'ACTION':
       return activity.action as string;
     case 'REFUND':

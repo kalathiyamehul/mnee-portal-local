@@ -13,17 +13,17 @@ interface ActiveRestrictionsProps {
   loading: boolean;
   handleUnblacklist: (
     e: MouseEvent<HTMLButtonElement>,
-    address: string
+    address: string, reason: string
   ) => Promise<void>;
   handleBlacklist: (
     e: MouseEvent<HTMLButtonElement>,
-    address: string
+    address: string, reason: string
   ) => Promise<void>;
   handleFreezeRequest: (
     e: MouseEvent<HTMLButtonElement>,
-    address: string
+    address: string, reason: string
   ) => Promise<void>;
-  handleUnfreeze: (address: string) => Promise<void>;
+  handleUnfreeze: (address: string, reason: string) => Promise<void>;
   activities: Activity[];
   handleCancel: (id: string, type: Activity["type"]) => Promise<void>;
   handleApprove: (id: string, type: Activity["type"]) => Promise<void>;
@@ -220,7 +220,7 @@ export const ActiveRestrictions = ({
                         <button
                           type="button"
                           className="btn btn-error btn-sm"
-                          onClick={(e) => handleBlacklist(e, status.address)}
+                          onClick={(e) => handleBlacklist(e, status.address, status.reason || '')}
                           disabled={loading}
                         >
                           <FaBan className="w-3 h-3 mr-1" /> Blacklist
@@ -230,7 +230,7 @@ export const ActiveRestrictions = ({
                       <button
                         type="button"
                         className="btn btn-outline btn-sm"
-                        onClick={(e) => handleUnblacklist(e, status.address)}
+                        onClick={(e) => handleUnblacklist(e, status.address, status.reason || '')}
                         disabled={loading}
                       >
                         <MdRemoveCircleOutline className="w-3 h-3 mr-1" />{" "}
@@ -241,7 +241,7 @@ export const ActiveRestrictions = ({
                       <button
                         type="button"
                         className="btn btn-sm btn-error"
-                        onClick={() => handleUnfreeze(status.address)}
+                        onClick={() => handleUnfreeze(status.address, status.reason || '')}
                         disabled={loading}
                       >
                         <FaSnowflake className="w-3 h-3" /> Unfreeze
@@ -254,7 +254,7 @@ export const ActiveRestrictions = ({
                           type="button"
                           className="btn btn-sm btn-error"
                           onClick={(e) =>
-                            handleFreezeRequest(e, status.address)
+                            handleFreezeRequest(e, status.address, status.reason || '')
                           }
                           disabled={loading}
                         >
@@ -288,9 +288,9 @@ export const ActiveRestrictions = ({
                                   }
                                   disabled={loading}
                                 >
-                                  {activity.type === "FREEZE" && 'Cancel Freeze'}
+                                  {activity.type === "FREEZE" && (restrictions.find((r) => r.address === activity.address)?.isFrozen ? "Cancel Unfreeze" : "Cancel Freeze")}
                                   {activity.type === "BLACKLIST" &&
-                                    'Cancel Blacklist'}
+                                    (restrictions.find((r) => r.address === activity.address)?.isBlacklisted ? "Cancel Unblacklist" : "Cancel Blacklist")}
                                 </button>
                               )}
                               {canApprove(activity) && (permissions.hasApproveBlacklistPer || permissions.hasApproveFreezePer) && (
@@ -302,9 +302,9 @@ export const ActiveRestrictions = ({
                                   }
                                   disabled={loading}
                                 >
-                                  {activity.type === "FREEZE" && 'Approve Freeze'}
+                                  {activity.type === "FREEZE" && (restrictions.find((r) => r.address === activity.address)?.isFrozen ? "Approve Unfreeze" : "Approve Freeze")}
                                   {activity.type === "BLACKLIST" &&
-                                    'Approve Blacklist'}
+                                    (restrictions.find((r) => r.address === activity.address)?.isBlacklisted ? "Approve Unblacklist" : "Approve Blacklist")}
                                 </button>
                               )}
                             </div>

@@ -24,6 +24,7 @@ export enum ActivityAction {
   REFUND_REQUEST_CANCEL = 'REFUND_REQUEST_CANCEL',
   REFUND_REQUEST_APPROVE = 'REFUND_REQUEST_APPROVE',
   REFUND_REQUEST_FULLY_APPROVED = 'REFUND_REQUEST_FULLY_APPROVED',
+  REFUND_TX_COMPLETED = 'REFUND_TX_COMPLETED',
   BURN_REQUEST_REFUNDED = 'BURN_REQUEST_REFUNDED',
 
   // Customer Actions
@@ -167,6 +168,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'Refund Request Fully Approved',
         description: `Refund request ${metadata.refundRequestId} fully approved after reaching required approvals`,
+      };
+    case ActivityAction.REFUND_TX_COMPLETED:
+      return {
+        name: 'Refund Request Broadcasted',
+        description: `Refund request ${metadata.refundRequestId} Broadcasted`,
       };
     case ActivityAction.BURN_REQUEST_REFUNDED:
       return {
