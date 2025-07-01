@@ -351,7 +351,7 @@ const MintTableContent = ({
                     <span
                       className={`badge badge-sm ${statusColors[mint.status]}`}
                     >
-                      {mint.status}
+                      {mint.status === 'DONE' ? 'APPROVED' : mint.status}
                     </span>
                     {mint.status === "PENDING" && (
                       <span className="text-xs text-base-content/70">
@@ -491,8 +491,8 @@ export const MintTable = ({
           onUpdate={onUpdate}
           showActions={showActions}
           showRequester={showRequester}
-          hasApproveMintPer={hasApproveMintPer}  // Add this line
-          hasRejectMintPer={hasRejectMintPer}    // Add this line
+          hasApproveMintPer={hasApproveMintPer}
+          hasRejectMintPer={hasRejectMintPer}
         />
       </div>
 
