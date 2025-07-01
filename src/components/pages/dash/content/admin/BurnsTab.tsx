@@ -374,7 +374,7 @@ export const BurnsTab = ({
   const completedBurns = burns.filter(
     (burn) =>
       burn.burnRequest &&
-      ["APPROVED", "REFUNDED", "SETTLED"].includes(burn.burnRequest.status)
+      ["APPROVED", "REFUNDED", "SETTLED", "REJECTED", "CANCELLED"].includes(burn.burnRequest.status)
   );
 
   const totalItems = activeBurns.length;
@@ -493,7 +493,7 @@ export const BurnsTab = ({
                                 : "badge-warning"
                             } badge-sm`}
                           >
-                            {(burn.burnRequest.status === "CANCELLED" || burn.burnRequest.status === "REJECTED" ) ? "AVAILABLE" : burn.burnRequest.status}
+                            {(burn.burnRequest.status === "CANCELLED" || burn.burnRequest.status === "REJECTED" || burn.refundRequest?.status === "CANCELLED" ) ? "AVAILABLE" : burn.burnRequest.status}
                           </span>
                         ) : (
                           <span className="badge badge-secondary badge-sm animate-pulse">
