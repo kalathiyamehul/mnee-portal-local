@@ -39,6 +39,7 @@ model User {
   blacklistApprovals BlacklistApproval[] @relation("UserBlacklistApprovals")
   refundRequests    RefundRequest[]    @relation("UserRefundRequests")
   refundApprovals   RefundApproval[]   @relation("UserRefundApprovals")
+  passwordHistory   PasswordHistory[]  @relation("UserPasswordHistory")
   roleId            String?
   role              Role?              @relation(fields: [roleId], references: [id])
 
@@ -422,4 +423,17 @@ enum RateLimitType {
   API_REQUEST
   PASSWORD_RESET
   TWO_FA_ATTEMPT
+}
+
+model PasswordHistory {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  password  String   // Hashed password
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation("UserPasswordHistory", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("password_history")
 }

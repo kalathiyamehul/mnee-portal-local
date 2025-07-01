@@ -29,13 +29,26 @@ async function createUser(email: string) {
     // Hash the password with same cost factor as reset password route
     const hashedPassword = await bcrypt.hash(tempPassword, 12);
 
-    // Create the user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        requiresPasswordReset: true
-      }
+    // Create the user with password history in a transaction
+    const user = await prisma.$transaction(async (tx) => {
+      // Create the user
+      const newUser = await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          requiresPasswordReset: true
+        }
+      });
+
+      // Initialize password history with the temporary password
+      await tx.passwordHistory.create({
+        data: {
+          userId: newUser.id,
+          password: hashedPassword
+        }
+      });
+
+      return newUser;
     });
 
     console.log('\nUser created successfully:');
@@ -45,6 +58,7 @@ async function createUser(email: string) {
     console.log('1. User will be required to change password on first login');
     console.log('2. Password must be changed before accessing the dashboard');
     console.log('3. Share the temporary password securely with the user');
+    console.log('4. The temporary password has been stored in password history to prevent reuse');
 
   } catch (error) {
     if (error instanceof Error) {
