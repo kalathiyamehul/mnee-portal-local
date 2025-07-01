@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { apiFetch } from '@/utils/api';
-import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 // Password validation function (should match server-side)
 function isPasswordValid(password: string): { valid: boolean; error?: string } {
@@ -42,10 +41,6 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState({
-    newPassword: false,
-    confirmPassword: false,
-  });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -106,45 +101,24 @@ export default function ResetPasswordPage() {
           <label htmlFor="newPassword" className="block text-sm font-bold mb-2">
             New Password
           </label>
-          <div className='relative'>
-            <input
-              type={showPassword.newPassword ? "text" : "password"}
-              id="newPassword"
-              className="input input-bordered w-full max-w-sm"
-              value={newPassword}
-              onChange={(e) => {
-                setNewPassword(e.target.value);
-                setError(""); // Clear error on change
-              }}
-              required
-              minLength={8}
-              disabled={isSubmitting}
-            />
-            <button
-              type="button"
-              onClick={() =>
-                setShowPassword({
-                  ...showPassword,
-                  newPassword: !showPassword.newPassword,
-                })
-              }
-              className="absolute right-4 top-3 z-50 text-gray-500"
-              aria-label={
-                showPassword.newPassword ? "Hide password" : "Show password"
-              }
-            >
-              {showPassword.newPassword ? (
-                <FiEyeOff size={18} className="text-gray-300" />
-              ) : (
-                <FiEye size={18} className="text-gray-300" />
-              )}
-            </button>
-          </div>
+          <input
+            type="password"
+            id="newPassword"
+            className="input input-bordered w-full max-w-sm"
+            value={newPassword}
+            onChange={(e) => {
+              setNewPassword(e.target.value);
+              setError(""); // Clear error on change
+            }}
+            required
+            minLength={8}
+            disabled={isSubmitting}
+          />
           {/* Real-time password validation error */}
           {newPassword &&
             !isSubmitting &&
             !isPasswordValid(newPassword).valid && (
-              <p className="text-error text-xs mt-1">
+              <p className="text-red-500 text-xs mt-1">
                 {isPasswordValid(newPassword).error}
               </p>
             )}
@@ -157,37 +131,16 @@ export default function ResetPasswordPage() {
           >
             Confirm Password
           </label>
-          <div className='relative'>
-            <input
-              type={showPassword.confirmPassword ? "text" : "password"}
-              id="confirmPassword"
-              className="input input-bordered w-full max-w-sm"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              minLength={8}
-              disabled={isSubmitting}
-            />
-            <button
-              type="button"
-              onClick={() =>
-                setShowPassword({
-                  ...showPassword,
-                  confirmPassword: !showPassword.confirmPassword,
-                })
-              }
-              className="absolute right-4 top-3 z-50 text-gray-500"
-              aria-label={
-                showPassword.confirmPassword ? "Hide password" : "Show password"
-              }
-            >
-              {showPassword.confirmPassword ? (
-                <FiEyeOff size={18} className="text-gray-300" />
-              ) : (
-                <FiEye size={18} className="text-gray-300" />
-              )}
-            </button>
-          </div>
+          <input
+            type="password"
+            id="confirmPassword"
+            className="input input-bordered w-full max-w-sm"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            minLength={8}
+            disabled={isSubmitting}
+          />
         </div>
         {/* Error Message */}
         {error && <p className="text-red-500 mb-4">{error}</p>}

@@ -207,16 +207,19 @@ export const POST = withCSRF(async function (request: Request) {
             approvalCount,
           },
         });
-
         try {
           const txid = await broadcastRefundTransaction(refundRequest);
 
+          if (!txid) {
+						throw new Error("Failed to broadcast refund transaction");
+					}
+
           // Update with txid and mark as DONE
-          const updatedRefund = await tx.refundRequest.update({
+          await tx.refundRequest.update({
             where: { id: refundRequestId },
             data: {
-              status: "DONE",
-              txid,
+              status: "REFUNDED",
+              txid: txid,
               updatedAt: new Date(),
             },
           });

@@ -10,7 +10,7 @@ import {
 import { toToken } from "satoshi-token";
 import type { MNEEUtxo } from "@/types";
 import { MdOutlineOpenInNew } from "react-icons/md";
-import type { BurnUtxo } from "./types";
+import type { Activity, BurnUtxo } from "./types";
 import { DEFAULT_DECIMALS } from "@/lib/constants";
 import { formatDistanceToNow } from "date-fns";
 import { BurnModal } from "../modals/BurnModal";
@@ -22,6 +22,8 @@ import { BurnTable } from "./BurnTable";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
 import { Pagination } from "@/components/common/Pagination";
+import { RefundRequest } from "@prisma/client";
+import { RefundTable } from "./RefundTable";
 
 const getRowBorderClass = (status: string | undefined) => {
   switch (status) {
@@ -62,6 +64,7 @@ export const BurnsTab = ({
   const { data: session } = useSession();
   const { statusData } = useSystemStatus();
   const [burns, setBurns] = useState<BurnUtxo[]>([]);
+  const [refunds, setRefunds] = useState<Activity[]>([]);
   const [burnUtxos, setBurnUtxos] = useState<MNEEUtxo[]>([]);
   const [utxos, setUtxos] = useState<MNEEUtxo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -137,16 +140,21 @@ export const BurnsTab = ({
     // console.log({ burnsWithRequests });
     // Add burn UTXOs with APPROVED status
     const completedBurnRequests = statusData?.burnRequests || [];
+    const completedRefundRequests = statusData?.refundRequests || [];
+    setRefunds(completedRefundRequests);
     for (const utxo of burnUtxos) {
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       const existingRequest = completedBurnRequests.find(
+        (req) => req.txid && outpoint.startsWith(req.txid)
+      );
+      const existingRefundRequest = completedRefundRequests.find(
         (req) => req.txid && outpoint.startsWith(req.txid)
       );
 
       burnsWithRequests.push({
         ...utxo,
         burnRequest: existingRequest,
-        refundRequest: undefined,
+        refundRequest: existingRefundRequest,
       });
     }
 
@@ -414,6 +422,15 @@ export const BurnsTab = ({
       ["APPROVED", "REFUNDED", "SETTLED", "REJECTED", "CANCELLED"].includes(burn.burnRequest.status)
   );
 
+  const refundsHistory = refunds.filter((refund) => {
+    return (
+      refund &&
+      ["DONE", "APPROVED", "REFUNDED", "SETTLED", "CANCELLED", "REJECTED"].includes(refund.status)
+    );
+  });
+
+  console.log("Refund History:", refundsHistory);
+
   const totalItems = activeBurns.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
 
@@ -421,6 +438,8 @@ export const BurnsTab = ({
   useEffect(() => {
     setCurrentPage(1);
   }, [activeBurns.length]);
+
+  console.log("All Burns and Refund:", burns);
 
   // Paginated burns
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -440,7 +459,7 @@ export const BurnsTab = ({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-3 space-y-8">
+        <div className="lg:col-span-4 space-y-8">
           {error && (
             <div className="alert alert-error">
               <span>{error}</span>
@@ -452,7 +471,7 @@ export const BurnsTab = ({
             </div>
           )}
 
-          <div className="bg-base-100 rounded-lg">
+          <div className="bg-base-100 rounded-lg flex justify-between">
             <div className="overflow-x-auto">
               <table className="table w-full">
                 <thead>
@@ -675,14 +694,15 @@ export const BurnsTab = ({
                           )}
 
                           {/* SETTLED Button */}
-                          {burn.burnRequest?.status === "APPROVED" && hasSettleBurnPer && (
-                            <button
-                              type="button"
-                              className="btn btn-success btn-sm"
-                            >
-                              Settle
-                            </button>
-                          )}
+                          {burn.burnRequest?.status === "APPROVED" &&
+                            hasSettleBurnPer && (
+                              <button
+                                type="button"
+                                className="btn btn-success btn-sm"
+                              >
+                                Settle
+                              </button>
+                            )}
                         </div>
                       </td>
                     </tr>
@@ -701,6 +721,83 @@ export const BurnsTab = ({
                 </div>
               )}
             </div>
+            {burnAddress && (
+              <div className="lg:col-span-1">
+                <div className="bg-base-200 rounded-lg p-6 space-y-6">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="text-xs uppercase tracking-wider opacity-50">
+                        Burn Address
+                      </div>
+                      <div className="text-xs text-base-content/70 flex items-center gap-2 mt-1">
+                        <FaCircleInfo className="w-3 h-3" />
+                        <span>Send tokens to burn</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAddress(burnAddress)}
+                        className="btn btn-ghost btn-xs btn-square"
+                        title="Copy address"
+                      >
+                        <FaCopy className="w-3 h-3" />
+                      </button>
+                      <a
+                        href={`https://whatsonchain.com/address/${burnAddress}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-ghost btn-xs btn-square"
+                        title="View on WhatsOnChain"
+                      >
+                        <MdOutlineOpenInNew className="w-3 h-3" />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={handleRefresh}
+                        disabled={loading}
+                        className="btn btn-ghost btn-xs btn-square"
+                        title="Refresh outputs"
+                      >
+                        {loading ? (
+                          <FaSpinner className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <FaArrowsRotate className="w-3 h-3" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="font-mono text-xs break-all">
+                    {burnAddress}
+                  </div>
+
+                  <div className="divider my-2" />
+
+                  <div>
+                    <div className="text-xs uppercase tracking-wider opacity-50 mb-2">
+                      Current Balance
+                    </div>
+                    <div className="text-2xl font-bold">
+                      {loading ? (
+                        <span className="loading loading-spinner loading-sm" />
+                      ) : (
+                        `${toToken(
+                          utxos
+                            .reduce(
+                              (total, utxo) =>
+                                total + Number(utxo.data.bsv21.amt),
+                              0
+                            )
+                            .toString(),
+                          decimals
+                        )} MNEE`
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <BurnTable
@@ -716,82 +813,14 @@ export const BurnsTab = ({
             hasRejectRefundPer={hasRejectRefundPer}
             hasSettleBurnPer={hasSettleBurnPer}
           />
+          <RefundTable
+            title="Refund History"
+            refunds={refundsHistory}
+            decimals={decimals}
+            onCopyTxid={handleCopyTxid}
+            alwaysShow={true}
+          />
         </div>
-
-        {burnAddress && (
-          <div className="lg:col-span-1">
-            <div className="bg-base-200 rounded-lg p-6 space-y-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="text-xs uppercase tracking-wider opacity-50">
-                    Burn Address
-                  </div>
-                  <div className="text-xs text-base-content/70 flex items-center gap-2 mt-1">
-                    <FaCircleInfo className="w-3 h-3" />
-                    <span>Send tokens to burn</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleCopyAddress(burnAddress)}
-                    className="btn btn-ghost btn-xs btn-square"
-                    title="Copy address"
-                  >
-                    <FaCopy className="w-3 h-3" />
-                  </button>
-                  <a
-                    href={`https://whatsonchain.com/address/${burnAddress}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-ghost btn-xs btn-square"
-                    title="View on WhatsOnChain"
-                  >
-                    <MdOutlineOpenInNew className="w-3 h-3" />
-                  </a>
-                  <button
-                    type="button"
-                    onClick={handleRefresh}
-                    disabled={loading}
-                    className="btn btn-ghost btn-xs btn-square"
-                    title="Refresh outputs"
-                  >
-                    {loading ? (
-                      <FaSpinner className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <FaArrowsRotate className="w-3 h-3" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="font-mono text-xs break-all">{burnAddress}</div>
-
-              <div className="divider my-2" />
-
-              <div>
-                <div className="text-xs uppercase tracking-wider opacity-50 mb-2">
-                  Current Balance
-                </div>
-                <div className="text-2xl font-bold">
-                  {loading ? (
-                    <span className="loading loading-spinner loading-sm" />
-                  ) : (
-                    `${toToken(
-                      utxos
-                        .reduce(
-                          (total, utxo) => total + Number(utxo.data.bsv21.amt),
-                          0
-                        )
-                        .toString(),
-                      decimals
-                    )} MNEE`
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {selectedBurn && (
