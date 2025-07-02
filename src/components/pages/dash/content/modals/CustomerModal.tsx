@@ -95,8 +95,8 @@ export function CustomerModal({
   };
 
   const validateApproval = (value: number) => {
-    if (value < 1) return "Minimum 1 approval required";
-    if (value > 10) return "Maximum 10 approvals allowed";
+    if (config?.minNoOfApproval && value < config.minNoOfApproval) return `Minimum ${config.minNoOfApproval} approval required`;
+    if (config?.maxNoOfApproval && value > config.maxNoOfApproval) return `Maximum ${config.maxNoOfApproval} approvals allowed`;
     return ""; // Add empty string return for valid cases
   };
 

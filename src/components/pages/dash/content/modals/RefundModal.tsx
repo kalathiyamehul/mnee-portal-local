@@ -1,7 +1,7 @@
 import { FaSpinner, FaArrowRotateLeft } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
 import { toast } from 'react-hot-toast';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { apiFetch } from '@/utils/api';
 
 interface RefundModalProps {
@@ -26,10 +26,75 @@ export const RefundModal = ({
 }: RefundModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [refundAddress, setRefundAddress] = useState('');
-  const [numApprovals, setNumApprovals] = useState(2); // New: Number of approvals
+  const [numApprovals, setNumApprovals] = useState('');
+  const [errors, setErrors] = useState({
+    refundAddressError: '',
+    numApprovalsError: ''
+  });
+    const [config, setConfig] = useState<{
+    minNoOfApproval: number;
+    maxNoOfApproval: number;
+  } | null>(null);
 
-  const handleRefund = async () => {
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await apiFetch("/api/config");
+        if (!response.ok) {
+          throw new Error("Failed to fetch configuration");
+        }
+        const data = await response.json();
+        setConfig({
+          minNoOfApproval: data.minNoOfApproval,
+          maxNoOfApproval: data.maxNoOfApproval,
+        });
+        setNumApprovals(`${data.minNoOfApproval}`);
+      } catch (error) {
+        // console.error("Error fetching config:", error);
+        toast.error("Failed to fetch configuration");
+      }
+    };
+
+    fetchConfig();
+  }, []);
+
+    const validateAddress = (address: string) => {
+    // Bitcoin address validation
+    if (/\s/.test(address)) return "Address cannot contain spaces";
+    if (/[^A-Za-z0-9]/.test(address.slice(1))) return "Address can only contain letters and numbers";
+    if (!address.startsWith('1')) return "Invalid Ordinals Address";
+    if (!/^1[A-Za-z0-9]{33,34}$/.test(address)) {
+      return "Address Length must be 35 characters";
+    }
+    return "";
+  };
+
+  const validateApproval = (value: number) => {
+    if (config?.minNoOfApproval && value < config.minNoOfApproval) return `Minimum ${config.minNoOfApproval} approval required`;
+    if (config?.maxNoOfApproval && value > config.maxNoOfApproval) return `Maximum ${config.maxNoOfApproval} approvals allowed`;
+    return ""; // Add empty string return for valid cases
+  };
+
+  const handleRefund = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validate all fields before submission
+    const addressError = validateAddress(refundAddress);
+    const numApprovalsError = validateApproval(Number(numApprovals));
+
+    // Update the error state setting to handle string returns
+    setErrors({
+      refundAddressError: addressError,
+      numApprovalsError: numApprovalsError
+    });
+    
+    if (addressError || numApprovalsError) {
+      toast.error(addressError || numApprovalsError || "Please fix the form errors");
+      return;
+    }
+
     setIsLoading(true);
+
     try {
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       // console.log('Creating refund request:', { outpoint, refundAddress });
@@ -84,19 +149,37 @@ export const RefundModal = ({
               <input
                 id="num-approvals"
                 type="number"
-                min={2}
                 className="input input-bordered w-full"
                 value={numApprovals}
-                onChange={e => {
-                  const val = Number(e.target.value);
-                  if (val < 2) {
-                    setNumApprovals(2);
-                  } else {
-                    setNumApprovals(val);
-                  }
-                }}
+                onChange={(e) => {
+                    let value = e.target.value;
+                    // Only allow non-negative integers
+                    if (/^\d*$/.test(value)) {
+                      let num = parseInt(value, 10);
+                      if (
+                        isNaN(num) ||
+                        (config && num < config.minNoOfApproval)
+                      ) {
+                        setNumApprovals(
+                          config?.minNoOfApproval?.toString() || ""
+                        );
+                      } else if (
+                        config?.maxNoOfApproval &&
+                        num > config.maxNoOfApproval
+                      ) {
+                        toast.error(
+                          `No of Approvals must be less than or equal to ${config?.maxNoOfApproval}`
+                        );
+                      } else {
+                        setNumApprovals(value);
+                      }
+                    }
+                  }}
                 disabled={isLoading}
               />
+              {errors && <div className="label mt-1">
+                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.numApprovalsError}</span>
+            </div>}
             </div>
           </div>
 
@@ -110,10 +193,20 @@ export const RefundModal = ({
               type="text"
               className="input input-bordered w-full"
               value={refundAddress}
-              onChange={(e) => setRefundAddress(e.target.value)}
+              onChange={(e) => {
+                setRefundAddress(e.target.value);
+                setErrors({
+                  ...errors,
+                  refundAddressError: validateAddress(e.target.value)
+                });
+              }}
+              maxLength={35}
               placeholder="Enter refund address"
               required
             />
+            {errors && <div className="label mt-1">
+                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.refundAddressError}</span>
+            </div>}
           </div>
 
           <div className="alert alert-info">
