@@ -15,7 +15,6 @@ import { DEFAULT_DECIMALS } from "@/lib/constants";
 import { formatDistanceToNow } from "date-fns";
 import { BurnModal } from "../modals/BurnModal";
 import { RefundModal } from "../modals/RefundModal";
-import { toast } from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { BurnTable } from "./BurnTable";
@@ -24,6 +23,7 @@ import { Action, Resource } from "@/lib/permission";
 import { Pagination } from "@/components/common/Pagination";
 import { RefundRequest } from "@prisma/client";
 import { RefundTable } from "./RefundTable";
+import CustomToast from "@/components/common/CustomToast";
 
 const getRowBorderClass = (status: string | undefined) => {
   switch (status) {
@@ -92,7 +92,7 @@ export const BurnsTab = ({
       return config.burnAddress as string;
     } catch (err) {
       // console.error("Error fetching config:", err);
-      toast.error(
+      CustomToast.error(
         err instanceof Error ? err.message : "Failed to fetch config"
       );
       setError(err instanceof Error ? err.message : "Failed to fetch config");
@@ -113,7 +113,7 @@ export const BurnsTab = ({
       setBurnUtxos(fetchedBurnUtxos);
     } catch (err) {
       // console.error("Error fetching UTXOs:", err);
-      toast.error(err instanceof Error ? err.message : "Failed to fetch UTXOs");
+      CustomToast.error(err instanceof Error ? err.message : "Failed to fetch UTXOs");
       setError(err instanceof Error ? err.message : "Failed to fetch UTXOs");
     }
   }, []);
@@ -202,12 +202,12 @@ export const BurnsTab = ({
         );
       }
 
-      toast.success(
+      CustomToast.success(
         `${request.type === "burn" ? "Burn" : "Refund"} request cancelled`
       );
     } catch (err) {
       // console.error(`Error cancelling ${request.type}:`, err);
-      toast.error(
+      CustomToast.error(
         err instanceof Error
           ? err.message
           : `Failed to cancel ${request.type} request`
@@ -233,10 +233,10 @@ export const BurnsTab = ({
         throw new Error(data.error || "Failed to reject burn request");
       }
 
-      toast.success("Burn request Rejected");
+      CustomToast.success("Burn request Rejected");
     } catch (error) {
       // console.error("Error approving burn:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to Reject burn request"
@@ -262,10 +262,10 @@ export const BurnsTab = ({
         throw new Error(data.error || "Failed to reject refund request");
       }
 
-      toast.success("Refund request Rejected");
+      CustomToast.success("Refund request Rejected");
     } catch (error) {
       // console.error("Error approving burn:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to Reject refund request"
@@ -286,10 +286,10 @@ export const BurnsTab = ({
         throw new Error(data.error || "Failed to approve refund request");
       }
 
-      toast.success("Refund request approved");
+      CustomToast.success("Refund request approved");
     } catch (error) {
       // console.error("Error approving refund:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to approve refund request"
@@ -310,10 +310,10 @@ export const BurnsTab = ({
         throw new Error(data.error || "Failed to approve burn request");
       }
 
-      toast.success("Burn request approved");
+      CustomToast.success("Burn request approved");
     } catch (error) {
       // console.error("Error approving burn:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to approve burn request"
@@ -381,17 +381,17 @@ export const BurnsTab = ({
   const handleRefundSuccess = () => {
     setSelectedRefund(null);
     handleRefresh();
-    toast.success("Refund initiated successfully");
+    CustomToast.success("Refund initiated successfully");
   };
 
   const handleCopyAddress = (address: string) => {
     navigator.clipboard.writeText(address);
-    toast.success("Address copied to clipboard");
+    CustomToast.success("Address copied to clipboard");
   };
 
   const handleCopyTxid = (txid: string) => {
     navigator.clipboard.writeText(txid);
-    toast.success("Transaction ID copied to clipboard");
+    CustomToast.success("Transaction ID copied to clipboard");
   };
 
   // Initial fetch of config and UTXOs

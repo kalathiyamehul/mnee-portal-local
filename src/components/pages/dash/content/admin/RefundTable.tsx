@@ -3,7 +3,6 @@ import type { Activity, BurnUtxo } from './types';
 import { FaCopy } from 'react-icons/fa6';
 import { formatDate } from 'date-fns';
 import { useSession } from 'next-auth/react';
-import { toast } from 'react-hot-toast';
 import { Pagination } from "@/components/common/Pagination";
 import { useEffect, useState } from 'react';
 import { MdOutlineOpenInNew } from 'react-icons/md';

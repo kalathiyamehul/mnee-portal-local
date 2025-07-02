@@ -4,12 +4,12 @@ import { toToken } from 'satoshi-token';
 import { FaCopy } from 'react-icons/fa6';
 import { format, formatDate, formatDistanceStrict, formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
-import { toast } from 'react-hot-toast';
 import { formatRevalidate } from 'next/dist/server/lib/revalidate';
 import { Pagination } from "@/components/common/Pagination";
 import { useEffect, useState } from 'react';
 import { MdOutlineOpenInNew } from 'react-icons/md';
 import { apiFetch } from '@/utils/api';
+import CustomToast from '@/components/common/CustomToast';
 
 interface BurnTableProps {
 	burns: BurnUtxo[];
@@ -58,10 +58,10 @@ export const BurnTable = ({
 				throw new Error(data.error || 'Failed to approve refund request');
 			}
 
-			toast.success('Refund request approved');
+			CustomToast.success('Refund request approved');
 		} catch (error) {
 			// console.error('Error approving refund:', error);
-			toast.error(error instanceof Error ? error.message : 'Failed to approve refund request');
+			CustomToast.error(error instanceof Error ? error.message : 'Failed to approve refund request');
 		}
 	};
 
@@ -83,10 +83,10 @@ export const BurnTable = ({
 			throw new Error(data.error || "Failed to reject refund request");
 		  }
 	
-		  toast.success("Refund request Rejected");
+		  CustomToast.success("Refund request Rejected");
 		} catch (error) {
 		  // console.error("Error approving burn:", error);
-		  toast.error(
+		  CustomToast.error(
 			error instanceof Error
 			  ? error.message
 			  : "Failed to Reject refund request"
@@ -109,11 +109,11 @@ export const BurnTable = ({
                 throw new Error(data.error || 'Failed to settle burn request');
             }
 
-            toast.success('Burn request settled successfully');
+            CustomToast.success('Burn request settled successfully');
             // Optionally, trigger a refresh or callback here
         } catch (error) {
             // console.error('Error settling burn:', error);
-            toast.error(error instanceof Error ? error.message : 'Failed to settle burn request');
+            CustomToast.error(error instanceof Error ? error.message : 'Failed to settle burn request');
         } finally {
             setSettlingId(null);
         }

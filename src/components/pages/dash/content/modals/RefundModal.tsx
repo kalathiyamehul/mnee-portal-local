@@ -1,8 +1,8 @@
 import { FaSpinner, FaArrowRotateLeft } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
-import { toast } from 'react-hot-toast';
 import { useState } from 'react';
 import { apiFetch } from '@/utils/api';
+import CustomToast from '@/components/common/CustomToast';
 
 interface RefundModalProps {
   onClose: () => void;
@@ -51,12 +51,12 @@ export const RefundModal = ({
         throw new Error('No request ID returned from server');
       }
 
-      toast.success("Refund request created (pending approval)");
+      CustomToast.success("Refund request created (pending approval)");
       onSuccess();
       onClose();
     } catch (error) {
       // console.error('Error creating refund request:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create refund request');
+      CustomToast.error(error instanceof Error ? error.message : 'Failed to create refund request');
     } finally {
       setIsLoading(false);
     }
