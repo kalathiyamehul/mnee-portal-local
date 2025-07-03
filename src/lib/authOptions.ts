@@ -4,7 +4,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import speakeasy from 'speakeasy';
-import { checkAccountLockout, checkRateLimit, resetRateLimit } from '@/lib/rateLimiter';
+import { checkRateLimit, RateLimitType } from '@/lib/rateLimiter';
 
 // Helper function to extract client IP from NextAuth request
 function getClientIPFromNextAuthReq(req: any): string {
@@ -55,7 +55,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         const clientIP = getClientIPFromNextAuthReq(req);
-        const rateLimitResult = await checkRateLimit(clientIP, 'LOGIN_ATTEMPT');
+        const rateLimitResult = await checkRateLimit(clientIP, RateLimitType.LOGIN_ATTEMPT);
         if (rateLimitResult.blocked) {
           const resetTime = rateLimitResult.blockUntil || rateLimitResult.resetTime;
           const retryAfter = Math.ceil((resetTime.getTime() - Date.now()) / 1000);
@@ -123,10 +123,10 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Check 2FA rate limiting
-          const twoFALimit = await checkRateLimit(credentials.email, 'TWO_FA_ATTEMPT');
-          if (twoFALimit.blocked) {
-            throw new Error("Too many 2FA attempts. Please try again later.");
-          }
+          // const twoFALimit = await checkRateLimit(credentials.email, 'TWO_FA_ATTEMPT');
+          // if (twoFALimit.blocked) {
+          //   throw new Error("Too many 2FA attempts. Please try again later.");
+          // }
 
           const verified = speakeasy.totp.verify({
             secret: user.twoFactorSecret!,
@@ -139,7 +139,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Reset 2FA rate limit on successful verification
-          await resetRateLimit(credentials.email, 'TWO_FA_ATTEMPT');
+          // await resetRateLimit(credentials.email, 'TWO_FA_ATTEMPT');
         }
 
         if (user.requiresPasswordReset && credentials.fromReset !== 'true') {

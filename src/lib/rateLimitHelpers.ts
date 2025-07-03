@@ -1,5 +1,5 @@
-import { RateLimitType } from '@prisma/client';
 import { CSRFOptions } from './csrf';
+import { RateLimitType } from './rateLimiter';
 
 /**
  * Helper function to create rate limiting configuration for 2FA endpoints
@@ -7,7 +7,7 @@ import { CSRFOptions } from './csrf';
 export function create2FARateLimit(): CSRFOptions {
     return {
         rateLimit: {
-            type: 'TWO_FA_ATTEMPT',
+            type: RateLimitType.API_REQUEST,
             identifier: async (request: Request) => {
                 try {
                     const body = await request.clone().json();
@@ -26,7 +26,7 @@ export function create2FARateLimit(): CSRFOptions {
 export function createAPIRateLimit(maxAttempts?: number): CSRFOptions {
     return {
         rateLimit: {
-            type: 'API_REQUEST',
+            type: RateLimitType.API_REQUEST,
             config: maxAttempts ? { maxAttempts } : undefined,
         },
     };

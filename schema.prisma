@@ -391,7 +391,7 @@ model ActivityLog {
 model RateLimitAttempt {
   id          String   @id @default(uuid())
   identifier  String   // IP address or email
-  type        RateLimitType
+  type        String
   attempts    Int      @default(1)
   windowStart DateTime @default(now()) @map("window_start")
   lastAttempt DateTime @default(now()) @map("last_attempt")
@@ -414,11 +414,4 @@ model AccountLockout {
 
   @@index([email, lockedUntil])
   @@map("account_lockout")
-}
-
-enum RateLimitType {
-  LOGIN_ATTEMPT
-  API_REQUEST
-  PASSWORD_RESET
-  TWO_FA_ATTEMPT
 }

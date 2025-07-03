@@ -1,7 +1,6 @@
 import csrf from 'csrf';
 import { NextResponse } from 'next/server';
-import { RateLimitType } from '@prisma/client';
-import { checkRateLimit, getClientIP, RateLimitConfig } from './rateLimiter';
+import { checkRateLimit, getClientIP, RateLimitConfig, RateLimitType } from './rateLimiter';
 
 const tokens = new csrf();
 const CSRF_SECRET = process.env.CSRF_SECRET || "N76P9eIuG68d7GZhKGmvzCD7";
