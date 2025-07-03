@@ -90,27 +90,41 @@ export const POST = withCSRF(async function (req: Request) {
 
         const hashedPassword = await hash(password, 12);
 
-        const user = await prisma.user.create({
-            data: {
-                name,
-                email,
-                password: hashedPassword,
-                roleId,
-                createdBy: session.user.email,
-                requiresPasswordReset: false,
-            },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                role: {
-                    select: {
-                        id: true,
-                        name: true,
-                    },
+        // Create user with password history in a transaction
+        const user = await prisma.$transaction(async (tx) => {
+            // Create the user
+            const newUser = await tx.user.create({
+                data: {
+                    name,
+                    email,
+                    password: hashedPassword,
+                    roleId,
+                    createdBy: session.user.email,
+                    requiresPasswordReset: false,
                 },
-                createdAt: true,
-            },
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: {
+                        select: {
+                            id: true,
+                            name: true,
+                        },
+                    },
+                    createdAt: true,
+                },
+            });
+
+            // Initialize password history with the initial password
+            await tx.passwordHistory.create({
+                data: {
+                    userId: newUser.id,
+                    password: hashedPassword
+                }
+            });
+
+            return newUser;
         });
 
         await logActivity(prisma, {

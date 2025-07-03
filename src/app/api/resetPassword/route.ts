@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import bcrypt from 'bcrypt';
-import { isPasswordValid } from '@/utils/auth';
+import { isPasswordValid, isPasswordReused, updatePasswordWithHistory } from '@/utils/auth';
 import { withCSRF } from '@/lib/csrf';
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 import { emitPasswordChanged } from '@/lib/sseEmitter';
@@ -41,6 +41,16 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if password has been used before (including current password and history)
+    const isReused = await isPasswordReused(session.user.id, newPassword);
+    if (isReused) {
+      console.log('[Reset Password] Error: Password has been used before');
+      return NextResponse.json(
+        { error: 'Password has been used before. Please choose a different password.' },
+        { status: 400 }
+      );
+    }
+
     // Hash the new password with a high cost factor for additional security
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
@@ -51,13 +61,14 @@ export async function POST(request: Request) {
     });
     console.log('[Reset Password] User state before update:', beforeUser);
 
-    // Update user's password and clear the reset requirement
+    // Update user's password using the password history function and clear the reset requirement
+    await updatePasswordWithHistory(session.user.id, hashedPassword);
+
+    // Update the requiresPasswordReset flag separately
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
       data: {
-        password: hashedPassword, 
-        requiresPasswordReset: false,
-        passwordChangedAt: new Date() // This will invalidate all existing JWT tokens
+        requiresPasswordReset: false
       },
       select: { id: true, email: true, requiresPasswordReset: true }
     });
