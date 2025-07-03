@@ -1,8 +1,8 @@
 import { FaSpinner, FaArrowRotateLeft } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
-import { toast } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/utils/api';
+import CustomToast from '@/components/common/CustomToast';
 
 interface RefundModalProps {
   onClose: () => void;
@@ -51,7 +51,7 @@ export const RefundModal = ({
         setNumApprovals(`${data.minNoOfApproval}`);
       } catch (error) {
         // console.error("Error fetching config:", error);
-        toast.error("Failed to fetch configuration");
+        CustomToast.error("Failed to fetch configuration");
       }
     };
 
@@ -89,7 +89,7 @@ export const RefundModal = ({
     });
     
     if (addressError || numApprovalsError) {
-      toast.error(addressError || numApprovalsError || "Please fix the form errors");
+      CustomToast.error(addressError || numApprovalsError || "Please fix the form errors");
       return;
     }
 
@@ -116,12 +116,12 @@ export const RefundModal = ({
         throw new Error('No request ID returned from server');
       }
 
-      toast.success("Refund request created (pending approval)");
+      CustomToast.success("Refund request created (pending approval)");
       onSuccess();
       onClose();
     } catch (error) {
       // console.error('Error creating refund request:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to create refund request');
+      CustomToast.error(error instanceof Error ? error.message : 'Failed to create refund request');
     } finally {
       setIsLoading(false);
     }
@@ -167,7 +167,7 @@ export const RefundModal = ({
                         config?.maxNoOfApproval &&
                         num > config.maxNoOfApproval
                       ) {
-                        toast.error(
+                        CustomToast.error(
                           `No of Approvals must be less than or equal to ${config?.maxNoOfApproval}`
                         );
                       } else {

@@ -11,7 +11,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MintTable } from "./admin/MintTable";
 import { BurnTable } from "./admin/BurnTable";
-import { toast } from "react-hot-toast";
 import type { Activity, BurnUtxo } from "./admin/types";
 import { TokenActivityChart } from "@/components/charts/TokenActivityChart";
 import { ActivityList } from "./admin/ActivityList";
@@ -23,6 +22,7 @@ import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
 import { apiFetch } from "@/utils/api";
+import CustomToast from "@/components/common/CustomToast";
 
 // Utility functions
 const getActivityDisplayText = (activity: Activity) => {
@@ -336,10 +336,25 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
         body: JSON.stringify({ [requestType]: id }),
       });
       fetchMetrics();
-      toast.success("Request cancelled");
+      CustomToast.success("Request cancelled");
     } catch (error) {
       // console.error("Error cancelling request:", error);
-      toast.error("Failed to cancel request");
+      CustomToast.error("Failed to cancel request");
+    }
+  };
+
+  const handleReject = async (id: string, type: Activity["type"]) => {
+    try {
+      const requestType = `${type.toLowerCase()}RequestId`;
+      await apiFetch("/api/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [requestType]: id }),
+      });
+      CustomToast.success("Request Rejected");
+    } catch (error) {
+      // console.error("Error Rejecting request:", error);
+      CustomToast.error("Failed to Reject request");
     }
   };
 
@@ -393,10 +408,10 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       }
 
       fetchMetrics();
-      toast.success("Request approved");
+      CustomToast.success("Request approved");
     } catch (error) {
       // console.error("Error approving request:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to approve request"
       );
     }
@@ -408,7 +423,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       .then((data) => setMetrics(data))
       .catch((error) => {
         // console.error("Failed to fetch dashboard metrics:", error)
-        toast.error(
+        CustomToast.error(
           error instanceof Error
             ? error.message
             : "Failed to fetch dashboard metrics"
@@ -703,19 +718,21 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
         </div>
 
         <div className="w-full">
-          {hasReadBurnPer && <BurnTable
-            title="Recent Burns"
-            burns={formattedBurns}
-            decimals={initialConfig.decimals}
-            onCopyTxid={(txid) => {
-              navigator.clipboard.writeText(txid);
-              toast.success("Transaction ID copied to clipboard");
-            }}
-            alwaysShow={true}
-            showViewAll={true}
-            showRequester={false}
-            hasSettleBurnPer={hasSettleBurnPer}
-          />}
+          {hasReadBurnPer && (
+            <BurnTable
+              title="Recent Burns"
+              burns={formattedBurns}
+              decimals={initialConfig.decimals}
+              onCopyTxid={(txid) => {
+                navigator.clipboard.writeText(txid);
+                CustomToast.success("Transaction ID copied to clipboard");
+              }}
+              alwaysShow={true}
+              showViewAll={true}
+              showRequester={false}
+              hasSettleBurnPer={hasSettleBurnPer}
+            />
+          )}
         </div>
       </div>
     </div>

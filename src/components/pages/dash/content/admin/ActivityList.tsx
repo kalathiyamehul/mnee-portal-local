@@ -6,7 +6,6 @@ import type { Activity, ActivityListProps } from "./types";
 import { formatDistanceToNow } from "date-fns";
 import { getGravatarUrl } from "@/utils/gravatar";
 import { FaSpinner } from "react-icons/fa6";
-import { toast } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 import { useEffect, useState } from "react";
 import { ExportButtons } from "@/components/common/ExportButtons";

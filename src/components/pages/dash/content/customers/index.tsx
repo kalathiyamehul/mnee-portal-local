@@ -17,12 +17,15 @@ import { getConfig } from "@/lib/config";
 import { toToken } from "satoshi-token";
 import type { Config, Customer } from "@prisma/client";
 import { FetchStatus } from "@/types/common";
-import toast, { ErrorIcon } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePermission } from "@/hooks/usePermission";
 import { Resource, Action } from "@/lib/permission";
 import { apiFetch } from "@/utils/api";
+import { CustomerHistory } from "./CustomerHistory";
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import type { Activity } from "./types";
+import CustomToast from "@/components/common/CustomToast";
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
@@ -43,7 +46,7 @@ export default function DashboardCustomersContent() {
         setConfig(configData);
       } catch (error) {
         // console.error("Error loading config:", error);
-        toast.error("Failed to load config");
+        CustomToast.error("Failed to load config");
       }
     };
     init();
@@ -106,7 +109,7 @@ export default function DashboardCustomersContent() {
       }));
     } catch (error) {
       // console.error("Error exporting customers:", error);
-      toast.error("Failed to export customers");
+      CustomToast.error("Failed to export customers");
       throw error;
     }
   };
