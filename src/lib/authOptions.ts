@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import speakeasy from 'speakeasy';
 import { checkRateLimit, RateLimitType } from '@/lib/rateLimiter';
+import { createLoginFingerprint } from '@/lib/rateLimitHelpers';
 
 // Helper function to extract client IP from NextAuth request
 function getClientIPFromNextAuthReq(req: any): string {
@@ -54,8 +55,16 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const clientIP = getClientIPFromNextAuthReq(req);
-        const rateLimitResult = await checkRateLimit(clientIP, RateLimitType.LOGIN_ATTEMPT);
+        //ip based rate limiting
+        // const clientIP = getClientIPFromNextAuthReq(req);
+        // const rateLimitResult = await checkRateLimit(clientIP, RateLimitType.LOGIN_ATTEMPT);
+
+        // Use email instead of IP for rate limiting to handle VPN users
+        // const rateLimitResult = await checkRateLimit(credentials.email, RateLimitType.LOGIN_ATTEMPT);
+
+        // Use advanced fingerprinting (session + user-agent + device) for VPN users
+        const fingerprintId = createLoginFingerprint(req, credentials.email);
+        const rateLimitResult = await checkRateLimit(fingerprintId, RateLimitType.LOGIN_ATTEMPT);
         if (rateLimitResult.blocked) {
           const resetTime = rateLimitResult.blockUntil || rateLimitResult.resetTime;
           const retryAfter = Math.ceil((resetTime.getTime() - Date.now()) / 1000);
@@ -72,9 +81,9 @@ export const authOptions: NextAuthOptions = {
           let errorMessage;
           if (retryAfter > 60) {
             const minutes = Math.ceil(retryAfter / 60);
-            errorMessage = `Rate limit exceeded. Too many login attempts. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''} (at ${timeString}).`;
+            errorMessage = `Rate limit exceeded. Too many login attempts from this device. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''} (at ${timeString}).`;
           } else {
-            errorMessage = `Rate limit exceeded. Too many login attempts. Please try again in ${retryAfter} second${retryAfter > 1 ? 's' : ''} (at ${timeString}).`;
+            errorMessage = `Rate limit exceeded. Too many login attempts from this device. Please try again in ${retryAfter} second${retryAfter > 1 ? 's' : ''} (at ${timeString}).`;
           }
           throw new Error(errorMessage);
         }
