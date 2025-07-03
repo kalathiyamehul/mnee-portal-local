@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { getGravatarUrl } from "@/utils/gravatar";
 import type { Session } from "next-auth";
 import { Pagination } from "@/components/common/Pagination";
-import toast from "react-hot-toast";
+import CustomToast from "@/components/common/CustomToast";
 
 interface ActiveRestrictionsProps {
   restrictions: AddressStatus[];
@@ -43,7 +43,7 @@ interface ActiveRestrictionsProps {
 
 const handleCopyAddress = (txid: string) => {
   navigator.clipboard.writeText(txid);
-  toast.success("Address copied to clipboard");
+  CustomToast.success("Address copied to clipboard");
 };
 
 export const ActiveRestrictions = ({

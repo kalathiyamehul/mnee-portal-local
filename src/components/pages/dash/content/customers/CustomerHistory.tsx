@@ -1,7 +1,6 @@
 import { formatDistanceToNow } from "date-fns";
 import { FaCopy, FaSpinner } from "react-icons/fa6";
 import { useSession } from "next-auth/react";
-import { toast } from "react-hot-toast";
 import {
   MdOutlineOpenInNew,
 } from "react-icons/md";
@@ -10,6 +9,7 @@ import { getGravatarUrl } from "@/utils/gravatar";
 import { Pagination } from "@/components/common/Pagination";
 import { apiFetch } from "@/utils/api";
 import type { Activity } from "./types";
+import CustomToast from "@/components/common/CustomToast";
 
 const statusColors: Record<string, string> = {
   PENDING: "badge-warning",
@@ -93,9 +93,7 @@ export const CustomerHistory = ({
 
       if (response.status === 202) {
         // System is paused or address is frozen, show info toast
-        toast(data.error || "Request will remain pending", {
-          style: { background: "#3b82f6", color: "white" },
-        });
+        CustomToast.error(data.error || "Request will remain pending");
         onUpdate?.();
         return;
       }
@@ -105,14 +103,14 @@ export const CustomerHistory = ({
       }
 
       if (data.success) {
-        toast.success(data.message || "Request Approved");
+        CustomToast.success(data.message || "Request Approved");
         fetchCustomers?.();
       } else {
         throw new Error(data.error || "Failed to approve customer request");
       }
     } catch (error) {
       // console.error("Failed to approve customer request:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to approve customer request"
@@ -139,14 +137,14 @@ export const CustomerHistory = ({
       }
 
       if (data.success) {
-        toast.success("customer request cancelled");
+        CustomToast.success("customer request cancelled");
         onUpdate?.();
       } else {
         throw new Error(data.error || "Failed to cancel customer request");
       }
     } catch (error) {
       // console.error("Failed to cancel customer request:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to cancel customer request"
@@ -172,14 +170,14 @@ export const CustomerHistory = ({
       }
 
       if (data.success) {
-        toast.success(data.message || "customer request rejected");
+        CustomToast.success(data.message || "customer request rejected");
         onUpdate?.();
       } else {
         throw new Error(data.error || "Failed to reject customer request");
       }
     } catch (error) {
       // console.error("Failed to reject customer request:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to reject customer request"
