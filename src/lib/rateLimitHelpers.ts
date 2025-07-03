@@ -67,3 +67,6 @@ export function createLoginFingerprint(req: any, email: string): string {
         return `fallback:${email}`;
     }
 }
+export function createFingerprintForAPIRequest(req: any, email: string | null, type: string): string {
+    return `${type?.toLowerCase()}:${email || ""}:${generateDeviceFingerprintFromNextAuth(req)}`;
+}

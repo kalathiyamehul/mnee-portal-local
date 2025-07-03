@@ -7,39 +7,6 @@ import speakeasy from 'speakeasy';
 import { checkRateLimit, RateLimitType } from '@/lib/rateLimiter';
 import { createLoginFingerprint } from '@/lib/rateLimitHelpers';
 
-// Helper function to extract client IP from NextAuth request
-function getClientIPFromNextAuthReq(req: any): string {
-  // Try to extract IP from various sources in NextAuth request
-  if (req?.headers) {
-    const xForwardedFor = req.headers['x-forwarded-for'];
-    if (xForwardedFor) {
-      return Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor.split(',')[0].trim();
-    }
-
-    const xRealIP = req.headers['x-real-ip'];
-    if (xRealIP) {
-      return Array.isArray(xRealIP) ? xRealIP[0] : xRealIP;
-    }
-
-    const cfConnectingIP = req.headers['cf-connecting-ip'];
-    if (cfConnectingIP) {
-      return Array.isArray(cfConnectingIP) ? cfConnectingIP[0] : cfConnectingIP;
-    }
-  }
-
-  // Try to get IP from connection info
-  if (req?.connection?.remoteAddress) {
-    return req.connection.remoteAddress;
-  }
-
-  if (req?.socket?.remoteAddress) {
-    return req.socket.remoteAddress;
-  }
-
-  // Fallback to unknown
-  return 'unknown';
-}
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
