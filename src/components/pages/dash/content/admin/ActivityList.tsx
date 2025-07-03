@@ -12,6 +12,7 @@ import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePathname } from "next/navigation";
 import { MdOutlineOpenInNew } from "react-icons/md";
 import { apiFetch } from "@/utils/api";
+import CustomToast from "@/components/common/CustomToast";
 
 export const ActivityList = ({
   showOnlyPending,
@@ -103,7 +104,7 @@ export const ActivityList = ({
         : activity.type === "BURN" && activity.outpoint
         ? `Outpoint: ${activity.outpoint}`
         : activity.type === "CUSTOMER"
-        ? `Name: ${activity.name} \nEmail: ${activity.email}`
+        ? `Name: ${activity.name} \nAddress: ${activity.address}`
         : activity.type === "FREEZE" || activity.type === "BLACKLIST"
         ? `${
             activity.address ? `Address: ${activity.address}` : ""
@@ -182,7 +183,7 @@ export const ActivityList = ({
       }
 
       if (data.success) {
-        toast.success(data.message || `${type} request rejected`);
+        CustomToast.success(data.message || `${type} request rejected`);
       } else {
         throw new Error(
           data.error || `Failed to reject ${type.toLowerCase()} request`
@@ -190,7 +191,7 @@ export const ActivityList = ({
       }
     } catch (error) {
       // console.error(`Failed to reject ${type.toLowerCase()} request:`, error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : `Failed to reject ${type.toLowerCase()} request`
@@ -315,7 +316,8 @@ export const ActivityList = ({
                           {activity.type === "CUSTOMER" && (
                             <div className="text-sm font-mono flex flex-col">
                               <p className="opacity-70">
-                                Name: {activity.name} {activity.email}
+                                Name: {activity.name} <br />
+                                Address: {activity.address}
                               </p>
                             </div>
                           )}

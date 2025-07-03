@@ -22,9 +22,7 @@ import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePermission } from "@/hooks/usePermission";
 import { Resource, Action } from "@/lib/permission";
 import { apiFetch } from "@/utils/api";
-import { CustomerHistory } from "./CustomerHistory";
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
-import type { Activity } from "./types";
 import CustomToast from "@/components/common/CustomToast";
 
 export default function DashboardCustomersContent() {
