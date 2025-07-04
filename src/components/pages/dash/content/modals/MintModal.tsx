@@ -6,8 +6,8 @@ import CustomToast from '@/components/common/CustomToast';
 interface Customer {
   id: string;
   name: string;
-  email: string;
   address: string;
+  isActive: boolean;
 }
 
 interface MintModalProps {
@@ -61,7 +61,8 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
           throw new Error("Failed to fetch customers");
         }
         const data = await response.json();
-        setCustomers(data?.customers || []);
+        const filteredCustomers = data.customers.filter((customer: Customer) => customer.isActive);// Ensure we only include active customers
+        setCustomers(filteredCustomers || []);
       } catch (error) {
         // console.error("Error fetching customers:", error);
         CustomToast.error("Failed to fetch customers");

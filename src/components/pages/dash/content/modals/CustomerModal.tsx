@@ -11,7 +11,6 @@ interface CustomerModalProps {
   customer?: {
     id: string;
     name: string;
-    email: string;
     address: string;
     noOfApproval: number;
   };
@@ -56,14 +55,12 @@ export function CustomerModal({
   // Add validation states
   const [errors, setErrors] = useState({
     name: "",
-    email: "",
     address: "",
     noOfApproval: "",
   });
 
   const [formData, setFormData] = useState({
     name: customer?.name || "",
-    email: customer?.email || "",
     address: customer?.address || "",
     noOfApproval: customer?.noOfApproval || 2, // Add noOfApproval field with default
   });
@@ -116,9 +113,6 @@ export function CustomerModal({
       case "name":
         error = validateName(value.toString());
         break;
-      case "email":
-        error = validateEmail(value.toString());
-        break;
       case "address":
         error = validateAddress(value.toString());
         break;
@@ -135,20 +129,18 @@ export function CustomerModal({
 
     // Validate all fields before submission
     const nameError = validateName(formData.name);
-    const emailError = validateEmail(formData.email);
     const addressError = validateAddress(formData.address);
 
     // Update the error state setting to handle string returns
     setErrors({
       name: nameError,
-      email: emailError,
       address: addressError,
       noOfApproval: validateApproval(formData.noOfApproval) || "", // Ensure string type
     });
 
     // Improved error feedback
-    if (nameError || emailError || addressError) {
-      const firstError = [nameError, emailError, addressError].find((e) => e);
+    if (nameError || addressError) {
+      const firstError = [nameError, addressError].find((e) => e);
       CustomToast.error(firstError || "Please fix the form errors");
       return;
     }
@@ -165,7 +157,6 @@ export function CustomerModal({
           },
           body: JSON.stringify({
             name: formData.name,
-            email: formData.email,
             address: formData.address,
           }),
         });
@@ -225,27 +216,6 @@ export function CustomerModal({
                 <div className="label mt-1">
                   <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">
                     {errors.name}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="form-control w-full mb-4">
-              <label className="label label-text">Email Address</label>
-              <input
-                type="text"
-                className={`input input-bordered w-full max-w-md ${
-                  errors.email ? "input-error" : ""
-                }`}
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                placeholder="Enter customer email"
-                required
-              />
-              {errors.email && (
-                <div className="label mt-1">
-                  <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">
-                    {errors.email}
                   </span>
                 </div>
               )}

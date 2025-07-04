@@ -100,7 +100,7 @@ export const ActivityList = ({
         : ""),
     Details:
       activity.type === "MINT" && activity.customer
-        ? `Customer: ${activity.customer.name} \n${activity.customer.email}`
+        ? `Customer: ${activity.customer.name} \n${activity.customer.address}`
         : activity.type === "BURN" && activity.outpoint
         ? `Outpoint: ${activity.outpoint}`
         : activity.type === "CUSTOMER"
@@ -317,7 +317,16 @@ export const ActivityList = ({
                             <div className="text-sm font-mono flex flex-col">
                               <p className="opacity-70">
                                 Name: {activity.name} <br />
-                                Address: {activity.address}
+                                MNEE Address: 
+                                <a
+                                  href={`https://whatsonchain.com/address/${activity.address}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-0"
+                                  title="View on WhatsOnChain"
+                                >
+                                  {activity.address} <MdOutlineOpenInNew className="w-3 h-3" />
+                                </a>
                               </p>
                             </div>
                           )}
