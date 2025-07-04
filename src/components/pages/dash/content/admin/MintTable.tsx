@@ -279,7 +279,7 @@ const MintTableContent = ({
                     <div className="font-medium">
                       {mint.customer ? (
                         <Link
-                          href={`/dash/customers?id=${mint.customer.email}`}
+                          href={`/dash/customers?id=${mint.customer.id}`}
                           className="hover:underline"
                         >
                           {mint.customer.name}

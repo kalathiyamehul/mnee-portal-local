@@ -20,8 +20,8 @@ import {
 interface Customer {
   id: string;
   name: string;
-  email: string;
   address: string;
+  isActive: boolean;
   noOfApprovals: number;
   createdAt: string;
   creator: {

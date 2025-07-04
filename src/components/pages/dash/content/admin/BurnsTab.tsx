@@ -22,7 +22,6 @@ import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
 import { Pagination } from "@/components/common/Pagination";
 import { RefundRequest } from "@prisma/client";
-import { RefundTable } from "./RefundTable";
 import CustomToast from "@/components/common/CustomToast";
 
 const getRowBorderClass = (status: string | undefined) => {

@@ -256,9 +256,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const hasReadActionPer = isSuperAdmin
     ? true
     : hasPermission(Resource.SYSTEM, Action.READ) || false;
-  const hasManageSystemPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.SYSTEM, Action.MANAGE) || false;
+
+  const hasManageSystemPer = isSuperAdmin ? true : hasPermission(Resource.SYSTEM, Action.UPDATE) || false;
 
   // Settle Permission
   const hasSettleBurnPer = isSuperAdmin

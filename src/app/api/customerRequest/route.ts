@@ -16,14 +16,14 @@ export const POST = withCSRF( async function(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, email, address, action = "CREATE", customerId } = body;
+    const { name, address, action = "CREATE", customerId } = body;
     const config = await getConfig();
 
     // Check if customer already exists (by email or address)
     const existingCustomer = await prisma.customer.findFirst({
       where: {
         OR: [
-          { email },
+          { name },
           { address },
         ],
       },
@@ -42,7 +42,6 @@ export const POST = withCSRF( async function(request: Request) {
       const req = await tx.customerRequest.create({
         data: {
           name,
-          email,
           address,
           action,
           customerId,
@@ -54,7 +53,7 @@ export const POST = withCSRF( async function(request: Request) {
       await logActivity(tx, {
         action: ActivityAction.CUSTOMER_REQUEST_CREATE,
         metadata: {
-          customerEmail: email,
+          customerAddress: address,
           customerRequest: JSON.stringify(req, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),

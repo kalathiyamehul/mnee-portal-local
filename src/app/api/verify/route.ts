@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/authOptions";
 import { withCSRF } from "@/lib/csrf";
-import { create2FARateLimit } from "@/lib/rateLimitHelpers";
 
 export const POST = withCSRF(async function (request: Request) {
   try {
@@ -70,4 +69,4 @@ export const POST = withCSRF(async function (request: Request) {
       { status: 500 }
     );
   }
-}, create2FARateLimit());
+});

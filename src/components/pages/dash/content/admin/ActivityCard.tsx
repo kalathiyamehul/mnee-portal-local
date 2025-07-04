@@ -74,7 +74,7 @@ export const ActivityCard = ({
                         Customer: {activity.customer.name}
                       </span>
                       <span className="px-2 py-1 text-xs bg-base-300/50 rounded-lg w-fit">
-                        {activity.customer.email}
+                        {activity.customer.address}
                       </span>
                     </div>
                     <span className="px-2 py-1 text-xs bg-base-300 rounded-lg w-fit">

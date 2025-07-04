@@ -26,7 +26,7 @@ export const SystemStatus = ({
   const [isCancelling, setIsCancelling] = useState(false);
   const { hasPermission} = usePermission();
   const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
-  const canManageSystem = hasPermission(Resource.SYSTEM, Action.MANAGE);  
+  const canManageSystem = hasPermission(Resource.SYSTEM, Action.UPDATE);
 
   const pendingAction = statusData?.systemRequests?.find(
     (req) =>

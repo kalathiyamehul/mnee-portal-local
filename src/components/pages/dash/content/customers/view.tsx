@@ -20,8 +20,8 @@ interface CustomerActivity {
   customer: {
     id: string;
     name: string;
-    email: string;
     address: string;
+    isActive: boolean;
     createdAt: string;
     creator: {
       name: string | null;
@@ -122,17 +122,17 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
             <div className="avatar">
               <div className="mask mask-squircle w-16 h-16">
                 <img
-                  src={getGravatarUrl(customer.email)}
+                  src={getGravatarUrl(customer.address)}
                   alt="Customer avatar"
                 />
               </div>
             </div>
             <div>
               <h2 className="text-xl font-bold">{customer.name}</h2>
-              <p className="text-base-content/70">{customer.email}</p>
+              <p className="text-base-content/70">{customer.address}</p>
             </div>
           </div>
-          {hasPermission(Resource.CUSTOMER, Action.UPDATE) || isSuperAdmin && (
+          {(hasPermission(Resource.CUSTOMER, Action.UPDATE) || isSuperAdmin) && (
             <button
             type="button"
             onClick={() => setShowModal(true)}

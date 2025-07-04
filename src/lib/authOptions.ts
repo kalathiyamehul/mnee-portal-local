@@ -4,40 +4,8 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import speakeasy from 'speakeasy';
-import { checkAccountLockout, checkRateLimit, resetRateLimit } from '@/lib/rateLimiter';
-
-// Helper function to extract client IP from NextAuth request
-function getClientIPFromNextAuthReq(req: any): string {
-  // Try to extract IP from various sources in NextAuth request
-  if (req?.headers) {
-    const xForwardedFor = req.headers['x-forwarded-for'];
-    if (xForwardedFor) {
-      return Array.isArray(xForwardedFor) ? xForwardedFor[0] : xForwardedFor.split(',')[0].trim();
-    }
-
-    const xRealIP = req.headers['x-real-ip'];
-    if (xRealIP) {
-      return Array.isArray(xRealIP) ? xRealIP[0] : xRealIP;
-    }
-
-    const cfConnectingIP = req.headers['cf-connecting-ip'];
-    if (cfConnectingIP) {
-      return Array.isArray(cfConnectingIP) ? cfConnectingIP[0] : cfConnectingIP;
-    }
-  }
-
-  // Try to get IP from connection info
-  if (req?.connection?.remoteAddress) {
-    return req.connection.remoteAddress;
-  }
-
-  if (req?.socket?.remoteAddress) {
-    return req.socket.remoteAddress;
-  }
-
-  // Fallback to unknown
-  return 'unknown';
-}
+import { checkRateLimit, RateLimitType } from '@/lib/rateLimiter';
+import { createLoginFingerprint } from '@/lib/rateLimitHelpers';
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -54,8 +22,16 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const clientIP = getClientIPFromNextAuthReq(req);
-        const rateLimitResult = await checkRateLimit(clientIP, 'LOGIN_ATTEMPT');
+        //ip based rate limiting
+        // const clientIP = getClientIPFromNextAuthReq(req);
+        // const rateLimitResult = await checkRateLimit(clientIP, RateLimitType.LOGIN_ATTEMPT);
+
+        // Use email instead of IP for rate limiting to handle VPN users
+        // const rateLimitResult = await checkRateLimit(credentials.email, RateLimitType.LOGIN_ATTEMPT);
+
+        // Use advanced fingerprinting (session + user-agent + device) for VPN users
+        const fingerprintId = createLoginFingerprint(req, credentials.email);
+        const rateLimitResult = await checkRateLimit(fingerprintId, RateLimitType.LOGIN_ATTEMPT);
         if (rateLimitResult.blocked) {
           const resetTime = rateLimitResult.blockUntil || rateLimitResult.resetTime;
           const retryAfter = Math.ceil((resetTime.getTime() - Date.now()) / 1000);
@@ -72,9 +48,9 @@ export const authOptions: NextAuthOptions = {
           let errorMessage;
           if (retryAfter > 60) {
             const minutes = Math.ceil(retryAfter / 60);
-            errorMessage = `Rate limit exceeded. Too many login attempts. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''} (at ${timeString}).`;
+            errorMessage = `Rate limit exceeded. Too many login attempts from this device. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''} (at ${timeString}).`;
           } else {
-            errorMessage = `Rate limit exceeded. Too many login attempts. Please try again in ${retryAfter} second${retryAfter > 1 ? 's' : ''} (at ${timeString}).`;
+            errorMessage = `Rate limit exceeded. Too many login attempts from this device. Please try again in ${retryAfter} second${retryAfter > 1 ? 's' : ''} (at ${timeString}).`;
           }
           throw new Error(errorMessage);
         }
@@ -123,10 +99,10 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Check 2FA rate limiting
-          const twoFALimit = await checkRateLimit(credentials.email, 'TWO_FA_ATTEMPT');
-          if (twoFALimit.blocked) {
-            throw new Error("Too many 2FA attempts. Please try again later.");
-          }
+          // const twoFALimit = await checkRateLimit(credentials.email, 'TWO_FA_ATTEMPT');
+          // if (twoFALimit.blocked) {
+          //   throw new Error("Too many 2FA attempts. Please try again later.");
+          // }
 
           const verified = speakeasy.totp.verify({
             secret: user.twoFactorSecret!,
@@ -139,7 +115,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Reset 2FA rate limit on successful verification
-          await resetRateLimit(credentials.email, 'TWO_FA_ATTEMPT');
+          // await resetRateLimit(credentials.email, 'TWO_FA_ATTEMPT');
         }
 
         if (user.requiresPasswordReset && credentials.fromReset !== 'true') {

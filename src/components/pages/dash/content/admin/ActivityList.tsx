@@ -12,6 +12,7 @@ import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePathname } from "next/navigation";
 import { MdOutlineOpenInNew } from "react-icons/md";
 import { apiFetch } from "@/utils/api";
+import CustomToast from "@/components/common/CustomToast";
 
 export const ActivityList = ({
   showOnlyPending,
@@ -106,11 +107,11 @@ export const ActivityList = ({
         : ""),
     Details:
       activity.type === "MINT" && activity.customer
-        ? `Customer: ${activity.customer.name} \n${activity.customer.email}`
+        ? `Customer: ${activity.customer.name} \n${activity.customer.address}`
         : activity.type === "BURN" && activity.outpoint
         ? `Outpoint: ${activity.outpoint}`
         : activity.type === "CUSTOMER"
-        ? `Name: ${activity.name} \nEmail: ${activity.email}`
+        ? `Name: ${activity.name} \nAddress: ${activity.address}`
         : activity.type === "FREEZE" || activity.type === "BLACKLIST"
         ? `${
             activity.address ? `Address: ${activity.address}` : ""
@@ -277,7 +278,17 @@ export const ActivityList = ({
                           {activity.type === "CUSTOMER" && (
                             <div className="text-sm font-mono flex flex-col">
                               <p className="opacity-70">
-                                Name: {activity.name} {activity.email}
+                                Name: {activity.name} <br />
+                                MNEE Address: 
+                                <a
+                                  href={`https://whatsonchain.com/address/${activity.address}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-0"
+                                  title="View on WhatsOnChain"
+                                >
+                                  {activity.address} <MdOutlineOpenInNew className="w-3 h-3" />
+                                </a>
                               </p>
                             </div>
                           )}
