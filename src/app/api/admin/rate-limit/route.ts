@@ -3,8 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/authOptions';
 import { prisma } from '@/lib/prisma';
 import { withCSRF } from '@/lib/csrf';
-import { unlockAccount, resetRateLimit } from '@/lib/rateLimiter';
-import { RateLimitType } from '@prisma/client';
+import { unlockAccount, resetRateLimit, RateLimitType } from '@/lib/rateLimiter';
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 // GET - Get rate limit and lockout status
 export const GET = withCSRF(async function (request: Request) {
