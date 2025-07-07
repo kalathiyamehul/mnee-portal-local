@@ -1,11 +1,27 @@
-import CustomToast from '@/components/common/CustomToast'
-import { apiFetch } from '@/utils/api'
-import React, { useState, useEffect } from 'react'
+import CustomToast from "@/components/common/CustomToast";
+import { apiFetch } from "@/utils/api";
+import type { Config } from "@prisma/client";
+import React, { useState, useEffect } from "react";
+import { toToken, toTokenSat } from "satoshi-token";
 
 interface Threshold {
-  id: string
-  name: string
-  value: number
+  id: string;
+  name: string;
+  value: number;
+}
+
+interface FeeItem {
+  fee: number;
+  max: number;
+  min: number;
+}
+
+interface ValidationErrors {
+  [key: number]: {
+    fee?: string;
+    max?: string;
+    min?: string;
+  };
 }
 
 const ThresholdTab = () => {
@@ -15,6 +31,88 @@ const ThresholdTab = () => {
   const [editingThreshold, setEditingThreshold] = useState<Threshold | null>(
     null
   );
+  const [editingFee, setEditingFee] = useState<boolean>(false);
+  const [items, setItems] = useState<FeeItem[]>([]);
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [config, setConfig] = useState<Config>();
+
+  // Add new item
+  const addNewItem = (): void => {
+    setItems([...items, { fee: 0, max: 0, min: 0 }]);
+  };
+
+  // Remove item
+  const removeItem = (index: number): void => {
+    if (items.length > 1) {
+      const newItems = items.filter((_, i) => i !== index);
+      setItems(newItems);
+      // Remove errors for this item
+      const newErrors = { ...errors };
+      delete newErrors[index];
+      setErrors(newErrors);
+    }
+  };
+
+  // Update item field
+  const updateItem = (
+    index: number,
+    field: keyof FeeItem,
+    value: string
+  ): void => {
+    const numericValue = parseFloat(value) || 0;
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: numericValue };
+    setItems(newItems);
+
+    // Clear error for this field
+    if (errors[index]) {
+      const newErrors = { ...errors };
+      if (newErrors[index]) {
+        delete newErrors[index][field];
+        if (Object.keys(newErrors[index]).length === 0) {
+          delete newErrors[index];
+        }
+      }
+      setErrors(newErrors);
+    }
+  };
+
+  // Validate all items
+  const validateAllItems = (): boolean => {
+    const newErrors: ValidationErrors = {};
+
+    items.forEach((item, index) => {
+      const itemErrors: { fee?: string; max?: string; min?: string } = {};
+
+      // Validate fee
+      if (item.fee < 0) {
+        itemErrors.fee = "Fee must be non-negative";
+      }
+
+      // Validate max
+      if (item.max < 0) {
+        itemErrors.max = "Max must be non-negative";
+      }
+
+      // Validate min
+      if (item.min < 0) {
+        itemErrors.min = "Min must be non-negative";
+      }
+
+      // Validate min <= max
+      if (item.min > item.max) {
+        itemErrors.min = "Min cannot be greater than Max";
+      }
+
+      if (Object.keys(itemErrors).length > 0) {
+        newErrors[index] = itemErrors;
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // Fetch initial config data
   useEffect(() => {
@@ -25,6 +123,7 @@ const ThresholdTab = () => {
           throw new Error("Failed to fetch configuration");
         }
         const config = await response.json();
+        setConfig(config);
         setThresholds([
           {
             id: "1",
@@ -33,6 +132,8 @@ const ThresholdTab = () => {
           },
           { id: "2", name: "Maximum Approvals", value: config.maxNoOfApproval },
         ]);
+        // Initialize items with fee structure from config
+        setItems([...config.fees]);
       } catch (error) {
         // console.error("Error fetching config:", error);
         CustomToast.error("Failed to load threshold settings");
@@ -72,6 +173,30 @@ const ThresholdTab = () => {
     } catch (error) {
       // console.error("Error updating threshold:", error);
       CustomToast.error("Failed to update threshold");
+    }
+  };
+
+  const handlefeeSubmit = async () => {
+    if (isSubmitting || !validateAllItems()) return;
+    try {
+      const response = await apiFetch("/api/config", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          feeStructure: items,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to update fee structure");
+      }
+      setEditingFee(false);
+      setIsSubmitting(false);
+      CustomToast.success("Fee structure updated successfully");
+    } catch (error) {
+      // console.error("Error updating fee structure:", error);
+      CustomToast.error("Failed to update fee structure");
     }
   };
 
@@ -120,6 +245,159 @@ const ThresholdTab = () => {
         </table>
       </div>
 
+      {/* Fee Structure Configuration */}
+      <div className="flex justify-between items-center mt-14 mb-4">
+        <h1 className="text-2xl font-bold">Fee Structure Configuration</h1>
+        {editingFee ? (
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={addNewItem}
+              className="btn btn-primary btn-sm"
+              type="button"
+            >
+              Add New Fee
+            </button>
+            <button onClick={() => setEditingFee(false)} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handlefeeSubmit}
+              className="btn btn-success btn-sm"
+              type="button"
+            >
+              Save
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditingFee(true)}
+            className="btn btn-primary"
+            type="button"
+          >
+            Edit
+          </button>
+        )}
+      </div>
+
+      <div className="overflow-x-auto space-y-4">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Fee</th>
+              <th>Min Amount</th>
+              <th>Max Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, index) => (
+              <tr key={index} className="p-3">
+                {/* Fee Field */}
+                <td>
+                  {editingFee ? (
+                    <input
+                      type="number"
+                      value={item.fee}
+                      onChange={(e) => updateItem(index, "fee", e.target.value)}
+                      className={`input input-bordered w-full ${
+                        errors[index]?.fee &&
+                        "border-red-500 focus:ring-red-500"
+                      }`}
+                      placeholder="Fee amount"
+                      min="0"
+                    />
+                  ) : (
+                    <p>{toToken(item?.fee, config?.decimals ?? 0)} MNEE</p>
+                  )}
+                  {errors[index]?.fee && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors[index].fee}
+                    </p>
+                  )}
+                </td>
+
+                {/* Min Field */}
+                <td>
+                  {editingFee ? (
+                    <input
+                      type="number"
+                      value={item.min}
+                      onChange={(e) => updateItem(index, "min", e.target.value)}
+                      className={`input input-bordered w-full ${
+                        errors[index]?.min &&
+                        "border-red-500 focus:ring-red-500"
+                      }`}
+                      placeholder="Minimum"
+                      min="0"
+                    />
+                  ) : (
+                    <p>{toToken(item?.min, config?.decimals ?? 0)} MNEE</p>
+                  )}
+                  {errors[index]?.min && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors[index].min}
+                    </p>
+                  )}
+                </td>
+
+                {/* Max Field */}
+                <td>
+                  {editingFee ? (
+                    <input
+                      type="number"
+                      value={item.max}
+                      onChange={(e) => updateItem(index, "max", e.target.value)}
+                      className={`input input-bordered w-full ${
+                        errors[index]?.max &&
+                        "border-red-500 focus:ring-red-500"
+                      }`}
+                      placeholder="Maximum"
+                      min="0"
+                    />
+                  ) : (
+                    <p>
+                      {item?.max === Number.MAX_SAFE_INTEGER
+                        ? "∞"
+                        : `${toToken(item.max, config?.decimals ?? 0)} MNEE`}
+                    </p>
+                  )}
+                  {errors[index]?.max && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors[index].max}
+                    </p>
+                  )}
+                </td>
+                <td>
+                  {editingFee && items.length > 1 && (
+                    <button
+                      onClick={() => removeItem(index)}
+                      className="btn btn-sm btn-error"
+                      type="button"
+                      aria-label={`Remove item ${index + 1}`}
+                    >
+                      Remove
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* Submit Button */}
+        {/* <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className={`w-full py-3 px-6 rounded-md font-medium transition-colors ${
+              isSubmitting
+                ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500'
+            }`}
+            type="button"
+          >
+            {isSubmitting ? 'Submitting...' : 'Submit to API'}
+          </button> */}
+      </div>
+
       {isEditing && (
         <div className="modal modal-open">
           <div className="modal-box">
@@ -141,22 +419,26 @@ const ThresholdTab = () => {
                 }}
                 onChange={(e) =>
                   setEditingThreshold((prev) =>
-                    prev ? { 
-                      ...prev, 
-                      value: Math.max(
-                        editingThreshold?.id === "1"
-                          ? 2  // Absolute minimum
-                          : editingThreshold?.id === "2"
-                            ? (thresholds.find(t => t.id === "1")?.value ?? 2) + 1  // Min = threshold1 + 1
-                            : 2,
-                        Math.min(
-                          editingThreshold?.id === "1"
-                            ? (thresholds.find(t => t.id === "2")?.value ?? Infinity) - 1  // Max = threshold2 - 1
-                            : Infinity,
-                          Number(e.target.value)
-                        )
-                      )
-                    } : null
+                    prev
+                      ? {
+                          ...prev,
+                          value: Math.max(
+                            editingThreshold?.id === "1"
+                              ? 2 // Absolute minimum
+                              : editingThreshold?.id === "2"
+                              ? (thresholds.find((t) => t.id === "1")?.value ??
+                                  2) + 1 // Min = threshold1 + 1
+                              : 2,
+                            Math.min(
+                              editingThreshold?.id === "1"
+                                ? (thresholds.find((t) => t.id === "2")
+                                    ?.value ?? Infinity) - 1 // Max = threshold2 - 1
+                                : Infinity,
+                              Number(e.target.value)
+                            )
+                          ),
+                        }
+                      : null
                   )
                 }
               />
@@ -177,6 +459,6 @@ const ThresholdTab = () => {
       )}
     </div>
   );
-}
+};
 
-export default ThresholdTab
+export default ThresholdTab;
