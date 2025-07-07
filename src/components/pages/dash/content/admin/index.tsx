@@ -758,6 +758,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
             {activeTab === "mints" && (
               <MintsTab
                 showModal={showModal}
+                config={config}
                 hasApproveMintPer={hasApproveMintPer}
                 hasCreateMintPer={hasCreateMintPer}
                 hasRejectMintPer={hasRejectMintPer}

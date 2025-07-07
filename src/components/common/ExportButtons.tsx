@@ -13,6 +13,7 @@ interface ExportButtonsProps {
   csvLabel?: string;
   pdfLabel?: string;
   onExport?: () => Promise<any[]>;
+  buttonLabel?: string;
 }
 
 export const ExportButtons: FC<ExportButtonsProps> = ({
@@ -21,6 +22,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
   className = "",
   csvLabel = "Export to CSV",
   pdfLabel = "Export to PDF",
+  buttonLabel = "Export",
   onExport,
 }) => {
   const [loading, setLoading] = useState(false);
@@ -111,7 +113,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
         {loading ? (
           <span className="loading loading-spinner loading-xs" />
         ) : (
-          "Export"
+          buttonLabel || "Export"
         )}
         <svg
           width="12px"
