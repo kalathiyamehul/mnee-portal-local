@@ -39,7 +39,13 @@ const ConfigureTab = () => {
 
   // Add new item
   const addNewItem = (): void => {
-    setItems([...items, { fee: 0, max: 0, min: 0 }]);
+    const lastItem = items[items.length - 1];
+    const newItem: FeeItem = {
+      fee: lastItem ? lastItem.fee + 1 : 0,
+      max: lastItem ? lastItem.max + 1000 : 1000,
+      min: lastItem ? lastItem.max + 1 : 0,
+    };
+    setItems([...items, newItem]);
   };
 
   // Remove item
@@ -47,10 +53,12 @@ const ConfigureTab = () => {
     if (items.length > 1) {
       const newItems = items.filter((_, i) => i !== index);
       setItems(newItems);
-      // Remove errors for this item
+      // Remove errors for this item and revalidate remaining items
       const newErrors = { ...errors };
       delete newErrors[index];
       setErrors(newErrors);
+      // Revalidate all items after removal
+      setTimeout(() => validateAllItems(), 0);
     }
   };
 
@@ -78,31 +86,61 @@ const ConfigureTab = () => {
     }
   };
 
-  // Validate all items
+  // Enhanced validation with sequential range checking
   const validateAllItems = (): boolean => {
     const newErrors: ValidationErrors = {};
 
     items.forEach((item, index) => {
       const itemErrors: { fee?: string; max?: string; min?: string } = {};
+      const previousItem = index > 0 ? items[index - 1] : null;
 
-      // Validate fee
+      // Basic validations
       if (item.fee < 0) {
         itemErrors.fee = "Fee must be non-negative";
       }
 
-      // Validate max
       if (item.max < 0) {
         itemErrors.max = "Max must be non-negative";
       }
 
-      // Validate min
       if (item.min < 0) {
         itemErrors.min = "Min must be non-negative";
       }
 
-      // Validate min <= max
+      // Validate min <= max for current item
       if (item.min > item.max) {
         itemErrors.min = "Min cannot be greater than Max";
+      }
+
+      // Sequential range validations (only if we have a previous item)
+      if (previousItem) {
+        // Fee must be greater than previous item's fee
+        if (item.fee <= previousItem.fee) {
+          itemErrors.fee = `Fee must be greater than ${previousItem.fee} (previous item's fee)`;
+        }
+
+        // Min must be greater than previous item's max
+        if (item.min <= previousItem.max) {
+          itemErrors.min = `Min must be greater than ${previousItem.max} (previous item's max)`;
+        }
+
+        // Additional check: current max should be greater than current min
+        // This is already covered above, but adding for clarity
+        if (item.max <= item.min) {
+          itemErrors.max = "Max must be greater than Min";
+        }
+      }
+
+      // For the first item, ensure min starts from 0
+      if (index === 0 && item.min !== 0) {
+        itemErrors.min = "First item's min must be 0";
+      }
+
+      // Add validation to ensure no gaps in ranges
+      if (previousItem && item.min !== previousItem.max + 1) {
+        itemErrors.min = `Min should be ${
+          previousItem.max + 1
+        } to maintain sequential range`;
       }
 
       if (Object.keys(itemErrors).length > 0) {
@@ -110,13 +148,33 @@ const ConfigureTab = () => {
       }
     });
 
+    // Additional validation: Check for overlapping ranges
+    for (let i = 0; i < items.length - 1; i++) {
+      const currentItem = items[i];
+      const nextItem = items[i + 1];
+
+      if (currentItem.max >= nextItem.min) {
+        if (!newErrors[i + 1]) {
+          newErrors[i + 1] = {};
+        }
+        newErrors[
+          i + 1
+        ].min = `Range overlaps with previous item. Min should be greater than ${currentItem.max}`;
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // Fetch initial config data
+  // Validate items whenever items change
   useEffect(() => {
-    const fetchConfig = async () => {
+    if (items.length > 0 && editingFee) {
+      validateAllItems();
+    }
+  }, [items, editingFee]);
+
+  const fetchConfig = async () => {
       try {
         const response = await apiFetch("/api/config/database");
         if (!response.ok) {
@@ -141,6 +199,9 @@ const ConfigureTab = () => {
         setLoading(false);
       }
     };
+
+  // Fetch initial config data
+  useEffect(() => {
     fetchConfig();
   }, []);
 
@@ -177,7 +238,16 @@ const ConfigureTab = () => {
   };
 
   const handlefeeSubmit = async () => {
-    if (isSubmitting || !validateAllItems()) return;
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+
+    if (!validateAllItems()) {
+      setIsSubmitting(false);
+      CustomToast.error("Please fix validation errors before submitting");
+      return;
+    }
+
     try {
       const response = await apiFetch("/api/config", {
         method: "PATCH",
@@ -188,15 +258,18 @@ const ConfigureTab = () => {
           feeStructure: items,
         }),
       });
+
       if (!response.ok) {
         throw new Error("Failed to update fee structure");
       }
+
       setEditingFee(false);
-      setIsSubmitting(false);
       CustomToast.success("Fee structure updated successfully");
     } catch (error) {
       // console.error("Error updating fee structure:", error);
       CustomToast.error("Failed to update fee structure");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -250,22 +323,41 @@ const ConfigureTab = () => {
         <h1 className="text-2xl font-bold">Fee Structure Configuration</h1>
         {editingFee ? (
           <div className="flex items-center space-x-4">
-            <button
-              onClick={addNewItem}
-              className="btn btn-primary btn-sm"
-              type="button"
+            <div
+              className="tooltip tooltip-top tooltip-error"
+              data-tip="Cannot add more fees if the last fee's max is set to Infinity"
             >
-              Add New Fee
-            </button>
-            <button onClick={() => setEditingFee(false)} className="btn btn-secondary btn-sm">
+              <button
+                onClick={addNewItem}
+                className="btn btn-primary btn-sm"
+                disabled={
+                  isSubmitting ||
+                  items[items.length - 1].max === Number.MAX_SAFE_INTEGER
+                }
+                type="button"
+              >
+                Add New Fee
+              </button>
+            </div>
+            <button
+              onClick={() => {
+                setEditingFee(false);
+                fetchConfig();
+              }}
+              className="btn btn-secondary btn-sm"
+            >
               Cancel
             </button>
+
             <button
               onClick={handlefeeSubmit}
-              className="btn btn-success btn-sm"
+              className={`btn btn-success btn-sm ${
+                isSubmitting ? "loading" : ""
+              }`}
               type="button"
+              disabled={isSubmitting}
             >
-              Save
+              {isSubmitting ? "Saving..." : "Save"}
             </button>
           </div>
         ) : (
@@ -279,6 +371,26 @@ const ConfigureTab = () => {
         )}
       </div>
 
+      {/* Validation Summary */}
+      {editingFee && Object.keys(errors).length > 0 && (
+        <div className="alert alert-error mb-4">
+          <div>
+            <h3 className="font-bold">Validation Errors:</h3>
+            <p className="text-sm">
+              Please fix the following errors before saving:
+            </p>
+            <ul className="list-disc list-inside text-sm mt-2">
+              {Object.entries(errors).map(([index, fieldErrors]) => (
+                <li key={index}>
+                  Row {parseInt(index) + 1}:{" "}
+                  {Object.values(fieldErrors).join(", ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto space-y-4">
         <table className="table">
           <thead>
@@ -286,6 +398,7 @@ const ConfigureTab = () => {
               <th>Fee</th>
               <th>Min Amount</th>
               <th>Max Amount</th>
+              {editingFee && <th>Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -345,6 +458,7 @@ const ConfigureTab = () => {
                     <input
                       type="number"
                       value={item.max}
+                      max={Number.MAX_SAFE_INTEGER}
                       onChange={(e) => updateItem(index, "max", e.target.value)}
                       className={`input input-bordered w-full ${
                         errors[index]?.max &&
@@ -366,8 +480,8 @@ const ConfigureTab = () => {
                     </p>
                   )}
                 </td>
-                <td>
-                  {editingFee && items.length > 1 && (
+                {editingFee && items.length > 1 && (
+                  <td>
                     <button
                       onClick={() => removeItem(index)}
                       className="btn btn-sm btn-error"
@@ -376,26 +490,12 @@ const ConfigureTab = () => {
                     >
                       Remove
                     </button>
-                  )}
-                </td>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
-
-        {/* Submit Button */}
-        {/* <button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className={`w-full py-3 px-6 rounded-md font-medium transition-colors ${
-              isSubmitting
-                ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500'
-            }`}
-            type="button"
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit to API'}
-          </button> */}
       </div>
 
       {isEditing && (
