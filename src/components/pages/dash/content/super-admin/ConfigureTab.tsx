@@ -24,7 +24,7 @@ interface ValidationErrors {
   };
 }
 
-const ThresholdTab = () => {
+const ConfigureTab = () => {
   const [loading, setLoading] = useState(true);
   const [thresholds, setThresholds] = useState<Threshold[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -271,7 +271,7 @@ const ThresholdTab = () => {
         ) : (
           <button
             onClick={() => setEditingFee(true)}
-            className="btn btn-primary"
+            className="btn btn-primary btn-sm"
             type="button"
           >
             Edit
@@ -461,4 +461,4 @@ const ThresholdTab = () => {
   );
 };
 
-export default ThresholdTab;
+export default ConfigureTab;
