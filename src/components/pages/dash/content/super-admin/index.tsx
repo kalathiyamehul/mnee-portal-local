@@ -4,11 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import type { Session } from "next-auth";
 import RolesTab from "./RolesTab";
-import ThresholdTab from "./ThresholdTab";
 import UsersTab from "./UsersTab";
 import { useRouter, useSearchParams } from "next/navigation";
+import ConfigureTab from "./ConfigureTab";
 
-type TabType = "roles" | "threshold" | "users";
+type TabType = "roles" | "configuration" | "users";
 
 interface AdminPageProps {
   defaultTab?: string;
@@ -47,10 +47,10 @@ export default function SuperAdminPage({
         </button>
         <button
           type="button"
-          className={`tab ${activeTab === "threshold" ? "tab-active" : ""}`}
-          onClick={() => handleTabChange("threshold")}
+          className={`tab ${activeTab === "configuration" ? "tab-active" : ""}`}
+          onClick={() => handleTabChange("configuration")}
         >
-          Threshold
+          Configuration
         </button>
         <button
           type="button"
@@ -63,7 +63,7 @@ export default function SuperAdminPage({
 
       <div className="animate-fade-in">
         {activeTab === "roles" && <RolesTab />}
-        {activeTab === "threshold" && <ThresholdTab />}
+        {activeTab === "configuration" && <ConfigureTab />}
         {activeTab === "users" && <UsersTab />}
       </div>
     </div>

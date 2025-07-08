@@ -66,9 +66,9 @@ export const POST = withCSRF(async function(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, email, address } = body;
+    const { name, address } = body;
 
-    if (!name || !email || !address) {
+    if (!name || !address) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -79,7 +79,7 @@ export const POST = withCSRF(async function(request: Request) {
     const existingCustomer = await prisma.customer.findFirst({
       where: {
         OR: [
-          { email },
+          { name },
           { address },
         ],
       },
@@ -95,7 +95,6 @@ export const POST = withCSRF(async function(request: Request) {
     const customer = await prisma.customer.create({
       data: {
         name,
-        email,
         address,
         createdBy: session.user.id,
       },

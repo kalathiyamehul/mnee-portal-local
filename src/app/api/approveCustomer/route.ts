@@ -50,7 +50,7 @@ export const POST = withCSRF(async function(request: Request) {
       await logActivity(tx, {
         action: ActivityAction.CUSTOMER_REQUEST_APPROVE,
         metadata: {
-          customerEmail: customerRequest.email,
+          customerAddress: customerRequest.address,
           customerRequestId,
           approverId: session.user.id,
         },
@@ -67,7 +67,7 @@ export const POST = withCSRF(async function(request: Request) {
         await logActivity(tx, {
           action: ActivityAction.CUSTOMER_REQUEST_FULLY_APPROVED,
           metadata: {
-            customerEmail: customerRequest.email,
+            customerAddress: customerRequest.address,
             customerRequestId,
             approvalsCount,
           },
@@ -76,7 +76,6 @@ export const POST = withCSRF(async function(request: Request) {
           const createdCustomer = await tx.customer.create({
             data: {
               name: customerRequest.name,
-              email: customerRequest.email,
               address: customerRequest.address,
               createdBy: customerRequest.requestedBy,
             },
@@ -84,7 +83,7 @@ export const POST = withCSRF(async function(request: Request) {
           await logActivity(tx, {
             action: ActivityAction.NEW_CUSTOMER_CREATED,
             metadata: {
-              customerEmail: createdCustomer.email,
+              customerAddress: createdCustomer.address,
               customer: JSON.stringify(createdCustomer, (key, value) =>
                 typeof value === 'bigint' ? value.toString() : value
               ),

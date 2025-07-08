@@ -1,5 +1,4 @@
 import { prisma } from './prisma';
-import { RateLimitType } from '@prisma/client';
 
 export interface RateLimitConfig {
     windowMs: number; // Time window in milliseconds
@@ -14,7 +13,10 @@ export interface RateLimitResult {
     blocked: boolean;
     blockUntil?: Date;
 }
-
+export enum RateLimitType {
+    LOGIN_ATTEMPT = 'LOGIN_ATTEMPT',
+    API_REQUEST = 'API_REQUEST',
+}
 // Default configurations for different types of rate limiting
 export const RATE_LIMIT_CONFIGS: Record<RateLimitType, RateLimitConfig> = {
     LOGIN_ATTEMPT: {
@@ -26,17 +28,7 @@ export const RATE_LIMIT_CONFIGS: Record<RateLimitType, RateLimitConfig> = {
         windowMs: 60 * 1000, // 1 minute
         maxAttempts: 100, // 100 requests per minute
         blockDurationMs: 1 * 60 * 1000, // Block for 1 minute
-    },
-    PASSWORD_RESET: {
-        windowMs: 60 * 60 * 1000, // 1 hour
-        maxAttempts: 3, // 3 attempts per hour
-        blockDurationMs: 60 * 60 * 1000, // Block for 1 hour
-    },
-    TWO_FA_ATTEMPT: {
-        windowMs: 5 * 60 * 1000, // 5 minutes
-        maxAttempts: 5, // 5 attempts per 5 minutes
-        blockDurationMs: 15 * 60 * 1000, // Block for 15 minutes
-    },
+    }
 };
 
 /**

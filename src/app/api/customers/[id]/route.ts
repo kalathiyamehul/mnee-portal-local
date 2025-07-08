@@ -6,7 +6,7 @@ import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
-export const POST =  withCSRF(async function(
+export const POST = withCSRF(async function (
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -32,7 +32,7 @@ export const POST =  withCSRF(async function(
     const existingCustomer = await prisma.customer.findFirst({
       where: {
         OR: [
-          { email },
+          { name },
           { address },
         ],
         NOT: {
@@ -53,7 +53,6 @@ export const POST =  withCSRF(async function(
         where: { id },
         data: {
           name,
-          email,
           address,
         },
         include: {
@@ -88,3 +87,63 @@ export const POST =  withCSRF(async function(
     );
   }
 }, createAPIRateLimit())
+
+export const PATCH = withCSRF(async function (
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const id = (await params).id;
+    const body = await request.json();
+    const { status } = body;
+
+    const customer = await prisma.customer.findUnique({
+      where: { id },
+      include: {
+        creator: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!customer) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+    }
+
+    const updatedCustomer = await prisma.$transaction(async (tx) => {
+      const updated = await tx.customer.update({
+        where: { id },
+        data: {
+          isActive: !customer.isActive,
+        },
+      });
+
+      await logActivity(tx, {
+        action: ActivityAction.CUSTOMER_UPDATE,
+        metadata: {
+          customerId: id,
+          isActive: updated.isActive,
+        },
+      });
+
+      return updated;
+    });
+
+    return NextResponse.json(updatedCustomer);
+  } catch (error) {
+    console.error("Error toggling customer active state:", error);
+    return NextResponse.json(
+      { error: "Failed to toggle customer active state" },
+      { status: 500 }
+    );
+  }
+}, createAPIRateLimit());

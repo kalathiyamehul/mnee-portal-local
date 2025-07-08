@@ -53,6 +53,13 @@ export const POST = withCSRF(async function(request: Request) {
         { status: 400 }
       );
     }
+    
+    if (customer.isActive === false) {
+      return NextResponse.json(
+        { error: "Customer is inactive" },
+        { status: 400 }
+      );
+    }
 
     // Check if system is paused and address is not blacklisted
     const systemCheck = await performSystemChecks(prisma, {

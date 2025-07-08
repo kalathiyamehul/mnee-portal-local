@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { FaSpinner } from 'react-icons/fa6';
-import { toast } from 'react-hot-toast';
 import { apiFetch } from '@/utils/api';
+import CustomToast from '@/components/common/CustomToast';
 
 interface Customer {
   id: string;
   name: string;
-  email: string;
   address: string;
+  isActive: boolean;
 }
 
 interface MintModalProps {
@@ -46,7 +46,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
         });
       } catch (error) {
         // console.error("Error fetching config:", error);
-        toast.error("Failed to fetch configuration");
+        CustomToast.error("Failed to fetch configuration");
       }
     };
 
@@ -61,10 +61,11 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
           throw new Error("Failed to fetch customers");
         }
         const data = await response.json();
-        setCustomers(data?.customers || []);
+        const filteredCustomers = data.customers.filter((customer: Customer) => customer.isActive);// Ensure we only include active customers
+        setCustomers(filteredCustomers || []);
       } catch (error) {
         // console.error("Error fetching customers:", error);
-        toast.error("Failed to fetch customers");
+        CustomToast.error("Failed to fetch customers");
       } finally {
         setLoadingCustomers(false);
       }
@@ -78,7 +79,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
     if (!selectedCustomer?.address || !amount || !config) return;
 
     if (Number(amount) <= 0) {
-      toast.error("Amount must be greater than 0");
+      CustomToast.error("Amount must be greater than 0");
       return;
     }
 
@@ -88,7 +89,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
       uproarValue < config.minNoOfApproval ||
       uproarValue > config.maxNoOfApproval
     ) {
-      toast.error(
+      CustomToast.error(
         `No of Approvals must be between ${config.minNoOfApproval} and ${config.maxNoOfApproval}`
       );
       return;
@@ -113,10 +114,10 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
 
       await onSuccess();
       onClose();
-      toast.success("Mint request created");
+      CustomToast.success("Mint request created");
     } catch (error) {
       // console.error("Error creating mint request:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to create mint request"
       );
     } finally {
@@ -205,7 +206,7 @@ export const MintModal = ({ onClose, onSuccess }: MintModalProps) => {
                   if (/^\d*\.?\d*$/.test(e.target.value)) {
                     // make sure its less than MAX_TOKEN_VALUE
                     if (Number(e.target.value) > MAX_TOKEN_VALUE) {
-                      toast.error("Amount must be less than 1 billion");
+                      CustomToast.error("Amount must be less than 1 billion");
                       return;
                     }
                     setAmount(e.target.value);

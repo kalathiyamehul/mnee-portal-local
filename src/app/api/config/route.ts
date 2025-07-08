@@ -152,7 +152,7 @@ export const PATCH = withCSRF(async function(request: Request) {
     }
 
     const body = await request.json();
-    const { minNoOfApproval, maxNoOfApproval, globalJson } = body;
+    const { minNoOfApproval, maxNoOfApproval, globalJson, feeStructure } = body;
 
     const updatedConfig = await prisma.$transaction(async (tx) => {
       const config = await tx.config.update({
@@ -160,6 +160,7 @@ export const PATCH = withCSRF(async function(request: Request) {
         data: {
           ...(minNoOfApproval !== undefined ? { minNoOfApproval: minNoOfApproval } : {}),
           ...(maxNoOfApproval !== undefined ? { maxNoOfApproval: maxNoOfApproval } : {}),
+          ...(feeStructure !== undefined ? { fees: feeStructure } : {}),
           ...(globalJson !== undefined ? { globalJson } : {}),
         },
       });
@@ -170,7 +171,7 @@ export const PATCH = withCSRF(async function(request: Request) {
           config: JSON.stringify(config, (key, value) =>
             typeof value === 'bigint' ? value.toString() : value
           ),
-          changes: { minNoOfApproval, maxNoOfApproval, globalJson },
+          changes: { minNoOfApproval, maxNoOfApproval, globalJson, feeStructure },
         },
       });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import CustomToast from '@/components/common/CustomToast';
 import { apiFetch } from '@/utils/api';
 import {
   sanitizeError,
@@ -14,14 +15,15 @@ import {
   useState,
   ReactNode,
   useMemo,
+  useEffect,
 } from "react";
-import { toast } from "react-hot-toast";
+import { EVENTS } from "@/lib/sseEmitter";
 
 interface Customer {
   id: string;
   name: string;
-  email: string;
   address: string;
+  isActive: boolean;
   noOfApprovals: number;
   createdAt: string;
   creator: {
@@ -90,7 +92,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         );
         const error = new Error(sanitizedError.message);
         setError(error);
-        toast.error(getDisplayMessage(sanitizedError));
+        CustomToast.error(getDisplayMessage(sanitizedError));
         return;
       }
       const data: PaginatedResponse = await response.json();
@@ -100,11 +102,49 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       const sanitizedError = sanitizeError(err, "Failed to fetch customers");
       const error = new Error(sanitizedError.message);
       setError(error);
-      toast.error(getDisplayMessage(sanitizedError));
+      CustomToast.error(getDisplayMessage(sanitizedError));
     } finally {
       setLoading(false);
     }
   }, []);
+
+    // Add this SSE effect to listen for real-time updates
+    useEffect(() => {
+      // Create SSE connection
+      const eventSource = new EventSource("/api/sse");
+  
+      // Connection established
+      eventSource.onopen = () => {
+        // console.log("SSE connection established"); 
+      };
+
+      eventSource.addEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          const { type } = data;
+          if (type === "APPROVED") {
+            fetchCustomers(pagination.page, pagination.limit);
+          }
+        } catch (error) {
+          // console.error("Error handling SSE event:", error);
+        }
+      });
+  
+      // Handle errors
+      eventSource.onerror = (error) => {
+        // console.error("SSE connection error:", error);
+        eventSource.close();
+      };
+  
+      // Clean up on unmount
+      return () => {
+        // console.log("Closing SSE connection");
+        eventSource.close();
+        eventSource.removeEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
+          // console.log(EVENTS.CUSTOMER_UPDATE, event);
+        });
+      };
+    }, [fetchCustomers]);
 
   const getCustomer = useCallback(
     async (id: string) => {

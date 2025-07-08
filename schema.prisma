@@ -117,7 +117,6 @@ model BlacklistApproval {
 model CustomerRequest {
   id              String       @id @default(uuid())
   name            String
-  email           String
   address         String
   status          ActionStatus @default(PENDING)
   action          CustomerRequestAction
@@ -312,12 +311,12 @@ model Config {
 model Customer {
   id          String    @id @default(uuid())
   name        String
-  email       String    @unique
   address     String    @unique
   createdBy   String    @map("created_by")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   no_of_approvals Int   @default(2)
+  isActive    Boolean   @default(true)
   // Add this relation field
   customerRequests CustomerRequest[]
   
@@ -391,7 +390,7 @@ model ActivityLog {
 model RateLimitAttempt {
   id          String   @id @default(uuid())
   identifier  String   // IP address or email
-  type        RateLimitType
+  type        String
   attempts    Int      @default(1)
   windowStart DateTime @default(now()) @map("window_start")
   lastAttempt DateTime @default(now()) @map("last_attempt")
@@ -414,11 +413,4 @@ model AccountLockout {
 
   @@index([email, lockedUntil])
   @@map("account_lockout")
-}
-
-enum RateLimitType {
-  LOGIN_ATTEMPT
-  API_REQUEST
-  PASSWORD_RESET
-  TWO_FA_ATTEMPT
 }

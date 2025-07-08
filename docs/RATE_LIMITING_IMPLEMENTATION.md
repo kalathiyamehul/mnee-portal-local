@@ -9,8 +9,6 @@ This implementation provides comprehensive rate limiting and brute force protect
 ### 1. Rate Limiting Types
 - **LOGIN_ATTEMPT**: Protects against login brute force attacks
 - **API_REQUEST**: General API rate limiting
-- **PASSWORD_RESET**: Limits password reset attempts
-- **TWO_FA_ATTEMPT**: Protects 2FA verification endpoints
 
 ### 2. Account Lockout Protection
 - Automatic account lockout after failed login attempts
@@ -43,17 +41,7 @@ export const RATE_LIMIT_CONFIGS: Record<RateLimitType, RateLimitConfig> = {
     windowMs: 60 * 1000, // 1 minute
     maxAttempts: 100, // 100 requests per minute
     blockDurationMs: 5 * 60 * 1000, // Block for 5 minutes
-  },
-  PASSWORD_RESET: {
-    windowMs: 60 * 60 * 1000, // 1 hour
-    maxAttempts: 3, // 3 attempts per hour
-    blockDurationMs: 60 * 60 * 1000, // Block for 1 hour
-  },
-  TWO_FA_ATTEMPT: {
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    maxAttempts: 5, // 5 attempts per 5 minutes
-    blockDurationMs: 15 * 60 * 1000, // Block for 15 minutes
-  },
+  }
 };
 ```
 

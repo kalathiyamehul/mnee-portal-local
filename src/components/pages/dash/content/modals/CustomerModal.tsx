@@ -5,12 +5,12 @@ import { FaSpinner } from "react-icons/fa6";
 import { toast } from "react-hot-toast";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { apiFetch } from "@/utils/api";
+import CustomToast from "@/components/common/CustomToast";
 
 interface CustomerModalProps {
   customer?: {
     id: string;
     name: string;
-    email: string;
     address: string;
     noOfApproval: number;
   };
@@ -45,7 +45,7 @@ export function CustomerModal({
         });
       } catch (error) {
         // console.error("Error fetching config:", error);
-        toast.error("Failed to fetch configuration");
+        CustomToast.error("Failed to fetch configuration");
       }
     };
 
@@ -55,14 +55,12 @@ export function CustomerModal({
   // Add validation states
   const [errors, setErrors] = useState({
     name: "",
-    email: "",
     address: "",
     noOfApproval: "",
   });
 
   const [formData, setFormData] = useState({
     name: customer?.name || "",
-    email: customer?.email || "",
     address: customer?.address || "",
     noOfApproval: customer?.noOfApproval || 2, // Add noOfApproval field with default
   });
@@ -72,13 +70,15 @@ export function CustomerModal({
     if (name.length < 2) return "Name must be at least 2 characters long";
     if (name.length > 50) return "Name must be less than 50 characters";
     // Unicode letters, marks, spaces, hyphens, apostrophes
-    if (!/^[\p{L}\p{M}\s'-]+$/u.test(name)) return "Name can only contain letters, spaces, hyphens and apostrophes";
+    if (!/^[\p{L}\p{M}\s'-]+$/u.test(name))
+      return "Name can only contain letters, spaces, hyphens and apostrophes";
     return "";
   };
 
   const validateEmail = (email: string) => {
     // Allow Unicode letters, numbers, ., _, and - before @
-    if (!/^[\p{L}\p{N}._-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}$/u.test(email)) return "Please enter a valid email address";
+    if (!/^[\p{L}\p{N}._-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}$/u.test(email))
+      return "Please enter a valid email address";
     if (email.length > 255) return "Email is too long";
     return "";
   };
@@ -86,8 +86,9 @@ export function CustomerModal({
   const validateAddress = (address: string) => {
     // Bitcoin address validation
     if (/\s/.test(address)) return "Address cannot contain spaces";
-    if (/[^A-Za-z0-9]/.test(address.slice(1))) return "Address can only contain letters and numbers";
-    if (!address.startsWith('1')) return "Invalid Ordinals Address";
+    if (/[^A-Za-z0-9]/.test(address.slice(1)))
+      return "Address can only contain letters and numbers";
+    if (!address.startsWith("1")) return "Invalid Ordinals Address";
     if (!/^1[A-Za-z0-9]{33,34}$/.test(address)) {
       return "Address Length must be 35 characters";
     }
@@ -95,8 +96,8 @@ export function CustomerModal({
   };
 
   const validateApproval = (value: number) => {
-    if (value < 1) return "Minimum 1 approval required";
-    if (value > 10) return "Maximum 10 approvals allowed";
+    if (config?.minNoOfApproval && value < config.minNoOfApproval) return `Minimum ${config.minNoOfApproval} approval required`;
+    if (config?.maxNoOfApproval && value > config.maxNoOfApproval) return `Maximum ${config.maxNoOfApproval} approvals allowed`;
     return ""; // Add empty string return for valid cases
   };
 
@@ -111,9 +112,6 @@ export function CustomerModal({
     switch (field) {
       case "name":
         error = validateName(value.toString());
-        break;
-      case "email":
-        error = validateEmail(value.toString());
         break;
       case "address":
         error = validateAddress(value.toString());
@@ -131,21 +129,19 @@ export function CustomerModal({
 
     // Validate all fields before submission
     const nameError = validateName(formData.name);
-    const emailError = validateEmail(formData.email);
     const addressError = validateAddress(formData.address);
 
     // Update the error state setting to handle string returns
     setErrors({
       name: nameError,
-      email: emailError,
       address: addressError,
       noOfApproval: validateApproval(formData.noOfApproval) || "", // Ensure string type
     });
 
     // Improved error feedback
-    if (nameError || emailError || addressError) {
-      const firstError = [nameError, emailError, addressError].find((e) => e);
-      toast.error(firstError || "Please fix the form errors");
+    if (nameError || addressError) {
+      const firstError = [nameError, addressError].find((e) => e);
+      CustomToast.error(firstError || "Please fix the form errors");
       return;
     }
 
@@ -161,7 +157,6 @@ export function CustomerModal({
           },
           body: JSON.stringify({
             name: formData.name,
-            email: formData.email,
             address: formData.address,
           }),
         });
@@ -178,7 +173,7 @@ export function CustomerModal({
 
       if (!response.ok) throw new Error("Failed to submit request");
 
-      toast.success(
+      CustomToast.success(
         customer
           ? "Customer updated successfully"
           : "Customer request submitted for approval"
@@ -186,7 +181,7 @@ export function CustomerModal({
       onSuccess();
     } catch (error) {
       // console.error("Error saving customer request:", error);
-      toast.error(
+      CustomToast.error(
         customer
           ? "Failed to update customer"
           : "Failed to submit customer request"
@@ -217,26 +212,13 @@ export function CustomerModal({
                 placeholder="Enter customer name"
                 required
               />
-              {errors.name && <div className="label mt-1">
-                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.name}</span>
-              </div>}
-            </div>
-
-            <div className="form-control w-full mb-4">
-              <label className="label label-text">Email Address</label>
-              <input
-                type="text"
-                className={`input input-bordered w-full max-w-md ${
-                  errors.email ? "input-error" : ""
-                }`}
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                placeholder="Enter customer email"
-                required
-              />
-              {errors.email && <div className="label mt-1">
-                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.email}</span>
-              </div>}
+              {errors.name && (
+                <div className="label mt-1">
+                  <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">
+                    {errors.name}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="form-control w-full mb-4">
@@ -247,14 +229,18 @@ export function CustomerModal({
                   errors.address ? "input-error" : ""
                 }`}
                 value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
+                onChange={(e) => handleInputChange("address", e.target.value)}
                 maxLength={35}
                 placeholder="Enter 1Sat Ordinals address"
                 required
               />
-              {errors.address && <div className="label mt-1">
-                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.address}</span>
-              </div>}
+              {errors.address && (
+                <div className="label mt-1">
+                  <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">
+                    {errors.address}
+                  </span>
+                </div>
+              )}
             </div>
             {customer ? (
               ""
@@ -283,7 +269,7 @@ export function CustomerModal({
                         config?.maxNoOfApproval &&
                         num > config.maxNoOfApproval
                       ) {
-                        toast.error(
+                        CustomToast.error(
                           `No of Approvals must be less than or equal to ${config?.maxNoOfApproval}`
                         );
                       } else {

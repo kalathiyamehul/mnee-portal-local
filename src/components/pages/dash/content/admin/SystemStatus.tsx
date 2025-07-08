@@ -1,11 +1,11 @@
 import { useSession } from "next-auth/react";
 import { FaCheck, FaXmark, FaSpinner } from "react-icons/fa6";
-import { toast } from "react-hot-toast";
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { useState } from "react";
 import { apiFetch } from "@/utils/api";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
+import CustomToast from "@/components/common/CustomToast";
 
 interface SystemStatusProps {
   isPaused: boolean;
@@ -58,10 +58,10 @@ export const SystemStatus = ({
       }
 
       await fetchStatus();
-      toast.success("Request approved");
+      CustomToast.success("Request approved");
     } catch (error) {
       // console.error("Failed to approve request:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to approve request"
       );
     }
@@ -84,10 +84,10 @@ export const SystemStatus = ({
       }
 
       await fetchStatus();
-      toast.success("Request cancelled");
+      CustomToast.success("Request cancelled");
     } catch (error) {
       // console.error("Failed to cancel request:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to cancel request"
       );
     } finally {
@@ -99,12 +99,12 @@ export const SystemStatus = ({
     setIsLoading(true);
     try {
       await onPauseToggle();
-      toast.success(
+      CustomToast.success(
         isPaused ? "Resume request created" : "Pause request created"
       );
     } catch (error) {
       // console.error('Error toggling system pause:', error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to toggle system state"
       );
     } finally {

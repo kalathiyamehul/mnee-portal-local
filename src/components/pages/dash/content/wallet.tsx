@@ -19,7 +19,6 @@ import {
 } from "@bsv/sdk";
 import { toToken, toTokenSat } from "satoshi-token";
 import { applyInscription, type Inscription } from "js-1sat-ord";
-import toast from "react-hot-toast";
 import type { Config } from "../../../../types";
 import {
   fetchConfig,
@@ -34,6 +33,7 @@ import { DepositModal } from "./modals/DepositModal";
 import { useRouter } from "next/navigation";
 import { useBalance } from "@/contexts/BalanceContext";
 import { FetchStatus } from "@/types/common";
+import CustomToast from "@/components/common/CustomToast";
 
 const { toArray, toBase64 } = Utils;
 
@@ -90,7 +90,7 @@ export default function DashboardWalletContent({
   const connectWallet = async () => {
     try {
       if (!wallet.isReady) {
-        toast.error("Please install the Yours Wallet extension first");
+        CustomToast.error("Please install the Yours Wallet extension first");
         window.open("https://yours.org", "_blank");
         return;
       }
@@ -108,12 +108,12 @@ export default function DashboardWalletContent({
         setAddresses(addresses ?? []);
         // Fetch MNEE balances immediately after getting addresses
         await fetchBalances(Object.values(addresses));
-        toast.success("Wallet connected successfully");
+        CustomToast.success("Wallet connected successfully");
       }
     } catch (error) {
       // console.error("Error connecting wallet:", error);
       const sanitizedError = sanitizeError(error, "Failed to connect wallet");
-      toast.error(getDisplayMessage(sanitizedError));
+      CustomToast.error(getDisplayMessage(sanitizedError));
     }
   };
 
@@ -137,7 +137,7 @@ export default function DashboardWalletContent({
           error,
           "Failed to fetch BSV balance"
         );
-        toast.error(getDisplayMessage(sanitizedError));
+        CustomToast.error(getDisplayMessage(sanitizedError));
       }
     };
 
@@ -434,7 +434,7 @@ export default function DashboardWalletContent({
         return response.json() as Promise<{ rawtx: string }>;
       } catch (error) {
         // console.error("Error signing/submitting transaction:", error);
-        toast.error("Error signing/submitting transaction");
+        CustomToast.error("Error signing/submitting transaction");
         throw error;
       }
     },
@@ -454,7 +454,7 @@ export default function DashboardWalletContent({
       setRecipient("");
       setAmount("");
 
-      toast.success("Transfer complete");
+      CustomToast.success("Transfer complete");
 
       // close the modal
       setShowTransferModal(false);
@@ -478,7 +478,7 @@ export default function DashboardWalletContent({
           "Token transfers are currently paused by the administrator";
       }
 
-      toast.error(errorMessage);
+      CustomToast.error(errorMessage);
     },
   });
 
@@ -487,18 +487,18 @@ export default function DashboardWalletContent({
   const handleTransfer = useCallback(async () => {
     try {
       if (!config) {
-        toast.error("Token configuration not loaded");
+        CustomToast.error("Token configuration not loaded");
         return;
       }
 
       const numAmount = Number(amount);
       if (numAmount <= 0 || Number.isNaN(numAmount)) {
-        toast.error("Please enter a valid amount greater than 0");
+        CustomToast.error("Please enter a valid amount greater than 0");
         return;
       }
 
       if (!recipient) {
-        toast.error("Please enter a recipient address");
+        CustomToast.error("Please enter a recipient address");
         return;
       }
 
@@ -510,13 +510,13 @@ export default function DashboardWalletContent({
           )
         : 0;
       if (numAmount > toToken(totalBalance, config.decimals)) {
-        toast.error("Insufficient MNEE balance");
+        CustomToast.error("Insufficient MNEE balance");
         return;
       }
 
       // Validate recipient address format
       if (!RegExp(/^[1][a-km-zA-HJ-NP-Z1-9]{25,34}$/).exec(recipient)) {
-        toast.error("Invalid recipient address format");
+        CustomToast.error("Invalid recipient address format");
         return;
       }
 
@@ -524,7 +524,7 @@ export default function DashboardWalletContent({
     } catch (error) {
       // console.error("Error in transfer:", error);
       const sanitizedError = sanitizeError(error, "Transfer failed");
-      toast.error(getDisplayMessage(sanitizedError));
+      CustomToast.error(getDisplayMessage(sanitizedError));
     }
   }, [addresses, balances, transferMNEE, amount, recipient, config]);
 

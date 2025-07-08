@@ -75,8 +75,6 @@ export const POST = withCSRF(async function (request: Request) {
 Available rate limit types:
 - `LOGIN_ATTEMPT`: For authentication endpoints
 - `API_REQUEST`: For general API endpoints
-- `PASSWORD_RESET`: For password reset endpoints
-- `TWO_FA_ATTEMPT`: For 2FA verification endpoints
 
 ## Default Configurations
 
@@ -84,8 +82,6 @@ Available rate limit types:
 |------|--------|--------------|----------------|
 | LOGIN_ATTEMPT | 15 minutes | 5 | 30 minutes |
 | API_REQUEST | 1 minute | 100 | 5 minutes |
-| PASSWORD_RESET | 1 hour | 3 | 1 hour |
-| TWO_FA_ATTEMPT | 5 minutes | 5 | 15 minutes |
 
 ## Response Headers
 
