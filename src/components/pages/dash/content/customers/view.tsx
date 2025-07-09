@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 import { FaArrowLeft, FaEdit } from "react-icons/fa";
 import { MdOutlineOpenInNew } from "react-icons/md";
@@ -14,7 +15,6 @@ import { getGravatarUrl } from "@/utils/gravatar";
 import { FetchStatus } from "@/types/common";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
-import CustomToast from "@/components/common/CustomToast";
 
 interface CustomerActivity {
   customer: {
@@ -72,7 +72,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
         setConfig(configData);
       } catch (error) {
         // console.error('Error loading config:', error);
-        CustomToast.error('Failed to load configuration');
+        toast.error('Failed to load configuration');
       }
     };
 

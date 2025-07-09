@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { Activity } from "@/components/pages/dash/content/admin/types";
 import { useSession } from "next-auth/react";
+import toast from "react-hot-toast";
 import { apiFetch } from "@/utils/api";
 import {
   sanitizeError,
@@ -17,7 +18,6 @@ import {
   getDisplayMessage,
 } from "@/utils/errorHandler";
 import { EVENTS } from "@/lib/sseEmitter";
-import CustomToast from "@/components/common/CustomToast";
 
 interface SystemStatusData {
   isPaused: boolean;
@@ -90,7 +90,7 @@ export function SystemStatusProvider({
         error,
         "Failed to fetch system status"
       );
-      CustomToast.error(getDisplayMessage(sanitizedError));
+      toast.error(getDisplayMessage(sanitizedError));
       setStatusData(null);
     }
   }, [session?.user]);

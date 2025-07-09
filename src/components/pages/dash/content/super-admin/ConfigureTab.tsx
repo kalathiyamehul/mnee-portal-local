@@ -1,7 +1,7 @@
-import CustomToast from "@/components/common/CustomToast";
 import { apiFetch } from "@/utils/api";
 import type { Config } from "@prisma/client";
 import React, { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { toToken, toTokenSat } from "satoshi-token";
 
 interface Threshold {
@@ -175,30 +175,30 @@ const ConfigureTab = () => {
   }, [items, editingFee]);
 
   const fetchConfig = async () => {
-      try {
-        const response = await apiFetch("/api/config/database");
-        if (!response.ok) {
-          throw new Error("Failed to fetch configuration");
-        }
-        const config = await response.json();
-        setConfig(config);
-        setThresholds([
-          {
-            id: "1",
-            name: "Minimum Approvals",
-            value: config.minNoOfApproval,
-          },
-          { id: "2", name: "Maximum Approvals", value: config.maxNoOfApproval },
-        ]);
-        // Initialize items with fee structure from config
-        setItems([...config.fees]);
-      } catch (error) {
-        // console.error("Error fetching config:", error);
-        CustomToast.error("Failed to load threshold settings");
-      } finally {
-        setLoading(false);
+    try {
+      const response = await apiFetch("/api/config/database");
+      if (!response.ok) {
+        throw new Error("Failed to fetch configuration");
       }
-    };
+      const config = await response.json();
+      setConfig(config);
+      setThresholds([
+        {
+          id: "1",
+          name: "Minimum Approvals",
+          value: config.minNoOfApproval,
+        },
+        { id: "2", name: "Maximum Approvals", value: config.maxNoOfApproval },
+      ]);
+      // Initialize items with fee structure from config
+      setItems([...config.fees]);
+    } catch (error) {
+      // console.error("Error fetching config:", error);
+      toast.error("Failed to load threshold settings");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch initial config data
   useEffect(() => {
@@ -229,11 +229,11 @@ const ConfigureTab = () => {
       setThresholds((prev) =>
         prev.map((t) => (t.id === editingThreshold.id ? editingThreshold : t))
       );
-      CustomToast.success("Threshold updated successfully");
+      toast.success("Threshold updated successfully");
       setIsEditing(false);
     } catch (error) {
       // console.error("Error updating threshold:", error);
-      CustomToast.error("Failed to update threshold");
+      toast.error("Failed to update threshold");
     }
   };
 
@@ -244,7 +244,7 @@ const ConfigureTab = () => {
 
     if (!validateAllItems()) {
       setIsSubmitting(false);
-      CustomToast.error("Please fix validation errors before submitting");
+      toast.error("Please fix validation errors before submitting");
       return;
     }
 
@@ -264,10 +264,10 @@ const ConfigureTab = () => {
       }
 
       setEditingFee(false);
-      CustomToast.success("Fee structure updated successfully");
+      toast.success("Fee structure updated successfully");
     } catch (error) {
       // console.error("Error updating fee structure:", error);
-      CustomToast.error("Failed to update fee structure");
+      toast.error("Failed to update fee structure");
     } finally {
       setIsSubmitting(false);
     }
