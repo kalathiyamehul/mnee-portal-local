@@ -12,8 +12,10 @@ interface ActivityTabProps {
   config: Config | null;
   loading: boolean;
   canCancel: (activity: Activity) => boolean;
+  canReject: (activity: Activity) => boolean;
   canApprove: (activity: Activity) => boolean;
   onCancel: (id: string, type: Activity["type"]) => Promise<void>;
+  onReject: (id: string, type: Activity["type"]) => Promise<void>;
   onApprove: (id: string, type: Activity["type"]) => Promise<void>;
   getActivityIcon: (activity: Activity) => IconType;
   getActivityDisplayText: (activity: Activity) => string;
@@ -25,9 +27,13 @@ interface ActivityTabProps {
     hasApproveBurnPer: boolean;
     hasRejectBurnPer: boolean;
     hasApproveRefundPer: boolean;
+    hasRejectRefundPer: boolean;
     hasApproveBlacklistPer: boolean;
+    hasRejectBlacklistPer: boolean;
     hasApproveFreezePer: boolean;
+    hasRejectFreezePer: boolean;
     hasApproveCustomerPer: boolean;
+    hasRejectCustomerPer: boolean;
     hasManageSystemPer: boolean;
   };
 }
@@ -39,9 +45,11 @@ export const ActivityTab = ({
   config,
   loading,
   canCancel,
+  canReject,
   canApprove,
   onCancel: handleCancel,
   onApprove: handleApprove,
+  onReject: handleReject,
   getActivityIcon,
   getActivityDisplayText,
   requiresApproval,
@@ -69,8 +77,10 @@ export const ActivityTab = ({
         loading={loading}
         showAction={showAction}
         canCancel={canCancel}
+        canReject={canReject}
         canApprove={canApprove}
         handleCancel={handleCancel}
+        handleReject={handleReject}
         handleApprove={handleApprove}
         getActivityIcon={getActivityIcon}
         getActivityDisplayText={getActivityDisplayText}

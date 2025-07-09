@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { toast } from "react-hot-toast";
 import { formatDistanceToNow } from "date-fns";
 import { FaArrowLeft, FaEdit } from "react-icons/fa";
 import { MdOutlineOpenInNew } from "react-icons/md";
@@ -15,13 +14,14 @@ import { getGravatarUrl } from "@/utils/gravatar";
 import { FetchStatus } from "@/types/common";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
+import CustomToast from "@/components/common/CustomToast";
 
 interface CustomerActivity {
   customer: {
     id: string;
     name: string;
-    email: string;
     address: string;
+    isActive: boolean;
     createdAt: string;
     creator: {
       name: string | null;
@@ -72,7 +72,7 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
         setConfig(configData);
       } catch (error) {
         // console.error('Error loading config:', error);
-        toast.error('Failed to load configuration');
+        CustomToast.error('Failed to load configuration');
       }
     };
 
@@ -122,17 +122,17 @@ export default function CustomerViewContent({ initialData }: { initialData: Cust
             <div className="avatar">
               <div className="mask mask-squircle w-16 h-16">
                 <img
-                  src={getGravatarUrl(customer.email)}
+                  src={getGravatarUrl(customer.address)}
                   alt="Customer avatar"
                 />
               </div>
             </div>
             <div>
               <h2 className="text-xl font-bold">{customer.name}</h2>
-              <p className="text-base-content/70">{customer.email}</p>
+              <p className="text-base-content/70">{customer.address}</p>
             </div>
           </div>
-          {hasPermission(Resource.CUSTOMER, Action.UPDATE) || isSuperAdmin && (
+          {(hasPermission(Resource.CUSTOMER, Action.UPDATE) || isSuperAdmin) && (
             <button
             type="button"
             onClick={() => setShowModal(true)}

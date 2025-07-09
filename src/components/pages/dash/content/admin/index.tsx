@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import type { Activity, AddressStatus, Fee } from "./types";
 import { getActivityIcon, getActivityDisplayText } from "./utils";
-import { toast } from "react-hot-toast";
 import { FreezeModal } from "../modals/FreezeModal";
 import { MintModal } from "../modals/MintModal";
 import type { Session } from "next-auth";
@@ -19,6 +18,7 @@ import type { Config } from "@prisma/client";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
 import { apiFetch } from "@/utils/api";
+import CustomToast from "@/components/common/CustomToast";
 
 type TabType = "activity" | "restrictions" | "burns" | "mints";
 
@@ -80,6 +80,9 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const hasApproveRefundPer = isSuperAdmin
     ? true
     : hasPermission(Resource.REFUND, Action.APPROVE) || false;
+  const hasRejectRefundPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.REFUND, Action.REJECT) || false;
 
   // Blacklist Permissions
   const hasReadBlacklistPer = isSuperAdmin
@@ -91,6 +94,9 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const hasApproveBlacklistPer = isSuperAdmin
     ? true
     : hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
+  const hasRejectBlacklistPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
 
   // Freeze Permissions
   const hasReadFreezePer = isSuperAdmin
@@ -102,6 +108,10 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const hasApproveFreezePer = isSuperAdmin
     ? true
     : hasPermission(Resource.FREEZE, Action.APPROVE) || false;
+  const hasRejectFreezePer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.FREEZE, Action.REJECT) || false;
+
 
   // Customer Permissions
   const hasReadCustomerPer = isSuperAdmin
@@ -113,13 +123,16 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const hasApproveCustomerPer = isSuperAdmin
     ? true
     : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+  const hasRejectCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
 
   // System Actions Permissions
   const hasReadActionPer = isSuperAdmin
     ? true
     : hasPermission(Resource.SYSTEM, Action.READ) || false;
 
-  const hasManageSystemPer = isSuperAdmin ? true : hasPermission(Resource.SYSTEM, Action.MANAGE) || false;
+  const hasManageSystemPer = isSuperAdmin ? true : hasPermission(Resource.SYSTEM, Action.UPDATE) || false;
 
   // Settle Permission
   const hasSettleBurnPer = isSuperAdmin ? true : (hasCreateBurnPer || hasApproveBurnPer) || false;
@@ -137,15 +150,19 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     // Refund
     hasReadRefundPer,
     hasApproveRefundPer,
+    hasRejectRefundPer,
     // Blacklist
     hasReadBlacklistPer,
     hasApproveBlacklistPer,
+    hasRejectBlacklistPer,
     // Freeze
     hasReadFreezePer,
     hasApproveFreezePer,
+    hasRejectFreezePer,
     // Customer
     hasReadCustomerPer,
     hasApproveCustomerPer,
+    hasRejectCustomerPer,
     // System
     hasReadActionPer,
     hasManageSystemPer,
@@ -157,10 +174,12 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     hasReadFreezePer,
     hasCreateFreezePer,
     hasApproveFreezePer,
+    hasRejectFreezePer,
     // Blacklist
     hasReadBlacklistPer,
     hasCreateBlacklistPer,
     hasApproveBlacklistPer,
+    hasRejectBlacklistPer,    
   };
 
   //   console.log("Permissions: ", permissions);
@@ -266,7 +285,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         }
       } catch (error) {
         // console.error("Error fetching config:", error);
-        toast.error("Error fetching config");
+        CustomToast.error("Error fetching config");
       }
     };
 
@@ -406,6 +425,18 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     [session]
   );
 
+  const canReject = useCallback(
+    (activity: Activity) => {
+      if (!session?.user?.email) return false;
+      return (
+        activity.status === "PENDING" &&
+        activity.requester.email !== session.user.email &&
+        !activity.approvals.some((approval: { approver?: { email: string } }) => approval.approver?.email === session.user.email)
+      );
+    },
+    [session]
+  );
+
   const canApprove = useCallback(
     (activity: Activity) => {
       if (!session?.user?.email) return false;
@@ -427,10 +458,25 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         body: JSON.stringify({ [requestType]: id }),
       });
       await fetchStatus();
-      toast.success("Request cancelled");
+      CustomToast.success("Request cancelled");
     } catch (error) {
       // console.error("Error cancelling request:", error);
-      toast.error("Failed to cancel request");
+      CustomToast.error("Failed to cancel request");
+    }
+  };
+
+  const handleReject = async (id: string, type: Activity["type"]) => {
+    try {
+      const requestType = `${type.toLowerCase()}RequestId`;
+      await apiFetch("/api/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [requestType]: id }),
+      });
+      CustomToast.success("Request Rejected");
+    } catch (error) {
+      // console.error("Error Rejecting request:", error);
+      CustomToast.error("Failed to Reject request");
     }
   };
 
@@ -484,10 +530,10 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       }
 
       await fetchStatus();
-      toast.success("Request approved");
+      CustomToast.success("Request approved");
     } catch (error) {
       // console.error("Error approving request:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to approve request"
       );
     }
@@ -507,7 +553,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     return activity.approvals?.length || 0;
   }, []);
 
-  const handleUnblacklist = async (e: React.MouseEvent, address: string) => {
+  const handleUnblacklist = async (e: React.MouseEvent, address: string, reason: string) => {
     try {
       const response = await apiFetch("/api/blacklist", {
         method: "POST",
@@ -515,6 +561,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         body: JSON.stringify({
           address,
           action: "UNBLACKLIST",
+          reason: reason,
         }),
       });
 
@@ -526,10 +573,10 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       }
 
       await fetchStatus();
-      toast.success("Address unblacklist requested");
+      CustomToast.success("Address unblacklist requested");
     } catch (error) {
       // console.error("Error unblacklisting address:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to unblacklist address"
       );
     }
@@ -537,7 +584,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
 
   const handleFreezeRequest = async (
     e: React.MouseEvent<HTMLButtonElement>,
-    address: string
+    address: string, reason: string
   ) => {
     try {
       const response = await apiFetch("/api/freeze", {
@@ -546,6 +593,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         body: JSON.stringify({
           address,
           action: "FREEZE",
+          reason: reason,
         }),
       });
 
@@ -555,16 +603,16 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       }
 
       await fetchStatus();
-      toast.success("Freeze request created");
+      CustomToast.success("Freeze request created");
     } catch (error) {
       // console.error("Error freezing address:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to freeze address"
       );
     }
   };
 
-  const handleUnfreeze = async (address: string) => {
+  const handleUnfreeze = async (address: string, reason: string) => {
     try {
       const response = await apiFetch("/api/freeze", {
         method: "POST",
@@ -572,6 +620,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         body: JSON.stringify({
           address,
           action: "UNFREEZE",
+          reason: reason
         }),
       });
 
@@ -581,16 +630,16 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       }
 
       await fetchStatus();
-      toast.success("Unfreeze request created");
+      CustomToast.success("Unfreeze request created");
     } catch (error) {
       // console.error("Error unfreezing address:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to unfreeze address"
       );
     }
   };
 
-  const handleBlacklist = async (e: React.MouseEvent, address: string) => {
+  const handleBlacklist = async (e: React.MouseEvent, address: string, reason: string) => {
     e.preventDefault();
     try {
       const response = await apiFetch("/api/blacklist", {
@@ -599,6 +648,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
         body: JSON.stringify({
           address,
           action: "BLACKLIST",
+          reason: reason,
         }),
       });
 
@@ -610,10 +660,10 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       }
 
       await fetchStatus();
-      toast.success("Address blacklist requested");
+      CustomToast.success("Address blacklist requested");
     } catch (error) {
       // console.error("Error blacklisting address:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to blacklist address"
       );
     }
@@ -699,9 +749,11 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 filteredActivities={filteredActivities}
                 loading={loading}
                 canCancel={canCancel}
+                canReject={canReject}
                 canApprove={canApprove}
                 onCancel={handleCancel}
                 onApprove={handleApprove}
+                onReject={handleReject}
                 requiresApproval={requiresApproval}
                 getApprovalCount={getApprovalCount}
                 config={config}
@@ -717,6 +769,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 handleUnblacklist={handleUnblacklist}
                 handleBlacklist={handleBlacklist}
                 handleFreezeRequest={handleFreezeRequest}
+                canReject={canReject}
+                handleReject={handleReject}
                 handleUnfreeze={handleUnfreeze}
                 showModal={showModal}
                 activities={activities}
@@ -733,6 +787,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 hasRejectBurnPer={hasRejectBurnPer}
                 hasCreateRefundPer={hasCreateRefundPer}
                 hasApproveRefundPer={hasApproveRefundPer}
+                hasRejectRefundPer={hasRejectRefundPer}
                 hasSettleBurnPer={hasSettleBurnPer}
               />
             )}

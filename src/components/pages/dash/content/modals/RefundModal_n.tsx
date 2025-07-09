@@ -1,9 +1,9 @@
 import { FaSpinner, FaArrowRotateLeft, FaShield } from "react-icons/fa6";
 import { toToken } from "satoshi-token";
-import { toast } from "react-hot-toast";
 import { useState, useEffect } from "react";
 import { apiFetch, fetchTxo } from "@/utils/api";
 import type { MNEEUtxo } from "@/types";
+import CustomToast from "@/components/common/CustomToast";
 
 interface RefundModalProps {
   onClose: () => void;
@@ -46,7 +46,7 @@ export const RefundModal = ({
         }
       } catch (error) {
         // console.error("Error fetching UTXO data:", error);
-        toast.error("Failed to load UTXO data");
+        CustomToast.error("Failed to load UTXO data");
       } finally {
         setLoadingUtxo(false);
       }
@@ -82,12 +82,12 @@ export const RefundModal = ({
         throw new Error("No request ID returned from server");
       }
 
-      toast.success("Refund request created (pending approval)");
+      CustomToast.success("Refund request created (pending approval)");
       onSuccess();
       onClose();
     } catch (error) {
       // console.error('Error creating refund request:', error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to create refund request"

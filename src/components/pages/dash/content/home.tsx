@@ -11,7 +11,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MintTable } from "./admin/MintTable";
 import { BurnTable } from "./admin/BurnTable";
-import { toast } from "react-hot-toast";
 import type { Activity, BurnUtxo } from "./admin/types";
 import { TokenActivityChart } from "@/components/charts/TokenActivityChart";
 import { ActivityList } from "./admin/ActivityList";
@@ -23,6 +22,7 @@ import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import { usePermission } from "@/hooks/usePermission";
 import { Action, Resource } from "@/lib/permission";
 import { apiFetch } from "@/utils/api";
+import CustomToast from "@/components/common/CustomToast";
 
 // Utility functions
 const getActivityDisplayText = (activity: Activity) => {
@@ -37,12 +37,12 @@ const getActivityDisplayText = (activity: Activity) => {
       return `New Customer`;
     case "FREEZE":
       return activity.action === "UNFREEZE"
-        ? `Unfreeze Address ${activity.address}`
-        : `Freeze Address ${activity.address}`;
+        ? `Unfreeze Address`
+        : `Freeze Address`;
     case "BLACKLIST":
       return activity.action === "UNBLACKLIST"
-        ? `Unblacklist Address ${activity.address}`
-        : `Blacklist Address ${activity.address}`;
+        ? `Unblacklist Address`
+        : `Blacklist Address`;
     case "ACTION":
       return activity.action || "Unknown Action";
     default:
@@ -170,9 +170,10 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       });
       setRequests({
         recentMints: filteredActivities
-          .filter((act) => act.type === "MINT").slice(0, 5),
+          .filter((act) => act.type === "MINT")
+          .slice(0, 5),
         recentBurns: filteredActivities
-          .filter((act) => act.type === "BURN" && (act.status !== "REJECTED" && act.status !== "CANCELLED")).slice(0, 5),
+          .filter((act) => act.type === "BURN").slice(0, 5),
         pendingActivities: filteredActivities
           .filter((activity) => activity.status === "PENDING")
           .slice(0, 5),
@@ -183,9 +184,6 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const { hasPermission } = usePermission();
   const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
   // Mint Permissions
-  const hasCreateMintPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.MINT, Action.CREATE) || false;
   const hasApproveMintPer = isSuperAdmin
     ? true
     : hasPermission(Resource.MINT, Action.APPROVE) || false;
@@ -211,58 +209,60 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     : hasPermission(Resource.BURN, Action.READ) || false;
 
   // Refund Permissions
-  const hasCreateRefundPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.REFUND, Action.CREATE) || false;
   const hasApproveRefundPer = isSuperAdmin
     ? true
     : hasPermission(Resource.REFUND, Action.APPROVE) || false;
   const hasReadRefundPer = isSuperAdmin
     ? true
     : hasPermission(Resource.REFUND, Action.READ) || false;
+  const hasRejectRefundPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.REFUND, Action.REJECT) || false;
 
   // Blacklist Permissions
-  const hasCreateBlacklistPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.BLACKLIST, Action.CREATE) || false;
   const hasApproveBlacklistPer = isSuperAdmin
     ? true
     : hasPermission(Resource.BLACKLIST, Action.APPROVE) || false;
   const hasReadBlacklistPer = isSuperAdmin
     ? true
     : hasPermission(Resource.BLACKLIST, Action.READ) || false;
+  const hasRejectBlacklistPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.BLACKLIST, Action.REJECT) || false;
 
   // Freeze Permissions
-  const hasCreateFreezePer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.FREEZE, Action.CREATE) || false;
   const hasApproveFreezePer = isSuperAdmin
     ? true
     : hasPermission(Resource.FREEZE, Action.APPROVE) || false;
   const hasReadFreezePer = isSuperAdmin
     ? true
     : hasPermission(Resource.FREEZE, Action.READ) || false;
+  const hasRejectFreezePer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.FREEZE, Action.REJECT) || false;
 
   // Customers Permissions
-  const hasCreateCustomerPer = isSuperAdmin
-    ? true
-    : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
   const hasApproveCustomerPer = isSuperAdmin
     ? true
     : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
   const hasReadCustomerPer = isSuperAdmin
     ? true
     : hasPermission(Resource.CUSTOMER, Action.READ) || false;
+  const hasRejectCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
 
   // System Actions Permissions
   const hasReadActionPer = isSuperAdmin
     ? true
     : hasPermission(Resource.SYSTEM, Action.READ) || false;
 
-  const hasManageSystemPer = isSuperAdmin ? true : hasPermission(Resource.SYSTEM, Action.MANAGE) || false;
+  const hasManageSystemPer = isSuperAdmin ? true : hasPermission(Resource.SYSTEM, Action.UPDATE) || false;
 
   // Settle Permission
-  const hasSettleBurnPer = isSuperAdmin ? true : (hasCreateBurnPer || hasApproveBurnPer) || false;
+  const hasSettleBurnPer = isSuperAdmin
+    ? true
+    : hasCreateBurnPer || hasApproveBurnPer || false;
 
   // Permissions object
   const permissions = {
@@ -277,15 +277,19 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     // Refund
     hasReadRefundPer,
     hasApproveRefundPer,
+    hasRejectRefundPer,
     // Blacklist
     hasReadBlacklistPer,
     hasApproveBlacklistPer,
+    hasRejectBlacklistPer,
     // Freeze
     hasReadFreezePer,
     hasApproveFreezePer,
+    hasRejectFreezePer,
     // Customers
     hasReadCustomerPer,
     hasApproveCustomerPer,
+    hasRejectCustomerPer,
     // System Actions
     hasReadActionPer,
     hasManageSystemPer,
@@ -299,9 +303,13 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     hasApproveBurnPer ||
     hasRejectBurnPer ||
     hasApproveRefundPer ||
+    hasRejectRefundPer ||
     hasApproveBlacklistPer ||
     hasApproveFreezePer ||
     hasApproveCustomerPer ||
+    hasRejectBlacklistPer ||
+    hasRejectFreezePer ||
+    hasRejectCustomerPer ||
     hasManageSystemPer;
 
   const canCancel = useCallback(
@@ -310,6 +318,18 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       return (
         activity.status === "PENDING" &&
         activity.requester.email === session.user.email
+      );
+    },
+    [session]
+  );
+
+  const canReject = useCallback(
+    (activity: Activity) => {
+      if (!session?.user?.email) return false;
+      return (
+        activity.status === "PENDING" &&
+        activity.requester.email !== session.user.email &&
+        !activity.approvals.some((approval: { approver?: { email: string } }) => approval.approver?.email === session.user.email)
       );
     },
     [session]
@@ -336,10 +356,25 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
         body: JSON.stringify({ [requestType]: id }),
       });
       fetchMetrics();
-      toast.success("Request cancelled");
+      CustomToast.success("Request cancelled");
     } catch (error) {
       // console.error("Error cancelling request:", error);
-      toast.error("Failed to cancel request");
+      CustomToast.error("Failed to cancel request");
+    }
+  };
+
+  const handleReject = async (id: string, type: Activity["type"]) => {
+    try {
+      const requestType = `${type.toLowerCase()}RequestId`;
+      await apiFetch("/api/reject", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [requestType]: id }),
+      });
+      CustomToast.success("Request Rejected");
+    } catch (error) {
+      // console.error("Error Rejecting request:", error);
+      CustomToast.error("Failed to Reject request");
     }
   };
 
@@ -393,10 +428,10 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       }
 
       fetchMetrics();
-      toast.success("Request approved");
+      CustomToast.success("Request approved");
     } catch (error) {
       // console.error("Error approving request:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to approve request"
       );
     }
@@ -408,7 +443,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       .then((data) => setMetrics(data))
       .catch((error) => {
         // console.error("Failed to fetch dashboard metrics:", error)
-        toast.error(
+        CustomToast.error(
           error instanceof Error
             ? error.message
             : "Failed to fetch dashboard metrics"
@@ -636,30 +671,32 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
         />
       </div>
 
-      <div className="w-full">
+      <div className="w-full overflow-x-auto">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Pending Activities</h2>
           {(hasReadActionPer ||
-        hasReadBlacklistPer ||
-        hasReadFreezePer ||
-        hasReadBurnPer ||
-        hasReadMintPer ||
-        hasReadRefundPer ||
-        hasReadCustomerPer) && <button
-            type="button"
-            onClick={() => router.push("/dash/admin?tab=activity")}
-            className="btn btn-ghost btn-sm gap-2"
-          >
-            View Activity <FaArrowRight className="w-3 h-3" />
-          </button>}
+            hasReadBlacklistPer ||
+            hasReadFreezePer ||
+            hasReadBurnPer ||
+            hasReadMintPer ||
+            hasReadRefundPer ||
+            hasReadCustomerPer) && (
+            <button
+              type="button"
+              onClick={() => router.push("/dash/admin?tab=activity")}
+              className="btn btn-ghost btn-sm gap-2"
+            >
+              View Activity <FaArrowRight className="w-3 h-3" />
+            </button>
+          )}
         </div>
-        {(hasReadActionPer ||
+        {hasReadActionPer ||
         hasReadBlacklistPer ||
         hasReadFreezePer ||
         hasReadBurnPer ||
         hasReadMintPer ||
         hasReadRefundPer ||
-        hasReadCustomerPer) ? (
+        hasReadCustomerPer ? (
           <ActivityList
             showOnlyPending={true}
             setShowOnlyPending={() => {}}
@@ -668,8 +705,10 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
             loading={loading}
             showAction={showActions}
             canCancel={canCancel}
+            canReject={canReject}
             canApprove={canApprove}
             handleCancel={handleCancel}
+            handleReject={handleReject}
             handleApprove={handleApprove}
             getActivityIcon={getActivityIcon}
             getActivityDisplayText={getActivityDisplayText}
@@ -689,33 +728,37 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="w-full">
-          {hasReadMintPer && <MintTable
-            title="Recent Mints"
-            mints={requestTables?.recentMints || []}
-            limit={5}
-            showViewAll={true}
-            showActions={false}
-            showRequester={false}
-            mode="all"
-            hasApproveMintPer={hasApproveMintPer}
-            hasRejectMintPer={hasRejectMintPer}
-          />}
+          {hasReadMintPer && (
+            <MintTable
+              title="Recent Mints"
+              mints={requestTables?.recentMints || []}
+              limit={5}
+              showViewAll={true}
+              showActions={false}
+              showRequester={false}
+              mode="all"
+              hasApproveMintPer={hasApproveMintPer}
+              hasRejectMintPer={hasRejectMintPer}
+            />
+          )}
         </div>
 
         <div className="w-full">
-          {hasReadBurnPer && <BurnTable
-            title="Recent Burns"
-            burns={formattedBurns}
-            decimals={initialConfig.decimals}
-            onCopyTxid={(txid) => {
-              navigator.clipboard.writeText(txid);
-              toast.success("Transaction ID copied to clipboard");
-            }}
-            alwaysShow={true}
-            showViewAll={true}
-            showRequester={false}
-            hasSettleBurnPer={hasSettleBurnPer}
-          />}
+          {hasReadBurnPer && (
+            <BurnTable
+              title="Recent Burns"
+              burns={formattedBurns}
+              decimals={initialConfig.decimals}
+              onCopyTxid={(txid) => {
+                navigator.clipboard.writeText(txid);
+                CustomToast.success("Transaction ID copied to clipboard");
+              }}
+              alwaysShow={true}
+              showViewAll={true}
+              showRequester={false}
+              hasSettleBurnPer={hasSettleBurnPer}
+            />
+          )}
         </div>
       </div>
     </div>

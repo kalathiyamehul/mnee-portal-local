@@ -4,12 +4,12 @@ import { toToken } from 'satoshi-token';
 import { FaCopy } from 'react-icons/fa6';
 import { format, formatDate, formatDistanceStrict, formatDistanceToNow } from 'date-fns';
 import { useSession } from 'next-auth/react';
-import { toast } from 'react-hot-toast';
 import { formatRevalidate } from 'next/dist/server/lib/revalidate';
 import { Pagination } from "@/components/common/Pagination";
 import { useEffect, useState } from 'react';
 import { MdOutlineOpenInNew } from 'react-icons/md';
 import { apiFetch } from '@/utils/api';
+import CustomToast from '@/components/common/CustomToast';
 
 interface BurnTableProps {
 	burns: BurnUtxo[];
@@ -23,6 +23,7 @@ interface BurnTableProps {
 	hasApproveBurnPer?: boolean;
 	hasRejectBurnPer?: boolean;
     hasApproveRefundPer?: boolean;
+	hasRejectRefundPer?: boolean;
 	hasCreateRefundPer?: boolean;
 	hasSettleBurnPer?: boolean;
 }
@@ -38,6 +39,8 @@ export const BurnTable = ({
 	showRequester = true,
     hasSettleBurnPer,
 	hasApproveRefundPer,
+	hasRejectBurnPer,
+	hasRejectRefundPer,
 }: BurnTableProps) => {
 	const { data: session } = useSession();
 	const [settlingId, setSettlingId] = React.useState<string | null>(null);
@@ -55,12 +58,41 @@ export const BurnTable = ({
 				throw new Error(data.error || 'Failed to approve refund request');
 			}
 
-			toast.success('Refund request approved');
+			CustomToast.success('Refund request approved');
 		} catch (error) {
 			// console.error('Error approving refund:', error);
-			toast.error(error instanceof Error ? error.message : 'Failed to approve refund request');
+			CustomToast.error(error instanceof Error ? error.message : 'Failed to approve refund request');
 		}
 	};
+
+	const handleRejectRefund = async (refundId: string) => {
+		console.log("Refund Request ID:", refundId)
+		try {
+		  const response = await apiFetch("/api/reject", {
+			method: "POST",
+			headers: {
+			  "Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+			  refundRequestId: refundId,
+			}),
+		  });
+	
+		  if (!response.ok) {
+			const data = await response.json();
+			throw new Error(data.error || "Failed to reject refund request");
+		  }
+	
+		  CustomToast.success("Refund request Rejected");
+		} catch (error) {
+		  // console.error("Error approving burn:", error);
+		  CustomToast.error(
+			error instanceof Error
+			  ? error.message
+			  : "Failed to Reject refund request"
+		  );
+		}
+	  };
 
 	const handleSettleBurn = async (burnRequestId: string) => {
         setSettlingId(burnRequestId);
@@ -77,11 +109,11 @@ export const BurnTable = ({
                 throw new Error(data.error || 'Failed to settle burn request');
             }
 
-            toast.success('Burn request settled successfully');
+            CustomToast.success('Burn request settled successfully');
             // Optionally, trigger a refresh or callback here
         } catch (error) {
             // console.error('Error settling burn:', error);
-            toast.error(error instanceof Error ? error.message : 'Failed to settle burn request');
+            CustomToast.error(error instanceof Error ? error.message : 'Failed to settle burn request');
         } finally {
             setSettlingId(null);
         }
@@ -94,10 +126,15 @@ export const BurnTable = ({
 			!burn.refundRequest.approvals.some((approval: { approver?: { email: string } }) => approval.approver?.email === session.user.email);
 	};
 
-	const canSettle = (burn: BurnUtxo) => {
-		if (!burn.burnRequest || !session?.user?.email) return false;
-		return burn.burnRequest.status === 'APPROVED'
-	};
+	const canRejectRefund = (burn: BurnUtxo) => {
+		if (!burn.refundRequest || !session?.user?.email) return false;
+		return (
+		  burn.refundRequest.status === "PENDING" &&
+		  burn.refundRequest.requester.email !== session.user.email &&
+		  !burn.refundRequest.approvals.some((approval: { approver?: { email: string } }) => approval.approver?.email === session.user.email)
+		);
+	  };
+
 	// Pagination state
 	const [currentPage, setCurrentPage] = useState(1);
 	const itemsPerPage = 6;
@@ -168,15 +205,6 @@ export const BurnTable = ({
 											}`}>
 												{status}
 											</div>
-											{burn.refundRequest && (
-												<div className={`badge ml-2 ${
-													burn.refundRequest.status === 'PENDING' ? 'badge-warning' :
-													burn.refundRequest.status === 'APPROVED' ? 'badge-success' :
-													'badge-error'
-												}`}>
-													REFUND {burn.refundRequest.status}
-												</div>
-											)}
 										</td>
 										<td>
 											<div className="flex flex-col items-center gap-2">
@@ -219,16 +247,6 @@ export const BurnTable = ({
 															Approved by: {burn.burnRequest.approvals.map(a => a.approver?.name || a.approver?.email).join(', ')}
 														</div>
 													)}
-													{burn.refundRequest && (
-														<div className="text-xs text-base-content/70">
-															Refund by: {burn.refundRequest.requester.name || burn.refundRequest.requester.email}
-															{burn.refundRequest.approvals?.length > 0 && (
-																<div>
-																	Approved by: {burn.refundRequest.approvals.map(a => a.approver?.name || a.approver?.email).join(', ')}
-																</div>
-															)}
-														</div>
-													)}
 												</div>
 											</td>
 										)}
@@ -245,6 +263,19 @@ export const BurnTable = ({
 													className="btn btn-success btn-sm"
 												>
 													Approve Refund
+												</button>
+											)}
+											{/* Reject Refund */}
+											{canRejectRefund(burn) && hasRejectRefundPer && (
+												<button
+												type="button"
+												onClick={() =>
+													burn.refundRequest &&
+													handleRejectRefund(burn.refundRequest.id)
+												}
+												className="btn btn-error btn-sm"
+												>
+												Reject Refund
 												</button>
 											)}
 											 {/* SETTLED Button */}

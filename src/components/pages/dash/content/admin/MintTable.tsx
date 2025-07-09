@@ -2,7 +2,6 @@ import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { FaCopy, FaSpinner } from "react-icons/fa6";
 import { useSession } from "next-auth/react";
-import { toast } from "react-hot-toast";
 import type { Activity } from "./types";
 import type { Session } from "next-auth";
 import {
@@ -19,6 +18,7 @@ import { getGravatarUrl } from "@/utils/gravatar";
 import { useRouter } from "next/navigation";
 import { Pagination } from "@/components/common/Pagination";
 import { apiFetch } from "@/utils/api";
+import CustomToast from "@/components/common/CustomToast";
 
 const statusColors: Record<string, string> = {
   PENDING: "badge-warning",
@@ -121,9 +121,7 @@ const MintTableContent = ({
 
       if (response.status === 202) {
         // System is paused or address is frozen, show info toast
-        toast(data.error || "Request will remain pending", {
-          style: { background: "#3b82f6", color: "white" },
-        });
+        CustomToast.error(data.error || "Request will remain pending");
         onUpdate?.();
         return;
       }
@@ -133,14 +131,14 @@ const MintTableContent = ({
       }
 
       if (data.success) {
-        toast.success(data.message);
+        CustomToast.success(data.message);
         onUpdate?.();
       } else {
         throw new Error(data.error || "Failed to approve mint request");
       }
     } catch (error) {
       // console.error("Failed to approve mint request:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to approve mint request"
@@ -167,14 +165,14 @@ const MintTableContent = ({
       }
 
       if (data.success) {
-        toast.success("Mint request cancelled");
+        CustomToast.success("Mint request cancelled");
         onUpdate?.();
       } else {
         throw new Error(data.error || "Failed to cancel mint request");
       }
     } catch (error) {
       // console.error("Failed to cancel mint request:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to cancel mint request"
       );
     }
@@ -183,7 +181,7 @@ const MintTableContent = ({
 	const handleReject = async (id: string) => {
 		try {
 			setLoadingReject(id);
-			const response = await apiFetch("/api/rejectMint", {
+			const response = await apiFetch("/api/reject", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
@@ -198,14 +196,14 @@ const MintTableContent = ({
 			}
 
 			if (data.success) {
-				toast.success(data.message || "Mint request rejected");
+				CustomToast.success(data.message || "Mint request rejected");
 				onUpdate?.();
 			} else {
 				throw new Error(data.error || "Failed to reject mint request");
 			}
 		} catch (error) {
 			// console.error("Failed to reject mint request:", error);
-			toast.error(error instanceof Error ? error.message : "Failed to reject mint request");
+			CustomToast.error(error instanceof Error ? error.message : "Failed to reject mint request");
 		} finally {
 			setLoadingReject(null);
 		}
@@ -281,7 +279,7 @@ const MintTableContent = ({
                     <div className="font-medium">
                       {mint.customer ? (
                         <Link
-                          href={`/dash/customers?id=${mint.customer.email}`}
+                          href={`/dash/customers?id=${mint.customer.id}`}
                           className="hover:underline"
                         >
                           {mint.customer.name}
@@ -317,7 +315,7 @@ const MintTableContent = ({
                         onClick={() => {
                           if (mint.address) {
                             navigator.clipboard.writeText(mint.address);
-                            toast.success("Address copied");
+                            CustomToast.success("Address copied");
                           }
                         }}
                         className="btn btn-ghost btn-xs text-base-content/70 hover:text-base-content"
@@ -351,7 +349,7 @@ const MintTableContent = ({
                     <span
                       className={`badge badge-sm ${statusColors[mint.status]}`}
                     >
-                      {mint.status}
+                      {mint.status === 'DONE' ? 'APPROVED' : mint.status}
                     </span>
                     {mint.status === "PENDING" && (
                       <span className="text-xs text-base-content/70">
@@ -491,8 +489,8 @@ export const MintTable = ({
           onUpdate={onUpdate}
           showActions={showActions}
           showRequester={showRequester}
-          hasApproveMintPer={hasApproveMintPer}  // Add this line
-          hasRejectMintPer={hasRejectMintPer}    // Add this line
+          hasApproveMintPer={hasApproveMintPer}
+          hasRejectMintPer={hasRejectMintPer}
         />
       </div>
 

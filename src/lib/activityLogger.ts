@@ -23,13 +23,16 @@ export enum ActivityAction {
   REFUND_REQUEST_CREATE = 'REFUND_REQUEST_CREATE',
   REFUND_REQUEST_CANCEL = 'REFUND_REQUEST_CANCEL',
   REFUND_REQUEST_APPROVE = 'REFUND_REQUEST_APPROVE',
+  REFUND_REQUEST_REJECT = 'REFUND_REQUEST_REJECT',
   REFUND_REQUEST_FULLY_APPROVED = 'REFUND_REQUEST_FULLY_APPROVED',
+  REFUND_TX_COMPLETED = 'REFUND_TX_COMPLETED',
   BURN_REQUEST_REFUNDED = 'BURN_REQUEST_REFUNDED',
 
   // Customer Actions
   CUSTOMER_REQUEST_CREATE = 'CUSTOMER_REQUEST_CREATE',
   CUSTOMER_REQUEST_CANCEL = 'CUSTOMER_REQUEST_CANCEL',
   CUSTOMER_REQUEST_APPROVE = 'CUSTOMER_REQUEST_APPROVE',
+  CUSTOMER_REQUEST_REJECT = 'CUSTOMER_REQUEST_REJECT',
   CUSTOMER_REQUEST_FULLY_APPROVED = 'CUSTOMER_REQUEST_FULLY_APPROVED',
   NEW_CUSTOMER_CREATED = 'NEW_CUSTOMER_CREATED',
   CUSTOMER_UPDATE = 'CUSTOMER_UPDATE',
@@ -38,20 +41,24 @@ export enum ActivityAction {
   FREEZE_REQUEST_CREATE = 'FREEZE_REQUEST_CREATE',
   FREEZE_REQUEST_CANCEL = 'FREEZE_REQUEST_CANCEL',
   FREEZE_REQUEST_APPROVE = 'FREEZE_REQUEST_APPROVE',
+  FREEZE_REQUEST_REJECT = 'FREEZE_REQUEST_REJECT',
   FREEZE_REQUEST_FULLY_APPROVED = 'FREEZE_REQUEST_FULLY_APPROVED',
 
   // Blacklist Actions
   BLACKLIST_REQUEST_CREATE = 'BLACKLIST_REQUEST_CREATE',
   BLACKLIST_REQUEST_CANCEL = 'BLACKLIST_REQUEST_CANCEL',
   BLACKLIST_REQUEST_APPROVE = 'BLACKLIST_REQUEST_APPROVE',
+  BLACKLIST_REQUEST_REJECT = 'BLACKLIST_REQUEST_REJECT',
   BLACKLIST_REQUEST_FULLY_APPROVED = 'BLACKLIST_REQUEST_FULLY_APPROVED',
 
   // System Action Request
   SYSTEM_PAUSE_REQUEST = 'SYSTEM_PAUSE_REQUEST',
   SYSTEM_PAUSE_REQUEST_APPROVE = 'SYSTEM_PAUSE_REQUEST_APPROVE',
+  SYSTEM_PAUSE_REQUEST_REJECT = 'SYSTEM_PAUSE_REQUEST_REJECT',
   SYSTEM_PAUSE_REQUEST_FULLY_APPROVED = 'SYSTEM_PAUSE_REQUEST_FULLY_APPROVED',
   SYSTEM_RESUME_REQUEST = 'SYSTEM_RESUME_REQUEST',
   SYSTEM_RESUME_REQUEST_APPROVE = 'SYSTEM_RESUME_REQUEST_APPROVE',
+  SYSTEM_RESUME_REQUEST_REJECT = 'SYSTEM_RESUME_REQUEST_REJECT',
   SYSTEM_RESUME_REQUEST_FULLY_APPROVED = 'SYSTEM_RESUME_REQUEST_FULLY_APPROVED',
   SYSTEM_PAUSE_REQUEST_CANCEL = 'SYSTEM_PAUSE_REQUEST_CANCEL',
   SYSTEM_RESUME_REQUEST_CANCEL = 'SYSTEM_RESUME_REQUEST_CANCEL',
@@ -73,12 +80,12 @@ export enum ActivityAction {
   USER_CREATED = 'USER_CREATED',
   USER_UPDATED = 'USER_UPDATED',
   USER_DELETED = 'USER_DELETED',
-  
 }
 
 type ActivityDetails = {
   name: string;
   description: string;
+  redirect_url?: string;
 };
 
 const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDetails => {
@@ -88,31 +95,37 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'Mint Request Created',
         description: `Mint request created by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=mints'
       };
     case ActivityAction.MINT_REQUEST_CANCEL:
       return {
         name: 'Mint Request Cancelled',
         description: `Mint request ${metadata.mintRequestId} was cancelled by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=mints'
       }
     case ActivityAction.MINT_REQUEST_APPROVE:
       return {
         name: 'Mint Request Approval',
         description: `Mint request ${metadata.mintRequestId} was approved by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=mints'
       };
     case ActivityAction.MINT_REQUEST_REJECT:
       return {
         name: 'Mint Request Rejected',
         description: `Mint request ${metadata.mintRequestId} was rejected by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=mints'
       };
     case ActivityAction.MINT_REQUEST_FULLY_APPROVED:
       return {
         name: 'Mint Request Fully Approved',
         description: `Mint request ${metadata.mintRequestId} fully approved after reaching required approvals`,
+        redirect_url: '/dash/admin?tab=mints'
       };
     case ActivityAction.MINT_TX_COMPLETED:
       return {
         name: 'Mint Transaction Completed',
         description: `Mint transaction ${metadata.txId} completed for Mint request ${metadata.mintRequestId}`,
+        redirect_url: '/dash/admin?tab=mints'
       }
 
     // Burn Actions
@@ -120,31 +133,37 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'Burn Request Created',
         description: `Burn request created by ${metadata.userEmail} for outpoint ${metadata.outpoint}`,
+        redirect_url: '/dash/admin?tab=burns'
       };
     case ActivityAction.BURN_REQUEST_CANCEL:
       return {
         name: 'Burn Request Cancelled',
         description: `Burn request ${metadata.burnRequestId} was cancelled by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=burns'
       };
     case ActivityAction.BURN_REQUEST_APPROVE:
       return {
         name: 'Burn Request Approval',
         description: `Burn request ${metadata.burnRequestId} was approved by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=burns'
       };
     case ActivityAction.BURN_REQUEST_REJECT:
       return {
         name: 'Burn Request Rejected',
         description: `Burn request ${metadata.burnRequestId} was rejected by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=burns'
       };
     case ActivityAction.BURN_REQUEST_FULLY_APPROVED:
       return {
         name: 'Burn Request Fully Approved',
         description: `Burn request ${metadata.burnRequestId} fully approved after reaching required approvals`,
+        redirect_url: '/dash/admin?tab=burns'
       };
     case ActivityAction.BURN_REQUEST_SETTLE:
       return {
         name: 'Burn Request Settled',
         description: `Burn request ${metadata.burnRequestId} was settled by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=burns'
       };
 
     // Refund Actions
@@ -152,26 +171,41 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'Refund Request Created',
         description: `Refund request created for outpoint ${metadata.outpoint} by user ${metadata.userEmail}. Refund address ${metadata.refundAddress} verified as original owner.`,
+        redirect_url: '/dash/admin?tab=burns'
       };
     case ActivityAction.REFUND_REQUEST_CANCEL:
       return {
         name: 'Refund Request Cancelled',
         description: `Refund request ${metadata.refundRequestId} was cancelled by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=burns'
       }
     case ActivityAction.REFUND_REQUEST_APPROVE:
       return {
         name: 'Refund Request Approval',
         description: `Refund request ${metadata.refundRequestId} was approved by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=burns'
       };
+      case ActivityAction.REFUND_REQUEST_REJECT:
+        return {
+          name: 'Refund Request Rejected',
+          description: `Refund request ${metadata.refundRequestId} was rejected by ${metadata.userEmail}`,
+        };
     case ActivityAction.REFUND_REQUEST_FULLY_APPROVED:
       return {
         name: 'Refund Request Fully Approved',
         description: `Refund request ${metadata.refundRequestId} fully approved after reaching required approvals`,
+        redirect_url: '/dash/admin?tab=burns'
+      };
+    case ActivityAction.REFUND_TX_COMPLETED:
+      return {
+        name: 'Refund Request Broadcasted',
+        description: `Refund request ${metadata.refundRequestId} Broadcasted`,
       };
     case ActivityAction.BURN_REQUEST_REFUNDED:
       return {
         name: 'Burn Request Refunded',
         description: `Burn request ${metadata.burnRequestId} was refunded`,
+        redirect_url: '/dash/admin?tab=burns'
       };
 
     // Customer Actions
@@ -179,31 +213,42 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'Customer Request Created',
         description: `New Customer Request ${metadata.customerEmail} was Created by ${metadata.userEmail}`,
+        redirect_url: '/dash/customers'
       };
     case ActivityAction.CUSTOMER_REQUEST_CANCEL:
       return {
         name: 'Customer Request Cancelled',
         description: `Customer request ${metadata.customerEmail} was cancelled by ${metadata.userEmail}`,
+        redirect_url: '/dash/customers'
       };
     case ActivityAction.CUSTOMER_REQUEST_APPROVE:
       return {
         name: 'Customer Request Approval',
         description: `Customer request ${metadata.customerEmail} was approved by ${metadata.userEmail}`,
+        redirect_url: '/dash/customers'
+      };
+    case ActivityAction.CUSTOMER_REQUEST_REJECT:
+      return {
+        name: 'Customer Request Rejected',
+        description: `Customer request ${metadata.customerEmail} was rejected by ${metadata.userEmail}`,
       };
     case ActivityAction.CUSTOMER_REQUEST_FULLY_APPROVED:
       return {
         name: 'Customer Request Fully Approved',
         description: `Customer request ${metadata.customerEmail} fully approved after reaching required approvals`,
+        redirect_url: '/dash/customers'
       };
     case ActivityAction.NEW_CUSTOMER_CREATED:
       return {
         name: 'New Customer Created',
         description: `New Customer ${metadata.customerEmail} Created Successfully.`,
+        redirect_url: '/dash/customers'
       };
     case ActivityAction.CUSTOMER_UPDATE:
       return {
         name: 'Customer Updated',
         description: `Customer ${metadata.customerId} Updated by ${metadata.userEmail}`,
+        redirect_url: '/dash/customers'
       };
 
     // Freeze Actions
@@ -211,21 +256,30 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'Freeze Request Created',
         description: `Freeze request was created by ${metadata.userEmail} for Address: ${metadata.address}`,
+        redirect_url: '/dash/admin?tab=restrictions'
       };
     case ActivityAction.FREEZE_REQUEST_CANCEL:
       return {
         name: 'Freeze Request Cancelled',
         description: `Freeze request ${metadata.address} was cancelled by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=restrictions'
       };
     case ActivityAction.FREEZE_REQUEST_APPROVE:
       return {
         name: 'Freeze Request Approval',
         description: `Freeze request ${metadata.freezeRequestId} was approved by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=restrictions'
+      };
+    case ActivityAction.FREEZE_REQUEST_REJECT:
+      return{
+        name: 'Freeze Request Rejected',
+        description: `Freeze request ${metadata.freezeRequestId} was rejected by ${metadata.userEmail}`,
       };
     case ActivityAction.FREEZE_REQUEST_FULLY_APPROVED:
       return {
         name: 'Freeze Request Fully Approved',
         description: `Freeze request ${metadata.freezeRequestId} fully approved after reaching required approvals`,
+        redirect_url: '/dash/admin?tab=restrictions'
       };
 
     // Blacklist Actions
@@ -233,21 +287,30 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'Blacklist Request Created',
         description: `Blacklist request was created by ${metadata.userEmail} for Address: ${metadata.address}`,
+        redirect_url: '/dash/admin?tab=restrictions'
       };
     case ActivityAction.BLACKLIST_REQUEST_CANCEL:
       return {
         name: 'Blacklist Request Cancelled',
         description: `Blacklist request for Address: ${metadata.address} was cancelled by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=restrictions'
       };
     case ActivityAction.BLACKLIST_REQUEST_APPROVE:
       return {
         name: 'Blacklist Request Approval',
         description: `Blacklist request for Address: ${metadata.address} was approved by ${metadata.userEmail}`,
+        redirect_url: '/dash/admin?tab=restrictions'
+      };
+    case ActivityAction.BLACKLIST_REQUEST_REJECT:
+      return {
+        name: 'Blacklist Request Rejected',
+        description: `Blacklist request for Address: ${metadata.address} was rejected by ${metadata.userEmail}`,
       };
     case ActivityAction.BLACKLIST_REQUEST_FULLY_APPROVED:
       return {
         name: 'Blacklist Request Fully Approved',
         description: `Blacklist request for Address: ${metadata.address} fully approved after reaching required approvals`,
+        redirect_url: '/dash/admin?tab=restrictions'
       };
 
     // System Action Request
@@ -276,6 +339,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
         name: 'System Pause Request Approved',
         description: `System pause request ${metadata.actionRequestId} was approved by ${metadata.userEmail}`,
       };
+    case ActivityAction.SYSTEM_PAUSE_REQUEST_REJECT:
+      return {
+        name: 'System Pause Request Rejected',
+        description: `System pause request ${metadata.actionRequestId} was rejected by ${metadata.userEmail}`,
+      };
     case ActivityAction.SYSTEM_PAUSE_REQUEST_FULLY_APPROVED:
       return {
         name: 'System Pause Request Fully Approved',
@@ -285,6 +353,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'System Resume Request Approved',
         description: `System resume request ${metadata.actionRequestId} was approved by ${metadata.userEmail}`,
+      };
+    case ActivityAction.SYSTEM_RESUME_REQUEST_REJECT:
+      return {
+        name: 'System Resume Request Rejected',
+        description: `System resume request ${metadata.actionRequestId} was rejected by ${metadata.userEmail}`,
       };
     case ActivityAction.SYSTEM_RESUME_REQUEST_FULLY_APPROVED:
       return {
@@ -379,7 +452,7 @@ export async function logActivity(
     throw new Error('No active session found for activity logging');
   }
 
-  const { name, description } = getActivityDetails(action, {
+  const { name, description, redirect_url } = getActivityDetails(action, {
     ...metadata,
     userId: session.user.id,
     userEmail: session.user.email
@@ -390,13 +463,14 @@ export async function logActivity(
       name,
       action,
       description,
+      redirectUrl: redirect_url,
       metadata: {
         ...metadata,
         user: {
           id: session.user.id,
           name: session.user.name,
           email: session.user.email
-        }
+        },
       },
     },
   });

@@ -40,6 +40,7 @@ model User {
   refundRequests    RefundRequest[]    @relation("UserRefundRequests")
   refundApprovals   RefundApproval[]   @relation("UserRefundApprovals")
   transactionRecords      TransactionRecords[]     @relation("UserTransactionRecords")
+  passwordHistory   PasswordHistory[]  @relation("UserPasswordHistory")
   roleId            String?
   role              Role?              @relation(fields: [roleId], references: [id])
 
@@ -118,7 +119,6 @@ model BlacklistApproval {
 model CustomerRequest {
   id              String       @id @default(uuid())
   name            String
-  email           String
   address         String
   status          ActionStatus @default(PENDING)
   action          CustomerRequestAction
@@ -313,12 +313,12 @@ model Config {
 model Customer {
   id          String    @id @default(uuid())
   name        String
-  email       String    @unique
   address     String    @unique
   createdBy   String    @map("created_by")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   no_of_approvals Int   @default(2)
+  isActive    Boolean   @default(true)
   // Add this relation field
   customerRequests CustomerRequest[]
   
@@ -381,6 +381,7 @@ model ActivityLog {
   name        String
   action      String
   description String
+  redirectUrl String   @default("")
   metadata    Json?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
@@ -415,7 +416,7 @@ model TransactionRecords {
 model RateLimitAttempt {
   id          String   @id @default(uuid())
   identifier  String   // IP address or email
-  type        RateLimitType
+  type        String
   attempts    Int      @default(1)
   windowStart DateTime @default(now()) @map("window_start")
   lastAttempt DateTime @default(now()) @map("last_attempt")
@@ -440,9 +441,15 @@ model AccountLockout {
   @@map("account_lockout")
 }
 
-enum RateLimitType {
-  LOGIN_ATTEMPT
-  API_REQUEST
-  PASSWORD_RESET
-  TWO_FA_ATTEMPT
+model PasswordHistory {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  password  String   // Hashed password
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation("UserPasswordHistory", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("password_history")
 }

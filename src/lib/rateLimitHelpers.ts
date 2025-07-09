@@ -1,32 +1,30 @@
-import { RateLimitType } from '@prisma/client';
 import { CSRFOptions } from './csrf';
+import { RateLimitType } from './rateLimiter';
+import crypto from 'crypto';
 
-/**
- * Helper function to create rate limiting configuration for 2FA endpoints
- */
-export function create2FARateLimit(): CSRFOptions {
-    return {
-        rateLimit: {
-            type: 'TWO_FA_ATTEMPT',
-            identifier: async (request: Request) => {
-                try {
-                    const body = await request.clone().json();
-                    return body.email || 'unknown';
-                } catch {
-                    return 'unknown';
-                }
-            },
-        },
-    };
+function generateDeviceFingerprintFromNextAuth(req: any): string {
+    const headers = req?.headers || {};
+
+    const fingerprint = [
+        headers['user-agent'] || '',
+        headers['accept-language'] || '',
+        headers['accept-encoding'] || '',
+        headers['accept'] || '',
+        headers['dnt'] || '',
+        headers['sec-ch-ua'] || '',
+        headers['sec-ch-ua-platform'] || '',
+        headers['sec-ch-ua-mobile'] || '',
+    ].join('|');
+
+    return crypto.createHash('sha256').update(fingerprint).digest('hex').slice(0, 16);
 }
-
 /**
  * Helper function to create rate limiting configuration for general API endpoints
  */
 export function createAPIRateLimit(maxAttempts?: number): CSRFOptions {
     return {
         rateLimit: {
-            type: 'API_REQUEST',
+            type: RateLimitType.API_REQUEST,
             config: maxAttempts ? { maxAttempts } : undefined,
         },
     };
@@ -47,4 +45,28 @@ export function createCustomRateLimit(
             config: maxAttempts ? { maxAttempts } : undefined,
         },
     };
-} 
+}
+
+export function createLoginFingerprint(req: any, email: string): string {
+    try {
+        // 1. Email prefix for account targeting
+        const emailPrefix = email;
+
+        // 2. User agent hash
+        const userAgent = req?.headers?.['user-agent'] || 'unknown';
+        const userAgentHash = crypto.createHash('md5').update(userAgent).digest('hex').slice(0, 8);
+
+        // 3. Device fingerprint
+        const deviceFingerprint = generateDeviceFingerprintFromNextAuth(req);
+
+        // Combine all factors
+        return `login:${emailPrefix}:${userAgentHash}:${deviceFingerprint}`;
+    } catch (error) {
+        console.error('Error generating login fingerprint:', error);
+        // Fallback to email-based if fingerprinting fails
+        return `fallback:${email}`;
+    }
+}
+export function createFingerprintForAPIRequest(req: any, email: string | null, type: string): string {
+    return `${type?.toLowerCase()}:${email || ""}:${generateDeviceFingerprintFromNextAuth(req)}`;
+}

@@ -8,36 +8,40 @@ import type { Session } from "next-auth";
 import { getGravatarUrl } from "@/utils/gravatar";
 import { Pagination } from "@/components/common/Pagination";
 import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
+import CustomToast from "@/components/common/CustomToast";
 
 interface ActiveRestrictionsTabProps {
   restrictions: AddressStatus[];
   loading: boolean;
   handleUnblacklist: (
     e: MouseEvent<HTMLButtonElement>,
-    address: string
+    address: string, reason: string
   ) => Promise<void>;
   handleBlacklist: (
     e: MouseEvent<HTMLButtonElement>,
-    address: string
+    address: string, reason: string
   ) => Promise<void>;
   handleFreezeRequest: (
     e: MouseEvent<HTMLButtonElement>,
-    address: string
+    address: string, reason: string
   ) => Promise<void>;
-  handleUnfreeze: (address: string) => Promise<void>;
+  handleUnfreeze: (address: string, reason: string) => Promise<void>;
   showModal: (id: string) => void;
   activities: Activity[];
   handleCancel: (id: string, type: Activity["type"]) => Promise<void>;
+  handleReject: (id: string, type: Activity["type"]) => Promise<void>;
+  canReject: (activity: Activity) => boolean;
   handleApprove: (id: string, type: Activity["type"]) => Promise<void>;
   session: Session;
   permissions: {
     hasReadBlacklistPer: boolean;
     hasCreateBlacklistPer: boolean;
     hasApproveBlacklistPer: boolean;
+    hasRejectBlacklistPer: boolean;
     hasReadFreezePer: boolean;
     hasCreateFreezePer: boolean;
     hasApproveFreezePer: boolean;
+    hasRejectFreezePer: boolean;
   };
 }
 
@@ -48,6 +52,8 @@ export const ActiveRestrictionsTab = ({
   handleBlacklist,
   handleFreezeRequest,
   handleUnfreeze,
+  handleReject,
+  canReject,
   showModal,
   activities,
   handleCancel,
@@ -70,7 +76,9 @@ export const ActiveRestrictionsTab = ({
 
   const showActions =
     permissions.hasApproveBlacklistPer ||
-    permissions.hasApproveFreezePer || permissions.hasCreateFreezePer || permissions.hasCreateBlacklistPer;
+    permissions.hasApproveFreezePer ||
+    permissions.hasCreateFreezePer ||
+    permissions.hasCreateBlacklistPer;
 
   const getActionBadgeClass = (activity: Activity) => {
     if (activity.type === "BLACKLIST") {
@@ -99,8 +107,10 @@ export const ActiveRestrictionsTab = ({
 
   const canApprove = (activity: Activity) => {
     if (activity.status !== "PENDING") return false;
-    if (activity.type === "BLACKLIST" && !permissions.hasApproveBlacklistPer) return false;
-    if (activity.type === "FREEZE" && !permissions.hasApproveFreezePer) return false;
+    if (activity.type === "BLACKLIST" && !permissions.hasApproveBlacklistPer)
+      return false;
+    if (activity.type === "FREEZE" && !permissions.hasApproveFreezePer)
+      return false;
     if (activity.requester.email === session?.user?.email) return false;
     return !activity.approvals?.some(
       (a) => a.approver?.email === session?.user?.email
@@ -109,7 +119,7 @@ export const ActiveRestrictionsTab = ({
 
   const handleCopyAddress = (txid: string) => {
     navigator.clipboard.writeText(txid);
-    toast.success("Address copied to clipboard");
+    CustomToast.success("Address copied to clipboard");
   };
 
   // Pagination state for history table
@@ -135,16 +145,17 @@ export const ActiveRestrictionsTab = ({
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl sm:text-2xl font-bold">Active</h2>
-        {(permissions.hasCreateBlacklistPer || permissions.hasCreateFreezePer) && (
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={() => showModal("freeze_modal")}
-            >
-              <FaSnowflake className="mr-1" />
-              <span className="text-sm">Restrict</span>
-            </button>
-          )}
+        {(permissions.hasCreateBlacklistPer ||
+          permissions.hasCreateFreezePer) && (
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={() => showModal("freeze_modal")}
+          >
+            <FaSnowflake className="mr-1" />
+            <span className="text-sm">Restrict</span>
+          </button>
+        )}
       </div>
       <ActiveRestrictions
         restrictions={restrictions}
@@ -153,6 +164,8 @@ export const ActiveRestrictionsTab = ({
         handleBlacklist={handleBlacklist}
         handleFreezeRequest={handleFreezeRequest}
         handleUnfreeze={handleUnfreeze}
+        canReject={canReject}
+        handleReject={handleReject}
         showActions={showActions}
         activities={activities}
         handleCancel={handleCancel}
@@ -285,12 +298,13 @@ export const ActiveRestrictionsTab = ({
                                 }
                                 disabled={loading}
                               >
-                                {activity.type === "FREEZE" && "Cancel Freeze"}
-                                {activity.type === "BLACKLIST" &&
-                                  "Cancel Blacklist"}
+                                {activity.type === "FREEZE" && (restrictions.find((r) => r.address === activity.address)?.isFrozen ? "Cancel Unfreeze" : "Cancel Freeze")}
+                                {activity.type === "BLACKLIST" && (restrictions.find((r) => r.address === activity.address)?.isBlacklisted ? "Cancel Unblacklist" : "Cancel Blacklist")}
                               </button>
                             )}
-                            {canApprove(activity) && (permissions.hasApproveBlacklistPer || permissions.hasApproveFreezePer) && (
+                            {canApprove(activity) &&
+                              (permissions.hasApproveBlacklistPer ||
+                                permissions.hasApproveFreezePer) && (
                                 <button
                                   type="button"
                                   className="btn btn-primary btn-sm"
@@ -299,12 +313,27 @@ export const ActiveRestrictionsTab = ({
                                   }
                                   disabled={loading}
                                 >
-                                  {activity.type === "FREEZE" &&
-                                    "Approve Freeze"}
-                                  {activity.type === "BLACKLIST" &&
-                                    "Approve Blacklist"}
+                                  {activity.type === "FREEZE" && (restrictions.find((r) => r.address === activity.address)?.isFrozen ? "Approve Unfreeze" : "Approve Freeze")}
+                                  {activity.type === "BLACKLIST" && (restrictions.find((r) => r.address === activity.address)?.isBlacklisted ? "Approve Unblacklist" : "Approve Blacklist")}
                                 </button>
-                              )}
+                            )}
+                            {canReject(activity) && (permissions.hasRejectBlacklistPer || permissions.hasRejectFreezePer) && (
+                              <button
+                                type="button"
+                                className="btn btn-error btn-sm"
+
+                                onClick={() =>
+                                  handleReject(activity.id, activity.type)
+                                }
+                                disabled={loading}
+                              >
+                                {activity.type === "FREEZE" &&
+                                  "Reject Freeze"}
+                                {activity.type === "BLACKLIST" &&
+                                  "Reject Blacklist"}
+                              </button>
+                            )}
+
                           </>
                         )}
                         {activity.type === "BLACKLIST" &&
@@ -318,7 +347,7 @@ export const ActiveRestrictionsTab = ({
                               className="btn btn-outline btn-sm"
                               onClick={(e) =>
                                 activity.address &&
-                                handleUnblacklist(e, activity.address)
+                                handleUnblacklist(e, activity.address, activity.reason || '')
                               }
                               disabled={loading}
                             >
@@ -332,7 +361,8 @@ export const ActiveRestrictionsTab = ({
                                 className="btn btn-error btn-sm"
                                 onClick={(e) =>
                                   activity.address &&
-                                  handleBlacklist(e, activity.address)
+                                  handleBlacklist(e, activity.address, activity.reason || '')
+
                                 }
                                 disabled={loading}
                               >
@@ -351,7 +381,7 @@ export const ActiveRestrictionsTab = ({
                               className="btn btn-outline btn-sm"
                               onClick={() =>
                                 activity.address &&
-                                handleUnfreeze(activity.address)
+                                handleUnfreeze(activity.address, activity.reason || '')
                               }
                               disabled={loading}
                             >
@@ -364,7 +394,7 @@ export const ActiveRestrictionsTab = ({
                                 className="btn btn-primary btn-sm"
                                 onClick={(e) =>
                                   activity.address &&
-                                  handleFreezeRequest(e, activity.address)
+                                  handleFreezeRequest(e, activity.address, activity.reason || '')
                                 }
                                 disabled={loading}
                               >

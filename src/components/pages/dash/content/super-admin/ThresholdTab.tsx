@@ -1,6 +1,6 @@
+import CustomToast from '@/components/common/CustomToast'
 import { apiFetch } from '@/utils/api'
 import React, { useState, useEffect } from 'react'
-import { toast } from 'react-hot-toast'
 
 interface Threshold {
   id: string
@@ -35,7 +35,7 @@ const ThresholdTab = () => {
         ]);
       } catch (error) {
         // console.error("Error fetching config:", error);
-        toast.error("Failed to load threshold settings");
+        CustomToast.error("Failed to load threshold settings");
       } finally {
         setLoading(false);
       }
@@ -67,11 +67,11 @@ const ThresholdTab = () => {
       setThresholds((prev) =>
         prev.map((t) => (t.id === editingThreshold.id ? editingThreshold : t))
       );
-      toast.success("Threshold updated successfully");
+      CustomToast.success("Threshold updated successfully");
       setIsEditing(false);
     } catch (error) {
       // console.error("Error updating threshold:", error);
-      toast.error("Failed to update threshold");
+      CustomToast.error("Failed to update threshold");
     }
   };
 

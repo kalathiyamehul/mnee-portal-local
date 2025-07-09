@@ -10,7 +10,6 @@ import {
 } from "react";
 import type { Activity } from "@/components/pages/dash/content/admin/types";
 import { useSession } from "next-auth/react";
-import toast from "react-hot-toast";
 import { apiFetch } from "@/utils/api";
 import {
   sanitizeError,
@@ -18,6 +17,7 @@ import {
   getDisplayMessage,
 } from "@/utils/errorHandler";
 import { EVENTS } from "@/lib/sseEmitter";
+import CustomToast from "@/components/common/CustomToast";
 
 interface SystemStatusData {
   isPaused: boolean;
@@ -90,7 +90,7 @@ export function SystemStatusProvider({
         error,
         "Failed to fetch system status"
       );
-      toast.error(getDisplayMessage(sanitizedError));
+      CustomToast.error(getDisplayMessage(sanitizedError));
       setStatusData(null);
     }
   }, [session?.user]);
@@ -147,7 +147,7 @@ export function SystemStatusProvider({
 
     // Connection established
     eventSource.onopen = () => {
-      // console.log("SSE connection established");
+      // console.log("SSE connection established"); 
     };
 
     eventSource.addEventListener(EVENTS.MINT_UPDATE, (event) => {
@@ -176,25 +176,6 @@ export function SystemStatusProvider({
             return {
               ...prev,
               mintRequests: updateActivity(prev.mintRequests),
-            };
-          });
-        }
-        if (type === "REJECT") {
-          setStatusData((prev: any) => {
-            if (!prev) return prev;
-            const updatedMint = prev.mintRequests.map((activity: any) => {
-              if (activity.id === activityId) {
-                return {
-                  ...activity,
-                  status: "REJECTED",
-                };
-              }
-              return activity;
-            });
-
-            return {
-              ...prev,
-              mintRequests: updatedMint,
             };
           });
         }
@@ -246,33 +227,57 @@ export function SystemStatusProvider({
         if (actionRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedSystem = prev.systemRequests.map((activity: any) => {
+              if (activity.id === actionRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              systemRequests: prev.systemRequests.filter(
-                (activity: any) => activity.id !== actionRequestId
-              ),
+              systemRequests: updatedSystem,
             };
           });
         }
         if (freezeRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedFreeze = prev.freezeRequests.map((activity: any) => {
+              if (activity.id === freezeRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              freezeRequests: prev.freezeRequests.filter(
-                (activity: any) => activity.id !== freezeRequestId
-              ),
+              freezeRequests: updatedFreeze,
             };
           });
         }
         if (blacklistRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedBlacklist = prev.blacklistRequests.map((activity: any) => {
+              if (activity.id === blacklistRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              blacklistRequests: prev.blacklistRequests.filter(
-                (activity: any) => activity.id !== blacklistRequestId
-              ),
+              blacklistRequests: updatedBlacklist,
             };
           });
         }
@@ -298,33 +303,202 @@ export function SystemStatusProvider({
         if (burnRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedBurn = prev.burnRequests.map((activity: any) => {
+              if (activity.id === burnRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              burnRequests: prev.burnRequests.filter(
-                (activity: any) => activity.id !== burnRequestId
-              ),
+              burnRequests: updatedBurn,
             };
           });
         }
         if (refundRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedRefund = prev.refundRequests.map((activity: any) => {
+              if (activity.id === refundRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              refundRequests: prev.refundRequests.filter(
-                (activity: any) => activity.id !== refundRequestId
-              ),
+              refundRequests: updatedRefund,
             };
           });
         }
         if (customerRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedCustomers = prev.customerRequests.map((activity: any) => {
+              if (activity.id === customerRequestId) {
+                return {
+                  ...activity,
+                  status: "CANCELLED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              customerRequests: prev.customerRequests.filter(
-                (activity: any) => activity.id !== customerRequestId
-              ),
+              customerRequests: updatedCustomers,
+            };
+          });
+        }
+      } catch (error) {
+        // console.error("Error handling SSE event:", error);
+      }
+    });
+    eventSource.addEventListener(EVENTS.REJECT_UPDATE, (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        // console.log("data", data);
+        const {
+          actionRequestId,
+          freezeRequestId,
+          blacklistRequestId,
+          mintRequestId,
+          burnRequestId,
+          refundRequestId,
+          customerRequestId,
+        } = data;
+        if (actionRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedCustomer = prev.customerRequests.map((activity: any) => {
+              if (activity.id === customerRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              systemRequests: updatedCustomer,
+            };
+          });
+        }
+        if (freezeRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedFreeze = prev.freezeRequests.map((activity: any) => {
+              if (activity.id === freezeRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              freezeRequests: updatedFreeze,
+
+            };
+          });
+        }
+        if (blacklistRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedBlacklist = prev.blacklistRequests.map((activity: any) => {
+              if (activity.id === blacklistRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              blacklistRequests: updatedBlacklist,
+            };
+          });
+        }
+        if (mintRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedMint = prev.mintRequests.map((activity: any) => {
+              if (activity.id === mintRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+
+            return {
+              ...prev,
+              mintRequests: updatedMint,
+            };
+          });
+        }
+        if (burnRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedBurn = prev.burnRequests.map((activity: any) => {
+              if (activity.id === burnRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              burnRequests: updatedBurn,
+            };
+          });
+        }
+        if (refundRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedRefund = prev.refundRequests.map((activity: any) => {
+              if (activity.id === refundRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              refundRequests: updatedRefund,
+            };
+          });
+        }
+        if (customerRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedCustomer = prev.customerRequests.map((activity: any) => {
+              if (activity.id === customerRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              customerRequests: updatedCustomer
             };
           });
         }
@@ -364,11 +538,19 @@ export function SystemStatusProvider({
         if (type === "APPROVED") {
           setStatusData((prev: any) => {
             if (!prev) return prev;
+            const updatedCustomers = prev.customerRequests.map((activity: any) => {
+              if (activity.id === activityId) {
+                return {
+                  ...activity,
+                  status: "APPROVED",
+                };
+              }
+              return activity;
+            });
+
             return {
               ...prev,
-              customerRequests: prev.customerRequests.filter(
-                (activity: any) => activity.id !== activityId
-              ),
+              customerRequests: updatedCustomers,
             };
           });
         }
@@ -483,18 +665,6 @@ export function SystemStatusProvider({
             };
           });
         }
-        // Reject Burn requests
-        if (type === "REJECT") {
-          setStatusData((prev: any) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              burnRequests: prev.mintRequests.filter(
-                (activity: any) => activity.id !== activityId
-              ),
-            };
-          });
-        }
         // Approved Burn requests
         if (type === "APPROVED") {
           setStatusData((prev: any) => {
@@ -586,6 +756,27 @@ export function SystemStatusProvider({
             };
           });
         }
+
+        // Fully Approved
+        if (type === "APPROVED") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedRefund = prev.refundRequests.map((activity: any) => {
+              if (activity.id === activityId) {
+                return {
+                  ...activity,
+                  status: "DONE",
+                };
+              }
+              return activity;
+            });
+
+            return {
+              ...prev,
+              refundRequests: updatedRefund,
+            };
+          });
+        }
       } catch (error) {
         // console.error("Error handling SSE event:", error);
       }
@@ -661,6 +852,9 @@ export function SystemStatusProvider({
       });
       eventSource.removeEventListener(EVENTS.CANCEL_UPDATE, (event) => {
         // console.log(EVENTS.CANCEL_UPDATE, event);
+      });
+      eventSource.removeEventListener(EVENTS.REJECT_UPDATE, (event) => {
+        // console.log(EVENTS.REJECT_UPDATE, event);
       });
       eventSource.removeEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
         // console.log(EVENTS.CUSTOMER_UPDATE, event);

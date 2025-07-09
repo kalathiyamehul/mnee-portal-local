@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { toast } from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { usePermission } from "@/hooks/usePermission";
 import { Resource, Action } from "@/lib/permission";
@@ -12,7 +11,7 @@ import { Pagination } from "@/components/common/Pagination";
 import { apiFetch } from "@/utils/api";
 import { password } from "bun";
 import { MdLockReset } from "react-icons/md";
-import { FiEye, FiEyeOff } from "react-icons/fi";
+import CustomToast from "@/components/common/CustomToast";
 
 interface User {
   id: string;
@@ -70,7 +69,6 @@ export default function UsersPage() {
     limit: 6,
     totalPages: 1,
   });
-  const [showPassword, setShowPassword] = useState(false);
 
   // Add validation states
   const [errors, setErrors] = useState({
@@ -174,7 +172,7 @@ export default function UsersPage() {
       setUsers(data.users);
       setPagination(data.pagination);
     } catch (error) {
-      toast.error("Failed to fetch users");
+      CustomToast.error("Failed to fetch users");
       // console.error(error);
     } finally {
       setLoading(false);
@@ -188,7 +186,7 @@ export default function UsersPage() {
       const data = await response.json();
       setRoles(data);
     } catch (error) {
-      toast.error("Failed to fetch roles");
+      CustomToast.error("Failed to fetch roles");
       // console.error(error);
     }
   };
@@ -209,7 +207,7 @@ export default function UsersPage() {
     // Improved error feedback
     if (nameError || emailError || passwordError) {
       const firstError = [nameError, emailError, passwordError].find((e) => e);
-      toast.error(firstError || "Please fix the form errors");
+      CustomToast.error(firstError || "Please fix the form errors");
       return;
     }
     try {
@@ -222,12 +220,12 @@ export default function UsersPage() {
       if (!response.ok) {
         throw new Error(data.error || "Failed to create user");
       }
-      toast.success("User created successfully");
+      CustomToast.success("User created successfully");
       fetchUsers();
       setIsCreating(false);
       setNewUser({ name: "", email: "", password: "", roleId: "" });
     } catch (error) {
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to create user"
       );
       // console.error(error);
@@ -251,7 +249,7 @@ export default function UsersPage() {
     // Improved error feedback
     if (nameError || emailError) {
       const firstError = [nameError, emailError].find((e) => e);
-      toast.error(firstError || "Please fix the form errors");
+      CustomToast.error(firstError || "Please fix the form errors");
       return;
     }
 
@@ -271,12 +269,12 @@ export default function UsersPage() {
         throw new Error(data.error || "Failed to update user");
       }
 
-      toast.success("User updated successfully");
+      CustomToast.success("User updated successfully");
       fetchUsers();
       setIsEditing(false);
       setEditingUser(null);
     } catch (error) {
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to update user"
       );
       // console.error(error);
@@ -299,7 +297,7 @@ export default function UsersPage() {
     // Improved error feedback
     if (passwordError) {
       const firstError = [passwordError].find((e) => e);
-      toast.error(firstError || "Please fix the form errors");
+      CustomToast.error(firstError || "Please fix the form errors");
       return;
     }
 
@@ -319,12 +317,12 @@ export default function UsersPage() {
         throw new Error(data.error || "Failed to Reset user password");
       }
 
-      toast.success("User Password Reset successfully");
+      CustomToast.success("User Password Reset successfully");
       fetchUsers();
       setIsEditing(false);
       setEditingUser(null);
     } catch (error) {
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to update user Password"
@@ -347,10 +345,10 @@ export default function UsersPage() {
         throw new Error(data.error || "Failed to delete user");
       }
 
-      toast.success("User deleted successfully");
+      CustomToast.success("User deleted successfully");
       fetchUsers();
     } catch (error) {
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to delete user"
       );
       // console.error(error);
@@ -710,50 +708,35 @@ export default function UsersPage() {
               <div className="space-y-6">
                 <div className="form-control w-full">
                   <label className="label label-text">Reset Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      className={`input input-bordered w-full max-w-md ${
-                        errors.password ? "input-error" : ""
-                      }`}
-                      value={editingUser.password ?? ""}
-                      maxLength={100}
-                      onChange={(e) => {
-                        const newPassword = e.target.value;
-                        setEditingUser((prev) =>
-                          prev ? { ...prev, password: newPassword } : null
-                        );
+                  <input
+                    type="password"
+                    className={`input input-bordered w-full max-w-md ${
+                      errors.password ? "input-error" : ""
+                    }`}
+                    value={editingUser.password}
+                    maxLength={100}
+                    onChange={(e) => {
+                      const newPassword = e.target.value;
+                      setEditingUser((prev) =>
+                        prev ? { ...prev, password: newPassword } : null
+                      );
 
-                        // Validate on every change
-                        const error =
-                          newPassword.trim() === ""
-                            ? ""
-                            : validatePassword(newPassword);
-                        setErrors((prev) => ({
-                          ...prev,
-                          password: error || "",
-                        }));
-                      }}
-                      placeholder="Set new password"
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-8 top-3 z-50 text-gray-500"
-                      aria-label={
-                        showPassword ? "Hide password" : "Show password"
-                      }
-                    >
-                      {showPassword ? (
-                        <FiEyeOff size={18} className="text-gray-300"/>
-                      ) : (
-                        <FiEye size={18} className="text-gray-300"/>
-                      )}
-                    </button>
-                  </div>
+                      // Validate on every change
+                      const error =
+                        newPassword.trim() === ""
+                          ? ""
+                          : validatePassword(newPassword);
+                      setErrors((prev) => ({ ...prev, password: error || "" }));
+                    }}
+                    placeholder="Set new password"
+                    required
+                  />
                   {errors.password && (
-                    <div className="text-error text-sm mt-2">{errors.password}</div>
+                    <div className="label mt-1">
+                      <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">
+                        {errors.password}
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -766,7 +749,6 @@ export default function UsersPage() {
                     setIsResetting(false);
                     setEditingUser(null);
                     setErrors({ name: "", password: "", email: "" });
-                    setShowPassword(false);
                   }}
                 >
                   Cancel
@@ -784,10 +766,8 @@ export default function UsersPage() {
           <div
             className="modal-backdrop"
             onClick={() => {
-              setIsResetting(false);
+              setIsEditing(false);
               setEditingUser(null);
-              setShowPassword(false);
-              setErrors({ name: "", password: "", email: "" });
             }}
           ></div>
         </div>

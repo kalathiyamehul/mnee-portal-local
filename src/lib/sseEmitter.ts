@@ -10,6 +10,7 @@ export const emitter = globalEmitter.sseEmitter;
 export const EVENTS = {
     MINT_UPDATE: "mintUpdate",
     CANCEL_UPDATE: "cancelUpdate",
+    REJECT_UPDATE: "rejectUpdate",
     CUSTOMER_UPDATE: "customerUpdate",
     RESTRICTIONS_UPDATE: "restrictionsUpdate",
     BURN_UPDATE: "burnUpdate",
@@ -31,6 +32,10 @@ export function emitMintUpdate(data: {
 
 export function emitCancelUpdate(data: any) {
     emitter.emit(EVENTS.CANCEL_UPDATE, data);
+}
+
+export function emitRejectUpdate(data: any) {
+    emitter.emit(EVENTS.REJECT_UPDATE, data);
 }
 
 export function emitCustomerUpdate(data: any) {

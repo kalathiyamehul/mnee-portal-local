@@ -17,12 +17,15 @@ import { getConfig } from "@/lib/config";
 import { toToken } from "satoshi-token";
 import type { Config, Customer } from "@prisma/client";
 import { FetchStatus } from "@/types/common";
-import toast, { ErrorIcon } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePermission } from "@/hooks/usePermission";
 import { Resource, Action } from "@/lib/permission";
 import { apiFetch } from "@/utils/api";
+import { CustomerHistory } from "./CustomerHistory";
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import type { Activity } from "./types";
+import CustomToast from "@/components/common/CustomToast";
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
@@ -33,9 +36,44 @@ export default function DashboardCustomersContent() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
+  const [customersRequests, setCustomerRequests] = useState<Activity[]>([]);
+  const { statusData, fetchStatus } = useSystemStatus();
   const [config, setConfig] = useState<Config | null>(null);
+  const [togglingCustomer, setTogglingCustomer] = useState<string | null>(null);
   const { hasPermission } = usePermission();
   const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+
+  // Customer Permissions
+  const hasCreateCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
+  const hasApproveCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+  const hasRejectCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
+  const hasUpdateCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.UPDATE) || false;
+
+  useEffect(() => {
+    if (statusData) {
+      const CustomersActivities: Activity[] = [
+        ...statusData.customerRequests.map((req) => ({
+          ...req,
+          type: "CUSTOMER" as const,
+          action: req.action,
+        })),
+      ].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      setCustomerRequests(CustomersActivities);
+    }
+  }, [statusData]);
+
   useEffect(() => {
     const init = async () => {
       try {
@@ -43,7 +81,7 @@ export default function DashboardCustomersContent() {
         setConfig(configData);
       } catch (error) {
         // console.error("Error loading config:", error);
-        toast.error("Failed to load config");
+        CustomToast.error("Failed to load config");
       }
     };
     init();
@@ -61,6 +99,52 @@ export default function DashboardCustomersContent() {
       fetchBalances(addresses);
     }
   }, [customers, fetchBalances, balancesLoading, loading]);
+
+  const handleToggle = async (
+    customerId: string,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    e.stopPropagation();
+
+    if (togglingCustomer === customerId) return; // Prevent multiple clicks
+
+    setTogglingCustomer(customerId);
+
+    try {
+      const response = await apiFetch(`/api/customers/${customerId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}), // Empty body since API toggles based on current state
+      });
+
+      if (!response.ok) {
+        const { error } = await response.json();
+        CustomToast.error(
+          typeof error === "string" ? error : "Failed to toggle customer state"
+        );
+        return;
+      }
+
+      const updatedCustomer = await response.json();
+      CustomToast.success(
+        `Customer ${
+          updatedCustomer.isActive ? "activated" : "deactivated"
+        } successfully`
+      );
+
+      // Refresh the customers list to reflect the change
+      fetchCustomers(pagination.page, pagination.limit);
+    } catch (error) {
+      console.error("Error toggling customer state:", error);
+      CustomToast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to toggle customer state"
+      );
+    } finally {
+      setTogglingCustomer(null);
+    }
+  };
 
   if (loading || !config) {
     return (
@@ -99,14 +183,14 @@ export default function DashboardCustomersContent() {
       return data.customers.map((customer: any) => ({
         ID: customer.id,
         Name: customer.name,
-        Email: customer.email,
         Address: customer.address,
+        isActive: customer.isActive ? "Yes" : "No",
         "Created By": customer.creator.email,
         "Created At": new Date(customer.createdAt).toLocaleDateString(),
       }));
     } catch (error) {
       // console.error("Error exporting customers:", error);
-      toast.error("Failed to export customers");
+      CustomToast.error("Failed to export customers");
       throw error;
     }
   };
@@ -117,7 +201,7 @@ export default function DashboardCustomersContent() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
           <ExportButtons filename="customers" onExport={handleExport} />
-          {(hasPermission(Resource.CUSTOMER, Action.CREATE) || isSuperAdmin) && (
+          {hasCreateCustomerPer && (
             <button
               type="button"
               onClick={() => setShowModal(true)}
@@ -145,23 +229,19 @@ export default function DashboardCustomersContent() {
               <tr
                 key={customer.id}
                 className="hover border-l-4 border-l-transparent hover:border-l-primary cursor-pointer"
-                onClick={() => router.push(`/dash/customers/${customer.id}`)}
               >
                 <td>
                   <div className="flex items-center gap-3">
                     <div className="avatar">
                       <div className="mask mask-squircle w-10 h-10">
                         <img
-                          src={getGravatarUrl(customer.email)}
+                          src={getGravatarUrl(customer.address)}
                           alt="Customer avatar"
                         />
                       </div>
                     </div>
                     <div>
                       <div className="font-medium">{customer.name}</div>
-                      <div className="text-sm text-base-content/70">
-                        {customer.email}
-                      </div>
                     </div>
                   </div>
                 </td>
@@ -223,8 +303,7 @@ export default function DashboardCustomersContent() {
                 </td>
                 <td>
                   <div className="flex gap-2">
-                    {(hasPermission(Resource.CUSTOMER, Action.UPDATE) ||
-                      isSuperAdmin) && (
+                    {hasUpdateCustomerPer && (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -233,8 +312,8 @@ export default function DashboardCustomersContent() {
                             {
                               id: customer.id,
                               name: customer.name,
-                              email: customer.email,
                               address: customer.address,
+                              isActive: customer.isActive,
                               no_of_approvals: customer.noOfApprovals,
                               createdBy: customer.creator.email,
                               createdAt: new Date(customer.createdAt),
@@ -287,6 +366,18 @@ export default function DashboardCustomersContent() {
           onPageChange={handlePageChange}
         />
       )}
+
+      <CustomerHistory
+        title="Customer Request History"
+        customers={customersRequests}
+        alwaysShow={true}
+        showActions={true}
+        fetchCustomers={fetchCustomers}
+        enablePagination={true}
+        itemsPerPage={6}
+        hasApproveCustomerPer = {hasApproveCustomerPer}
+        hasRejectCustomerPer = {hasRejectCustomerPer}
+      />
 
       {showModal && (
         <CustomerModal
