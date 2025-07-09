@@ -2,6 +2,7 @@ import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { FaCopy, FaSpinner } from "react-icons/fa6";
 import { useSession } from "next-auth/react";
+import { toast } from "react-hot-toast";
 import type { Activity } from "./types";
 import type { Session } from "next-auth";
 import {
@@ -18,7 +19,6 @@ import { getGravatarUrl } from "@/utils/gravatar";
 import { useRouter } from "next/navigation";
 import { Pagination } from "@/components/common/Pagination";
 import { apiFetch } from "@/utils/api";
-import CustomToast from "@/components/common/CustomToast";
 
 const statusColors: Record<string, string> = {
   PENDING: "badge-warning",
@@ -121,7 +121,9 @@ const MintTableContent = ({
 
       if (response.status === 202) {
         // System is paused or address is frozen, show info toast
-        CustomToast.error(data.error || "Request will remain pending");
+        toast(data.error || "Request will remain pending", {
+          style: { background: "#3b82f6", color: "white" },
+        });
         onUpdate?.();
         return;
       }
@@ -131,14 +133,14 @@ const MintTableContent = ({
       }
 
       if (data.success) {
-        CustomToast.success(data.message);
+        toast.success(data.message);
         onUpdate?.();
       } else {
         throw new Error(data.error || "Failed to approve mint request");
       }
     } catch (error) {
       // console.error("Failed to approve mint request:", error);
-      CustomToast.error(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to approve mint request"
@@ -165,14 +167,14 @@ const MintTableContent = ({
       }
 
       if (data.success) {
-        CustomToast.success("Mint request cancelled");
+        toast.success("Mint request cancelled");
         onUpdate?.();
       } else {
         throw new Error(data.error || "Failed to cancel mint request");
       }
     } catch (error) {
       // console.error("Failed to cancel mint request:", error);
-      CustomToast.error(
+      toast.error(
         error instanceof Error ? error.message : "Failed to cancel mint request"
       );
     }
@@ -196,14 +198,14 @@ const MintTableContent = ({
 			}
 
 			if (data.success) {
-				CustomToast.success(data.message || "Mint request rejected");
+				toast.success(data.message || "Mint request rejected");
 				onUpdate?.();
 			} else {
 				throw new Error(data.error || "Failed to reject mint request");
 			}
 		} catch (error) {
 			// console.error("Failed to reject mint request:", error);
-			CustomToast.error(error instanceof Error ? error.message : "Failed to reject mint request");
+			toast.error(error instanceof Error ? error.message : "Failed to reject mint request");
 		} finally {
 			setLoadingReject(null);
 		}
@@ -315,7 +317,7 @@ const MintTableContent = ({
                         onClick={() => {
                           if (mint.address) {
                             navigator.clipboard.writeText(mint.address);
-                            CustomToast.success("Address copied");
+                            toast.success("Address copied");
                           }
                         }}
                         className="btn btn-ghost btn-xs text-base-content/70 hover:text-base-content"

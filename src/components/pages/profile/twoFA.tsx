@@ -1,8 +1,8 @@
 "use client";
 
-import CustomToast from "@/components/common/CustomToast";
 import { apiFetch } from "@/utils/api";
 import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { MdClose } from "react-icons/md";
 
 const Button = (props: any) => (
@@ -33,7 +33,7 @@ export default function TwoFA() {
         set2FAStatus(data.enabled ? "enabled" : "disabled");
       } catch (error) {
         // console.error("Failed to check 2FA status:", error);
-        CustomToast.error("Failed to check 2FA status");
+        toast.error("Failed to check 2FA status");
         setErrorText("Failed to check 2FA status");
       } finally {
         setIsLoading(false);
@@ -66,7 +66,7 @@ export default function TwoFA() {
       }
     } catch (error) {
       // console.error("Failed to disable 2FA:", error);
-      CustomToast.error("Failed to disable 2FA");
+      toast.error("Failed to disable 2FA");
       setErrorText("Failed to disable 2FA");
     }
   };

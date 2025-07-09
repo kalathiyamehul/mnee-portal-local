@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { FaSpinner, FaSnowflake, FaLock } from "react-icons/fa6";
+import { toast } from "react-hot-toast";
 import { apiFetch } from "@/utils/api";
-import CustomToast from "@/components/common/CustomToast";
 
 interface FreezeModalProps {
   onClose: () => void;
@@ -41,7 +41,7 @@ export const FreezeModal = ({
         setnoOfApprovals(data.minNoOfApproval);
       } catch (error) {
         // console.error("Error fetching config:", error);
-        CustomToast.error("Failed to fetch configuration");
+        toast.error("Failed to fetch configuration");
       }
     };
 
@@ -68,10 +68,10 @@ export const FreezeModal = ({
 
       await onSuccess();
       onClose();
-      CustomToast.success("Freeze request created");
+      toast.success("Freeze request created");
     } catch (error) {
       // console.error('Error creating freeze request:', error);
-      CustomToast.error(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to create freeze request"
@@ -101,10 +101,10 @@ export const FreezeModal = ({
 
       await onSuccess();
       onClose();
-      CustomToast.success("Blacklist request created");
+      toast.success("Blacklist request created");
     } catch (error) {
       // console.error('Error creating blacklist request:', error);
-      CustomToast.error(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to create blacklist request"
