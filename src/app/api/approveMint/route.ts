@@ -23,6 +23,7 @@ import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { emitMintUpdate } from "@/lib/sseEmitter";
+import { recordTransaction, TransactionType } from "@/lib/recordTransactions";
 
 type MintRequestWithRelations = Prisma.MintRequestGetPayload<{
 	include: {
@@ -171,6 +172,14 @@ export const POST =  withCSRF(async function(request: Request) {
 							txid: Transaction.fromHex(rawtx).id("hex"),
 						},
 					});
+
+					await recordTransaction(tx, {
+						requestId: mintRequestId || '',
+						txid: Transaction.fromHex(rawtx).id("hex"),
+						requestedBy: mintRequest.requestedBy,
+						timestamp: new Date(),
+						type: TransactionType.MINT,
+					})
 
 					emitMintUpdate({
 						activityId: requestId,

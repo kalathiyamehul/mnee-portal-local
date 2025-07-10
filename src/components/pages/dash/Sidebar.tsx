@@ -24,7 +24,7 @@ const menuItems = [
   { name: "Wallet", href: "/dash/wallet", icon: FaWallet },
   { name: "Customers", href: "/dash/customers", icon: FaUsers },
   { name: "Admin", href: "/dash/admin", icon: FaGear },
-  // { name: "Transactions", href: "/dash/transactions", icon: FaExchangeAlt },
+  { name: "Transactions", href: "/dash/transactions", icon: FaExchangeAlt },
   { name: "Activity", href: "/dash/activity", icon: FaHistory },
   { name: "Config", href: "/dash/settings", icon: FaSliders },
   {
@@ -56,6 +56,7 @@ const Sidebar: React.FC = () => {
     Resource.ACTIVITY_LOGS,
     Action.READ
   );
+  const canViewTransactions = hasPermission(Resource.TRANSACTIONS, Action.READ);
   const canViewSuperAdmin = isSuperAdmin;
   const filteredMenuItems = menuItems.filter((item) => {
     if (item.name === "Wallet") return canViewSuperAdmin || canViewWallet;
@@ -63,8 +64,7 @@ const Sidebar: React.FC = () => {
     if (item.name === "SuperAdmin") return canViewSuperAdmin;
     if (item.name === "Config") return canViewSuperAdmin || canViewConfig;
     if (item.name === "Admin") return canViewSuperAdmin || canAdminView;
-    // if (item.name === "Transactions")
-    //   return canViewSuperAdmin || canViewTransactions;
+    if (item.name === "Transactions") return canViewSuperAdmin || canViewTransactions;
     if (item.name === "Activity")
       return canViewSuperAdmin || canViewActivityLogs;
     return true;

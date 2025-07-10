@@ -14,6 +14,7 @@ import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitburnUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { recordTransaction, TransactionType } from "@/lib/recordTransactions";
 const { toArray } = Utils;
 
 export const POST = withCSRF(async function(request: Request) {
@@ -190,6 +191,14 @@ export const POST = withCSRF(async function(request: Request) {
             burnTx: cosignTx.toHex(),
           },
         });
+
+        await recordTransaction(tx, {
+						requestId: burnRequestId || '',
+						txid: cosignTx.id('hex'),
+						requestedBy: burnRequest.requestedBy,
+						timestamp: new Date(),
+						type: TransactionType.BURN,
+					})
 
         return { status: "APPROVED", burnTx: cosignTx.toHex() };
       }
