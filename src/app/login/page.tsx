@@ -117,7 +117,7 @@ function LoginPageInner() {
                 />
               </svg>
               <span>
-                Password reset successfully! You can now log in with your new
+                Password changed successfully! You can now log in with your new
                 password.
               </span>
             </div>
@@ -216,9 +216,13 @@ function LoginPageInner() {
 
           {!showTwoFactor && (
             <div className="text-center">
-              <a href="/forgot-password" className="link link-primary text-sm">
+              <button
+                type="button"
+                onClick={() => router.push("/forgot-password")}
+                className="link link-primary text-sm"
+              >
                 Forgot your password?
-              </a>
+              </button>
             </div>
           )}
         </form>

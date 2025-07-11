@@ -20,14 +20,14 @@ export interface EmailTemplate {
   text?: string;
 }
 
-export function generateOtpEmailTemplate(otp: string, userEmail: string): EmailTemplate {
+export function generateOtpEmailTemplate(otp: string, userEmail: string, type: "forgot" | "reset"): EmailTemplate {
   const html = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Password Reset OTP</title>
+        <title>Password ${type === "forgot" ? "Forgot" : "Reset"} OTP</title>
         <style>
             body {
                 font-family: Arial, sans-serif;
@@ -76,13 +76,13 @@ export function generateOtpEmailTemplate(otp: string, userEmail: string): EmailT
     <body>
         <div class="container">
             <div class="header">
-                <h1>Password Reset Request</h1>
-                <p>We received a request to reset your password for your account.</p>
+                <h1>Password ${type === "forgot" ? "Forgot" : "Reset"} Request</h1>
+                <p>We received a request to ${type === "forgot" ? "forgot" : "reset"} your password for your account.</p>
             </div>
             
             <p>Hello,</p>
             
-            <p>You requested to reset your password for your account associated with <strong>${userEmail}</strong>.</p>
+            <p>You requested to ${type === "forgot" ? "forgot" : "reset"} your password for your account associated with <strong>${userEmail}</strong>.</p>
             
             <p>Your One-Time Password (OTP) is:</p>
             
@@ -109,11 +109,11 @@ export function generateOtpEmailTemplate(otp: string, userEmail: string): EmailT
   `;
 
   const text = `
-    Password Reset Request
+    Password ${type === "forgot" ? "Forgot" : "Reset"} Request
     
     Hello,
     
-    You requested to reset your password for your account associated with ${userEmail}.
+    You requested to ${type === "forgot" ? "forgot" : "reset"} your password for your account associated with ${userEmail}.
     
     Your One-Time Password (OTP) is: ${otp}
     
@@ -122,14 +122,14 @@ export function generateOtpEmailTemplate(otp: string, userEmail: string): EmailT
     - Do not share this code with anyone
     - If you didn't request this, please ignore this email
     
-    Enter this code on the password reset page to continue with setting your new password.
+    Enter this code on the password ${type === "forgot" ? "forgot" : "reset"} page to continue with setting your new password.
     
     If you have any questions, please contact our support team.
     This is an automated message, please do not reply to this email.
   `;
 
   return {
-    subject: 'Password Reset OTP - MNEE',
+    subject: `Password ${type === "forgot" ? "Forgot" : "Reset"} OTP - MNEE`,
     html,
     text,
   };
@@ -137,7 +137,8 @@ export function generateOtpEmailTemplate(otp: string, userEmail: string): EmailT
 
 export async function sendOtpEmail(
   email: string,
-  otp: string
+  otp: string,
+  type: "forgot" | "reset"
 ): Promise<{ success: boolean; error?: string }> {
   try {
     if (!EMAIL_ENABLED) {
@@ -155,7 +156,7 @@ export async function sendOtpEmail(
       },
     });
 
-    const emailTemplate = generateOtpEmailTemplate(otp, email);
+    const emailTemplate = generateOtpEmailTemplate(otp, email, type);
 
     const mailOptions = {
       from: `${EMAIL_CONFIG.FROM_NAME} <${EMAIL_CONFIG.FROM_ADDRESS}>`,
