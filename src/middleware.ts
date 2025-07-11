@@ -54,6 +54,7 @@ export const config = {
 	matcher: [
 		"/dash/:path*",
 		"/reset-password",
-		"/api/((?!auth|deploy|resetPassword|users/check).*)/:path*", // Protect all API routes except /api/auth/*, /api/deploy, /api/resetPassword, and /api/users/check
+		// Protect all API routes except specific ones for auth, deploy, password reset, and user check
+		"/api/((?!auth|deploy|resetPassword|users/check|forgotPassword|verifyOtp|resendOtp|resetPasswordWithOtp).*)/:path*", 
 	],
 };
