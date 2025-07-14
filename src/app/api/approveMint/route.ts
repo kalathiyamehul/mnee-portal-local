@@ -219,11 +219,11 @@ export const mintMnee = async (
 	}
 	const tx = await parseTransaction(config.latestMinterTx);
 	const inscriptions = tx?.inscriptions?.[1];
-	const currentSupply = Number(inscriptions?.metadata?.currentSupply)
-	const currectTotalSupply = Number(inscriptions?.amt);
+	const currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
+	const currectTotalSupply = BigInt(inscriptions?.amt);
 	let latestDeployTokenTxOp = 1
-	const totalSupply = currentSupply + Number(amount)
-	const currectAvailableSupply = currectTotalSupply - amount;
+	const totalSupply = currentSupply + BigInt(amount)
+	const currectAvailableSupply = currectTotalSupply - BigInt(amount);
 	const response = await createMintOp(
 		Number(amount),
 		config.latestMinterTx,
@@ -232,8 +232,8 @@ export const mintMnee = async (
 		config.tokenId,
 		mintPk,
 		approverPk,
-		totalSupply,
-		currectAvailableSupply
+		Number(totalSupply),
+		Number(currectAvailableSupply)
 	);
 	const payload = {
 		rawtx: Buffer.from(response.txHex, 'hex').toString('base64'),
