@@ -1,0 +1,7 @@
+export const MINT_WIF = 'KyVY2DgQdLY6NWpUDqjsY4dKd93TyF7QKCwDqM14BQogj2ktK9Ps'
+export const MINT_ADDRESS = '1NP3KUzszGg6WqQbFmWU9Yjzc4ZHjG9DtG'
+export const APPROVER_WIF = 'KyVY2DgQdLY6NWpUDqjsY4dKd93TyF7QKCwDqM14BQogj2ktK9Ps'
+export const APPROVER_PUBKEY = '02347e74b6d7db688227c74b95cd4f5677960ef4f7f62ad18a01ef93718fe5ea59'
+export const APPROVER_ADDRESS = '1NP3KUzszGg6WqQbFmWU9Yjzc4ZHjG9DtG'
+export const MNEE_API = 'https://dev-api-cosigner.mnee.net'
+export const MNEE_WEBHOOK_API = 'https://prawn-relaxed-airedale.ngrok-free.app'

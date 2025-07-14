@@ -45,6 +45,16 @@ export const MintsTab = ({
   if (initialLoading) {
     return <div>Loading...</div>;
   }
+  const handleMint = async () => {
+    const mintApi = await fetch("/api/approveMint", {
+      method: "POST",
+      body: JSON.stringify({
+        mintRequestId: "f3056be1-0e79-4528-8a58-117a4c390ee6",
+      }),
+    });
+    const data = await mintApi.json();
+    console.log(data);
+  };
 
   return (
     <div className="p-4 space-y-8">

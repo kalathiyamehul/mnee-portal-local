@@ -9,7 +9,7 @@ import { withCSRF } from "@/lib/csrf";
 import { emitrefundUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
-export const POST = withCSRF(async function(request: Request) {
+export const POST = withCSRF(async function (request: Request) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -17,7 +17,7 @@ export const POST = withCSRF(async function(request: Request) {
   }
 
   try {
-    const { outpoint, refundAddress, no_of_approvals } = await request.json();
+    const { outpoint, refundAddress, no_of_approvals, amount } = await request.json();
 
     if (!outpoint) {
       return NextResponse.json(
@@ -54,8 +54,8 @@ export const POST = withCSRF(async function(request: Request) {
     }
 
     // Get the amount from the UTXO
-    const txo = await fetchTxo(outpoint);
-    const amount = BigInt(txo.data.bsv21.amt);
+    // const txo = await fetchTxo(outpoint);
+    // const amount = BigInt(txo.data.bsv21.amt);
 
     // Create the RefundRequest (status=PENDING)
     const refundRequest = await prisma.refundRequest.create({
@@ -86,7 +86,7 @@ export const POST = withCSRF(async function(request: Request) {
         refundRequest: JSON.stringify(refundRequest, (key, value) =>
           typeof value === 'bigint' ? value.toString() : value
         ),
-        originalOwners: JSON.stringify(txo.owners),
+        originalOwners: JSON.stringify({}),
         securityCheckPassed: true,
       },
     });
