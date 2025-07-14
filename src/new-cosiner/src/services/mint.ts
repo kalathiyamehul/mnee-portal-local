@@ -32,7 +32,6 @@ export const createMintOp = async (
         tx.addOutput(mintOp)
         let fileHex = createDeployTransferInscription(currectAvaSupply, totalSupply, "mint", tokenID)
         let deployTransferLockingScript = new P2PKH().lock(MINT_ADDRESS)
-        console.log("MINT_ADDRESS", MINT_ADDRESS)
         let deployTxInstanceOp: TransactionOutput = {
             satoshis: 1,
             lockingScript: applyTransferInscription(deployTransferLockingScript, { dataHex: fileHex } as Inscription)
