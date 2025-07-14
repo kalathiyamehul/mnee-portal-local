@@ -91,7 +91,7 @@ export const fetchMneeUtxos = async (addresses: string[], ops: ('transfer' | 'bu
         throw new Error("MNEE_API not defined");
     }
 
-    const response = await fetch(`${MNEE_API}/v1/utxos/`, {
+    const response = await fetch(`${MNEE_API}/v1/utxos`, {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(addresses),

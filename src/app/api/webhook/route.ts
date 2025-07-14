@@ -9,45 +9,47 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('Webhook received:', JSON.stringify(body, null, 2));
     if (body.status === "SUCCESS") {
-      const latestMinterTx = body?.tx_hex;
-      await prisma.config.update({
-        where: {
-          id: 1
-        },
-        data: {
-          latestMinterTx: latestMinterTx
-        }
-      });
-      const mintRequest = await prisma.mintRequest.findFirst({
-        where: {
-          txid: body?.id
-        }
-      });
-      if (mintRequest) {
-        await prisma.$transaction(async (tx) => {
-          await logActivity(tx, {
-            action: ActivityAction.MINT_TX_COMPLETED,
-            metadata: {
-              mintRequestId: mintRequest?.id,
-              txid: body?.id,
-            },
-          });
-          await tx.mintRequest.update({
-            where: {
-              id: mintRequest?.id
-            },
-            data: {
-              status: "DONE",
-              txid: body?.tx_id,
-              updatedAt: new Date()
-            }
-          });
+      if (body.action_requested = "mint") {
+        const latestMinterTx = body?.tx_hex;
+        await prisma.config.update({
+          where: {
+            id: 1
+          },
+          data: {
+            latestMinterTx: latestMinterTx
+          }
         });
-        emitMintUpdate({
-          activityId: mintRequest?.id,
-          approval: "Mint Request Fully Approved",
-          type: "APPROVED",
+        const mintRequest = await prisma.mintRequest.findFirst({
+          where: {
+            txid: body?.id
+          }
         });
+        if (mintRequest) {
+          emitMintUpdate({
+            activityId: mintRequest?.id,
+            approval: "Mint Request Fully Approved",
+            type: "APPROVED",
+          });
+          await prisma.$transaction(async (tx) => {
+            // await logActivity(tx, {
+            //   action: ActivityAction.MINT_TX_COMPLETED,
+            //   metadata: {
+            //     mintRequestId: mintRequest?.id,
+            //     txid: body?.id,
+            //   },
+            // });
+            await tx.mintRequest.update({
+              where: {
+                id: mintRequest?.id
+              },
+              data: {
+                status: "DONE",
+                txid: body?.tx_id,
+                updatedAt: new Date()
+              }
+            });
+          });
+        }
       }
     }
     // Return success response
