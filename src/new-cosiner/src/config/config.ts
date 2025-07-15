@@ -4,4 +4,3 @@ export const APPROVER_PUBKEY = '02347e74b6d7db688227c74b95cd4f5677960ef4f7f62ad1
 export const APPROVER_ADDRESS = '1NP3KUzszGg6WqQbFmWU9Yjzc4ZHjG9DtG'
 
 export const MNEE_API = 'https://dev-api-cosigner.mnee.net'
-export const MNEE_WEBHOOK_API = 'https://prawn-relaxed-airedale.ngrok-free.app'
