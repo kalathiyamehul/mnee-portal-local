@@ -2,13 +2,11 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
+import { PrivateKey, PublicKey } from "@bsv/sdk";
 import { APPROVER_PUBKEY, getMintWif, MNEE_API, MNEE_WEBHOOK_API } from "@/env";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import type { Prisma } from "@prisma/client";
 import { ActivityAction, logActivity } from "@/lib/activityLogger";
-import { withCSRF } from "@/lib/csrf";
-import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { emitMintUpdate } from "@/lib/sseEmitter";
 import { createMintOp } from "@/new-cosiner/src/services/mint";
 import { parseTransaction } from "@/new-cosiner/src/services/helper";
@@ -133,22 +131,23 @@ export const POST = async function (request: Request) {
 
 				try {
 					const { rawtx, error, success } = await mintMnee(
-						Number(mintRequest.amount),
+						mintRequest.amount,
 						mintRequest.address,
 					);
 
-					if (!success) {
+					if (error) {
 						throw new Error(error);
 					}
-
-					await tx.mintRequest.update({
-						where: { id: mintRequestId },
-						data: {
-							updatedAt: new Date(),
-							txid: rawtx,
-						},
-					});
-					return { status: "DONE", approvalsCount, minterTx: rawtx, approval };
+					if (success) {
+						await tx.mintRequest.update({
+							where: { id: mintRequestId },
+							data: {
+								updatedAt: new Date(),
+								txid: rawtx,
+							},
+						});
+						return { status: "DONE", approvalsCount, minterTx: rawtx, approval };
+					}
 				} catch (error) {
 					console.error("Error during minting:", error);
 					const errorMessage =
@@ -202,16 +201,13 @@ export const POST = async function (request: Request) {
 }
 
 // Helper function to mint MNEE tokens
-export const mintMnee = async (
-	amount: number,
+const mintMnee = async (
+	amount: bigint,
 	address: string,
 ): Promise<{ success: boolean; rawtx: string; error?: string }> => {
 	console.log("Starting mintMnee:", { amount: amount.toString(), address });
 	// Fetching remote config
-	const MINT_ADDRESS = await getMintWif();
-	console.log("MINT_ADDRESS:", MINT_ADDRESS);
-	const mintPk = PrivateKey.fromWif(MINT_ADDRESS);
-	// const mintPk = PrivateKey.fromWif(MINT_WIF);
+	const mintPk = PrivateKey.fromWif(await getMintWif());
 	const approverPk = PublicKey.fromString(APPROVER_PUBKEY);
 	const config = await prisma.config.findFirst();
 	if (!config) {
@@ -233,7 +229,8 @@ export const mintMnee = async (
 		mintPk,
 		approverPk,
 		Number(totalSupply),
-		Number(currectAvailableSupply)
+		Number(currectAvailableSupply),
+		config.mintAddress
 	);
 	const payload = {
 		rawtx: Buffer.from(response.txHex, 'hex').toString('base64'),
@@ -251,9 +248,16 @@ export const mintMnee = async (
 
 		const data = await res.json();
 		console.log("Mint Response:", data);
+		if (data?.error) {
+			return {
+				rawtx: "",
+				success: false,
+				error: data?.error
+			};
+		}
 		return {
 			rawtx: data,
-			success: true
+			success: false
 		};
 	} catch (error) {
 		return {

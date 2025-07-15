@@ -10,6 +10,7 @@ async function fetchRawTx(txid:any) {
     const hex = Buffer.from(base64, 'base64').toString('hex');
     return Transaction.fromHex(hex);
 }
+
 export async function parseTransaction(tx: any) {
     const txid = tx.id('hex');
     const outScripts = tx.outputs.map((output: any) => output.lockingScript);

@@ -2,7 +2,6 @@ import { P2PKH, PrivateKey, PublicKey, Transaction, TransactionOutput } from "@b
 import { applyTransferInscription, createDeployTransferInscription, createTransferInscription } from "../transaction/helper/utils"
 import { Inscription } from "../types/inscription"
 import CosignTemplate from "../transaction/template/cosign"
-import { MINT_ADDRESS } from "../config/config"
 
 export const createMintOp = async (
     amount: number,
@@ -13,7 +12,8 @@ export const createMintOp = async (
     mintPk: PrivateKey,
     approverPubkey: PublicKey,
     totalSupply: number,
-    currectAvaSupply: number
+    currectAvaSupply: number,
+    MINT_ADDRESS: string
 ): Promise<{ txHex: string; err: Error | null }> => {
     try {
         let latestDeployedTx = Transaction.fromHex(latestDeployedTokenTxHex)

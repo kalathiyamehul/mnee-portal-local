@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { ActivityAction, logActivity } from '@/lib/activityLogger';
-import { emitMintUpdate } from '@/lib/sseEmitter';
+import { emitburnUpdate, emitMintUpdate } from '@/lib/sseEmitter';
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,6 +47,47 @@ export async function POST(request: NextRequest) {
                 updatedAt: new Date()
               }
             });
+          });
+        }
+      }
+      if (body.action_requested = "burn") {
+        const latestMinterTx = body?.tx_hex;
+        await prisma.config.update({
+          where: {
+            id: 1
+          },
+          data: {
+            latestMinterTx: latestMinterTx
+          }
+        });
+        const burnRequest = await prisma.burnRequest.findFirst({
+          where: {
+            txid: body?.id
+          }
+        });
+        if (burnRequest) {
+          emitburnUpdate({
+            activityId: burnRequest?.id,
+            approval: [],
+            type: "APPROVE",
+          });
+          await prisma.$transaction(async (tx) => {
+            await tx.burnRequest.update({
+              where: { id: burnRequest?.id },
+              data: {
+                status: "APPROVED",
+                updatedAt: new Date(),
+                txid: body?.tx_id,
+              },
+            });
+            // await logActivity(tx, {
+            //   action: ActivityAction.BURN_REQUEST_FULLY_APPROVED,
+            //   metadata: {
+            //     burnRequestId: burnRequest?.id,
+            //     txid: body?.tx_id,
+            //     burnTx: body?.tx_hex,
+            //   },
+            // });
           });
         }
       }

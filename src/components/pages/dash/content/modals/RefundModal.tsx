@@ -15,7 +15,6 @@ interface RefundModalProps {
     vout: number;
   };
   customerName?: string;
-  selectedRefund: any;
 }
 
 export const RefundModal = ({
@@ -25,7 +24,6 @@ export const RefundModal = ({
   decimals,
   utxo,
   customerName = "the customer",
-  selectedRefund,
 }: RefundModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   // const [refundAddress, setRefundAddress] = useState("");
