@@ -133,6 +133,7 @@ export const POST = async function (request: Request) {
 					const { rawtx, error, success } = await mintMnee(
 						mintRequest.amount,
 						mintRequest.address,
+						request,
 					);
 
 					if (error) {
@@ -204,6 +205,7 @@ export const POST = async function (request: Request) {
 const mintMnee = async (
 	amount: bigint,
 	address: string,
+	request: Request,
 ): Promise<{ success: boolean; rawtx: string; error?: string }> => {
 	console.log("Starting mintMnee:", { amount: amount.toString(), address });
 	// Fetching remote config
@@ -232,9 +234,14 @@ const mintMnee = async (
 		currectAvailableSupply,
 		config.mintAddress
 	);
+	const isLocal = process.env.NEXT_PUBLIC_ENV === "local";
+	const webhookUrl = isLocal
+		? `${MNEE_WEBHOOK_API}/api/webhook`
+		: `https://${request.headers.get('host')}/api/webhook`;
+
 	const payload = {
 		rawtx: Buffer.from(response.txHex, 'hex').toString('base64'),
-		callback_url: `${MNEE_WEBHOOK_API}/api/webhook`,
+		callback_url: webhookUrl,
 	}
 	console.log(payload)
 	try {

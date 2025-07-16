@@ -108,7 +108,8 @@ export const POST = withCSRF(async function(request: Request) {
         try {
           const { rawtx, error, success } = await burnMnee(
             burnRequest.amount,
-            txid
+            txid,
+            request
           );
           if (error) {
             throw new Error(error);
@@ -154,6 +155,7 @@ export const POST = withCSRF(async function(request: Request) {
 const burnMnee = async (
   amount: bigint,
   txid: string,
+  request: Request,
 ): Promise<{ success: boolean; rawtx: string; error?: string }> => {
   console.log("Starting burnMnee:", { amount: amount.toString(), txid });
   // Fetching remote config
@@ -192,9 +194,14 @@ const burnMnee = async (
     MINT_WIF
   );
   console.log("response", response)
+  const isLocal = process.env.NEXT_PUBLIC_ENV === "local";
+  const webhookUrl = isLocal
+    ? `${MNEE_WEBHOOK_API}/api/webhook`
+    : `https://${request.headers.get('host')}/api/webhook`;
+
   const payload = {
     rawtx: Buffer.from(response.txHex, 'hex').toString('base64'),
-    callback_url: `${MNEE_WEBHOOK_API}/api/webhook`,
+    callback_url: webhookUrl,
   }
   console.log(payload)
   try {
