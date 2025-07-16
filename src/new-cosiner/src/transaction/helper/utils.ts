@@ -57,7 +57,7 @@ export const createDeployInstanceInscription = (
 
 
 
-export const createTransferInscription = (amount: number, id: string) => {
+export const createTransferInscription = (amount: bigint | number, id: string) => {
     const transferInscription: TransferBSV21Inscription = {
 			p: "bsv-20",
 			op: "transfer",
@@ -70,7 +70,7 @@ export const createTransferInscription = (amount: number, id: string) => {
 }
 
 
-export const createDeployTransferInscription = (amount: number, tsatAmt: number, action: ActionType,  id: string) => { 
+export const createDeployTransferInscription = (amount: bigint, tsatAmt: bigint, action: ActionType, id: string) => { 
   let metadata: TokenMetadata = {
     currentSupply: tsatAmt.toString(),
     action: action,

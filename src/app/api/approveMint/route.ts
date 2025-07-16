@@ -221,15 +221,15 @@ const mintMnee = async (
 	const totalSupply = currentSupply + BigInt(amount)
 	const currectAvailableSupply = currectTotalSupply - BigInt(amount);
 	const response = await createMintOp(
-		Number(amount),
+		amount,
 		config.latestMinterTx,
 		latestDeployTokenTxOp,
 		address,
 		config.tokenId,
 		mintPk,
 		approverPk,
-		Number(totalSupply),
-		Number(currectAvailableSupply),
+		totalSupply,
+		currectAvailableSupply,
 		config.mintAddress
 	);
 	const payload = {

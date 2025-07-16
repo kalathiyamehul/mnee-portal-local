@@ -12,8 +12,8 @@ export const createRedeemTx = async (
     redeemUtxoIndex: number,
     tokenID: string,
     redeemPk: PrivateKey,
-    parsedCurrentSupply: number,
-    parsedTotalSupply: number,
+    parsedCurrentSupply: bigint,
+    parsedTotalSupply: bigint,
     MINT_ADDRESS: string,
     MINT_WIF: string
 ): Promise<{ txHex: string; err: Error | null }> => {

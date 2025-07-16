@@ -4,15 +4,15 @@ import { Inscription } from "../types/inscription"
 import CosignTemplate from "../transaction/template/cosign"
 
 export const createMintOp = async (
-    amount: number,
+    amount: bigint,
     latestDeployedTokenTxHex: string,
     latestDeployedTokenOpIndex: number,
     destinationAddress: string,
     tokenID: string,
     mintPk: PrivateKey,
     approverPubkey: PublicKey,
-    totalSupply: number,
-    currectAvaSupply: number,
+    totalSupply: bigint,
+    currectAvaSupply: bigint,
     MINT_ADDRESS: string
 ): Promise<{ txHex: string; err: Error | null }> => {
     try {

@@ -168,12 +168,16 @@ const burnMnee = async (
   const inscriptions = tx?.inscriptions?.[1];
   const currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
   const currectTotalSupply = BigInt(inscriptions?.amt);
-  const totalSupply = currentSupply - BigInt(amount)
+
+
   const currectAvailableSupply = currectTotalSupply + BigInt(amount);
-  // console.log("currentSupply", currentSupply)
-  // console.log("currectTotalSupply", currectTotalSupply)
-  // console.log("totalSupply", totalSupply)
-  // console.log("currectAvailableSupply", currectAvailableSupply)
+  console.log("Previous currectTotalSupply", currectTotalSupply)
+  console.log("currectTotalSupply + amount", currectAvailableSupply)
+
+  const totalSupply = currentSupply - BigInt(amount)
+  console.log("Previous currentSupply", currentSupply)
+  console.log("totalSupply - amount", totalSupply)
+
   const MINT_WIF = await getMintWif();
   const response = await createRedeemTx(
     config.latestMinterTx,
@@ -182,11 +186,12 @@ const burnMnee = async (
     0,
     config.tokenId,
     burnPk,
-    Number(currectAvailableSupply),
-    Number(totalSupply),
+    currectAvailableSupply,
+    totalSupply,
     config.mintAddress,
     MINT_WIF
   );
+  console.log("response", response)
   const payload = {
     rawtx: Buffer.from(response.txHex, 'hex').toString('base64'),
     callback_url: `${MNEE_WEBHOOK_API}/api/webhook`,
