@@ -405,6 +405,7 @@ model TransactionRecords {
   requestedBy     String            @map("requested_by")
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
+  approvers       Json           // JSON array of approvers
 
   // Relations
   requester       User              @relation("UserTransactionRecords", fields: [requestedBy], references: [id])

@@ -13,6 +13,7 @@ type Transaction = {
   status: string;
   requestedBy: string;
   type: "MINT" | "BURN" | "REFUND";
+  approvers?: any; // Optional field for approvers
 };
 
 export default function DashboardTransactionsContent() {
@@ -225,7 +226,7 @@ export default function DashboardTransactionsContent() {
               <th>Request ID</th>
               <th>Timestamp</th>
               <th>Type</th>
-              <th>Explore</th>
+              <th>Approvers</th>
             </tr>
           </thead>
           <tbody>
@@ -263,14 +264,17 @@ export default function DashboardTransactionsContent() {
                     </span>
                   </td>
                   <td>
-                    <a
-                      href={`https://whatsonchain.com/tx/${tx.txid}?tab=m8eqcrbs`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-link btn-xs"
-                    >
-                      View
-                    </a>
+                    {Array.isArray(tx.approvers) && tx.approvers.length > 0 ? (
+                      <div className="flex flex-col gap-1">
+                        {tx.approvers.map((approver: any, idx: number) => (
+                          <span key={idx} className="text-xs text-gray-700">
+                            {approver.name || approver.email || approver.id}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-500">N/A</span>
+                    )}
                   </td>
                 </tr>
               ))

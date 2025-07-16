@@ -198,6 +198,7 @@ export const POST = withCSRF(async function(request: Request) {
 						requestedBy: burnRequest.requestedBy,
 						timestamp: new Date(),
 						type: TransactionType.BURN,
+            approvers: burnRequest.approvals,
 					})
 
         return { status: "APPROVED", burnTx: cosignTx.toHex() };
