@@ -179,6 +179,7 @@ export const POST =  withCSRF(async function(request: Request) {
 						requestedBy: mintRequest.requestedBy,
 						timestamp: new Date(),
 						type: TransactionType.MINT,
+						approvers: mintRequest.approvals,
 					})
 
 					emitMintUpdate({

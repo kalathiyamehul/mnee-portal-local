@@ -216,7 +216,7 @@ export const POST = withCSRF(async function (request: Request) {
 					}
 
           // Update with txid and mark as DONE
-          await tx.refundRequest.update({
+          const updatedRefund = await tx.refundRequest.update({
             where: { id: refundRequestId },
             data: {
               status: "REFUNDED",
@@ -271,6 +271,7 @@ export const POST = withCSRF(async function (request: Request) {
 						requestedBy: refundRequest.requestedBy,
 						timestamp: new Date(),
 						type: TransactionType.REFUND,
+            approvers: refundRequest.approvals,
 					})
           }
 
