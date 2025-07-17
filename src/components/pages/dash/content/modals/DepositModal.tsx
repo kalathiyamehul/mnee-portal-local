@@ -1,7 +1,7 @@
 import { QRCodeSVG } from 'qrcode.react';
 import { FaCopy } from 'react-icons/fa6';
+import { toast } from 'react-hot-toast';
 import { useEffect } from 'react';
-import CustomToast from '@/components/common/CustomToast';
 
 interface DepositModalProps {
   onClose: () => void;
@@ -12,7 +12,7 @@ interface DepositModalProps {
 export const DepositModal = ({ onClose, title, address }: DepositModalProps) => {
   const handleCopyAddress = () => {
     navigator.clipboard.writeText(address);
-    CustomToast.success('Address copied to clipboard');
+    toast.success('Address copied to clipboard');
   };
 
   useEffect(() => {

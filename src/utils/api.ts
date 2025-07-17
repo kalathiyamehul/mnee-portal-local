@@ -85,13 +85,19 @@ export const fetchTransaction = async (txid: string) => {
 
     return Transaction.fromBinary(toArray(rawtx, 'base64'));
 }
+export const fetchRawTx = async (txid: string) => {
+    const response = await fetch(`${MNEE_API}/v1/tx/${txid}`);
+    const { rawtx } = await response.json() as { rawtx: string };
+    const hex = Buffer.from(rawtx, 'base64').toString('hex');
+    return hex;
+}
 
 export const fetchMneeUtxos = async (addresses: string[], ops: ('transfer' | 'burn' | 'deploy+mint')[] = ['transfer', 'deploy+mint']) => {
     if (!MNEE_API) {
         throw new Error("MNEE_API not defined");
     }
 
-    const response = await fetch(`${MNEE_API}/v1/utxos/`, {
+    const response = await fetch(`${MNEE_API}/v1/utxos`, {
         method: 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(addresses),

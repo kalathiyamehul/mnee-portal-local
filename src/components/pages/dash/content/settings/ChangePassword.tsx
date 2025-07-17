@@ -1,8 +1,8 @@
 "use client";
 
-import CustomToast from "@/components/common/CustomToast";
 import { apiFetch } from "@/utils/api";
 import { useState } from "react";
+import { toast } from "react-hot-toast";
 import { FaCircleInfo } from "react-icons/fa6";
 import { IoClose } from "react-icons/io5";
 
@@ -41,7 +41,7 @@ export const ChangePassword = ({ onClose }: { onClose: () => void }) => {
       });
 
       if (res.ok) {
-        CustomToast.success(
+        toast.success(
           "Password changed successfully. All sessions will be terminated for security."
         );
         // Clear form

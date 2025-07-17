@@ -8,7 +8,7 @@ import type { Session } from "next-auth";
 import { getGravatarUrl } from "@/utils/gravatar";
 import { Pagination } from "@/components/common/Pagination";
 import { useState, useEffect } from "react";
-import CustomToast from "@/components/common/CustomToast";
+import toast from "react-hot-toast";
 
 interface ActiveRestrictionsTabProps {
   restrictions: AddressStatus[];
@@ -113,7 +113,7 @@ export const ActiveRestrictionsTab = ({
 
   const handleCopyAddress = (txid: string) => {
     navigator.clipboard.writeText(txid);
-    CustomToast.success("Address copied to clipboard");
+    toast.success("Address copied to clipboard");
   };
 
   // Pagination state for history table

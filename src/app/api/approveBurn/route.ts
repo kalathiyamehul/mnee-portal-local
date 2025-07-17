@@ -2,19 +2,15 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
-import { getBurnWif, MNEE_API } from "@/env";
-import { fetchConfig, fetchTransaction } from "@/utils/api";
-import { applyInscription } from "js-1sat-ord";
-import type { Inscription } from "js-1sat-ord";
-import CosignTemplate from "@/templates/cosign";
-import { Utils } from "@bsv/sdk";
+import { PrivateKey } from "@bsv/sdk";
+import { getBurnWif, getMintWif, MNEE_API, MNEE_WEBHOOK_API } from "@/env";
+import { fetchConfig, fetchRawTx, fetchTransaction } from "@/utils/api";
 import { isSystemPaused } from "@/lib/systemStatus";
 import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
-import { emitburnUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
-const { toArray } = Utils;
+import { createRedeemTx } from "@/new-cosiner/src/services/redeem";
+import { parseTransaction } from "@/new-cosiner/src/services/helper";
 
 export const POST = withCSRF(async function(request: Request) {
   try {
@@ -109,114 +105,41 @@ export const POST = withCSRF(async function(request: Request) {
         if (!sourceTransaction) {
           throw new Error("Failed to fetch source transaction");
         }
-
-        const pk = PrivateKey.fromWif(await getBurnWif());
-        const burnTx = new Transaction();
-
-        burnTx.addInput({
-          sourceTXID: txid,
-          sourceOutputIndex: vout,
-          sourceTransaction,
-          unlockingScriptTemplate: new CosignTemplate().userUnlock(pk, "all", true),
-        });
-
-        const burnInscriptionData = {
-          p: "bsv-20",
-          op: "burn",
-          id: remoteConfig.tokenId,
-          amt: burnRequest.amount.toString(),
-        };
-        
-        const burnDataB64 = Buffer.from(JSON.stringify(burnInscriptionData)).toString("base64");
-        burnTx.addOutput({
-          lockingScript: applyInscription(
-            new CosignTemplate().lock(
-              remoteConfig.burnAddress,
-              PublicKey.fromString(remoteConfig.approver),
-            ),
-            {
-              dataB64: burnDataB64,
-              contentType: "application/bsv-20",
-            } as Inscription,
-          ),
-          satoshis: 1,
-        });
-
-        await burnTx.sign();
-
-        const cosignResponse = await fetch(`${MNEE_API}/v1/transfer`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            rawtx: Buffer.from(burnTx.toHex(), "hex").toString("base64"),
-          }),
-        });
-
-        if (!cosignResponse.ok) {
-          const errorText = await cosignResponse.text();
-          try {
-            const errorJson = JSON.parse(errorText);
-            if (errorJson.message) {
-              if (errorJson.message.includes("OP_EQUALVERIFY failed")) {
-                throw new Error("Transaction verification failed. Please try again.");
-              }
-              throw new Error(errorJson.message);
-            }
-          } catch {
-            throw new Error("Failed to cosign burn transaction. Please try again.");
+        try {
+          const { rawtx, error, success } = await burnMnee(
+            burnRequest.amount,
+            txid,
+            request
+          );
+          if (error) {
+            throw new Error(error);
           }
+          if (success) {
+            await tx.burnRequest.update({
+              where: { id: burnRequestId },
+              data: {
+                updatedAt: new Date(),
+                txid: rawtx,
+              },
+            });
+          }
+          return { status: "DONE", approval };
+        } catch (error) {
+          console.error("Error during minting:", error);
+          const errorMessage =
+            error instanceof Error
+              ? error.message.replace(/^Error:\s*/, "")
+              : "Transaction submission failed";
+          throw new Error(errorMessage);
         }
-
-        const cosignResponseJson = (await cosignResponse.json()) as { rawtx: string };
-        const cosignTx = Transaction.fromBinary(toArray(cosignResponseJson.rawtx, 'base64'));
-        if (!cosignTx) {
-          throw new Error("Failed to parse cosigned transaction");
-        }
-
-        await tx.burnRequest.update({
-          where: { id: burnRequestId },
-          data: {
-            status: "APPROVED",
-            updatedAt: new Date(),
-            txid: cosignTx.id('hex'),
-          },
-        });
-
-        await logActivity(tx, {
-          action: ActivityAction.BURN_REQUEST_FULLY_APPROVED,
-          metadata: {
-            burnRequestId: burnRequestId,
-            txid: cosignTx.id('hex'),
-            burnTx: cosignTx.toHex(),
-          },
-        });
-
-        return { status: "APPROVED", burnTx: cosignTx.toHex() };
       }
-
       return { status: "PENDING" };
     });
-
-    // emit Burn Approve event
-		const approvalWithUser = await prisma.burnApproval.findUnique({
-			where: {
-				id: newAppeovalID!,
-			},
-			include: {
-				approver: true,
-			},
-		});
-		emitburnUpdate({
-			activityId: burnRequestId,
-			approval: approvalWithUser,
-			type: "APPROVE",
-		});
 
     return NextResponse.json({
       success: true,
       message: result.status === "APPROVED" ? "Burn request approved" : "Approval recorded",
       status: result.status,
-      burnTx: result.burnTx,
     });
   } catch (error) {
     return NextResponse.json({
@@ -227,3 +150,151 @@ export const POST = withCSRF(async function(request: Request) {
     });
   }
 }, createAPIRateLimit())
+
+// Helper function to mint MNEE tokens
+const burnMnee = async (
+  amount: bigint,
+  txid: string,
+  request: Request,
+): Promise<{ success: boolean; rawtx: string; error?: string }> => {
+  console.log("Starting burnMnee:", { amount: amount.toString(), txid });
+  // Fetching remote config
+  const BURN_WIF = await getBurnWif();
+  const burnPk = PrivateKey.fromWif(BURN_WIF);
+  const config = await prisma.config.findFirst();
+  if (!config) {
+    throw new Error("Config not found");
+  }
+  const redeemUtxoTx = await fetchRawTx(txid);
+  const tx = await parseTransaction(config.latestMinterTx);
+  const inscriptions = tx?.inscriptions?.[1];
+  const currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
+  const currectTotalSupply = BigInt(inscriptions?.amt);
+
+
+  const currectAvailableSupply = currectTotalSupply + BigInt(amount);
+  console.log("Previous currectTotalSupply", currectTotalSupply)
+  console.log("currectTotalSupply + amount", currectAvailableSupply)
+
+  const totalSupply = currentSupply - BigInt(amount)
+  console.log("Previous currentSupply", currentSupply)
+  console.log("totalSupply - amount", totalSupply)
+
+  const MINT_WIF = await getMintWif();
+  const response = await createRedeemTx(
+    config.latestMinterTx,
+    1,
+    redeemUtxoTx,
+    0,
+    config.tokenId,
+    burnPk,
+    currectAvailableSupply,
+    totalSupply,
+    config.mintAddress,
+    MINT_WIF
+  );
+  console.log("response", response)
+  const isLocal = process.env.NEXT_PUBLIC_ENV === "local";
+  const webhookUrl = isLocal
+    ? `${MNEE_WEBHOOK_API}/api/webhook`
+    : `https://${request.headers.get('host')}/api/webhook`;
+
+  const payload = {
+    rawtx: Buffer.from(response.txHex, 'hex').toString('base64'),
+    callback_url: webhookUrl,
+  }
+  console.log(payload)
+  try {
+    const res = await fetch(`${MNEE_API}/v1/redeem`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    console.log("Burn Response:", data);
+    if (data?.error) {
+      return {
+        rawtx: "",
+        success: false,
+        error: data?.error
+      };
+    }
+    return {
+      rawtx: data,
+      success: false
+    };
+  } catch (error) {
+    return {
+      rawtx: "",
+      success: false,
+      error: error?.toString()
+    };
+  }
+};
+
+
+// const pk = PrivateKey.fromWif(await getBurnWif());
+// const burnTx = new Transaction();
+
+// burnTx.addInput({
+//   sourceTXID: txid,
+//   sourceOutputIndex: vout,
+//   sourceTransaction,
+//   unlockingScriptTemplate: new CosignTemplate().userUnlock(pk, "all", true),
+// });
+
+// const burnInscriptionData = {
+//   p: "bsv-20",
+//   op: "burn",
+//   id: remoteConfig.tokenId,
+//   amt: burnRequest.amount.toString(),
+// };
+
+// const burnDataB64 = Buffer.from(JSON.stringify(burnInscriptionData)).toString("base64");
+// burnTx.addOutput({
+//   lockingScript: applyInscription(
+//     new CosignTemplate().lock(
+//       remoteConfig.burnAddress,
+//       PublicKey.fromString(remoteConfig.approver),
+//     ),
+//     {
+//       dataB64: burnDataB64,
+//       contentType: "application/bsv-20",
+//     } as Inscription,
+//   ),
+//   satoshis: 1,
+// });
+
+// await burnTx.sign();
+
+// const cosignResponse = await fetch(`${MNEE_API}/v1/transfer`, {
+//   method: "POST",
+//   headers: { "Content-Type": "application/json" },
+//   body: JSON.stringify({
+//     rawtx: Buffer.from(burnTx.toHex(), "hex").toString("base64"),
+//   }),
+// });
+
+// if (!cosignResponse.ok) {
+//   const errorText = await cosignResponse.text();
+//   try {
+//     const errorJson = JSON.parse(errorText);
+//     if (errorJson.message) {
+//       if (errorJson.message.includes("OP_EQUALVERIFY failed")) {
+//         throw new Error("Transaction verification failed. Please try again.");
+//       }
+//       throw new Error(errorJson.message);
+//     }
+//   } catch {
+//     throw new Error("Failed to cosign burn transaction. Please try again.");
+//   }
+// }
+
+// const cosignResponseJson = (await cosignResponse.json()) as { rawtx: string };
+// const cosignTx = Transaction.fromBinary(toArray(cosignResponseJson.rawtx, 'base64'));
+// if (!cosignTx) {
+//   throw new Error("Failed to parse cosigned transaction");
+// }

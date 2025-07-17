@@ -5,7 +5,7 @@ export default withAuth(
 	function middleware(req) {
 		// Get the token from the request (it's already verified by withAuth)
 		const token = req.nextauth.token;
-		
+
 		// Check if user needs to reset password
 		const requiresReset = token?.requiresPasswordReset;
 		const isResetPage = req.nextUrl.pathname === '/reset-password';
@@ -18,7 +18,7 @@ export default withAuth(
 
 		// If requires reset and not on reset page, redirect to reset page
 		if (requiresReset && !isResetPage) {
-    //   console.log("[DEBUG] requiresReset", requiresReset);
+			//   console.log("[DEBUG] requiresReset", requiresReset);
 			return NextResponse.redirect(new URL('/reset-password', req.url));
 		}
 
@@ -54,6 +54,6 @@ export const config = {
 	matcher: [
 		"/dash/:path*",
 		"/reset-password",
-		"/api/((?!auth|deploy|resetPassword|users/check).*)/:path*", // Protect all API routes except /api/auth/*, /api/deploy, /api/resetPassword, and /api/users/check
+		"/api/((?!auth|deploy|resetPassword|users/check|webhook).*)/:path*", // Protect all API routes except /api/auth/*, /api/deploy, /api/resetPassword, /api/users/check, and /api/webhook
 	],
 };

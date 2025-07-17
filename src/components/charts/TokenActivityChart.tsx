@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import {
   AreaChart,
   Area,
@@ -12,7 +13,6 @@ import {
 import { format, parseISO } from "date-fns";
 import { toToken } from "satoshi-token";
 import { apiFetch } from "@/utils/api";
-import CustomToast from "../common/CustomToast";
 
 interface ChartDataPoint {
   date: string;
@@ -103,7 +103,7 @@ export const TokenActivityChart = ({
         setData(chartData.chartData);
       } catch (error) {
         // console.error("Error fetching data:", error);
-        CustomToast.error(error instanceof Error ? error.message : "Failed to fetch data");
+        toast.error(error instanceof Error ? error.message : "Failed to fetch data");
         setData([]);
       } finally {
         setLoading(false);
