@@ -228,7 +228,6 @@ const mintMnee = async (
 			error: "Inscriptions not found"
 		};
 	}
-	console.log("inscriptions", inscriptions);
 	let currentSupply = BigInt(0);
 	if (inscriptions?.metadata) {
 		currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
@@ -245,7 +244,7 @@ const mintMnee = async (
 		currentSupply = databaseMint._sum.amount || BigInt(0);
 	}
 	const currectTotalSupply = BigInt(inscriptions?.amt);
-	let latestDeployTokenTxOp = 1
+	let latestDeployTokenTxOp = tx?.outputIndex;
 	const totalSupply = currentSupply + BigInt(amount)
 	const currectAvailableSupply = currectTotalSupply - BigInt(amount);
 	const response = await createMintOp(

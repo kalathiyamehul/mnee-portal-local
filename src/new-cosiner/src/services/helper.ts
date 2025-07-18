@@ -82,7 +82,7 @@ export function parseInscription(script: any) {
     return insc;
 }
 export const parseTransaction = async (id: any) => {
-    let tx = Transaction.fromHex(id)
+    let tx = Transaction.fromHex(id);
     const outScripts = tx.outputs.map((output: any) => output.lockingScript);
     const sourceTxs = tx.inputs.map((input: any) => ({
         txid: input.sourceTXID,
@@ -110,5 +110,6 @@ export const parseTransaction = async (id: any) => {
         vin: sourceTxs,
         cosigners,
         inscriptions,
+        outputIndex: tx.outputs.length - 1
     };
 }
