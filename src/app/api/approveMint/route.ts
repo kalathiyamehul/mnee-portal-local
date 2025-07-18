@@ -264,7 +264,7 @@ const mintMnee = async (
 		}
 		return {
 			rawtx: data,
-			success: false
+			success: true
 		};
 	} catch (error) {
 		return {
