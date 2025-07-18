@@ -214,7 +214,9 @@ const mintMnee = async (
 	if (!config) {
 		throw new Error("Config not found");
 	}
-	const tx = await parseTransaction(config.latestMinterTx);
+	const latestMinterTx = config?.latestMinterTx;
+	// QA-: "0100000002ebb1d72cac15f83534e3d067a84fc86fc6e2db0fb30029150106b0c098846b7e010000006b48304502210093da3a3054dda9c062e8c1d853f3f216c50c475d8f3fc5ccf7d49a7ddedea39302207d9747b830030fd4c9ffcb1fceb71333312b2bdfa16682c1ce83e1982baecd92c12102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ffffffff4c6e48d1ca0a3799add2c494ed5e7627d6e3dbd4245c4829ee7252fbfb14f47d010000006b483045022100c144758f75e311382ea7829b9034c0e7202bd0785fdca07091f8c42b49d5add802206f1184abf309e3970d30650294283b01d95feb6900cda4fd678849bae9ac5d52c12102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ffffffff030100000000000000d90063036f726451126170706c69636174696f6e2f6273762d3230004c7f7b2270223a226273762d3230222c226f70223a227472616e73666572222c22616d74223a223232313231323231323030303030222c226964223a22363463656131346162303136393735643039323036306663633134663061363138366138636566306463633664366165346133653836363831323839616531345f30227d6876a914a2455cf1b8bc508a7d3d7c469fb4c4feb800eef288ad2102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ac0100000000000000bc0063036f726451126170706c69636174696f6e2f6273762d3230004c857b2270223a226273762d3230222c226f70223a227472616e73666572222c22616d74223a223138343436373231313936313139323030303030222c226964223a22363463656131346162303136393735643039323036306663633134663061363138366138636566306463633664366165346133653836363831323839616531345f30227d6876a9147332d7a5bb41ca58892be9ab9de6d8d05489930a88ac6ffc0200000000001976a9147332d7a5bb41ca58892be9ab9de6d8d05489930a88ac00000000"
+	const tx = await parseTransaction(latestMinterTx);
 	let inscriptions = tx?.inscriptions?.[1];
 	if (!inscriptions) {
 		inscriptions = tx?.inscriptions?.[0];
@@ -226,14 +228,29 @@ const mintMnee = async (
 			error: "Inscriptions not found"
 		};
 	}
-	const currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
+	console.log("inscriptions", inscriptions);
+	let currentSupply = BigInt(0);
+	if (inscriptions?.metadata) {
+		currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
+	} else {
+		//Handle for QR and Prodution
+		const databaseMint = await prisma.mintRequest.aggregate({
+			where: {
+				status: "DONE"
+			},
+			_sum: {
+				amount: true
+			}
+		});
+		currentSupply = databaseMint._sum.amount || BigInt(0);
+	}
 	const currectTotalSupply = BigInt(inscriptions?.amt);
 	let latestDeployTokenTxOp = 1
 	const totalSupply = currentSupply + BigInt(amount)
 	const currectAvailableSupply = currectTotalSupply - BigInt(amount);
 	const response = await createMintOp(
 		amount,
-		config.latestMinterTx,
+		latestMinterTx,
 		latestDeployTokenTxOp,
 		address,
 		config.tokenId,
