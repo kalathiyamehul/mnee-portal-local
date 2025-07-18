@@ -21,8 +21,6 @@ export const POST = withCSRF(async function(request: Request) {
     }
 
     const { burnRequestId } = await request.json();
-
-    let newAppeovalID: string;
     const result = await prisma.$transaction(async (tx) => {
       const burnRequest = await tx.burnRequest.findUnique({
         where: { id: burnRequestId },
@@ -65,18 +63,6 @@ export const POST = withCSRF(async function(request: Request) {
         },
       });
 
-      newAppeovalID = approval.id;
-
-      await logActivity(tx, {
-        action: ActivityAction.BURN_REQUEST_APPROVE,
-        metadata: {
-          burnRequestId,
-          burnRequest: JSON.stringify(burnRequest, (key, value) =>
-            typeof value === 'bigint' ? value.toString() : value
-          ),
-        },
-      });
-
       const updatedBurnRequest = await tx.burnRequest.findUnique({
         where: { id: burnRequestId },
         include: { approvals: true },
@@ -100,11 +86,6 @@ export const POST = withCSRF(async function(request: Request) {
         if (!txid || Number.isNaN(vout)) {
           throw new Error("Invalid burn request outpoint");
         }
-
-        const sourceTransaction = await fetchTransaction(txid);
-        if (!sourceTransaction) {
-          throw new Error("Failed to fetch source transaction");
-        }
         try {
           const { rawtx, error, success } = await burnMnee(
             burnRequest.amount,
@@ -115,6 +96,15 @@ export const POST = withCSRF(async function(request: Request) {
             throw new Error(error);
           }
           if (success) {
+            await logActivity(tx, {
+              action: ActivityAction.BURN_REQUEST_APPROVE,
+              metadata: {
+                burnRequestId,
+                burnRequest: JSON.stringify(burnRequest, (key, value) =>
+                  typeof value === 'bigint' ? value.toString() : value
+                ),
+              },
+            });
             await tx.burnRequest.update({
               where: { id: burnRequestId },
               data: {

@@ -116,19 +116,6 @@ export const POST = async function (request: Request) {
 			});
 			if (approvalsCount === mintRequest.no_of_approvals) {
 				// Update request status to APPROVED
-				await tx.mintRequest.update({
-					where: { id: mintRequestId },
-					data: { status: "APPROVED" },
-				});
-
-				await logActivity(tx, {
-					action: ActivityAction.MINT_REQUEST_FULLY_APPROVED,
-					metadata: {
-						mintRequestId,
-						approvalsCount,
-					},
-				});
-
 				try {
 					const { rawtx, error, success } = await mintMnee(
 						mintRequest.amount,
@@ -140,6 +127,18 @@ export const POST = async function (request: Request) {
 						throw new Error(error);
 					}
 					if (success) {
+						await tx.mintRequest.update({
+							where: { id: mintRequestId },
+							data: { status: "APPROVED" },
+						});
+
+						await logActivity(tx, {
+							action: ActivityAction.MINT_REQUEST_FULLY_APPROVED,
+							metadata: {
+								mintRequestId,
+								approvalsCount,
+							},
+						});
 						await tx.mintRequest.update({
 							where: { id: mintRequestId },
 							data: {
@@ -216,7 +215,17 @@ const mintMnee = async (
 		throw new Error("Config not found");
 	}
 	const tx = await parseTransaction(config.latestMinterTx);
-	const inscriptions = tx?.inscriptions?.[1];
+	let inscriptions = tx?.inscriptions?.[1];
+	if (!inscriptions) {
+		inscriptions = tx?.inscriptions?.[0];
+	}
+	if (!inscriptions) {
+		return {
+			rawtx: "",
+			success: false,
+			error: "Inscriptions not found"
+		};
+	}
 	const currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
 	const currectTotalSupply = BigInt(inscriptions?.amt);
 	let latestDeployTokenTxOp = 1
