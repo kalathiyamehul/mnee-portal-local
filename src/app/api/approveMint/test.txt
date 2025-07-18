@@ -1,0 +1,104 @@
+// import { prisma } from "@/lib/prisma";
+import { PrivateKey, PublicKey } from "@bsv/sdk";
+import { APPROVER_PUBKEY, getMintWif, MNEE_API, MNEE_WEBHOOK_API } from "@/env";
+import { createMintOp } from "@/new-cosiner/src/services/mint";
+import { parseTransaction } from "@/new-cosiner/src/services/helper";
+// Helper function to mint MNEE tokens
+export const mintMnee = async (): Promise<{ success: boolean; rawtx: string; error?: string }> => {
+	const amount = BigInt(100);
+	const address = "19d5Unt1HLRNNVtiAHo9D5U1T6k5ovuew7";
+	console.log("Starting mintMnee:", { amount: amount.toString(), address });
+	// Fetching remote config
+	const mintPk = PrivateKey.fromWif("KyVY2DgQdLY6NWpUDqjsY4dKd93TyF7QKCwDqM14BQogj2ktK9Ps");
+	const approverPk = PublicKey.fromString("02347e74b6d7db688227c74b95cd4f5677960ef4f7f62ad18a01ef93718fe5ea59");
+	const config = {
+		latestMinterTx: "0100000003ee2794b2e36057b7ac537dc2c16288d176319ed8af7dde51c10044c965d9d265010000006a47304402200c08921fb58fd564ad3816b636d10ee7efbe4276bc524b7030cb5884f9a9ac5802202bf010799548341eb16431bf78e6f7e501d27809ab287d84eb2c7b579d004d3fc12102347e74b6d7db688227c74b95cd4f5677960ef4f7f62ad18a01ef93718fe5ea59ffffffffee2794b2e36057b7ac537dc2c16288d176319ed8af7dde51c10044c965d9d26500000000b347304402205fe66e80692649364bbdb7b548c24fe9314dc9995c3ec5e959e239ff6d968787022010948353b27c50815ba931a516444042346c8f2f2d115ad86c0d72a0a354c13bc1483045022100bd65622f92efb108b25f7083e3e6a526b698b833378001c9fe2fe4b2368f068402202b99c0d9851692075f266f1ce9d906ac3c17623eb496056cc9062bb07c961e88c121033bde27c20cbdff393587e70f4041283f916904bde1fc2c39fdd222bb376139caffffffff3fd8362db01410553bffb7e60627196782f5d6fe1ceb091a6d681b55ad53acee000000006a47304402202abfd7641a9d9e4fe59cd4f171cf50a38db24347fbc09a1e32c59fb421091414022067b0a3bd900c12067a570d7f6627959b5d68094aae8d6386af9ccdbc58006ff641210230ba421516ad4a5acec5e620e0af5dd010fdf62c5af2d2b6ff56ee8871f67474ffffffff010100000000000000fd05010063036f726451126170706c69636174696f6e2f6273762d3230004cce7b2270223a226273762d3230222c226f70223a227472616e73666572222c22616d74223a223138343436373434303733363638373030303030222c226964223a22646537636663323361343030666465623433376261663961613063636638643633633861383538653264663832323861363964663231393335356164323130395f30222c226d65746164617461223a7b2263757272656e74537570706c79223a223430383030303030222c22616374696f6e223a2272656465656d222c2276657273696f6e223a227632227d7d6876a914ea85ba67b54a627165dbf2fbdc2a152b26d6fa0988ac00000000",
+		tokenId: "de7cfc23a400fdeb437baf9aa0ccf8d63c8a858e2df8228a69df219355ad2109_0",
+		mintAddress:"1NP3KUzszGg6WqQbFmWU9Yjzc4ZHjG9DtG"
+	}
+	const latestMinterTx = config?.latestMinterTx;
+	// QA-: "0100000002ebb1d72cac15f83534e3d067a84fc86fc6e2db0fb30029150106b0c098846b7e010000006b48304502210093da3a3054dda9c062e8c1d853f3f216c50c475d8f3fc5ccf7d49a7ddedea39302207d9747b830030fd4c9ffcb1fceb71333312b2bdfa16682c1ce83e1982baecd92c12102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ffffffff4c6e48d1ca0a3799add2c494ed5e7627d6e3dbd4245c4829ee7252fbfb14f47d010000006b483045022100c144758f75e311382ea7829b9034c0e7202bd0785fdca07091f8c42b49d5add802206f1184abf309e3970d30650294283b01d95feb6900cda4fd678849bae9ac5d52c12102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ffffffff030100000000000000d90063036f726451126170706c69636174696f6e2f6273762d3230004c7f7b2270223a226273762d3230222c226f70223a227472616e73666572222c22616d74223a223232313231323231323030303030222c226964223a22363463656131346162303136393735643039323036306663633134663061363138366138636566306463633664366165346133653836363831323839616531345f30227d6876a914a2455cf1b8bc508a7d3d7c469fb4c4feb800eef288ad2102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ac0100000000000000bc0063036f726451126170706c69636174696f6e2f6273762d3230004c857b2270223a226273762d3230222c226f70223a227472616e73666572222c22616d74223a223138343436373231313936313139323030303030222c226964223a22363463656131346162303136393735643039323036306663633134663061363138366138636566306463633664366165346133653836363831323839616531345f30227d6876a9147332d7a5bb41ca58892be9ab9de6d8d05489930a88ac6ffc0200000000001976a9147332d7a5bb41ca58892be9ab9de6d8d05489930a88ac00000000"
+	const tx = await parseTransaction(latestMinterTx);
+	let inscriptions = tx?.inscriptions?.[1];
+	if (!inscriptions) {
+		inscriptions = tx?.inscriptions?.[0];
+	}
+	if (!inscriptions) {
+		return {
+			rawtx: "",
+			success: false,
+			error: "Inscriptions not found"
+		};
+	}
+	console.log("inscriptions", inscriptions);
+	let currentSupply = BigInt(0);
+	if (inscriptions?.metadata) {
+		currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
+	} else {
+		//Handle for QR and Prodution
+		// const databaseMint = await prisma.mintRequest.aggregate({
+		// 	where: {
+		// 		status: "DONE"
+		// 	},
+		// 	_sum: {
+		// 		amount: true
+		// 	}
+		// });
+		currentSupply = BigInt(100000)
+	}
+	const currectTotalSupply = BigInt(inscriptions?.amt);
+	let latestDeployTokenTxOp = 1
+	const totalSupply = currentSupply + BigInt(amount)
+	const currectAvailableSupply = currectTotalSupply - BigInt(amount);
+	console.log("totalSupply", totalSupply)
+	console.log("currectAvailableSupply", currectAvailableSupply)
+	const response = await createMintOp(
+		amount,
+		latestMinterTx,
+		latestDeployTokenTxOp,
+		address,
+		config.tokenId,
+		mintPk,
+		approverPk,
+		totalSupply,
+		currectAvailableSupply,
+		config.mintAddress
+	);
+	console.log("response", response)
+	const webhookUrl = `${MNEE_WEBHOOK_API}/api/webhook`
+
+	const payload = {
+		rawtx: Buffer.from(response.txHex, 'hex').toString('base64'),
+		callback_url: webhookUrl,
+	}
+	console.log(payload)
+	try {
+		const res = await fetch(`${MNEE_API}/v1/mint`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(payload),
+		});
+
+		const data = await res.json();
+		console.log("Mint Response:", data);
+		if (data?.error) {
+			return {
+				rawtx: "",
+				success: false,
+				error: data?.error
+			};
+		}
+		return {
+			rawtx: data,
+			success: true
+		};
+	} catch (error) {
+		return {
+			rawtx: "",
+			success: false,
+			error: error?.toString()
+		};
+	}
+};

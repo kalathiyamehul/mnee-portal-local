@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey } from "@bsv/sdk";
+import { PrivateKey, Transaction } from "@bsv/sdk";
 import { getBurnWif, getMintWif, MNEE_API, MNEE_WEBHOOK_API } from "@/env";
 import { fetchConfig, fetchRawTx, fetchTransaction } from "@/utils/api";
 import { isSystemPaused } from "@/lib/systemStatus";
@@ -160,22 +160,16 @@ const burnMnee = async (
   const inscriptions = tx?.inscriptions?.[1];
   const currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
   const currectTotalSupply = BigInt(inscriptions?.amt);
-
-
   const currectAvailableSupply = currectTotalSupply + BigInt(amount);
-  console.log("Previous currectTotalSupply", currectTotalSupply)
-  console.log("currectTotalSupply + amount", currectAvailableSupply)
-
   const totalSupply = currentSupply - BigInt(amount)
-  console.log("Previous currentSupply", currentSupply)
-  console.log("totalSupply - amount", totalSupply)
-
+  const latestDeployedTokenOpIndex = tx.outputIndex;
+  const redeemUtxoIndex = 0;
   const MINT_WIF = await getMintWif();
   const response = await createRedeemTx(
     config.latestMinterTx,
-    1,
+    latestDeployedTokenOpIndex,
     redeemUtxoTx,
-    0,
+    redeemUtxoIndex,
     config.tokenId,
     burnPk,
     currectAvailableSupply,
