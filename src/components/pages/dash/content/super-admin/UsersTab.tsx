@@ -317,7 +317,7 @@ export default function UsersPage() {
         throw new Error(data.error || "Failed to Reset user password");
       }
 
-      CustomToast.success("User Password Reset successfully");
+      CustomToast.success("User Password Changed successfully");
       fetchUsers();
       setIsEditing(false);
       setEditingUser(null);
