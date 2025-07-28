@@ -23,7 +23,6 @@ export const POST = withCSRF( async function(request: Request) {
     const existingCustomer = await prisma.customer.findFirst({
       where: {
         OR: [
-          { name },
           { address },
         ],
       },
@@ -31,7 +30,7 @@ export const POST = withCSRF( async function(request: Request) {
 
     if (existingCustomer) {
       return NextResponse.json(
-        { error: "A customer with this email or address already exists" },
+        { error: "A customer with this address already exists" },
         { status: 400 }
       );
     }

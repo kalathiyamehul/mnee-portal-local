@@ -50,12 +50,11 @@ interface CustomerContextType {
   getCustomer: (id: string) => Promise<Customer>;
   createCustomer: (data: {
     name: string;
-    email: string;
     address: string;
   }) => Promise<Customer>;
   updateCustomer: (
     id: string,
-    data: { name: string; email: string; address: string }
+    data: { name: string; address: string }
   ) => Promise<Customer>;
   pagination: {
     total: number;
@@ -166,7 +165,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
   );
 
   const createCustomer = useCallback(
-    async (data: { name: string; email: string; address: string }) => {
+    async (data: { name: string; address: string }) => {
       const response = await apiFetch("/api/customers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -192,7 +191,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
   const updateCustomer = useCallback(
     async (
       id: string,
-      data: { name: string; email: string; address: string }
+      data: { name: string; address: string }
     ) => {
       const response = await apiFetch(`/api/customers/${id}`, {
         method: "POST",

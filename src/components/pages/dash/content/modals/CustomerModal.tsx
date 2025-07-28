@@ -152,8 +152,8 @@ export function CustomerModal({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            name: formData.name,
-            address: formData.address,
+            name: formData.name.trim(),
+            address: formData.address.trim(),
           }),
         });
       } else {

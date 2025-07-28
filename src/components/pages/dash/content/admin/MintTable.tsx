@@ -272,26 +272,21 @@ const MintTableContent = ({
                   <div className="avatar">
                     <div className="mask mask-squircle w-10 h-10">
                       <img
-                        src={getGravatarUrl(mint.customer?.email)}
+                        src={getGravatarUrl('default')}
                         alt="Customer avatar"
                       />
                     </div>
                   </div>
                   <div>
                     <div className="font-medium">
-                      {mint.customer ? (
+                      {mint.customer && (
                         <Link
                           href={`/dash/customers?id=${mint.customer.id}`}
                           className="hover:underline"
                         >
                           {mint.customer.name}
                         </Link>
-                      ) : (
-                        "Unknown"
                       )}
-                    </div>
-                    <div className="text-sm opacity-50">
-                      {mint.customer?.email || "unknown@example.com"}
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 import { apiFetch } from "@/utils/api";
 import type { Config } from "@prisma/client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { toToken, toTokenSat } from "satoshi-token";
 
@@ -37,57 +37,8 @@ const ConfigureTab = () => {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [config, setConfig] = useState<Config>();
 
-  // Add new item
-  const addNewItem = (): void => {
-    const lastItem = items[items.length - 1];
-    const newItem: FeeItem = {
-      fee: lastItem ? lastItem.fee + 1 : 0,
-      max: lastItem ? lastItem.max + 1000 : 1000,
-      min: lastItem ? lastItem.max + 1 : 0,
-    };
-    setItems([...items, newItem]);
-  };
-
-  // Remove item
-  const removeItem = (index: number): void => {
-    if (items.length > 1) {
-      const newItems = items.filter((_, i) => i !== index);
-      setItems(newItems);
-      // Remove errors for this item and revalidate remaining items
-      const newErrors = { ...errors };
-      delete newErrors[index];
-      setErrors(newErrors);
-      // Revalidate all items after removal
-      setTimeout(() => validateAllItems(), 0);
-    }
-  };
-
-  // Update item field
-  const updateItem = (
-    index: number,
-    field: keyof FeeItem,
-    value: string
-  ): void => {
-    const numericValue = parseFloat(value) || 0;
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: numericValue };
-    setItems(newItems);
-
-    // Clear error for this field
-    if (errors[index]) {
-      const newErrors = { ...errors };
-      if (newErrors[index]) {
-        delete newErrors[index][field];
-        if (Object.keys(newErrors[index]).length === 0) {
-          delete newErrors[index];
-        }
-      }
-      setErrors(newErrors);
-    }
-  };
-
   // Enhanced validation with sequential range checking
-  const validateAllItems = (): boolean => {
+  const validateAllItems = useCallback((): boolean => {
     const newErrors: ValidationErrors = {};
 
     items.forEach((item, index) => {
@@ -165,14 +116,61 @@ const ConfigureTab = () => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [items]);
 
-  // Validate items whenever items change
+  // Validate items whenever items change - NOW ALWAYS ACTIVE
   useEffect(() => {
-    if (items.length > 0 && editingFee) {
+    if (items.length > 0) {
       validateAllItems();
     }
-  }, [items, editingFee]);
+  }, [items, validateAllItems]);
+
+  // Add new item
+  const addNewItem = (): void => {
+    const lastItem = items[items.length - 1];
+    const nextMax = lastItem ? lastItem.max + 1000 : 1000;
+    const newItem: FeeItem = {
+      fee: lastItem ? lastItem.fee + 1 : 0,
+      max: Math.min(nextMax, Number.MAX_SAFE_INTEGER),
+      min: lastItem ? lastItem.max + 1 : 0,
+    };
+    setItems([...items, newItem]);
+  };
+
+  // Remove item
+  const removeItem = (index: number): void => {
+    if (items.length > 1) {
+      const newItems = items.filter((_, i) => i !== index);
+      setItems(newItems);
+      // Remove errors for this item
+      const newErrors = { ...errors };
+      delete newErrors[index];
+      // Shift error indices down for items after the removed one
+      const shiftedErrors: ValidationErrors = {};
+      Object.entries(newErrors).forEach(([idx, error]) => {
+        const numIdx = parseInt(idx);
+        if (numIdx < index) {
+          shiftedErrors[numIdx] = error;
+        } else if (numIdx > index) {
+          shiftedErrors[numIdx - 1] = error;
+        }
+      });
+      setErrors(shiftedErrors);
+    }
+  };
+
+  // Update item field with immediate validation
+  const updateItem = (
+    index: number,
+    field: keyof FeeItem,
+    value: string
+  ): void => {
+    const numericValue = parseFloat(value) || 0;
+    const newItems = [...items];
+    newItems[index] = { ...newItems[index], [field]: numericValue };
+    setItems(newItems);
+    // Note: Validation will trigger automatically via useEffect
+  };
 
   const fetchConfig = async () => {
     try {
@@ -242,6 +240,7 @@ const ConfigureTab = () => {
 
     setIsSubmitting(true);
 
+    // Final validation before submit (this should always pass now since validation is live)
     if (!validateAllItems()) {
       setIsSubmitting(false);
       toast.error("Please fix validation errors before submitting");
@@ -272,6 +271,9 @@ const ConfigureTab = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Check if there are any validation errors
+  const hasValidationErrors = Object.keys(errors).length > 0;
 
   if (loading) {
     return (
@@ -325,7 +327,11 @@ const ConfigureTab = () => {
           <div className="flex items-center space-x-4">
             <div
               className="tooltip tooltip-top tooltip-error"
-              data-tip="Cannot add more fees if the last fee's max is set to Infinity"
+              data-tip={`${
+                items[items.length - 1].max === Number.MAX_SAFE_INTEGER
+                  ? "Cannot add more fees if the last fee's max is set to Infinity"
+                  : ""
+              }`}
             >
               <button
                 onClick={addNewItem}
@@ -343,6 +349,7 @@ const ConfigureTab = () => {
               onClick={() => {
                 setEditingFee(false);
                 fetchConfig();
+                setErrors({});
               }}
               className="btn btn-secondary btn-sm"
             >
@@ -353,9 +360,9 @@ const ConfigureTab = () => {
               onClick={handlefeeSubmit}
               className={`btn btn-success btn-sm ${
                 isSubmitting ? "loading" : ""
-              }`}
+              } ${hasValidationErrors ? "btn-disabled" : ""}`}
               type="button"
-              disabled={isSubmitting}
+              disabled={isSubmitting || hasValidationErrors}
             >
               {isSubmitting ? "Saving..." : "Save"}
             </button>
@@ -371,14 +378,12 @@ const ConfigureTab = () => {
         )}
       </div>
 
-      {/* Validation Summary */}
-      {editingFee && Object.keys(errors).length > 0 && (
+      {/* Validation Summary - NOW SHOWS LIVE ERRORS */}
+      {hasValidationErrors && (
         <div className="alert alert-error mb-4">
           <div>
             <h3 className="font-bold">Validation Errors:</h3>
-            <p className="text-sm">
-              Please fix the following errors before saving:
-            </p>
+            <p className="text-sm">Please fix the following errors:</p>
             <ul className="list-disc list-inside text-sm mt-2">
               {Object.entries(errors).map(([index, fieldErrors]) => (
                 <li key={index}>
@@ -405,7 +410,7 @@ const ConfigureTab = () => {
             {items.map((item, index) => (
               <tr key={index} className="p-3">
                 {/* Fee Field */}
-                <td>
+                <td className="align-top">
                   {editingFee ? (
                     <input
                       type="number"
@@ -429,7 +434,7 @@ const ConfigureTab = () => {
                 </td>
 
                 {/* Min Field */}
-                <td>
+                <td className="align-top">
                   {editingFee ? (
                     <input
                       type="number"
@@ -453,13 +458,18 @@ const ConfigureTab = () => {
                 </td>
 
                 {/* Max Field */}
-                <td>
+                <td className="align-top">
                   {editingFee ? (
                     <input
                       type="number"
                       value={item.max}
                       max={Number.MAX_SAFE_INTEGER}
-                      onChange={(e) => updateItem(index, "max", e.target.value)}
+                      onChange={(e) => {
+                        let value = Number(e.target.value);
+                        if (value > Number.MAX_SAFE_INTEGER)
+                          value = Number.MAX_SAFE_INTEGER;
+                        updateItem(index, "max", value.toString());
+                      }}
                       className={`input input-bordered w-full ${
                         errors[index]?.max &&
                         "border-red-500 focus:ring-red-500"
@@ -481,7 +491,7 @@ const ConfigureTab = () => {
                   )}
                 </td>
                 {editingFee && items.length > 1 && (
-                  <td>
+                  <td className="align-top">
                     <button
                       onClick={() => removeItem(index)}
                       className="btn btn-sm btn-error"
