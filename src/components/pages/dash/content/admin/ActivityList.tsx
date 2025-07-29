@@ -6,13 +6,13 @@ import type { Activity, ActivityListProps } from "./types";
 import { formatDistanceToNow } from "date-fns";
 import { getGravatarUrl } from "@/utils/gravatar";
 import { FaSpinner } from "react-icons/fa6";
+import { toast } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 import { useEffect, useState } from "react";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePathname } from "next/navigation";
 import { MdOutlineOpenInNew } from "react-icons/md";
 import { apiFetch } from "@/utils/api";
-import CustomToast from "@/components/common/CustomToast";
 
 export const ActivityList = ({
   showOnlyPending,
@@ -163,6 +163,50 @@ export const ActivityList = ({
   };
 
   // console.log("filteredList", filteredActivities);
+
+  const [loadingReject, setLoadingReject] = useState<string | null>(null);
+
+  // Implement handleReject
+  const handleReject = async (id: string, type: "MINT" | "BURN") => {
+    try {
+      setLoadingReject(id);
+      const endpoint = type === "MINT" ? "/api/rejectMint" : "/api/rejectBurn";
+      const response = await apiFetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          [`${type.toLowerCase()}RequestId`]: id,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || `Failed to reject ${type.toLowerCase()} request`
+        );
+      }
+
+      if (data.success) {
+        toast.success(data.message || `${type} request rejected`);
+      } else {
+        throw new Error(
+          data.error || `Failed to reject ${type.toLowerCase()} request`
+        );
+      }
+    } catch (error) {
+      // console.error(`Failed to reject ${type.toLowerCase()} request:`, error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : `Failed to reject ${type.toLowerCase()} request`
+      );
+    } finally {
+      setLoadingReject(null);
+    }
+  };
   return (
     <div className="space-y-4">
       {showPendingSwitch && (
@@ -279,7 +323,7 @@ export const ActivityList = ({
                             <div className="text-sm font-mono flex flex-col">
                               <p className="opacity-70">
                                 Name: {activity.name} <br />
-                                MNEE Address: 
+                                MNEE Address:
                                 <a
                                   href={`https://whatsonchain.com/address/${activity.address}`}
                                   target="_blank"
@@ -287,7 +331,8 @@ export const ActivityList = ({
                                   className="flex items-center gap-1 px-0"
                                   title="View on WhatsOnChain"
                                 >
-                                  {activity.address} <MdOutlineOpenInNew className="w-3 h-3" />
+                                  {activity.address}{" "}
+                                  <MdOutlineOpenInNew className="w-3 h-3" />
                                 </a>
                               </p>
                             </div>

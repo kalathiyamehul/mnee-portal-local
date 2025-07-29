@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import { Resource, Action, RESOURCE_PERMISSIONS } from "@/lib/permission";
 import { apiFetch } from "@/utils/api";
-import CustomToast from "@/components/common/CustomToast";
 
 interface Role {
   id: string;
@@ -86,7 +86,7 @@ export default function RolesTab() {
       const data = await response.json();
       setRoles(data);
     } catch (error) {
-      CustomToast.error("Failed to fetch roles");
+      toast.error("Failed to fetch roles");
       // console.error(error);
     } finally {
       setLoading(false);
@@ -109,12 +109,12 @@ export default function RolesTab() {
       if (!response.ok) {
         throw new Error(data.error || "Failed to create role");
       }
-      CustomToast.success("Role created successfully");
+      toast.success("Role created successfully");
       fetchRoles();
       setIsCreating(false);
       setNewRole({ name: "", description: "", permissions: [] });
     } catch (error) {
-      CustomToast.error(
+      toast.error(
         error instanceof Error ? error.message : "Failed to create role"
       );
       // console.error(error);
@@ -144,14 +144,14 @@ export default function RolesTab() {
         throw new Error(data.error || "Failed to update role");
       }
 
-      CustomToast.success(
+      toast.success(
         "Role updated successfully. Affected users will be logged out automatically."
       );
       fetchRoles();
       setIsEditing(false);
       setEditingRole(null);
     } catch (error) {
-      CustomToast.error(
+      toast.error(
         error instanceof Error ? error.message : "Failed to update role"
       );
       // console.error(error);
@@ -351,12 +351,12 @@ export default function RolesTab() {
         throw new Error(data.error || "Failed to delete role");
       }
 
-      CustomToast.success(
+      toast.success(
         "Role deleted successfully. Affected users will be logged out automatically."
       );
       fetchRoles();
     } catch (error) {
-      CustomToast.error(
+      toast.error(
         error instanceof Error ? error.message : "Failed to delete role"
       );
       // console.error(error);

@@ -17,6 +17,7 @@ import { getConfig } from "@/lib/config";
 import { toToken } from "satoshi-token";
 import type { Config, Customer } from "@prisma/client";
 import { FetchStatus } from "@/types/common";
+import toast, { ErrorIcon } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePermission } from "@/hooks/usePermission";
@@ -26,6 +27,7 @@ import { CustomerHistory } from "./CustomerHistory";
 import { useSystemStatus } from "@/contexts/SystemStatusContext";
 import type { Activity } from "./types";
 import CustomToast from "@/components/common/CustomToast";
+import { FaSpinner } from "react-icons/fa6";
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
@@ -81,7 +83,7 @@ export default function DashboardCustomersContent() {
         setConfig(configData);
       } catch (error) {
         // console.error("Error loading config:", error);
-        CustomToast.error("Failed to load config");
+        toast.error("Failed to load config");
       }
     };
     init();
@@ -119,14 +121,14 @@ export default function DashboardCustomersContent() {
 
       if (!response.ok) {
         const { error } = await response.json();
-        CustomToast.error(
+        toast.error(
           typeof error === "string" ? error : "Failed to toggle customer state"
         );
         return;
       }
 
       const updatedCustomer = await response.json();
-      CustomToast.success(
+      toast.success(
         `Customer ${
           updatedCustomer.isActive ? "activated" : "deactivated"
         } successfully`
@@ -136,7 +138,7 @@ export default function DashboardCustomersContent() {
       fetchCustomers(pagination.page, pagination.limit);
     } catch (error) {
       console.error("Error toggling customer state:", error);
-      CustomToast.error(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to toggle customer state"
@@ -190,7 +192,7 @@ export default function DashboardCustomersContent() {
       }));
     } catch (error) {
       // console.error("Error exporting customers:", error);
-      CustomToast.error("Failed to export customers");
+      toast.error("Failed to export customers");
       throw error;
     }
   };

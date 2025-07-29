@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 import { useSession } from "next-auth/react";
 import { usePermission } from "@/hooks/usePermission";
 import { Resource, Action } from "@/lib/permission";
@@ -11,7 +12,6 @@ import { Pagination } from "@/components/common/Pagination";
 import { apiFetch } from "@/utils/api";
 import { password } from "bun";
 import { MdLockReset } from "react-icons/md";
-import CustomToast from "@/components/common/CustomToast";
 
 interface User {
   id: string;
@@ -172,7 +172,7 @@ export default function UsersPage() {
       setUsers(data.users);
       setPagination(data.pagination);
     } catch (error) {
-      CustomToast.error("Failed to fetch users");
+      toast.error("Failed to fetch users");
       // console.error(error);
     } finally {
       setLoading(false);
@@ -186,7 +186,7 @@ export default function UsersPage() {
       const data = await response.json();
       setRoles(data);
     } catch (error) {
-      CustomToast.error("Failed to fetch roles");
+      toast.error("Failed to fetch roles");
       // console.error(error);
     }
   };
@@ -207,7 +207,7 @@ export default function UsersPage() {
     // Improved error feedback
     if (nameError || emailError || passwordError) {
       const firstError = [nameError, emailError, passwordError].find((e) => e);
-      CustomToast.error(firstError || "Please fix the form errors");
+      toast.error(firstError || "Please fix the form errors");
       return;
     }
     try {
@@ -220,12 +220,12 @@ export default function UsersPage() {
       if (!response.ok) {
         throw new Error(data.error || "Failed to create user");
       }
-      CustomToast.success("User created successfully");
+      toast.success("User created successfully");
       fetchUsers();
       setIsCreating(false);
       setNewUser({ name: "", email: "", password: "", roleId: "" });
     } catch (error) {
-      CustomToast.error(
+      toast.error(
         error instanceof Error ? error.message : "Failed to create user"
       );
       // console.error(error);
@@ -249,7 +249,7 @@ export default function UsersPage() {
     // Improved error feedback
     if (nameError || emailError) {
       const firstError = [nameError, emailError].find((e) => e);
-      CustomToast.error(firstError || "Please fix the form errors");
+      toast.error(firstError || "Please fix the form errors");
       return;
     }
 
@@ -269,12 +269,12 @@ export default function UsersPage() {
         throw new Error(data.error || "Failed to update user");
       }
 
-      CustomToast.success("User updated successfully");
+      toast.success("User updated successfully");
       fetchUsers();
       setIsEditing(false);
       setEditingUser(null);
     } catch (error) {
-      CustomToast.error(
+      toast.error(
         error instanceof Error ? error.message : "Failed to update user"
       );
       // console.error(error);
@@ -297,7 +297,7 @@ export default function UsersPage() {
     // Improved error feedback
     if (passwordError) {
       const firstError = [passwordError].find((e) => e);
-      CustomToast.error(firstError || "Please fix the form errors");
+      toast.error(firstError || "Please fix the form errors");
       return;
     }
 
@@ -317,12 +317,13 @@ export default function UsersPage() {
         throw new Error(data.error || "Failed to Reset user password");
       }
 
+
       CustomToast.success("User Password Changed successfully");
       fetchUsers();
       setIsEditing(false);
       setEditingUser(null);
     } catch (error) {
-      CustomToast.error(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to update user Password"
@@ -345,10 +346,10 @@ export default function UsersPage() {
         throw new Error(data.error || "Failed to delete user");
       }
 
-      CustomToast.success("User deleted successfully");
+      toast.success("User deleted successfully");
       fetchUsers();
     } catch (error) {
-      CustomToast.error(
+      toast.error(
         error instanceof Error ? error.message : "Failed to delete user"
       );
       // console.error(error);

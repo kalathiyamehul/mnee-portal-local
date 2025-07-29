@@ -70,8 +70,7 @@ export const POST = withCSRF(async function(request: Request) {
         }
 
         const utxos = await fetchMneeUtxos([config.burnAddress]);
-        const targetUtxo = utxos.find((u: MNEEUtxo) => u.txid === txid && u.vout === vout);
-
+        const targetUtxo = utxos.find((u: MNEEUtxo) => u.txid === txid && u.vout == vout);
         if (!targetUtxo) {
             return NextResponse.json(
                 { error: "UTXO not found or not owned by burn address" },

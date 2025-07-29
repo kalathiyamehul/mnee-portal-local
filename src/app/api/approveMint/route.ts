@@ -2,28 +2,15 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
-import {
-	fetchConfig,
-	fetchVaultedMneeUtxos,
-} from "@/utils/api";
-import { getMintWif, MNEE_API } from "@/env";
-import { getFundingUtxos } from "@/utils/utxo";
+import { PrivateKey, PublicKey } from "@bsv/sdk";
+import { APPROVER_PUBKEY, getMintWif, MNEE_API, MNEE_WEBHOOK_API } from "@/env";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import type { Prisma } from "@prisma/client";
-import {
-	type Distribution,
-	TokenType,
-	type TokenUtxo,
-	transferOrdTokens,
-	type TransferOrdTokensConfig,
-} from "js-1sat-ord";
-import CosignTemplate from "@/templates/cosign";
 import { ActivityAction, logActivity } from "@/lib/activityLogger";
-import { withCSRF } from "@/lib/csrf";
-import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { emitMintUpdate } from "@/lib/sseEmitter";
 import { recordTransaction, TransactionType } from "@/lib/recordTransactions";
+import { createMintOp } from "@/new-cosiner/src/services/mint";
+import { parseTransaction } from "@/new-cosiner/src/services/helper";
 
 type MintRequestWithRelations = Prisma.MintRequestGetPayload<{
 	include: {
@@ -32,18 +19,15 @@ type MintRequestWithRelations = Prisma.MintRequestGetPayload<{
 	};
 }>;
 
-export const POST =  withCSRF(async function(request: Request) {
+export const POST = async function (request: Request) {
 	console.log("Starting approveMint request");
 	const session = await getServerSession(authOptions);
 	console.log("Session:", { userId: session?.user?.id });
-
 	if (!session?.user?.id) {
 		console.log("Unauthorized: No session or user ID");
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
-
-	let mintRequestId: string | undefined;
-
+	let mintRequestId: string;
 	try {
 		const { mintRequestId: requestId } = await request.json();
 		mintRequestId = requestId;
@@ -133,29 +117,16 @@ export const POST =  withCSRF(async function(request: Request) {
 			});
 			if (approvalsCount === mintRequest.no_of_approvals) {
 				// Update request status to APPROVED
-				await tx.mintRequest.update({
-					where: { id: mintRequestId },
-					data: { status: "APPROVED" },
-				});
-
-				await logActivity(tx, {
-					action: ActivityAction.MINT_REQUEST_FULLY_APPROVED,
-					metadata: {
-						mintRequestId,
-						approvalsCount,
-					},
-				});
-
 				try {
 					const { rawtx, error, success } = await mintMnee(
 						mintRequest.amount,
 						mintRequest.address,
+						request,
 					);
 
-					if (!success) {
+					if (error) {
 						throw new Error(error);
 					}
-
 					await tx.mintRequest.update({
 						where: { id: mintRequestId },
 						data: {
@@ -211,7 +182,7 @@ export const POST =  withCSRF(async function(request: Request) {
 			},
 		});
 		emitMintUpdate({
-			activityId: requestId,
+			activityId: mintRequestId,
 			approval: approval,
 			type: "APPROVE",
 		});
@@ -232,160 +203,111 @@ export const POST =  withCSRF(async function(request: Request) {
 			{
 				status:
 					error instanceof Error &&
-					(error.message.includes("will remain pending") ||
-						error.message.includes("address is frozen"))
+						(error.message.includes("will remain pending") ||
+							error.message.includes("address is frozen"))
 						? 202
 						: 500,
 			},
 		);
 	}
-}, createAPIRateLimit())
+}
 
 // Helper function to mint MNEE tokens
 const mintMnee = async (
 	amount: bigint,
 	address: string,
+	request: Request,
 ): Promise<{ success: boolean; rawtx: string; error?: string }> => {
 	console.log("Starting mintMnee:", { amount: amount.toString(), address });
-  // Fetching remote config
-	const config = await fetchConfig();
-	console.log("Fetched remote config:", { approver: config.approver });
-
-	// MNEE contract config
-	const pk = PrivateKey.fromWif(await getMintWif());
-	const fundingAddress = pk.toAddress();
-	const funding_utxos = await getFundingUtxos(fundingAddress);
-	console.log("Got funding UTXOs:", { count: funding_utxos.length });
-	console.log("Funding UTXOs:", funding_utxos);
-
-	if (!funding_utxos.length) {
-		throw new Error("No funding UTXOs available");
+	// Fetching remote config
+	const mintPk = PrivateKey.fromWif(await getMintWif());
+	const approverPk = PublicKey.fromString(APPROVER_PUBKEY);
+	const config = await prisma.config.findFirst();
+	if (!config) {
+		throw new Error("Config not found");
 	}
+	const latestMinterTx = config?.latestMinterTx;
+	// QA-: "0100000002ebb1d72cac15f83534e3d067a84fc86fc6e2db0fb30029150106b0c098846b7e010000006b48304502210093da3a3054dda9c062e8c1d853f3f216c50c475d8f3fc5ccf7d49a7ddedea39302207d9747b830030fd4c9ffcb1fceb71333312b2bdfa16682c1ce83e1982baecd92c12102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ffffffff4c6e48d1ca0a3799add2c494ed5e7627d6e3dbd4245c4829ee7252fbfb14f47d010000006b483045022100c144758f75e311382ea7829b9034c0e7202bd0785fdca07091f8c42b49d5add802206f1184abf309e3970d30650294283b01d95feb6900cda4fd678849bae9ac5d52c12102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ffffffff030100000000000000d90063036f726451126170706c69636174696f6e2f6273762d3230004c7f7b2270223a226273762d3230222c226f70223a227472616e73666572222c22616d74223a223232313231323231323030303030222c226964223a22363463656131346162303136393735643039323036306663633134663061363138366138636566306463633664366165346133653836363831323839616531345f30227d6876a914a2455cf1b8bc508a7d3d7c469fb4c4feb800eef288ad2102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ac0100000000000000bc0063036f726451126170706c69636174696f6e2f6273762d3230004c857b2270223a226273762d3230222c226f70223a227472616e73666572222c22616d74223a223138343436373231313936313139323030303030222c226964223a22363463656131346162303136393735643039323036306663633134663061363138366138636566306463633664366165346133653836363831323839616531345f30227d6876a9147332d7a5bb41ca58892be9ab9de6d8d05489930a88ac6ffc0200000000001976a9147332d7a5bb41ca58892be9ab9de6d8d05489930a88ac00000000"
+	const tx = await parseTransaction(latestMinterTx);
+	let inscriptions = tx?.inscriptions?.[1];
+	if (!inscriptions) {
+		inscriptions = tx?.inscriptions?.[0];
+	}
+	if (!inscriptions) {
+		return {
+			rawtx: "",
+			success: false,
+			error: "Inscriptions not found"
+		};
+	}
+	let currentSupply = BigInt(0);
+	if (inscriptions?.metadata) {
+		currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
+	} else {
+		//Handle for QR and Prodution
+		const databaseMint = await prisma.mintRequest.aggregate({
+			where: {
+				status: "DONE"
+			},
+			_sum: {
+				amount: true
+			}
+		});
+		currentSupply = databaseMint._sum.amount || BigInt(0);
+	}
+	const currectTotalSupply = BigInt(inscriptions?.amt);
+	let latestDeployTokenTxOp = tx?.outputIndex;
+	const totalSupply = currentSupply + BigInt(amount)
+	const currectAvailableSupply = currectTotalSupply - BigInt(amount);
+	const response = await createMintOp(
+		amount,
+		latestMinterTx,
+		latestDeployTokenTxOp,
+		address,
+		config.tokenId,
+		mintPk,
+		approverPk,
+		totalSupply,
+		currectAvailableSupply,
+		config.mintAddress
+	);
+	const isLocal = process.env.NEXT_PUBLIC_ENV === "local";
+	const webhookUrl = isLocal
+		? `${MNEE_WEBHOOK_API}/api/webhook`
+		: `https://${request.headers.get('host')}/api/webhook`;
 
-	const change_addr = fundingAddress;
-	console.log("Change address:", change_addr);
-
-	const vaultTokens = await fetchVaultedMneeUtxos();
-	const inputTokens = vaultTokens.map((token) => ({
-		txid: token.txid,
-		vout: token.vout,
-		satoshis: 1,
-		amt: token.data.bsv21.amt.toString(),
-		id: token.data.bsv21.id,
-		script: token.script,
-	})) as TokenUtxo[];
-
-	const distributions = [
-		{
-			address: new CosignTemplate().lock(address, PublicKey.fromString(config.approver)),
-      // This is already in sats format so we pass 0 decimals as a hack below
-			tokens: Number(amount),
-		},
-	] as Distribution[];
-
-	const changeAddress = fundingAddress;
-	const transferConfig = {
-		protocol: TokenType.BSV21,
-		tokenID: config.tokenId,
-    // We do not want 1sat to convert this again its already in sats format
-		decimals: 0,
-		utxos: funding_utxos,
-		inputTokens,
-		distributions,
-		paymentPk: pk,
-		ordPk: pk,
-		changeAddress,
-		tokenChangeAddress: changeAddress,
-	} as TransferOrdTokensConfig;
-
-  console.log({transferConfig})
-  let rawtx = "";
-  
-  try {
-    const mintResponse = await transferOrdTokens(transferConfig);
-
-    if (!mintResponse || !mintResponse.tx) {
-      // return an error without throwing
-      return {
-        success: false,
-        error: "Failed to mint MNEE",
-        rawtx: "",
-      };
-    }
-
-    const { tx } = mintResponse;
-    console.log("Signed transaction");
-
-     rawtx = tx.toHex();
-  } catch (error) {
-    console.error("Error during mint process:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
-      rawtx: "",
-    };
-  }
-	
-
+	const payload = {
+		rawtx: Buffer.from(response.txHex, 'hex').toString('base64'),
+		callback_url: webhookUrl,
+	}
+	console.log(payload)
 	try {
-
-
-		// broadcast & ingest
-		console.log("Broadcasting transaction");
-		const broadcastResponse = await fetch(`${MNEE_API}/v1/broadcast`, {
+		const res = await fetch(`${MNEE_API}/v1/mint`, {
 			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				rawtx: Buffer.from(rawtx, "hex").toString("base64"),
-			}),
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(payload),
 		});
 
-		if (!broadcastResponse.ok) {
-			const broadcastError = await broadcastResponse.text();
-			console.error("Broadcast failed:", broadcastError);
-
-			// Check if it's a double-spend error
-			try {
-				const errorJson = JSON.parse(broadcastError);
-				if (errorJson.message?.includes("double-spend")) {
-					console.log("Transaction was already broadcast");
-					// Don't throw - the transaction is already on chain
-					return { rawtx, success: true };
-				}
-			} catch (e) {
-				// If we can't parse the error, just continue with the normal error flow
-			}
-
+		const data = await res.json();
+		console.log("Mint Response:", data);
+		if (data?.error) {
 			return {
-				success: false,
-				error: broadcastError,
 				rawtx: "",
+				success: false,
+				error: data?.error
 			};
 		}
-
-		// save the new tx id to the db
-		try {
-			console.log("Updating config with latest minter tx");
-			await prisma.config.update({
-				where: { id: 1 },
-				data: { latestMinterTx: rawtx },
-			});
-		} catch (configError) {
-			console.error(
-				"Failed to update config with latest minter tx:",
-				configError,
-			);
-			// Don't throw here - the mint was successful, we just couldn't update the config
-			// This will be handled in the next mint attempt
-		}
-
-		return { success: true, rawtx };
-	} catch (error) {
-		console.error("Error during mint process:", error);
 		return {
-			success: false,
-			error: error instanceof Error ? error.message : "Unknown error",
+			rawtx: data,
+			success: true
+		};
+	} catch (error) {
+		return {
 			rawtx: "",
+			success: false,
+			error: error?.toString()
 		};
 	}
 };

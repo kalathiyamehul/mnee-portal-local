@@ -2,6 +2,7 @@
 
 import { useMemo, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
+import { toast } from "react-hot-toast";
 import DashboardHomeContent from "./content/home";
 import DashboardWalletContent from "./content/wallet";
 import DashboardAdminContent from "./content/admin";
@@ -13,7 +14,6 @@ import DashboardActivityContent from "./content/activity";
 import { Config } from "@prisma/client";
 import type { DashPage } from "@/types/dashboard";
 import { DashPages } from "@/types/dashboard";
-import CustomToast from "@/components/common/CustomToast";
 
 export type DashboardProps = {
   page: DashPage;
@@ -71,7 +71,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               break;
           }
 
-          CustomToast.error(message);
+          toast.error(message);
 
           // Sign out the user after a short delay
           setTimeout(() => {

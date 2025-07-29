@@ -4,7 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilePdf } from "react-icons/fa6";
 import { TbFileTypeCsv, TbFileTypePdf } from "react-icons/tb";
-import CustomToast from "./CustomToast";
+import { toast } from "react-hot-toast";
 
 interface ExportButtonsProps {
   data?: any[];
@@ -13,6 +13,7 @@ interface ExportButtonsProps {
   csvLabel?: string;
   pdfLabel?: string;
   onExport?: () => Promise<any[]>;
+  buttonLabel?: string;
 }
 
 export const ExportButtons: FC<ExportButtonsProps> = ({
@@ -21,6 +22,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
   className = "",
   csvLabel = "Export to CSV",
   pdfLabel = "Export to PDF",
+  buttonLabel = "Export",
   onExport,
 }) => {
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
       setLoading(true);
       const exportData = onExport ? await onExport() : data;
       if (!exportData?.length) {
-        CustomToast.error("No data to export");
+        toast.error("No data to export");
         return;
       }
       const csv = Papa.unparse(exportData);
@@ -44,7 +46,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
       document.body.removeChild(link);
     } catch (error) {
       // console.error("Error exporting CSV:", error);
-      CustomToast.error("Failed to export CSV");
+      toast.error("Failed to export CSV");
     } finally {
       setLoading(false);
     }
@@ -55,7 +57,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
       setLoading(true);
       const exportData = onExport ? await onExport() : data;
       if (!exportData?.length) {
-        CustomToast.error("No data to export");
+        toast.error("No data to export");
         return;
       }
 
@@ -94,7 +96,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
       doc.save(`${filename}.pdf`);
     } catch (error) {
       // console.error("Error exporting PDF:", error);
-      CustomToast.error("Failed to export PDF");
+      toast.error("Failed to export PDF");
     } finally {
       setLoading(false);
     }
@@ -111,7 +113,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
         {loading ? (
           <span className="loading loading-spinner loading-xs" />
         ) : (
-          "Export"
+          buttonLabel || "Export"
         )}
         <svg
           width="12px"
