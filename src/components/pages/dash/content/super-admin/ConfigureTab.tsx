@@ -36,6 +36,11 @@ const ConfigureTab = () => {
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [config, setConfig] = useState<Config>();
+  const [thresholdError, setThresholdError] = useState<string>("");
+
+  // Int4 range constants
+  const INT4_MIN = 1; // Minimum positive value for thresholds
+  const INT4_MAX = 2147483647; // Maximum int4 value
 
   // Enhanced validation with sequential range checking
   const validateAllItems = useCallback((): boolean => {
@@ -49,13 +54,22 @@ const ConfigureTab = () => {
       if (item.fee < 0) {
         itemErrors.fee = "Fee must be non-negative";
       }
+      if (item.fee > INT4_MAX) {
+        itemErrors.fee = `Fee cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`;
+      }
 
       if (item.max < 0) {
         itemErrors.max = "Max must be non-negative";
       }
+      if (item.max > Number.MAX_SAFE_INTEGER && item.max !== Number.MAX_SAFE_INTEGER) {
+        itemErrors.max = `Max cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`;
+      }
 
       if (item.min < 0) {
         itemErrors.min = "Min must be non-negative";
+      }
+      if (item.min > INT4_MAX) {
+        itemErrors.min = `Min cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`;
       }
 
       // Validate min <= max for current item
@@ -166,6 +180,12 @@ const ConfigureTab = () => {
     value: string
   ): void => {
     const numericValue = parseFloat(value) || 0;
+    
+    // Validate int4 range for fee and min fields (max can be infinity)
+    if ((field === 'fee' || field === 'min') && numericValue > INT4_MAX) {
+      return; // Don't update if outside int4 range
+    }
+    
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: numericValue };
     setItems(newItems);
@@ -309,6 +329,7 @@ const ConfigureTab = () => {
                     onClick={() => {
                       setEditingThreshold(threshold);
                       setIsEditing(true);
+                      setThresholdError(""); // Clear any previous errors
                     }}
                   >
                     Edit
@@ -422,6 +443,7 @@ const ConfigureTab = () => {
                       }`}
                       placeholder="Fee amount"
                       min="0"
+                      max={INT4_MAX}
                     />
                   ) : (
                     <p>{toToken(item?.fee, config?.decimals ?? 0)} MNEE</p>
@@ -446,6 +468,7 @@ const ConfigureTab = () => {
                       }`}
                       placeholder="Minimum"
                       min="0"
+                      max={INT4_MAX}
                     />
                   ) : (
                     <p>{toToken(item?.min, config?.decimals ?? 0)} MNEE</p>
@@ -518,7 +541,8 @@ const ConfigureTab = () => {
               </label>
               <input
                 type="number"
-                min="2"
+                min="1"
+                max={INT4_MAX}
                 step="1"
                 className="input input-bordered w-full"
                 value={editingThreshold?.value}
@@ -527,39 +551,64 @@ const ConfigureTab = () => {
                     e.preventDefault(); // Prevents typing decimal point or comma
                   }
                 }}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const inputValue = Number(e.target.value);
+                  
+                  // Clear previous error
+                  setThresholdError("");
+                  
+                  // Validate int4 range first
+                  if (inputValue < INT4_MIN) {
+                    setThresholdError(`Value must be at least ${INT4_MIN}`);
+                    return;
+                  }
+                  if (inputValue > INT4_MAX) {
+                    setThresholdError(`Value cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`);
+                    return;
+                  }
+                  
                   setEditingThreshold((prev) =>
                     prev
                       ? {
                           ...prev,
                           value: Math.max(
                             editingThreshold?.id === "1"
-                              ? 2 // Absolute minimum
+                              ? 2 // Absolute minimum for min approvals
                               : editingThreshold?.id === "2"
                               ? (thresholds.find((t) => t.id === "1")?.value ??
                                   2) + 1 // Min = threshold1 + 1
                               : 2,
                             Math.min(
                               editingThreshold?.id === "1"
-                                ? (thresholds.find((t) => t.id === "2")
-                                    ?.value ?? Infinity) - 1 // Max = threshold2 - 1
-                                : Infinity,
-                              Number(e.target.value)
+                                ? Math.min(
+                                    (thresholds.find((t) => t.id === "2")
+                                      ?.value ?? INT4_MAX) - 1, // Max = threshold2 - 1
+                                    INT4_MAX
+                                  )
+                                : INT4_MAX,
+                              inputValue
                             )
                           ),
                         }
                       : null
-                  )
-                }
+                  );
+                }}
               />
+              {thresholdError && (
+                <p className="text-red-500 text-sm mt-1">{thresholdError}</p>
+              )}
             </div>
             <div className="modal-action">
-              <button className="btn" onClick={() => setIsEditing(false)}>
+              <button className="btn" onClick={() => {
+                setIsEditing(false);
+                setThresholdError(""); // Clear errors when canceling
+              }}>
                 Cancel
               </button>
               <button
                 className="btn btn-primary"
                 onClick={handleUpdateThreshold}
+                disabled={!!thresholdError}
               >
                 Save Changes
               </button>
