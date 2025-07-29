@@ -11,9 +11,9 @@ interface Threshold {
 }
 
 interface FeeItem {
-  fee: number;
-  max: number;
-  min: number;
+  fee: number | string;
+  max: number | string;
+  min: number | string;
 }
 
 interface ValidationErrors {
@@ -50,61 +50,88 @@ const ConfigureTab = () => {
       const itemErrors: { fee?: string; max?: string; min?: string } = {};
       const previousItem = index > 0 ? items[index - 1] : null;
 
-      // Basic validations
-      if (item.fee < 0) {
-        itemErrors.fee = "Fee must be non-negative";
+      // Convert string values to numbers for validation
+      const feeValue = typeof item.fee === 'string' ? (item.fee === '' ? NaN : parseFloat(item.fee)) : item.fee;
+      const maxValue = typeof item.max === 'string' ? (item.max === '' ? NaN : parseFloat(item.max)) : item.max;
+      const minValue = typeof item.min === 'string' ? (item.min === '' ? NaN : parseFloat(item.min)) : item.min;
+      const prevFeeValue = previousItem ? (typeof previousItem.fee === 'string' ? (previousItem.fee === '' ? NaN : parseFloat(previousItem.fee)) : previousItem.fee) : NaN;
+      const prevMaxValue = previousItem ? (typeof previousItem.max === 'string' ? (previousItem.max === '' ? NaN : parseFloat(previousItem.max)) : previousItem.max) : NaN;
+
+      // Check for empty fields
+      if (item.fee === '' || isNaN(feeValue)) {
+        itemErrors.fee = "Fee is required";
       }
-      if (item.fee > INT4_MAX) {
-        itemErrors.fee = `Fee cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`;
+      if (item.max === '' || isNaN(maxValue)) {
+        itemErrors.max = "Max is required";
+      }
+      if (item.min === '' || isNaN(minValue)) {
+        itemErrors.min = "Min is required";
       }
 
-      if (item.max < 0) {
-        itemErrors.max = "Max must be non-negative";
-      }
-      if (item.max > Number.MAX_SAFE_INTEGER && item.max !== Number.MAX_SAFE_INTEGER) {
-        itemErrors.max = `Max cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`;
-      }
-
-      if (item.min < 0) {
-        itemErrors.min = "Min must be non-negative";
-      }
-      if (item.min > INT4_MAX) {
-        itemErrors.min = `Min cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`;
+      // Basic validations (only if values are valid numbers)
+      if (!isNaN(feeValue)) {
+        if (feeValue < 0) {
+          itemErrors.fee = "Fee must be non-negative";
+        }
+        if (feeValue > INT4_MAX) {
+          itemErrors.fee = `Fee cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`;
+        }
       }
 
-      // Validate min <= max for current item
-      if (item.min > item.max) {
+      if (!isNaN(maxValue)) {
+        if (maxValue < 0) {
+          itemErrors.max = "Max must be non-negative";
+        }
+        if (maxValue > Number.MAX_SAFE_INTEGER && maxValue !== Number.MAX_SAFE_INTEGER) {
+          itemErrors.max = `Max cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`;
+        }
+      }
+
+      if (!isNaN(minValue)) {
+        if (minValue < 0) {
+          itemErrors.min = "Min must be non-negative";
+        }
+        if (minValue > INT4_MAX) {
+          itemErrors.min = `Min cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`;
+        }
+      }
+
+      // Validate min <= max for current item (only if both are valid numbers)
+      if (!isNaN(minValue) && !isNaN(maxValue) && minValue > maxValue) {
         itemErrors.min = "Min cannot be greater than Max";
       }
 
-      // Sequential range validations (only if we have a previous item)
-      if (previousItem) {
+      // Sequential range validations (only if we have a previous item and values are valid)
+      if (previousItem && !isNaN(feeValue) && !isNaN(prevFeeValue)) {
         // Fee must be greater than previous item's fee
-        if (item.fee <= previousItem.fee) {
-          itemErrors.fee = `Fee must be greater than ${previousItem.fee} (previous item's fee)`;
+        if (feeValue <= prevFeeValue) {
+          itemErrors.fee = `Fee must be greater than ${prevFeeValue} (previous item's fee)`;
         }
+      }
 
+      if (previousItem && !isNaN(minValue) && !isNaN(prevMaxValue)) {
         // Min must be greater than previous item's max
-        if (item.min <= previousItem.max) {
-          itemErrors.min = `Min must be greater than ${previousItem.max} (previous item's max)`;
+        if (minValue <= prevMaxValue) {
+          itemErrors.min = `Min must be greater than ${prevMaxValue} (previous item's max)`;
         }
+      }
 
+      if (!isNaN(maxValue) && !isNaN(minValue)) {
         // Additional check: current max should be greater than current min
-        // This is already covered above, but adding for clarity
-        if (item.max <= item.min) {
+        if (maxValue <= minValue) {
           itemErrors.max = "Max must be greater than Min";
         }
       }
 
-      // For the first item, ensure min starts from 0
-      if (index === 0 && item.min !== 0) {
+      // For the first item, ensure min starts from 0 (only if value is valid)
+      if (index === 0 && !isNaN(minValue) && minValue !== 0) {
         itemErrors.min = "First item's min must be 0";
       }
 
-      // Add validation to ensure no gaps in ranges
-      if (previousItem && item.min !== previousItem.max + 1) {
+      // Add validation to ensure no gaps in ranges (only if both values are valid)
+      if (previousItem && !isNaN(minValue) && !isNaN(prevMaxValue) && minValue !== prevMaxValue + 1) {
         itemErrors.min = `Min should be ${
-          previousItem.max + 1
+          prevMaxValue + 1
         } to maintain sequential range`;
       }
 
@@ -117,14 +144,17 @@ const ConfigureTab = () => {
     for (let i = 0; i < items.length - 1; i++) {
       const currentItem = items[i];
       const nextItem = items[i + 1];
+      
+      const currentMaxValue = typeof currentItem.max === 'string' ? (currentItem.max === '' ? NaN : parseFloat(currentItem.max)) : currentItem.max;
+      const nextMinValue = typeof nextItem.min === 'string' ? (nextItem.min === '' ? NaN : parseFloat(nextItem.min)) : nextItem.min;
 
-      if (currentItem.max >= nextItem.min) {
+      if (!isNaN(currentMaxValue) && !isNaN(nextMinValue) && currentMaxValue >= nextMinValue) {
         if (!newErrors[i + 1]) {
           newErrors[i + 1] = {};
         }
         newErrors[
           i + 1
-        ].min = `Range overlaps with previous item. Min should be greater than ${currentItem.max}`;
+        ].min = `Range overlaps with previous item. Min should be greater than ${currentMaxValue}`;
       }
     }
 
@@ -142,11 +172,13 @@ const ConfigureTab = () => {
   // Add new item
   const addNewItem = (): void => {
     const lastItem = items[items.length - 1];
-    const nextMax = lastItem ? lastItem.max + 1000 : 1000;
+    const lastMaxValue = lastItem ? (typeof lastItem.max === 'string' ? parseFloat(lastItem.max) || 0 : lastItem.max) : 0;
+    const lastFeeValue = lastItem ? (typeof lastItem.fee === 'string' ? parseFloat(lastItem.fee) || 0 : lastItem.fee) : 0;
+    const nextMax = lastItem ? lastMaxValue + 1000 : 1000;
     const newItem: FeeItem = {
-      fee: lastItem ? lastItem.fee + 1 : 0,
+      fee: lastItem ? lastFeeValue + 1 : 0,
       max: Math.min(nextMax, Number.MAX_SAFE_INTEGER),
-      min: lastItem ? lastItem.max + 1 : 0,
+      min: lastItem ? lastMaxValue + 1 : 0,
     };
     setItems([...items, newItem]);
   };
@@ -179,10 +211,23 @@ const ConfigureTab = () => {
     field: keyof FeeItem,
     value: string
   ): void => {
-    const numericValue = parseFloat(value) || 0;
+    // Handle empty string case - allow empty values
+    if (value === '') {
+      const newItems = [...items];
+      newItems[index] = { ...newItems[index], [field]: '' };
+      setItems(newItems);
+      return;
+    }
+    
+    const numericValue = parseFloat(value);
+    
+    // Check if the value is a valid number
+    if (isNaN(numericValue)) {
+      return; // Don't update if not a valid number
+    }
     
     // Validate int4 range for fee and min fields (max can be infinity)
-    if ((field === 'fee' || field === 'min') && numericValue > INT4_MAX) {
+    if ((field === 'fee' || field === 'min') && !isNaN(numericValue) && numericValue > INT4_MAX) {
       return; // Don't update if outside int4 range
     }
     
@@ -268,13 +313,20 @@ const ConfigureTab = () => {
     }
 
     try {
+      // Convert string values back to numbers for API submission
+      const numericItems = items.map(item => ({
+        fee: typeof item.fee === 'string' ? parseFloat(item.fee) || 0 : item.fee,
+        max: typeof item.max === 'string' ? parseFloat(item.max) || 0 : item.max,
+        min: typeof item.min === 'string' ? parseFloat(item.min) || 0 : item.min,
+      }));
+
       const response = await apiFetch("/api/config", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          feeStructure: items,
+          feeStructure: numericItems,
         }),
       });
 
@@ -446,7 +498,7 @@ const ConfigureTab = () => {
                       max={INT4_MAX}
                     />
                   ) : (
-                    <p>{toToken(item?.fee, config?.decimals ?? 0)} MNEE</p>
+                    <p>{toToken(typeof item?.fee === 'string' ? parseFloat(item.fee) || 0 : item?.fee, config?.decimals ?? 0)} MNEE</p>
                   )}
                   {errors[index]?.fee && (
                     <p className="text-red-500 text-xs mt-1">
@@ -471,7 +523,7 @@ const ConfigureTab = () => {
                       max={INT4_MAX}
                     />
                   ) : (
-                    <p>{toToken(item?.min, config?.decimals ?? 0)} MNEE</p>
+                    <p>{toToken(typeof item?.min === 'string' ? parseFloat(item.min) || 0 : item?.min, config?.decimals ?? 0)} MNEE</p>
                   )}
                   {errors[index]?.min && (
                     <p className="text-red-500 text-xs mt-1">
@@ -488,10 +540,7 @@ const ConfigureTab = () => {
                       value={item.max}
                       max={Number.MAX_SAFE_INTEGER}
                       onChange={(e) => {
-                        let value = Number(e.target.value);
-                        if (value > Number.MAX_SAFE_INTEGER)
-                          value = Number.MAX_SAFE_INTEGER;
-                        updateItem(index, "max", value.toString());
+                        updateItem(index, "max", e.target.value);
                       }}
                       className={`input input-bordered w-full ${
                         errors[index]?.max &&
@@ -502,9 +551,9 @@ const ConfigureTab = () => {
                     />
                   ) : (
                     <p>
-                      {item?.max === Number.MAX_SAFE_INTEGER
+                      {(typeof item?.max === 'number' ? item.max : parseFloat(item.max) || 0) === Number.MAX_SAFE_INTEGER
                         ? "∞"
-                        : `${toToken(item.max, config?.decimals ?? 0)} MNEE`}
+                        : `${toToken(typeof item?.max === 'string' ? parseFloat(item.max) || 0 : item.max, config?.decimals ?? 0)} MNEE`}
                     </p>
                   )}
                   {errors[index]?.max && (
