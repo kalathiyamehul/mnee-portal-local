@@ -26,7 +26,8 @@ export const POST = async function (request: Request) {
 		console.log("Unauthorized: No session or user ID");
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
-	let mintRequestId: string;
+
+	let mintRequestId: string = "";
 	try {
 		const { mintRequestId: requestId } = await request.json();
 		mintRequestId = requestId;
@@ -102,59 +103,82 @@ export const POST = async function (request: Request) {
 					approvedBy: session.user.id,
 				},
 			});
-
 			await logActivity(tx, {
 				action: ActivityAction.MINT_REQUEST_APPROVE,
 				metadata: {
 					mintRequestId,
 				},
 			});
-
 			// Check if we have enough approvals
 			const approvalsCount = await tx.actionApproval.count({
 				where: { mintRequestId },
 			});
+			console.log("approvalsCount", approvalsCount);
 			if (approvalsCount === mintRequest.no_of_approvals) {
 				// Update request status to APPROVED
 				try {
+					console.log("Starting minting process for request:", mintRequestId);
 					const { rawtx, error, success } = await mintMnee(
 						mintRequest.amount,
 						mintRequest.address,
 						request,
 					);
 
-					if (error) {
-						throw new Error(error);
-					}
-					if (success) {
-						await tx.mintRequest.update({
-							where: { id: mintRequestId },
-							data: { status: "APPROVED" },
-						});
+					console.log("Mint result:", { success, error, rawtxLength: rawtx?.length });
 
-						await logActivity(tx, {
-							action: ActivityAction.MINT_REQUEST_FULLY_APPROVED,
-							metadata: {
-								mintRequestId,
-								approvalsCount,
-							},
-						});
-						await tx.mintRequest.update({
-							where: { id: mintRequestId },
-							data: {
-								updatedAt: new Date(),
-								txid: rawtx,
-							},
-						});
-						return { status: "DONE", approvalsCount, minterTx: rawtx, approval };
+					if (error) {
+						console.error("Mint operation failed with error:", error);
+						throw new Error(`Mint operation failed: ${error}`);
 					}
+
+					if (!success) {
+						console.error("Mint operation was not successful");
+						throw new Error("Mint operation was not successful");
+					}
+
+					if (!rawtx) {
+						console.error("No transaction returned from mint operation");
+						throw new Error("No transaction returned from mint operation");
+					}
+
+					console.log("Updating mint request status to APPROVED");
+					await tx.mintRequest.update({
+						where: { id: mintRequestId },
+						data: { status: "APPROVED" },
+					});
+
+					await logActivity(tx, {
+						action: ActivityAction.MINT_REQUEST_FULLY_APPROVED,
+						metadata: {
+							mintRequestId,
+							approvalsCount,
+						},
+					});
+
+					console.log("Updating mint request with transaction ID");
+					await tx.mintRequest.update({
+						where: { id: mintRequestId },
+						data: {
+							updatedAt: new Date(),
+							txid: rawtx,
+						},
+					});
+
+					console.log("Mint process completed successfully");
+					return { status: "DONE", approvalsCount, minterTx: rawtx, approval };
 				} catch (error) {
-					console.error("Error during minting:", error);
-					const errorMessage =
-						error instanceof Error
-							? error.message.replace(/^Error:\s*/, "")
-							: "Transaction submission failed";
-					throw new Error(errorMessage);
+					const mintError = error instanceof Error ? error.message : String(error || 'Unknown minting error');
+					console.error("Error during minting process:", {
+						mintRequestId: mintRequestId || 'unknown',
+						error: mintError,
+						errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+						errorType: typeof error,
+						errorName: error instanceof Error ? error.name : 'Unknown'
+					});
+
+					// Clean up the error message for user display
+					const cleanErrorMessage = mintError.replace(/^Error:\s*/, "").replace(/^Mint operation failed:\s*/, "");
+					throw new Error(cleanErrorMessage);
 				}
 			}
 
@@ -181,12 +205,21 @@ export const POST = async function (request: Request) {
 				result.status === "APPROVED" ? "Request approved" : "Approval recorded",
 		});
 	} catch (error) {
-		console.error("Error processing approval:", error);
+		// Ensure we have a proper error message to log
+		const errorMessage = error instanceof Error ? error.message : String(error || 'Unknown error occurred');
+		// Safely log error information without null values
+		console.error("Error processing approval:", {
+			mintRequestId: mintRequestId || 'unknown',
+			error: errorMessage,
+			errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+			errorType: typeof error,
+			errorName: error instanceof Error ? error.name : 'Unknown'
+		});
+
 		return NextResponse.json(
 			{
 				success: false,
-				error:
-					error instanceof Error ? error.message : "Failed to process approval",
+				error: errorMessage,
 			},
 			{
 				status:
@@ -208,57 +241,166 @@ const mintMnee = async (
 ): Promise<{ success: boolean; rawtx: string; error?: string }> => {
 	console.log("Starting mintMnee:", { amount: amount.toString(), address });
 	// Fetching remote config
-	const mintPk = PrivateKey.fromWif(await getMintWif());
-	const approverPk = PublicKey.fromString(APPROVER_PUBKEY);
-	const config = await prisma.config.findFirst();
-	if (!config) {
-		throw new Error("Config not found");
-	}
-	const latestMinterTx = config?.latestMinterTx;
-	// QA-: "0100000002ebb1d72cac15f83534e3d067a84fc86fc6e2db0fb30029150106b0c098846b7e010000006b48304502210093da3a3054dda9c062e8c1d853f3f216c50c475d8f3fc5ccf7d49a7ddedea39302207d9747b830030fd4c9ffcb1fceb71333312b2bdfa16682c1ce83e1982baecd92c12102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ffffffff4c6e48d1ca0a3799add2c494ed5e7627d6e3dbd4245c4829ee7252fbfb14f47d010000006b483045022100c144758f75e311382ea7829b9034c0e7202bd0785fdca07091f8c42b49d5add802206f1184abf309e3970d30650294283b01d95feb6900cda4fd678849bae9ac5d52c12102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ffffffff030100000000000000d90063036f726451126170706c69636174696f6e2f6273762d3230004c7f7b2270223a226273762d3230222c226f70223a227472616e73666572222c22616d74223a223232313231323231323030303030222c226964223a22363463656131346162303136393735643039323036306663633134663061363138366138636566306463633664366165346133653836363831323839616531345f30227d6876a914a2455cf1b8bc508a7d3d7c469fb4c4feb800eef288ad2102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ac0100000000000000bc0063036f726451126170706c69636174696f6e2f6273762d3230004c857b2270223a226273762d3230222c226f70223a227472616e73666572222c22616d74223a223138343436373231313936313139323030303030222c226964223a22363463656131346162303136393735643039323036306663633134663061363138366138636566306463633664366165346133653836363831323839616531345f30227d6876a9147332d7a5bb41ca58892be9ab9de6d8d05489930a88ac6ffc0200000000001976a9147332d7a5bb41ca58892be9ab9de6d8d05489930a88ac00000000"
-	const tx = await parseTransaction(latestMinterTx);
-	let inscriptions = tx?.inscriptions?.[1];
-	if (!inscriptions) {
-		inscriptions = tx?.inscriptions?.[0];
-	}
-	if (!inscriptions) {
+	console.log("Initializing mint operation with private keys and config");
+
+	let mintPk: PrivateKey;
+	let approverPk: PublicKey;
+	let config: any;
+	let latestMinterTx: string;
+	let tx: any;
+	let inscriptions: any;
+
+	try {
+		mintPk = PrivateKey.fromWif(await getMintWif());
+		approverPk = PublicKey.fromString(APPROVER_PUBKEY);
+		config = await prisma.config.findFirst();
+		if (!config) {
+			console.error("Config not found in database");
+			return {
+				rawtx: "",
+				success: false,
+				error: "System configuration not found"
+			};
+		}
+
+		latestMinterTx = config?.latestMinterTx;
+		if (!latestMinterTx) {
+			console.error("Latest minter transaction not found in config");
+			return {
+				rawtx: "",
+				success: false,
+				error: "Latest minter transaction not found"
+			};
+		}
+
+		console.log("Parsing latest minter transaction");
+		// QA-: "0100000002ebb1d72cac15f83534e3d067a84fc86fc6e2db0fb30029150106b0c098846b7e010000006b48304502210093da3a3054dda9c062e8c1d853f3f216c50c475d8f3fc5ccf7d49a7ddedea39302207d9747b830030fd4c9ffcb1fceb71333312b2bdfa16682c1ce83e1982baecd92c12102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ffffffff4c6e48d1ca0a3799add2c494ed5e7627d6e3dbd4245c4829ee7252fbfb14f47d010000006b483045022100c144758f75e311382ea7829b9034c0e7202bd0785fdca07091f8c42b49d5add802206f1184abf309e3970d30650294283b01d95feb6900cda4fd678849bae9ac5d52c12102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ffffffff030100000000000000d90063036f726451126170706c69636174696f6e2f6273762d3230004c7f7b2270223a226273762d3230222c226f70223a227472616e73666572222c22616d74223a223232313231323231323030303030222c226964223a22363463656131346162303136393735643039323036306663633134663061363138366138636566306463633664366165346133653836363831323839616531345f30227d6876a914a2455cf1b8bc508a7d3d7c469fb4c4feb800eef288ad2102b92c2dbded4e81747d4d58ab41923f1ec014ac2c3b37db61e414028b5bda8533ac0100000000000000bc0063036f726451126170706c69636174696f6e2f6273762d3230004c857b2270223a226273762d3230222c226f70223a227472616e73666572222c22616d74223a223138343436373231313936313139323030303030222c226964223a22363463656131346162303136393735643039323036306663633134663061363138366138636566306463633664366165346133653836363831323839616531345f30227d6876a9147332d7a5bb41ca58892be9ab9de6d8d05489930a88ac6ffc0200000000001976a9147332d7a5bb41ca58892be9ab9de6d8d05489930a88ac00000000"
+		tx = await parseTransaction(latestMinterTx);
+		if (!tx) {
+			console.error("Failed to parse latest minter transaction");
+			return {
+				rawtx: "",
+				success: false,
+				error: "Failed to parse latest minter transaction"
+			};
+		}
+
+		inscriptions = tx?.inscriptions?.[1];
+		if (!inscriptions) {
+			inscriptions = tx?.inscriptions?.[0];
+		}
+		if (!inscriptions) {
+			console.error("No inscriptions found in transaction");
+			return {
+				rawtx: "",
+				success: false,
+				error: "Token inscriptions not found in transaction"
+			};
+		}
+	} catch (error) {
+		const initError = error instanceof Error ? error.message : String(error || 'Unknown initialization error');
+		console.error("Error during mint initialization:", {
+			error: initError,
+			errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+			errorType: typeof error,
+			errorName: error instanceof Error ? error.name : 'Unknown'
+		});
 		return {
 			rawtx: "",
 			success: false,
-			error: "Inscriptions not found"
+			error: `Initialization failed: ${initError}`
 		};
 	}
-	let currentSupply = BigInt(0);
-	if (inscriptions?.metadata) {
-		currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
-	} else {
-		//Handle for QR and Prodution
-		const databaseMint = await prisma.mintRequest.aggregate({
-			where: {
-				status: "DONE"
-			},
-			_sum: {
-				amount: true
-			}
+	console.log("Calculating supply and creating mint operation");
+	let response: any;
+
+	try {
+		let currentSupply = BigInt(0);
+		if (inscriptions?.metadata) {
+			currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
+		} else {
+			//Handle for QR and Production 
+			console.log("Fetching current supply from database");
+			const databaseMint = await prisma.mintRequest.aggregate({
+				where: {
+					status: "DONE"
+				},
+				_sum: {
+					amount: true
+				}
+			});
+			currentSupply = databaseMint._sum.amount || BigInt(0);
+		}
+
+		if (!inscriptions?.amt) {
+			console.error("Token amount not found in inscriptions");
+			return {
+				rawtx: "",
+				success: false,
+				error: "Token amount not found in inscriptions"
+			};
+		}
+
+		const currectTotalSupply = BigInt(inscriptions.amt);
+		let latestDeployTokenTxOp = tx?.outputIndex;
+		const totalSupply = currentSupply + BigInt(amount);
+		const currectAvailableSupply = currectTotalSupply - BigInt(amount);
+
+		console.log("Supply calculation:", {
+			currentSupply: currentSupply.toString(),
+			currectTotalSupply: currectTotalSupply.toString(),
+			mintAmount: amount.toString(),
+			totalSupply: totalSupply.toString(),
+			currectAvailableSupply: currectAvailableSupply.toString()
 		});
-		currentSupply = databaseMint._sum.amount || BigInt(0);
+
+		if (currectAvailableSupply < 0n) {
+			console.error("Insufficient available supply for minting");
+			return {
+				rawtx: "",
+				success: false,
+				error: "Insufficient available supply for minting"
+			};
+		}
+
+		console.log("Creating mint operation");
+		response = await createMintOp(
+			amount,
+			latestMinterTx,
+			latestDeployTokenTxOp,
+			address,
+			config.tokenId,
+			mintPk,
+			approverPk,
+			totalSupply,
+			currectAvailableSupply,
+			config.mintAddress
+		);
+
+		if (!response || !response.txHex) {
+			console.error("Invalid response from createMintOp");
+			return {
+				rawtx: "",
+				success: false,
+				error: "Failed to create mint transaction"
+			};
+		}
+
+		console.log("Mint operation created successfully, transaction hex length:", response.txHex.length);
+	} catch (error) {
+		const supplyError = error instanceof Error ? error.message : String(error || 'Unknown supply calculation error');
+		console.error("Error during supply calculation or mint operation creation:", {
+			error: supplyError,
+			errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+			errorType: typeof error,
+			errorName: error instanceof Error ? error.name : 'Unknown'
+		});
+		return {
+			rawtx: "",
+			success: false,
+			error: `Supply calculation failed: ${supplyError}`
+		};
 	}
-	const currectTotalSupply = BigInt(inscriptions?.amt);
-	let latestDeployTokenTxOp = tx?.outputIndex;
-	const totalSupply = currentSupply + BigInt(amount)
-	const currectAvailableSupply = currectTotalSupply - BigInt(amount);
-	const response = await createMintOp(
-		amount,
-		latestMinterTx,
-		latestDeployTokenTxOp,
-		address,
-		config.tokenId,
-		mintPk,
-		approverPk,
-		totalSupply,
-		currectAvailableSupply,
-		config.mintAddress
-	);
 	const isLocal = process.env.NEXT_PUBLIC_ENV === "local";
 	const webhookUrl = isLocal
 		? `${MNEE_WEBHOOK_API}/api/webhook`
@@ -270,6 +412,7 @@ const mintMnee = async (
 	}
 	console.log(payload)
 	try {
+		console.log("Sending mint request to MNEE API:", `${MNEE_API}/v1/mint`);
 		const res = await fetch(`${MNEE_API}/v1/mint`, {
 			method: "POST",
 			headers: {
@@ -278,24 +421,60 @@ const mintMnee = async (
 			body: JSON.stringify(payload),
 		});
 
-		const data = await res.json();
-		console.log("Mint Response:", data);
-		if (data?.error) {
+		console.log("MNEE API Response status:", res.status, res.statusText);
+
+		if (!res.ok) {
+			const errorText = await res.text();
+			console.error("MNEE API returned error status:", {
+				status: res.status,
+				statusText: res.statusText,
+				errorText
+			});
 			return {
 				rawtx: "",
 				success: false,
-				error: data?.error
+				error: `MNEE API error (${res.status}): ${errorText || res.statusText}`
 			};
 		}
+
+		const data = await res.json();
+		console.log("Mint Response:", data);
+
+		if (data?.error) {
+			console.error("MNEE API returned error in response:", data.error);
+			return {
+				rawtx: "",
+				success: false,
+				error: data.error
+			};
+		}
+
+		if (!data) {
+			console.error("MNEE API returned empty response");
+			return {
+				rawtx: "",
+				success: false,
+				error: "Empty response from MNEE API"
+			};
+		}
+
+		console.log("Mint operation successful, transaction ID:", data);
 		return {
 			rawtx: data,
 			success: true
 		};
 	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error || 'Unknown fetch error');
+		console.error("Error calling MNEE API:", {
+			error: errorMessage,
+			errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+			errorType: typeof error,
+			errorName: error instanceof Error ? error.name : 'Unknown'
+		});
 		return {
 			rawtx: "",
 			success: false,
-			error: error?.toString()
+			error: `Network error: ${errorMessage}`
 		};
 	}
 };
