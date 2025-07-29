@@ -184,7 +184,7 @@ export const POST = async function (request: Request) {
 
 			console.log("Not enough approvals yet, staying in PENDING state");
 			return { status: "PENDING", approvalsCount, approval };
-		});
+		}, { timeout: 60000 });
 		const approval = await prisma.actionApproval.findUnique({
 			where: {
 				id: result.approval.id,
@@ -249,6 +249,7 @@ const mintMnee = async (
 	let latestMinterTx: string;
 	let tx: any;
 	let inscriptions: any;
+	let migration: any
 
 	try {
 		mintPk = PrivateKey.fromWif(await getMintWif());
@@ -316,6 +317,7 @@ const mintMnee = async (
 
 	try {
 		let currentSupply = BigInt(0);
+		let latestDeployTokenTxOp = tx?.outputIndex;
 		if (inscriptions?.metadata) {
 			currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
 		} else {
@@ -330,6 +332,8 @@ const mintMnee = async (
 				}
 			});
 			currentSupply = databaseMint._sum.amount || BigInt(0);
+			migration = true;
+			latestDeployTokenTxOp = latestDeployTokenTxOp - 1;
 		}
 
 		if (!inscriptions?.amt) {
@@ -342,7 +346,6 @@ const mintMnee = async (
 		}
 
 		const currectTotalSupply = BigInt(inscriptions.amt);
-		let latestDeployTokenTxOp = tx?.outputIndex;
 		const totalSupply = currentSupply + BigInt(amount);
 		const currectAvailableSupply = currectTotalSupply - BigInt(amount);
 
@@ -409,6 +412,7 @@ const mintMnee = async (
 	const payload = {
 		rawtx: Buffer.from(response.txHex, 'hex').toString('base64'),
 		callback_url: webhookUrl,
+		...(migration && { migration: true })
 	}
 	console.log(payload)
 	try {
