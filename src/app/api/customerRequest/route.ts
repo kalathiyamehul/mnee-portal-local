@@ -16,7 +16,7 @@ export const POST = withCSRF( async function(request: Request) {
 
   try {
     const body = await request.json();
-    const { name, address, action = "CREATE", customerId } = body;
+    const { name, address, action = "CREATE", customerId, noOfApproval } = body;
     const config = await getConfig();
 
     // Check if customer already exists (by email or address)
@@ -45,7 +45,7 @@ export const POST = withCSRF( async function(request: Request) {
           action,
           customerId,
           requestedBy: session.user.id,
-          no_of_approvals: config?.minNoOfApproval || 2,
+          no_of_approvals: noOfApproval || 2,
         }
       });
 

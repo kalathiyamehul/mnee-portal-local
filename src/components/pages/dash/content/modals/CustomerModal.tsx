@@ -23,7 +23,6 @@ export function CustomerModal({
   onSuccess,
 }: CustomerModalProps) {
   const { createCustomer, updateCustomer } = useCustomer();
-  const [no_of_approvals, setnoOfApprovals] = useState("");
   const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState<{
     minNoOfApproval: number;
@@ -61,7 +60,7 @@ export function CustomerModal({
   const [formData, setFormData] = useState({
     name: customer?.name || "",
     address: customer?.address || "",
-    noOfApproval: customer?.noOfApproval || 2, // Add noOfApproval field with default
+    noOfApproval: customer?.noOfApproval || config?.minNoOfApproval || 2, // Add noOfApproval field with default
   });
 
   // Validation functions
@@ -70,13 +69,6 @@ export function CustomerModal({
     if (name.length > 50) return "Name must be less than 50 characters";
     // Unicode letters, marks, spaces, hyphens, apostrophes
     if (!/^[\p{L}\p{M}\s'-]+$/u.test(name)) return "Name can only contain letters, spaces, hyphens and apostrophes";
-    return "";
-  };
-
-  const validateEmail = (email: string) => {
-    // Allow Unicode letters, numbers, ., _, and - before @
-    if (!/^[\p{L}\p{N}._-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}$/u.test(email)) return "Please enter a valid email address";
-    if (email.length > 255) return "Email is too long";
     return "";
   };
 
@@ -240,29 +232,43 @@ export function CustomerModal({
                 <input
                   type="number"
                   className="input input-bordered w-full max-w-md"
-                  value={no_of_approvals}
+                  value={formData.noOfApproval}
                   onChange={(e) => {
-                    let value = e.target.value;
+                    const value = e.target.value;
                     // Only allow non-negative integers
                     if (/^\d*$/.test(value)) {
-                      let num = parseInt(value, 10);
+                      const num = parseInt(value, 10);
+                      if (isNaN(num) && value !== "") {
+                        return; // Don't update if invalid
+                      }
+
+                      if (value === "") {
+                        handleInputChange("noOfApproval", "");
+                        return;
+                      }
+
                       if (
-                        isNaN(num) ||
-                        (config && num < config.minNoOfApproval)
+                        config?.minNoOfApproval &&
+                        num < config.minNoOfApproval
                       ) {
-                        setnoOfApprovals(
-                          config?.minNoOfApproval?.toString() || ""
+                        handleInputChange(
+                          "noOfApproval",
+                          config.minNoOfApproval
                         );
-                      } else if (
+                        return;
+                      }
+
+                      if (
                         config?.maxNoOfApproval &&
                         num > config.maxNoOfApproval
                       ) {
                         toast.error(
-                          `No of Approvals must be less than or equal to ${config?.maxNoOfApproval}`
+                          `No of Approvals must be less than or equal to ${config.maxNoOfApproval}`
                         );
-                      } else {
-                        setnoOfApprovals(value);
+                        return;
                       }
+
+                      handleInputChange("noOfApproval", num);
                     }
                   }}
                   placeholder={`Enter no_of_approvals value (between ${config?.minNoOfApproval} and ${config?.maxNoOfApproval})`}

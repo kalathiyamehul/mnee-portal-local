@@ -76,7 +76,7 @@ export const POST = withCSRF(async function(request: Request) {
       });
 
       await logActivity(tx, {
-        action: ActivityAction.BLACKLIST_REQUEST_CREATE,
+        action: action === 'UNBLACKLIST' ? ActivityAction.UNBLACKLIST_REQUEST_CREATE : ActivityAction.BLACKLIST_REQUEST_CREATE,
         metadata: {
           blacklistRequestId: blacklistRequest.id,
           address,
