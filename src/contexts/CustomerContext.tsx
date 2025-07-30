@@ -117,7 +117,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         // console.log("SSE connection established"); 
       };
 
-      eventSource.addEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
+      const handleCustomerUpdate = (event: MessageEvent) => {
         try {
           const data = JSON.parse(event.data);
           const { type } = data;
@@ -127,7 +127,9 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         } catch (error) {
           // console.error("Error handling SSE event:", error);
         }
-      });
+      };
+
+      eventSource.addEventListener(EVENTS.CUSTOMER_UPDATE, handleCustomerUpdate);
   
       // Handle errors
       eventSource.onerror = (error) => {
@@ -138,12 +140,10 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       // Clean up on unmount
       return () => {
         // console.log("Closing SSE connection");
+        eventSource.removeEventListener(EVENTS.CUSTOMER_UPDATE, handleCustomerUpdate);
         eventSource.close();
-        eventSource.removeEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
-          // console.log(EVENTS.CUSTOMER_UPDATE, event);
-        });
       };
-    }, [fetchCustomers]);
+    }, [pagination.page, pagination.limit]);
 
   const getCustomer = useCallback(
     async (id: string) => {
@@ -251,4 +251,4 @@ export function useCustomer() {
     throw new Error('useCustomer must be used within a CustomerProvider');
   }
   return context;
-} 
+}

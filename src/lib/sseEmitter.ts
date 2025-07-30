@@ -4,6 +4,8 @@ import { EventEmitter } from "events";
 const globalEmitter = global as any;
 if (!globalEmitter.sseEmitter) {
     globalEmitter.sseEmitter = new EventEmitter();
+    // Set max listeners to prevent memory leak warnings
+    globalEmitter.sseEmitter.setMaxListeners(50);
 }
 export const emitter = globalEmitter.sseEmitter;
 

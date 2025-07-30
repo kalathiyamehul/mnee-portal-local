@@ -15,6 +15,8 @@ export async function GET(req: NextRequest) {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
         "Connection": "keep-alive",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Cache-Control",
     });
 
     // Create a readable stream
@@ -101,21 +103,35 @@ export async function GET(req: NextRequest) {
             emitter.on(EVENTS.PASSWORD_CHANGED, onPasswordChanged);
             emitter.on(EVENTS.SYSTEM_UPDATE, onSystemUpdate);
 
+            // Function to clean up all listeners
+            const cleanup = () => {
+                try {
+                    emitter.off(EVENTS.MINT_UPDATE, onApprovalUpdate);
+                    emitter.off(EVENTS.CANCEL_UPDATE, onCancelUpdate);
+                    emitter.off(EVENTS.CUSTOMER_UPDATE, onCustomerUpdate);
+                    emitter.off(EVENTS.RESTRICTIONS_UPDATE, onRestrictionsUpdate);
+                    emitter.off(EVENTS.BURN_UPDATE, onburnUpdate);
+                    emitter.off(EVENTS.REFUND_UPDATE, onrefundUpdate);
+                    emitter.off(EVENTS.ROLE_UPDATE, onRoleUpdate);
+                    emitter.off(EVENTS.USER_SESSION_INVALIDATE, onUserSessionInvalidate);
+                    emitter.off(EVENTS.PASSWORD_CHANGED, onPasswordChanged);
+                    emitter.off(EVENTS.SYSTEM_UPDATE, onSystemUpdate);
+                    controller.close();
+                } catch (error) {
+                    console.error('Error during SSE cleanup:', error);
+                }
+            };
 
             // Clean up when the connection closes
-            req.signal?.addEventListener("abort", () => {
-                emitter.off(EVENTS.MINT_UPDATE, onApprovalUpdate);
-                emitter.off(EVENTS.CANCEL_UPDATE, onCancelUpdate);
-                emitter.off(EVENTS.CUSTOMER_UPDATE, onCustomerUpdate);
-                emitter.off(EVENTS.RESTRICTIONS_UPDATE, onRestrictionsUpdate);
-                emitter.off(EVENTS.BURN_UPDATE, onburnUpdate);
-                emitter.off(EVENTS.REFUND_UPDATE, onrefundUpdate);
-                emitter.off(EVENTS.ROLE_UPDATE, onRoleUpdate);
-                emitter.off(EVENTS.USER_SESSION_INVALIDATE, onUserSessionInvalidate);
-                emitter.off(EVENTS.PASSWORD_CHANGED, onPasswordChanged);
-                emitter.off(EVENTS.SYSTEM_UPDATE, onSystemUpdate);
-                controller.close();
-            });
+            req.signal?.addEventListener("abort", cleanup);
+            
+            // Additional cleanup for connection errors
+            const handleError = () => {
+                cleanup();
+            };
+            
+            // Set up error handling
+            req.signal?.addEventListener("error", handleError);
         }
     });
 
