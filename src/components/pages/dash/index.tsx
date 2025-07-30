@@ -69,6 +69,9 @@ const Dashboard: React.FC<DashboardProps> = ({
             case "password_changed":
               message = `Your password has been changed. All sessions have been terminated for security.`;
               break;
+            case "user_deleted":
+              message = `Your account has been deleted. You will be logged out immediately.`;
+              break;
           }
 
           toast.error(message);

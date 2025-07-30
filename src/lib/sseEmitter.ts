@@ -62,7 +62,7 @@ export function emitRoleUpdate(data: {
 
 export function emitUserSessionInvalidate(data: {
     userIds: string[];
-    reason: 'role_updated' | 'role_assigned' | 'role_deleted' | 'password_changed';
+    reason: 'role_updated' | 'role_assigned' | 'role_deleted' | 'password_changed' | 'user_deleted';
     roleId?: string;
     roleName?: string;
     userEmail?: string;
