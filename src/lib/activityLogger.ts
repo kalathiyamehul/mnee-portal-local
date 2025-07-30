@@ -19,7 +19,7 @@ export enum ActivityAction {
   BURN_REQUEST_REJECT = 'BURN_REQUEST_REJECT',
   BURN_REQUEST_SETTLE = 'BURN_REQUEST_SETTLE',
   BURN_REQUEST_FULLY_APPROVED = 'BURN_REQUEST_FULLY_APPROVED',
-  
+
   // Refund Actions
   REFUND_REQUEST_CREATE = 'REFUND_REQUEST_CREATE',
   REFUND_REQUEST_CANCEL = 'REFUND_REQUEST_CANCEL',
@@ -42,11 +42,23 @@ export enum ActivityAction {
   FREEZE_REQUEST_APPROVE = 'FREEZE_REQUEST_APPROVE',
   FREEZE_REQUEST_FULLY_APPROVED = 'FREEZE_REQUEST_FULLY_APPROVED',
 
+  // Unfreeze Actions
+  UNFREEZE_REQUEST_CREATE = 'UNFREEZE_REQUEST_CREATE',
+  UNFREEZE_REQUEST_CANCEL = 'UNFREEZE_REQUEST_CANCEL',
+  UNFREEZE_REQUEST_APPROVE = 'UNFREEZE_REQUEST_APPROVE',
+  UNFREEZE_REQUEST_FULLY_APPROVED = 'UNFREEZE_REQUEST_FULLY_APPROVED',
+
   // Blacklist Actions
   BLACKLIST_REQUEST_CREATE = 'BLACKLIST_REQUEST_CREATE',
   BLACKLIST_REQUEST_CANCEL = 'BLACKLIST_REQUEST_CANCEL',
   BLACKLIST_REQUEST_APPROVE = 'BLACKLIST_REQUEST_APPROVE',
   BLACKLIST_REQUEST_FULLY_APPROVED = 'BLACKLIST_REQUEST_FULLY_APPROVED',
+
+  // Unblacklist Actions
+  UNBLACKLIST_REQUEST_CREATE = 'UNBLACKLIST_REQUEST_CREATE',
+  UNBLACKLIST_REQUEST_CANCEL = 'UNBLACKLIST_REQUEST_CANCEL',
+  UNBLACKLIST_REQUEST_APPROVE = 'UNBLACKLIST_REQUEST_APPROVE',
+  UNBLACKLIST_REQUEST_FULLY_APPROVED = 'UNBLACKLIST_REQUEST_FULLY_APPROVED',
 
   // System Action Request
   SYSTEM_PAUSE_REQUEST = 'SYSTEM_PAUSE_REQUEST',
@@ -75,7 +87,7 @@ export enum ActivityAction {
   USER_CREATED = 'USER_CREATED',
   USER_UPDATED = 'USER_UPDATED',
   USER_DELETED = 'USER_DELETED',
-  
+
 }
 
 type ActivityDetails = {
@@ -235,6 +247,28 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
         description: `Freeze request ${metadata.freezeRequestId} fully approved after reaching required approvals`,
       };
 
+    // Unfreeze Actions
+    case ActivityAction.UNFREEZE_REQUEST_CREATE:
+      return {
+        name: 'Unfreeze Request Created',
+        description: `Unfreeze request was created by ${metadata.userEmail} for Address: ${metadata.address}`,
+      };
+    case ActivityAction.UNFREEZE_REQUEST_CANCEL:
+      return {
+        name: 'Unfreeze Request Cancelled',
+        description: `Unfreeze request ${metadata.address} was cancelled by ${metadata.userEmail}`,
+      };
+    case ActivityAction.UNFREEZE_REQUEST_APPROVE:
+      return {
+        name: 'Unfreeze Request Approval',
+        description: `Unfreeze request ${metadata.unfreezeRequestId} was approved by ${metadata.userEmail}`,
+      };
+    case ActivityAction.UNFREEZE_REQUEST_FULLY_APPROVED:
+      return {
+        name: 'Unfreeze Request Fully Approved',
+        description: `Unfreeze request ${metadata.unfreezeRequestId} fully approved after reaching required approvals`,
+      };
+
     // Blacklist Actions
     case ActivityAction.BLACKLIST_REQUEST_CREATE:
       return {
@@ -255,6 +289,27 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'Blacklist Request Fully Approved',
         description: `Blacklist request for Address: ${metadata.address} fully approved after reaching required approvals`,
+      };
+
+    case ActivityAction.UNBLACKLIST_REQUEST_CREATE:
+      return {
+        name: 'Unblacklist Request Created',
+        description: `Unblacklist request was created by ${metadata.userEmail} for Address: ${metadata.address}`,
+      };
+    case ActivityAction.UNBLACKLIST_REQUEST_CANCEL:
+      return {
+        name: 'Unblacklist Request Cancelled',
+        description: `Unblacklist request for Address: ${metadata.address} was cancelled by ${metadata.userEmail}`,
+      };
+    case ActivityAction.UNBLACKLIST_REQUEST_APPROVE:
+      return {
+        name: 'Unblacklist Request Approval',
+        description: `Unblacklist request for Address: ${metadata.address} was approved by ${metadata.userEmail}`,
+      };
+    case ActivityAction.UNBLACKLIST_REQUEST_FULLY_APPROVED:
+      return {
+        name: 'Unblacklist Request Fully Approved',
+        description: `Unblacklist request for Address: ${metadata.address} fully approved after reaching required approvals`,
       };
 
     // System Action Request

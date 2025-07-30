@@ -142,6 +142,9 @@ export function SystemStatusProvider({
 
   // Add this SSE effect to listen for real-time updates
   useEffect(() => {
+    // Only create SSE connection if authenticated
+    if (!session?.user) return;
+
     // Create SSE connection
     const eventSource = new EventSource("/api/sse");
 
@@ -733,29 +736,8 @@ export function SystemStatusProvider({
     return () => {
       // console.log("Closing SSE connection");
       eventSource.close();
-      eventSource.removeEventListener(EVENTS.MINT_UPDATE, (event) => {
-        // console.log(EVENTS.MINT_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.CANCEL_UPDATE, (event) => {
-        // console.log(EVENTS.CANCEL_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
-        // console.log(EVENTS.CUSTOMER_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.RESTRICTIONS_UPDATE, (event) => {
-        // console.log(EVENTS.RESTRICTIONS_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.BURN_UPDATE, (event) => {
-        // console.log(EVENTS.BURN_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.REFUND_UPDATE, (event) => {
-        // console.log(EVENTS.REFUND_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.SYSTEM_UPDATE, (event) => {
-        // console.log(EVENTS.SYSTEM_UPDATE, event);
-      });
     };
-  }, [fetchStatus]);
+  }, [session?.user]);
 
   const value = useMemo(
     () => ({

@@ -111,7 +111,7 @@ export const POST = withCSRF(async function(request: Request) {
         },
       });
       await logActivity(tx, {
-        action: ActivityAction.FREEZE_REQUEST_CREATE,
+        action: action === 'UNFREEZE' ? ActivityAction.UNFREEZE_REQUEST_CREATE : ActivityAction.FREEZE_REQUEST_CREATE,
         metadata: {
           freezeRequestId: request.id,
           address,

@@ -81,6 +81,20 @@ export const POST = async function (request: Request) {
 				);
 			}
 
+			// Check if the customer is active
+			if (!mintRequest.customerId) {
+				throw new Error("Mint request does not have a valid customerId");
+			}
+			const customer = (await tx.customer.findUnique({
+				where: { id: mintRequest.customerId }
+			}));
+			if (!customer) {
+				throw new Error("Customer not found");
+			}
+			if (!customer.isActive) {
+				throw new Error("Customer is inactive");
+			}
+
 			// Prevent self-approval
 			if (mintRequest.requestedBy === session.user.id) {
 				throw new Error("Cannot approve your own request");
