@@ -140,11 +140,14 @@ export const POST = async function (request: Request) {
 						console.error("No transaction returned from mint operation");
 						throw new Error("No transaction returned from mint operation");
 					}
-
 					console.log("Updating mint request status to APPROVED");
 					await tx.mintRequest.update({
 						where: { id: mintRequestId },
-						data: { status: "APPROVED" },
+						data: {
+							status: "APPROVED",
+							updatedAt: new Date(),
+							ticket_id: rawtx,
+						},
 					});
 
 					await logActivity(tx, {
@@ -154,16 +157,6 @@ export const POST = async function (request: Request) {
 							approvalsCount,
 						},
 					});
-
-					console.log("Updating mint request with transaction ID");
-					await tx.mintRequest.update({
-						where: { id: mintRequestId },
-						data: {
-							updatedAt: new Date(),
-							txid: rawtx,
-						},
-					});
-
 					console.log("Mint process completed successfully");
 					return { status: "DONE", approvalsCount, minterTx: rawtx, approval };
 				} catch (error) {
@@ -184,7 +177,7 @@ export const POST = async function (request: Request) {
 
 			console.log("Not enough approvals yet, staying in PENDING state");
 			return { status: "PENDING", approvalsCount, approval };
-		}, { timeout: 60000 });
+		}, { timeout: 600000 });
 		const approval = await prisma.actionApproval.findUnique({
 			where: {
 				id: result.approval.id,

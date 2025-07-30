@@ -160,6 +160,7 @@ model MintRequest {
   no_of_approvals Int         @default(2)
   status          ActionStatus @default(PENDING)
   requestedBy     String      @map("requested_by")
+  ticket_id       String      @default("")
   txid            String      @default("")
   requiresApproval Boolean     @default(true) @map("requires_approval")
   createdAt       DateTime     @default(now()) @map("created_at")
@@ -213,6 +214,7 @@ model BurnRequest {
   updatedAt       DateTime     @updatedAt @map("updated_at")
   refundAddress   String?      @map("refund_address")
   outpoint        String?
+  ticket_id       String      @default("")
   txid            String      @default("")
 
   // Relations

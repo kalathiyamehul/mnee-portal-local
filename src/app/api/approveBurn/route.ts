@@ -118,7 +118,11 @@ export const POST = withCSRF(async function(request: Request) {
           console.log("Updating burn request status to APPROVED");
           await tx.burnRequest.update({
             where: { id: burnRequestId },
-            data: { status: "APPROVED" },
+            data: {
+              status: "APPROVED",
+              updatedAt: new Date(),
+              ticket_id: rawtx,
+            },
           });
 
           await logActivity(tx, {
@@ -130,16 +134,6 @@ export const POST = withCSRF(async function(request: Request) {
               ),
             },
           });
-
-          console.log("Updating burn request with transaction ID");
-          await tx.burnRequest.update({
-            where: { id: burnRequestId },
-            data: {
-              updatedAt: new Date(),
-              txid: rawtx,
-            },
-          });
-
           console.log("Burn process completed successfully");
           return { status: "DONE", approval };
         } catch (error) {
@@ -159,7 +153,7 @@ export const POST = withCSRF(async function(request: Request) {
       }
       console.log("Not enough approvals yet, staying in PENDING state");
       return { status: "PENDING", approval };
-    });
+    }, { timeout: 600000 });
 
     console.log("Transaction completed successfully:", result);
     return NextResponse.json({

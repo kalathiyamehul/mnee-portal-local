@@ -41,7 +41,38 @@ const Dashboard: React.FC<DashboardProps> = ({
 }) => {
   const { data: session } = useSession();
 
-  // Listen for SSE events to handle session invalidation
+  // Function to check for stuck transactions
+  const checkStuckTransactions = async () => {
+    try {
+      const response = await fetch("/api/cron/mint-status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.results) {
+          const { total } = data.results;
+          if (total.success > 0 || total.failed > 0) {
+            console.log(
+              `🔄 Stuck transaction check completed: ${total.success} completed, ${total.failed} failed, ${total.pending} still pending`
+            );
+            console.log(
+              `📊 Mint: ${data.results.mint.success} success, ${data.results.mint.failed} failed, ${data.results.mint.pending} pending`
+            );
+            console.log(
+              `📊 Burn: ${data.results.burn.success} success, ${data.results.burn.failed} failed, ${data.results.burn.pending} pending`
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error checking stuck transactions:", error);
+    }
+  };
+
   useEffect(() => {
     if (!session?.user?.id) return;
 
@@ -51,11 +82,11 @@ const Dashboard: React.FC<DashboardProps> = ({
       try {
         const data = JSON.parse(event.data);
         const { userIds, reason, roleName, userEmail } = data;
-        
+
         // Check if current user is affected
         if (userIds.includes(session.user.id)) {
           let message = "Your session has been invalidated.";
-          
+
           switch (reason) {
             case "role_updated":
               message = `Your role "${roleName}" has been updated. Please log in again.`;
@@ -99,6 +130,26 @@ const Dashboard: React.FC<DashboardProps> = ({
         handleUserSessionInvalidate
       );
       eventSource.close();
+    };
+  }, [session?.user?.id]);
+
+  // Set up interval to check for stuck transactions every 5 minutes
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    // Initial check after 30 seconds
+    const initialTimeout = setTimeout(() => {
+      checkStuckTransactions();
+    }, 15000);
+
+    // Set up interval for every 5 minutes (300000 ms)
+    const interval = setInterval(() => {
+      checkStuckTransactions();
+    }, 5 * 60 * 1000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
     };
   }, [session?.user?.id]);
 
