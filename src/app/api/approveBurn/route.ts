@@ -13,14 +13,18 @@ import { createRedeemTx } from "@/new-cosiner/src/services/redeem";
 import { parseTransaction } from "@/new-cosiner/src/services/helper";
 
 export const POST = withCSRF(async function(request: Request) {
+  console.log("Starting approveBurn request");
+  const session = await getServerSession(authOptions);
+  console.log("Session:", { userId: session?.user?.id });
+  if (!session?.user?.id) {
+    console.log("Unauthorized: No session or user ID");
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let burnRequestId: string = "";
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { burnRequestId } = await request.json();
+    const { burnRequestId: requestId } = await request.json();
+    burnRequestId = requestId;
     const result = await prisma.$transaction(async (tx) => {
       const burnRequest = await tx.burnRequest.findUnique({
         where: { id: burnRequestId },
@@ -87,61 +91,106 @@ export const POST = withCSRF(async function(request: Request) {
           throw new Error("Invalid burn request outpoint");
         }
         try {
+          console.log("Starting burning process for request:", burnRequestId);
           const { rawtx, error, success } = await burnMnee(
             burnRequest.amount,
             txid,
             request
           );
+
+          console.log("Burn result:", { success, error, rawtxLength: rawtx?.length });
+
           if (error) {
-            throw new Error(error);
+            console.error("Burn operation failed with error:", error);
+            throw new Error(`Burn operation failed: ${error}`);
           }
-          if (success) {
-            await logActivity(tx, {
-              action: ActivityAction.BURN_REQUEST_APPROVE,
-              metadata: {
-                burnRequestId,
-                burnRequest: JSON.stringify(burnRequest, (key, value) =>
-                  typeof value === 'bigint' ? value.toString() : value
-                ),
-              },
-            });
-            await tx.burnRequest.update({
-              where: { id: burnRequestId },
-              data: {
-                updatedAt: new Date(),
-                txid: rawtx,
-              },
-            });
+
+          if (!success) {
+            console.error("Burn operation was not successful");
+            throw new Error("Burn operation was not successful");
           }
+
+          if (!rawtx) {
+            console.error("No transaction returned from burn operation");
+            throw new Error("No transaction returned from burn operation");
+          }
+
+          console.log("Updating burn request status to APPROVED");
+          await tx.burnRequest.update({
+            where: { id: burnRequestId },
+            data: {
+              status: "APPROVED",
+              updatedAt: new Date(),
+              ticket_id: rawtx,
+            },
+          });
+
+          await logActivity(tx, {
+            action: ActivityAction.BURN_REQUEST_APPROVE,
+            metadata: {
+              burnRequestId,
+              burnRequest: JSON.stringify(burnRequest, (key, value) =>
+                typeof value === 'bigint' ? value.toString() : value
+              ),
+            },
+          });
+          console.log("Burn process completed successfully");
           return { status: "DONE", approval };
         } catch (error) {
-          console.error("Error during minting:", error);
-          const errorMessage =
-            error instanceof Error
-              ? error.message.replace(/^Error:\s*/, "")
-              : "Transaction submission failed";
-          throw new Error(errorMessage);
+          const burnError = error instanceof Error ? error.message : String(error || 'Unknown burning error');
+          console.error("Error during burning process:", {
+            burnRequestId: burnRequestId || 'unknown',
+            error: burnError,
+            errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+            errorType: typeof error,
+            errorName: error instanceof Error ? error.name : 'Unknown'
+          });
+
+          // Clean up the error message for user display
+          const cleanErrorMessage = burnError.replace(/^Error:\s*/, "").replace(/^Burn operation failed:\s*/, "");
+          throw new Error(cleanErrorMessage);
         }
       }
-      return { status: "PENDING" };
-    });
+      console.log("Not enough approvals yet, staying in PENDING state");
+      return { status: "PENDING", approval };
+    }, { timeout: 600000 });
 
+    console.log("Transaction completed successfully:", result);
     return NextResponse.json({
       success: true,
       message: result.status === "APPROVED" ? "Burn request approved" : "Approval recorded",
       status: result.status,
     });
   } catch (error) {
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : "An unexpected error occurred",
-    }, { 
-      status: 400
+    // Ensure we have a proper error message to log
+    const errorMessage = error instanceof Error ? error.message : String(error || 'Unknown error occurred');
+    // Safely log error information without null values
+    console.error("Error processing approval:", {
+      burnRequestId: burnRequestId || 'unknown',
+      error: errorMessage,
+      errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+      errorType: typeof error,
+      errorName: error instanceof Error ? error.name : 'Unknown'
     });
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: errorMessage,
+      },
+      {
+        status:
+          error instanceof Error &&
+            (error.message.includes("will remain pending") ||
+              error.message.includes("address is frozen"))
+            ? 202
+            : 500,
+      },
+    );
   }
 }, createAPIRateLimit())
 
-// Helper function to mint MNEE tokens
+// Helper function to burn MNEE tokens
 const burnMnee = async (
   amount: bigint,
   txid: string,
@@ -149,35 +198,178 @@ const burnMnee = async (
 ): Promise<{ success: boolean; rawtx: string; error?: string }> => {
   console.log("Starting burnMnee:", { amount: amount.toString(), txid });
   // Fetching remote config
-  const BURN_WIF = await getBurnWif();
-  const burnPk = PrivateKey.fromWif(BURN_WIF);
-  const config = await prisma.config.findFirst();
-  if (!config) {
-    throw new Error("Config not found");
+  console.log("Initializing burn operation with private keys and config");
+
+  let burnPk: PrivateKey;
+  let config: any;
+  let latestMinterTx: string;
+  let tx: any;
+  let inscriptions: any;
+  let redeemUtxoTx: any;
+
+  try {
+    const BURN_WIF = await getBurnWif();
+    burnPk = PrivateKey.fromWif(BURN_WIF);
+    config = await prisma.config.findFirst();
+    if (!config) {
+      console.error("Config not found in database");
+      return {
+        rawtx: "",
+        success: false,
+        error: "System configuration not found"
+      };
+    }
+
+    latestMinterTx = config?.latestMinterTx;
+    if (!latestMinterTx) {
+      console.error("Latest minter transaction not found in config");
+      return {
+        rawtx: "",
+        success: false,
+        error: "Latest minter transaction not found"
+      };
+    }
+
+    console.log("Fetching redeem UTXO transaction");
+    redeemUtxoTx = await fetchRawTx(txid);
+    if (!redeemUtxoTx) {
+      console.error("Failed to fetch redeem UTXO transaction");
+      return {
+        rawtx: "",
+        success: false,
+        error: "Failed to fetch redeem UTXO transaction"
+      };
+    }
+
+    console.log("Parsing latest minter transaction");
+    tx = await parseTransaction(config.latestMinterTx);
+    if (!tx) {
+      console.error("Failed to parse latest minter transaction");
+      return {
+        rawtx: "",
+        success: false,
+        error: "Failed to parse latest minter transaction"
+      };
+    }
+
+    inscriptions = tx?.inscriptions?.[1];
+    if (!inscriptions) {
+      inscriptions = tx?.inscriptions?.[0];
+    }
+    if (!inscriptions) {
+      console.error("No inscriptions found in transaction");
+      return {
+        rawtx: "",
+        success: false,
+        error: "Token inscriptions not found in transaction"
+      };
+    }
+  } catch (error) {
+    const initError = error instanceof Error ? error.message : String(error || 'Unknown initialization error');
+    console.error("Error during burn initialization:", {
+      error: initError,
+      errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+      errorType: typeof error,
+      errorName: error instanceof Error ? error.name : 'Unknown'
+    });
+    return {
+      rawtx: "",
+      success: false,
+      error: `Initialization failed: ${initError}`
+    };
   }
-  const redeemUtxoTx = await fetchRawTx(txid);
-  const tx = await parseTransaction(config.latestMinterTx);
-  const inscriptions = tx?.inscriptions?.[1];
-  const currentSupply = BigInt(inscriptions?.metadata?.currentSupply)
-  const currectTotalSupply = BigInt(inscriptions?.amt);
-  const currectAvailableSupply = currectTotalSupply + BigInt(amount);
-  const totalSupply = currentSupply - BigInt(amount)
-  const latestDeployedTokenOpIndex = tx.outputIndex;
-  const redeemUtxoIndex = 0;
-  const MINT_WIF = await getMintWif();
-  const response = await createRedeemTx(
-    config.latestMinterTx,
-    latestDeployedTokenOpIndex,
-    redeemUtxoTx,
-    redeemUtxoIndex,
-    config.tokenId,
-    burnPk,
-    currectAvailableSupply,
-    totalSupply,
-    config.mintAddress,
-    MINT_WIF
-  );
-  console.log("response", response)
+
+  console.log("Calculating supply and creating burn operation");
+  let response: any;
+
+  try {
+    if (!inscriptions?.metadata?.currentSupply) {
+      console.log("Perform Migration Operation to Burn Tokens");
+      return {
+        rawtx: "",
+        success: false,
+        error: "Perform Migration Opration to burn tokens"
+      }
+    }
+    const currentSupply = BigInt(inscriptions?.metadata?.currentSupply || 0);
+    if (currentSupply === 0n) {
+      console.error("Current supply is missing, cannot burn");
+      return {
+        rawtx: "",
+        success: false,
+        error: "Current supply is missing, cannot burn"
+      };
+    }
+    if (!inscriptions?.amt) {
+      console.error("Token amount not found in inscriptions");
+      return {
+        rawtx: "",
+        success: false,
+        error: "Token amount not found in inscriptions"
+      };
+    }
+    const currectTotalSupply = BigInt(inscriptions.amt);
+    const currectAvailableSupply = currectTotalSupply + BigInt(amount);
+    const totalSupply = currentSupply - BigInt(amount);
+    const latestDeployedTokenOpIndex = tx.outputIndex;
+    const redeemUtxoIndex = 0;
+    const MINT_WIF = await getMintWif();
+
+    console.log("Supply calculation:", {
+      currentSupply: currentSupply.toString(),
+      currectTotalSupply: currectTotalSupply.toString(),
+      burnAmount: amount.toString(),
+      totalSupply: totalSupply.toString(),
+      currectAvailableSupply: currectAvailableSupply.toString()
+    });
+
+    if (totalSupply < 0n) {
+      console.error("Insufficient supply for burning");
+      return {
+        rawtx: "",
+        success: false,
+        error: "Insufficient supply for burning"
+      };
+    }
+
+    console.log("Creating burn operation");
+    response = await createRedeemTx(
+      config.latestMinterTx,
+      latestDeployedTokenOpIndex,
+      redeemUtxoTx,
+      redeemUtxoIndex,
+      config.tokenId,
+      burnPk,
+      currectAvailableSupply,
+      totalSupply,
+      config.mintAddress,
+      MINT_WIF
+    );
+
+    if (!response || !response.txHex) {
+      console.error("Invalid response from createRedeemTx");
+      return {
+        rawtx: "",
+        success: false,
+        error: "Failed to create burn transaction"
+      };
+    }
+
+    console.log("Burn operation created successfully, transaction hex length:", response.txHex.length);
+  } catch (error) {
+    const supplyError = error instanceof Error ? error.message : String(error || 'Unknown supply calculation error');
+    console.error("Error during supply calculation or burn operation creation:", {
+      error: supplyError,
+      errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+      errorType: typeof error,
+      errorName: error instanceof Error ? error.name : 'Unknown'
+    });
+    return {
+      rawtx: "",
+      success: false,
+      error: `Supply calculation failed: ${supplyError}`
+    };
+  }
   const isLocal = process.env.NEXT_PUBLIC_ENV === "local";
   const webhookUrl = isLocal
     ? `${MNEE_WEBHOOK_API}/api/webhook`
@@ -189,6 +381,7 @@ const burnMnee = async (
   }
   console.log(payload)
   try {
+    console.log("Sending burn request to MNEE API:", `${MNEE_API}/v1/redeem`);
     const res = await fetch(`${MNEE_API}/v1/redeem`, {
       method: "POST",
       headers: {
@@ -197,24 +390,60 @@ const burnMnee = async (
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();
-    console.log("Burn Response:", data);
-    if (data?.error) {
+    console.log("MNEE API Response status:", res.status, res.statusText);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("MNEE API returned error status:", {
+        status: res.status,
+        statusText: res.statusText,
+        errorText
+      });
       return {
         rawtx: "",
         success: false,
-        error: data?.error
+        error: `MNEE API error (${res.status}): ${errorText || res.statusText}`
       };
     }
+
+    const data = await res.json();
+    console.log("Burn Response:", data);
+
+    if (data?.error) {
+      console.error("MNEE API returned error in response:", data.error);
+      return {
+        rawtx: "",
+        success: false,
+        error: data.error
+      };
+    }
+
+    if (!data) {
+      console.error("MNEE API returned empty response");
+      return {
+        rawtx: "",
+        success: false,
+        error: "Empty response from MNEE API"
+      };
+    }
+
+    console.log("Burn operation successful, transaction ID:", data);
     return {
       rawtx: data,
       success: true
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error || 'Unknown fetch error');
+    console.error("Error calling MNEE API:", {
+      error: errorMessage,
+      errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+      errorType: typeof error,
+      errorName: error instanceof Error ? error.name : 'Unknown'
+    });
     return {
       rawtx: "",
       success: false,
-      error: error?.toString()
+      error: `Network error: ${errorMessage}`
     };
   }
 };

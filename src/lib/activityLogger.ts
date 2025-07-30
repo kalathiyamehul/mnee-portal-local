@@ -10,6 +10,7 @@ export enum ActivityAction {
   MINT_REQUEST_REJECT = 'MINT_REQUEST_REJECT',
   MINT_REQUEST_FULLY_APPROVED = 'MINT_REQUEST_FULLY_APPROVED',
   MINT_TX_COMPLETED = 'MINT_TX_COMPLETED',
+  MINT_TX_FAILED = 'MINT_TX_FAILED',
 
   // Burn Actions
   BURN_REQUEST_CREATE = 'BURN_REQUEST_CREATE',
@@ -362,6 +363,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'User Deleted',
         description: `User ${metadata.deletedUserEmail} was deleted by ${metadata.userEmail}`,
+      };
+    case ActivityAction.MINT_TX_FAILED:
+      return {
+        name: 'Mint Transaction Failed',
+        description: `Mint transaction ${metadata.txid} failed`,
       };
     default:
       const exhaustiveCheck: never = action;

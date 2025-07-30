@@ -10,17 +10,14 @@ export async function POST(request: NextRequest) {
     if (body.status === "SUCCESS") {
       if (body.action_requested = "mint") {
         const latestMinterTx = body?.tx_hex;
-        await prisma.config.update({
-          where: {
-            id: 1
-          },
+        await prisma.config.updateMany({
           data: {
             latestMinterTx: latestMinterTx
           }
         });
         const mintRequest = await prisma.mintRequest.findFirst({
           where: {
-            txid: body?.id
+            ticket_id: body?.id
           }
         });
         if (mintRequest) {
@@ -52,10 +49,7 @@ export async function POST(request: NextRequest) {
       }
       if (body.action_requested = "burn") {
         const latestMinterTx = body?.tx_hex;
-        await prisma.config.update({
-          where: {
-            id: 1
-          },
+        await prisma.config.updateMany({
           data: {
             latestMinterTx: latestMinterTx
           }
@@ -75,9 +69,73 @@ export async function POST(request: NextRequest) {
             await tx.burnRequest.update({
               where: { id: burnRequest?.id },
               data: {
-                status: "APPROVED",
+                status: "DONE",
                 updatedAt: new Date(),
                 txid: body?.tx_id,
+              },
+            });
+            // await logActivity(tx, {
+            //   action: ActivityAction.BURN_REQUEST_FULLY_APPROVED,
+            //   metadata: {
+            //     burnRequestId: burnRequest?.id,
+            //     txid: body?.tx_id,
+            //     burnTx: body?.tx_hex,
+            //   },
+            // });
+          });
+        }
+      }
+    } else {
+      if (body.action_requested = "mint") {
+        const mintRequest = await prisma.mintRequest.findFirst({
+          where: {
+            ticket_id: body?.id
+          }
+        });
+        if (mintRequest) {
+          emitMintUpdate({
+            activityId: mintRequest?.id,
+            approval: "Mint Request Fully Approved",
+            type: "APPROVED",
+          });
+          await prisma.$transaction(async (tx) => {
+            // await logActivity(tx, {
+            //   action: ActivityAction.MINT_TX_COMPLETED,
+            //   metadata: {
+            //     mintRequestId: mintRequest?.id,
+            //     txid: body?.id,
+            //   },
+            // });
+            await tx.mintRequest.update({
+              where: {
+                id: mintRequest?.id
+              },
+              data: {
+                status: "FAILED",
+                updatedAt: new Date()
+              }
+            });
+          });
+        }
+      }
+      if (body.action_requested = "burn") {
+        const burnRequest = await prisma.burnRequest.findFirst({
+          where: {
+            txid: body?.id
+          }
+        });
+        if (burnRequest) {
+          emitburnUpdate({
+            activityId: burnRequest?.id,
+            approval: [],
+            type: "APPROVE",
+          });
+          await prisma.$transaction(async (tx) => {
+            await tx.burnRequest.update({
+              where: { id: burnRequest?.id },
+              data: {
+                status: "FAILED",
+                updatedAt: new Date(),
               },
             });
             // await logActivity(tx, {
