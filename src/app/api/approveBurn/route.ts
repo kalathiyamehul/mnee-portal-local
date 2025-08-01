@@ -406,15 +406,22 @@ const burnMnee = async (
       };
     }
 
-    const data = await res.json();
+    const data = await res.text();
     console.log("Burn Response:", data);
 
-    if (data?.error) {
-      console.error("MNEE API returned error in response:", data.error);
+    let parsedData: any;
+    try {
+      parsedData = JSON.parse(data);
+    } catch {
+      parsedData = null;
+    }
+
+    if (parsedData && parsedData.error) {
+      console.error("MNEE API returned error in response:", parsedData.error);
       return {
         rawtx: "",
         success: false,
-        error: data.error
+        error: parsedData.error
       };
     }
 
@@ -427,9 +434,12 @@ const burnMnee = async (
       };
     }
 
-    console.log("Burn operation successful, transaction ID:", data);
+    // If parsedData is an object and has a transaction id, use it; otherwise, use the raw string
+    const txId = parsedData && parsedData.txid ? parsedData.txid : data;
+
+    console.log("Burn operation successful, transaction ID:", txId);
     return {
-      rawtx: data,
+      rawtx: txId,
       success: true
     };
   } catch (error) {

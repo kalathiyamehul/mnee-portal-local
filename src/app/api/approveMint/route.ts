@@ -448,19 +448,26 @@ const mintMnee = async (
 			};
 		}
 
-		const data = await res.json();
-		console.log("Mint Response:", data);
+		const dataText = await res.text();
+		console.log("Mint Response:", dataText);
 
-		if (data?.error) {
-			console.error("MNEE API returned error in response:", data.error);
+		let dataJson: any;
+		try {
+			dataJson = JSON.parse(dataText);
+		} catch {
+			dataJson = null;
+		}
+
+		if (dataJson && dataJson.error) {
+			console.error("MNEE API returned error in response:", dataJson.error);
 			return {
 				rawtx: "",
 				success: false,
-				error: data.error
+				error: dataJson.error
 			};
 		}
 
-		if (!data) {
+		if (!dataText) {
 			console.error("MNEE API returned empty response");
 			return {
 				rawtx: "",
@@ -469,9 +476,9 @@ const mintMnee = async (
 			};
 		}
 
-		console.log("Mint operation successful, transaction ID:", data);
+		console.log("Mint operation successful, transaction ID:", dataText);
 		return {
-			rawtx: data,
+			rawtx: dataText,
 			success: true
 		};
 	} catch (error) {

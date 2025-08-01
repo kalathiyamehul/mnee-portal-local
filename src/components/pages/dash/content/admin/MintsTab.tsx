@@ -53,7 +53,7 @@ export const MintsTab = ({
       }),
     });
     const data = await mintApi.json();
-    console.log(data);
+    // console.log(data);
   };
 
   return (
