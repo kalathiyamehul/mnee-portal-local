@@ -116,10 +116,10 @@ async function broadcastRefundTransaction(
       };
     }
 
-    const responseData = await broadcastResponse.json() as IndexContext;
+    const responseData = await broadcastResponse.json() as any;
     console.log("Refund broadcast response:", responseData);
 
-    if (!responseData.txid) {
+    if (!responseData.rawtx) {
       console.error("No transaction ID returned from MNEE API");
       return {
         success: false,
@@ -127,10 +127,11 @@ async function broadcastRefundTransaction(
       };
     }
 
-    console.log("Refund transaction broadcast successful, txid:", responseData.txid);
+    console.log("Refund transaction broadcast successful, rawtx:", responseData.rawtx);
+
     return {
       success: true,
-      txid: responseData.txid
+      txid: Transaction.fromHex(Buffer.from(responseData.rawtx, 'base64').toString('hex')).hash('hex') as string
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error || 'Unknown broadcast error');
