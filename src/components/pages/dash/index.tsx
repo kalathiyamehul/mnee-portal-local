@@ -56,15 +56,15 @@ const Dashboard: React.FC<DashboardProps> = ({
         if (data.success && data.results) {
           const { total } = data.results;
           if (total.success > 0 || total.failed > 0) {
-            console.log(
-              `🔄 Stuck transaction check completed: ${total.success} completed, ${total.failed} failed, ${total.pending} still pending`
-            );
-            console.log(
-              `📊 Mint: ${data.results.mint.success} success, ${data.results.mint.failed} failed, ${data.results.mint.pending} pending`
-            );
-            console.log(
-              `📊 Burn: ${data.results.burn.success} success, ${data.results.burn.failed} failed, ${data.results.burn.pending} pending`
-            );
+            // console.log(
+            //   `🔄 Stuck transaction check completed: ${total.success} completed, ${total.failed} failed, ${total.pending} still pending`
+            // );
+            // console.log(
+            //   `📊 Mint: ${data.results.mint.success} success, ${data.results.mint.failed} failed, ${data.results.mint.pending} pending`
+            // );
+            // console.log(
+            //   `📊 Burn: ${data.results.burn.success} success, ${data.results.burn.failed} failed, ${data.results.burn.pending} pending`
+            // );
           }
         }
       }

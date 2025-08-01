@@ -334,8 +334,7 @@ const DashboardSettingsContent = () => {
 
         // Fetch token details from the blockchain
         const [txid] = data.tokenId.split("_");
-        const indexContext = await ingestTxid(txid);
-        const tokenData = indexContext.txos[0].data.bsv21;
+        const tokenData = await ingestTxid(txid);
         setTokenDetails({
           sym: tokenData.sym,
           icon: tokenData.icon,

@@ -208,7 +208,7 @@ export const BurnsTab = ({
   };
 
   const handleRejectBurn = async (burnId: string) => {
-    console.log("Burn Request ID:", burnId)
+    // console.log("Burn Request ID:", burnId)
     try {
       const response = await apiFetch("/api/rejectBurn", {
         method: "POST",
@@ -373,7 +373,7 @@ export const BurnsTab = ({
   );
   const burnHistory = statusData?.burnRequests;
 
-  console.log("burnsHistory:", statusData?.burnRequests);
+  // console.log("burnsHistory:", statusData?.burnRequests);
 
   const totalItems = activeBurns.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));

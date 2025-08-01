@@ -134,8 +134,9 @@ export const fetchVaultedMneeUtxos = async (ops: ('transfer' | 'burn' | 'deploy+
 };
 
 export const ingestTxid = async (txid: string) => {
-  const response = await fetch(`${MNEE_API}/v1/ingest/${txid}`, {
-    method: 'POST',
-  });
-  return await response.json() as IndexContext;
+    const tx = await fetchTransaction(txid);
+    const lockingScript = tx.outputs[0].lockingScript.toASM().split(' ');
+    const indexContext = JSON.parse(Buffer.from(lockingScript[6], "hex").toString());
+    console.log("indexContext:", indexContext);
+    return await indexContext as any;
 }

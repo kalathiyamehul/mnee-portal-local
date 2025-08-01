@@ -37,10 +37,8 @@ export default function Setup() {
       // console.log({txid, vout})
       setLoading(true);
       try {
-       
         const data = await ingestTxid(txid);
-        const token = data.txos[Number.parseInt(vout)].data.bsv21;
-        setDecimals(token.dec);
+        setDecimals(data.dec);
         const tx = await fetchTransaction(txid);
         setLatestMinterTx(tx.toHex());
         toast.success('Token details fetched successfully');
