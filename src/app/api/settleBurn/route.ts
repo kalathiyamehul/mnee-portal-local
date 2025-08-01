@@ -37,7 +37,7 @@ export const POST = withCSRF(async function(request: Request) {
         throw new Error("Burn request not found");
       }
 
-      if (burnRequest.status !== "APPROVED") {
+      if (burnRequest.status !== "DONE") {
         throw new Error("Only Approved Burn requests can be Settled");
       }
 
@@ -72,7 +72,7 @@ export const POST = withCSRF(async function(request: Request) {
       });
 
       return { status: "SETTLED" };
-    });
+    }, {timeout: 300000});
 
     return NextResponse.json({
       success: true,

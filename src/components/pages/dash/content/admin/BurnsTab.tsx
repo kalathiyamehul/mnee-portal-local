@@ -371,11 +371,9 @@ export const BurnsTab = ({
         ["PENDING", "CANCELLED", "REJECTED"].includes(burn.burnRequest.status)
       )
   );
-  const completedBurns = burns.filter(
-    (burn) =>
-      burn.burnRequest &&
-      ["APPROVED", "REFUNDED", "SETTLED", "REJECTED", "CANCELLED"].includes(burn.burnRequest.status)
-  );
+  const burnHistory = statusData?.burnRequests;
+
+  console.log("burnsHistory:", statusData?.burnRequests);
 
   const totalItems = activeBurns.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
@@ -654,7 +652,7 @@ export const BurnsTab = ({
 
           <BurnTable
             title="Burn History"
-            burns={completedBurns}
+            burns={burnHistory ?? []}
             decimals={decimals}
             onCopyTxid={handleCopyTxid}
             showActions={showActions}
