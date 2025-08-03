@@ -449,38 +449,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   }
 
   // Format burns for the BurnTable component
-  const formattedBurns: BurnUtxo[] = (requestTables?.recentBurns || [])
-    .map((burn) => {
-      const [txid, vout] = (burn.outpoint || "").split("_");
-      if (!txid || !vout) return null;
-
-      return {
-        txid,
-        vout: Number.parseInt(vout),
-        height: 0,
-        data: {
-          bsv21: {
-            amt: burn.amount,
-          },
-        },
-        burnRequest: {
-          id: burn.id,
-          status: burn.status,
-          createdAt: burn.createdAt,
-          amount: burn?.amount?.toString(),
-          requester: burn.requester,
-          outpoint: burn.outpoint,
-          updatedAt: burn.createdAt,
-          approvals: burn.approvals,
-        },
-        idx: 0,
-        script: "",
-        outpoint: burn.id,
-        satoshis: 0,
-        owners: [],
-      };
-    })
-    .filter(Boolean) as unknown as BurnUtxo[];
+  const formattedBurns = requestTables?.recentBurns || [];
 
   const getStatCardClass = (chartType: ChartType) => {
     const baseClass =

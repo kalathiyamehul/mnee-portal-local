@@ -1,5 +1,5 @@
 import React from 'react';
-import type { BurnUtxo } from './types';
+import type { Activity, BurnUtxo } from './types';
 import { toToken } from 'satoshi-token';
 import { FaCopy } from 'react-icons/fa6';
 import { format, formatDate, formatDistanceStrict, formatDistanceToNow } from 'date-fns';
@@ -12,7 +12,7 @@ import { MdOutlineOpenInNew } from 'react-icons/md';
 import { apiFetch } from '@/utils/api';
 
 interface BurnTableProps {
-	burns: BurnUtxo[];
+	burns: Activity[];
 	decimals: number;
 	onCopyTxid?: (txid: string) => void;
 	alwaysShow?: boolean;
@@ -154,13 +154,13 @@ export const BurnTable = ({
 								</td>
 							</tr>
 						) : (
-							currentBurns.map(burn => {
-								const amount = burn.data.bsv21.amt;
-								const status = burn.burnRequest?.status || 'PENDING';
-								const createdAt = burn.burnRequest?.createdAt || '';
+							currentBurns.map((burn, index) => {
+								const amount = burn.amount ?? 0;
+								const status = burn.status || 'PENDING';
+								const createdAt = burn?.createdAt || '';
 
 								return (
-									<tr key={burn.outpoint}>
+									<tr key={index}>
 										<td>
 											<div className="font-mono">
 												{toToken(amount.toString(), decimals)} MNEE
@@ -172,6 +172,7 @@ export const BurnTable = ({
 												status === 'APPROVED' ? 'badge-success' :
 												status === 'SETTLED'? 'badge-success' :
 												status === 'REFUNDED' ? 'badge-info' :
+												status === 'DONE' ? 'badge-success' :
 												'badge-error'
 											}`}>
 												{status}
@@ -180,12 +181,12 @@ export const BurnTable = ({
 										<td>
 											<div className="flex flex-col items-center gap-2">
 												<div className="flex font-mono text-xs">
-													{burn.txid.slice(0, 8)}...{burn.txid.slice(-8)}
+													{burn?.outpoint ? `${burn.outpoint.slice(0, 8)}...${burn.outpoint.slice(-8)}` : ''}
 													{onCopyTxid && (
 														<button
 															type="button"
 															className="btn btn-ghost btn-xs btn-square"
-															onClick={() => onCopyTxid(burn.txid)}
+															onClick={() => onCopyTxid(burn?.outpoint || '')}
 														>
 															<FaCopy className="w-3 h-3" />
 														</button>
@@ -207,15 +208,15 @@ export const BurnTable = ({
 												</div>
 											</div>
 										</td>
-										{showRequester && burn.burnRequest?.requester && (
+										{showRequester && burn?.requester && (
 											<td>
 												<div className="space-y-1">
 													<div className="text-sm">
-														{burn.burnRequest.requester.name || burn.burnRequest.requester.email}
+														{burn?.requester.name || burn.requester.email}
 													</div>
-													{burn.burnRequest.approvals?.length > 0 && (
+													{burn.approvals?.length > 0 && (
 														<div className="text-xs text-base-content/70">
-															Approved by: {burn.burnRequest.approvals.map(a => a.approver?.name || a.approver?.email).join(', ')}
+															Approved by: {burn.approvals.map(a => a.approver?.name || a.approver?.email).join(', ')}
 														</div>
 													)}
 												</div>
@@ -250,14 +251,14 @@ export const BurnTable = ({
 												</button>
 											)}
 											 {/* SETTLED Button */}
-											 {burn.burnRequest?.status === 'APPROVED' && hasSettleBurnPer && (
+											 {burn?.status === 'DONE' && hasSettleBurnPer && (
                                                 <button
                                                     type="button"
                                                     className="btn btn-primary btn-sm"
-                                                    onClick={() => burn.burnRequest?.id && handleSettleBurn(burn.burnRequest.id)}
-                                                    disabled={settlingId === burn.burnRequest?.id}
+                                                    onClick={() => burn?.id && handleSettleBurn(burn.id)}
+                                                    disabled={settlingId === burn?.id}
                                                 >
-                                                    {settlingId === burn.burnRequest?.id ? 'Settling...' : 'Settle'}
+                                                    {settlingId === burn?.id ? 'Settling...' : 'Settle'}
                                                 </button>
                                             )}
 										</td>}

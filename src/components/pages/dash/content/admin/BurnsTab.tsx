@@ -217,7 +217,7 @@ export const BurnsTab = ({
   };
 
   const handleRejectBurn = async (burnId: string) => {
-    console.log("Burn Request ID:", burnId)
+    // console.log("Burn Request ID:", burnId)
     try {
       const response = await apiFetch("/api/reject", {
         method: "POST",
@@ -388,11 +388,9 @@ export const BurnsTab = ({
         ["PENDING", "CANCELLED", "REJECTED"].includes(burn.burnRequest.status)
       )
   );
-  const completedBurns = burns.filter(
-    (burn) =>
-      burn.burnRequest &&
-      ["APPROVED", "REFUNDED", "SETTLED", "REJECTED", "CANCELLED"].includes(burn.burnRequest.status)
-  );
+  const burnHistory = statusData?.burnRequests;
+
+  // console.log("burnsHistory:", statusData?.burnRequests);
 
   const refundsHistory = refunds.filter((refund) => {
     return (
@@ -774,7 +772,7 @@ export const BurnsTab = ({
 
           <BurnTable
             title="Burn History"
-            burns={completedBurns}
+            burns={burnHistory ?? []}
             decimals={decimals}
             onCopyTxid={handleCopyTxid}
             showActions={showActions}

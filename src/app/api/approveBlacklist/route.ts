@@ -114,7 +114,7 @@ export const POST = withCSRF(async function(request: Request) {
       newAppeovalID = approval.id;
 
       await logActivity(tx, {
-        action: ActivityAction.BLACKLIST_REQUEST_APPROVE,
+        action: blacklistRequest.action === 'UNBLACKLIST' ? ActivityAction.UNBLACKLIST_REQUEST_APPROVE : ActivityAction.BLACKLIST_REQUEST_APPROVE,
         metadata: {
           blacklistRequestId,
           address: blacklistRequest.address,
@@ -143,7 +143,7 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          action: ActivityAction.BLACKLIST_REQUEST_FULLY_APPROVED,
+          action: blacklistRequest.action === 'UNBLACKLIST' ? ActivityAction.UNBLACKLIST_REQUEST_FULLY_APPROVED : ActivityAction.BLACKLIST_REQUEST_FULLY_APPROVED,
           metadata: {
             address: blacklistRequest.address,
             blacklistRequestId: blacklistRequestId,

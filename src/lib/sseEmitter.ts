@@ -4,6 +4,8 @@ import { EventEmitter } from "events";
 const globalEmitter = global as any;
 if (!globalEmitter.sseEmitter) {
     globalEmitter.sseEmitter = new EventEmitter();
+    // Set max listeners to prevent memory leak warnings
+    globalEmitter.sseEmitter.setMaxListeners(50);
 }
 export const emitter = globalEmitter.sseEmitter;
 
@@ -65,7 +67,7 @@ export function emitRoleUpdate(data: {
 
 export function emitUserSessionInvalidate(data: {
     userIds: string[];
-    reason: 'role_updated' | 'role_assigned' | 'role_deleted' | 'password_changed';
+    reason: 'role_updated' | 'role_assigned' | 'role_deleted' | 'password_changed' | 'user_deleted';
     roleId?: string;
     roleName?: string;
     userEmail?: string;

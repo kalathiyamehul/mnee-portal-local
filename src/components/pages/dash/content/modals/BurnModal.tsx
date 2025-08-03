@@ -1,5 +1,5 @@
 import { apiFetch } from '@/utils/api';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { FaSpinner, FaFire } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
@@ -17,9 +17,53 @@ interface BurnModalProps {
 
 export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [numApprovals, setNumApprovals] = useState(2); // Default value as per schema
+  const [numApprovals, setNumApprovals] = useState("");
+  const [errors, setErrors] = useState({
+    numApprovalsError: "",
+  });
+  const [config, setConfig] = useState<{
+    minNoOfApproval: number;
+    maxNoOfApproval: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await apiFetch("/api/config");
+        if (!response.ok) {
+          throw new Error("Failed to fetch configuration");
+        }
+        const data = await response.json();
+        setConfig({
+          minNoOfApproval: data.minNoOfApproval,
+          maxNoOfApproval: data.maxNoOfApproval,
+        });
+        setNumApprovals(`${data.minNoOfApproval}`);
+      } catch (error) {
+        toast.error("Failed to fetch configuration");
+      }
+    };
+
+    fetchConfig();
+  }, []);
+
+  const validateApproval = (value: number) => {
+    if (config?.minNoOfApproval && value < config.minNoOfApproval)
+      return `Minimum ${config.minNoOfApproval} approval required`;
+    if (config?.maxNoOfApproval && value > config.maxNoOfApproval)
+      return `Maximum ${config.maxNoOfApproval} approvals allowed`;
+    return "";
+  };
 
   const handleBurn = async () => {
+    const numApprovalsError = validateApproval(Number(numApprovals));
+    setErrors({
+      numApprovalsError: numApprovalsError,
+    });
+    if (numApprovalsError) {
+      toast.error(numApprovalsError || "Please fix the form errors");
+      return;
+    }
     setIsLoading(true);
     try {
       // console.log('Starting burn request with:', { amount, utxo });
@@ -27,7 +71,7 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
       const payload = {
         amount,
         outpoint,
-        no_of_approvals: numApprovals, // Pass to API
+        no_of_approvals: Number(numApprovals), // Pass to API
       };
       
       // console.log('Prepared burn payload:', payload);
@@ -84,19 +128,41 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
               <input
                 id="num-approvals"
                 type="number"
-                min={2}
                 className="input input-bordered w-full"
                 value={numApprovals}
-                onChange={e => {
-                  const val = Number(e.target.value);
-                  if (val < 2) {
-                    setNumApprovals(2);
-                  } else {
-                    setNumApprovals(val);
+                onChange={(e) => {
+                  let value = e.target.value;
+                  // Only allow non-negative integers
+                  if (/^\d*$/.test(value)) {
+                    let num = parseInt(value, 10);
+                    if (
+                      isNaN(num) ||
+                      (config && num < config.minNoOfApproval)
+                    ) {
+                      setNumApprovals(
+                        config?.minNoOfApproval?.toString() || ""
+                      );
+                    } else if (
+                      config?.maxNoOfApproval &&
+                      num > config.maxNoOfApproval
+                    ) {
+                      toast.error(
+                        `No of Approvals must be less than or equal to ${config?.maxNoOfApproval}`
+                      );
+                    } else {
+                      setNumApprovals(value);
+                    }
                   }
                 }}
                 disabled={isLoading}
               />
+              {errors && (
+                <div className="label mt-1">
+                  <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">
+                    {errors.numApprovalsError}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 

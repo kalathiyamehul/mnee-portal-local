@@ -142,6 +142,9 @@ export function SystemStatusProvider({
 
   // Add this SSE effect to listen for real-time updates
   useEffect(() => {
+    // Only create SSE connection if authenticated
+    if (!session?.user) return;
+
     // Create SSE connection
     const eventSource = new EventSource("/api/sse");
 
@@ -872,7 +875,7 @@ export function SystemStatusProvider({
         // console.log(EVENTS.SYSTEM_UPDATE, event);
       });
     };
-  }, [fetchStatus]);
+  }, [session?.user]);
 
   const value = useMemo(
     () => ({

@@ -111,7 +111,7 @@ export const POST = withCSRF(async function(request: Request) {
 			newAppeovalID = approval.id;
 
 			await logActivity(tx, {
-				action: ActivityAction.FREEZE_REQUEST_APPROVE,
+				action: freezeRequest.action === 'UNFREEZE' ? ActivityAction.UNFREEZE_REQUEST_APPROVE : ActivityAction.FREEZE_REQUEST_APPROVE,
 				metadata: {
 					freezeRequestId,
 					freezeRequest: JSON.stringify(freezeRequest, (key, value) =>
@@ -157,7 +157,7 @@ export const POST = withCSRF(async function(request: Request) {
 				});
 
 				await logActivity(tx, {
-					action: ActivityAction.FREEZE_REQUEST_FULLY_APPROVED,
+					action: freezeRequest.action === 'UNFREEZE' ? ActivityAction.UNFREEZE_REQUEST_FULLY_APPROVED : ActivityAction.FREEZE_REQUEST_FULLY_APPROVED,
 					metadata: {
 						freezeRequestId: freezeRequestId,
 						approvals: updatedApprovals,

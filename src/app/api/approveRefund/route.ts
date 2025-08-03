@@ -17,99 +17,157 @@ import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 import { recordTransaction, TransactionType } from "@/lib/recordTransactions";
 const { toBase64 } = Utils;
 
-async function broadcastRefundTransaction(refundRequest: RefundRequest) {
-  const config = await fetchConfig();
-  if (!config) {
-    throw new Error("Config not found");
+async function broadcastRefundTransaction(
+  refundRequest: RefundRequest
+): Promise<{ success: boolean; txid?: string; error?: string }> {
+  console.log("Starting broadcastRefundTransaction:", { refundRequestId: refundRequest.id, outpoint: refundRequest.outpoint });
+
+  try {
+    const config = await fetchConfig();
+    if (!config) {
+      console.error("Config not found in database");
+      return {
+        success: false,
+        error: "System configuration not found"
+      };
+    }
+
+    const [sourceTXID, voutStr] = refundRequest.outpoint.split("_");
+    const vout = Number.parseInt(voutStr, 10);
+
+    if (!sourceTXID || Number.isNaN(vout)) {
+      console.error("Invalid outpoint format:", refundRequest.outpoint);
+      return {
+        success: false,
+        error: "Invalid outpoint format"
+      };
+    }
+
+    console.log("Creating refund transaction");
+    // Create refund transaction
+    const burnPk = PrivateKey.fromWif(await getBurnWif());
+    const tx = new Transaction();
+
+    // Add input from burn address
+    const sourceTransaction = await fetchTransaction(sourceTXID);
+    tx.addInput({
+      sourceTXID,
+      sourceOutputIndex: vout,
+      sourceTransaction,
+      unlockingScriptTemplate: new CosignTemplate().userUnlock(
+        burnPk,
+        "all",
+        true
+      ),
+    });
+
+    // get the parsed MNEEUtxo for the amount
+    const txo = await fetchTxo(refundRequest.outpoint);
+    const amount = txo.data.bsv21.amt;
+    const cosignScript = new CosignTemplate().lock(
+      refundRequest.refundAddress,
+      PublicKey.fromString(config.approver)
+    );
+    const inscriptionData = {
+      p: "bsv-20",
+      op: "transfer",
+      id: config.tokenId,
+      amt: amount.toString(),
+    };
+    const dataB64 = Buffer.from(JSON.stringify(inscriptionData)).toString(
+      "base64"
+    );
+    const inscription = {
+      dataB64,
+      contentType: "application/bsv-20",
+    } as Inscription;
+    const lockingScript = applyInscription(cosignScript, inscription);
+
+    // Add output to the refund address
+    tx.addOutput({
+      lockingScript,
+      satoshis: 1,
+    });
+
+    await tx.fee();
+    await tx.sign();
+
+    console.log("Broadcasting refund transaction to MNEE API");
+    // Broadcast transaction
+    const broadcastResponse = await fetch(`${MNEE_API}/v1/transfer`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rawtx: toBase64(tx.toBinary()),
+      }),
+    });
+
+    console.log("MNEE API Response status:", broadcastResponse.status, broadcastResponse.statusText);
+
+    if (!broadcastResponse.ok) {
+      const errorText = await broadcastResponse.text();
+      console.error("MNEE API returned error status:", {
+        status: broadcastResponse.status,
+        statusText: broadcastResponse.statusText,
+        errorText
+      });
+      return {
+        success: false,
+        error: `MNEE API error (${broadcastResponse.status}): ${errorText || broadcastResponse.statusText}`
+      };
+    }
+
+    const responseData = await broadcastResponse.json() as any;
+    console.log("Refund broadcast response:", responseData);
+
+    if (!responseData.rawtx) {
+      console.error("No transaction ID returned from MNEE API");
+      return {
+        success: false,
+        error: "No transaction ID returned from broadcast"
+      };
+    }
+
+    console.log("Refund transaction broadcast successful, rawtx:", responseData.rawtx);
+
+    return {
+      success: true,
+      txid: Transaction.fromHex(Buffer.from(responseData.rawtx, 'base64').toString('hex')).hash('hex') as string
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error || 'Unknown broadcast error');
+    console.error("Error during refund transaction broadcast:", {
+      error: errorMessage,
+      errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+      errorType: typeof error,
+      errorName: error instanceof Error ? error.name : 'Unknown'
+    });
+    return {
+      success: false,
+      error: `Broadcast failed: ${errorMessage}`
+    };
   }
-
-  const [sourceTXID, voutStr] = refundRequest.outpoint.split("_");
-  const vout = Number.parseInt(voutStr, 10);
-
-  if (!sourceTXID || Number.isNaN(vout)) {
-    throw new Error("Invalid outpoint format");
-  }
-
-  // Create refund transaction
-  const burnPk = PrivateKey.fromWif(await getBurnWif());
-  const tx = new Transaction();
-
-  // Add input from burn address
-  const sourceTransaction = await fetchTransaction(sourceTXID);
-  tx.addInput({
-    sourceTXID,
-    sourceOutputIndex: vout,
-    sourceTransaction,
-    unlockingScriptTemplate: new CosignTemplate().userUnlock(
-      burnPk,
-      "all",
-      true
-    ),
-  });
-
-  // get the parsed MNEEUtxo for the amount
-  const txo = await fetchTxo(refundRequest.outpoint);
-  const amount = txo.data.bsv21.amt;
-  const cosignScript = new CosignTemplate().lock(
-    refundRequest.refundAddress,
-    PublicKey.fromString(config.approver)
-  );
-  const inscriptionData = {
-    p: "bsv-20",
-    op: "transfer",
-    id: config.tokenId,
-    amt: amount.toString(),
-  };
-  const dataB64 = Buffer.from(JSON.stringify(inscriptionData)).toString(
-    "base64"
-  );
-  const inscription = {
-    dataB64,
-    contentType: "application/bsv-20",
-  } as Inscription;
-  const lockingScript = applyInscription(cosignScript, inscription);
-
-  // Add output to the refund address
-  tx.addOutput({
-    lockingScript,
-    satoshis: 1,
-  });
-
-  await tx.fee();
-  await tx.sign();
-
-  // Broadcast transaction
-  const broadcastResponse = await fetch(`${MNEE_API}/v1/transfer`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      rawtx: toBase64(tx.toBinary()),
-    }),
-  });
-
-  if (!broadcastResponse.ok) {
-    throw new Error("Failed to broadcast refund transaction");
-  }
-
-  const { txid } = (await broadcastResponse.json()) as IndexContext;
-  return txid;
 }
 
 export const POST = withCSRF(async function (request: Request) {
+  console.log("Starting approveRefund request");
   const session = await getServerSession(authOptions);
+  console.log("Session:", { userId: session?.user?.id });
   if (!session?.user?.id) {
+    console.log("Unauthorized: No session or user ID");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { refundRequestId } = await request.json();
-  if (!refundRequestId) {
-    return NextResponse.json(
-      { error: "Missing refundRequestId" },
-      { status: 400 }
-    );
-  }
-
+  let refundRequestId: string = "";
   try {
+    const { refundRequestId: requestId } = await request.json();
+    refundRequestId = requestId;
+    if (!refundRequestId) {
+      return NextResponse.json(
+        { error: "Missing refundRequestId" },
+        { status: 400 }
+      );
+    }
     let newAppeovalID: string;
     const result = await prisma.$transaction(async (tx) => {
       // Load refund request
@@ -195,12 +253,6 @@ export const POST = withCSRF(async function (request: Request) {
 
       // If we have enough approvals, broadcast the transaction
       if (approvalCount === refundRequest.no_of_approvals) {
-        // Update request Status to Approved
-        await tx.refundRequest.update({
-          where: { id: refundRequestId },
-          data: { status: "APPROVED" },
-        });
-
         await logActivity(tx, {
           action: ActivityAction.REFUND_REQUEST_FULLY_APPROVED,
           metadata: {
@@ -209,12 +261,26 @@ export const POST = withCSRF(async function (request: Request) {
           },
         });
         try {
-          const txid = await broadcastRefundTransaction(refundRequest);
+          console.log("Starting refund broadcasting process for request:", refundRequestId);
+          const { success, txid, error } = await broadcastRefundTransaction(refundRequest);
+          console.log("Refund broadcast result:", { success, txid, error });
+
+          if (error) {
+            console.error("Refund broadcast failed with error:", error);
+            throw new Error(`Refund broadcast failed: ${error}`);
+          }
+
+          if (!success) {
+            console.error("Refund broadcast was not successful");
+            throw new Error("Refund broadcast was not successful");
+          }
 
           if (!txid) {
-						throw new Error("Failed to broadcast refund transaction");
-					}
+            console.error("No transaction ID returned from refund broadcast");
+            throw new Error("No transaction ID returned from refund broadcast");
+          }
 
+          console.log("Updating refund request status to DONE");
           // Update with txid and mark as DONE
           const updatedRefund = await tx.refundRequest.update({
             where: { id: refundRequestId },
@@ -249,7 +315,7 @@ export const POST = withCSRF(async function (request: Request) {
           });
 
           if (burnRequest) {
-            const updatedBurn = await tx.burnRequest.update({
+            await tx.burnRequest.update({
               where: { id: burnRequest.id },
               data: {
                 status: "REFUNDED",
@@ -275,20 +341,27 @@ export const POST = withCSRF(async function (request: Request) {
 					})
           }
 
+          console.log("Refund process completed successfully");
           return { status: "DONE", txid };
         } catch (error) {
-          // If broadcasting fails, keep as APPROVED
-          console.error("Failed to broadcast refund:", error);
-          return {
-            status: "APPROVED",
-            error:
-              error instanceof Error ? error.message : "Failed to broadcast",
-          };
+          const refundError = error instanceof Error ? error.message : String(error || 'Unknown refund error');
+          console.error("Error during refund broadcasting process:", {
+            refundRequestId: refundRequestId || 'unknown',
+            error: refundError,
+            errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+            errorType: typeof error,
+            errorName: error instanceof Error ? error.name : 'Unknown'
+          });
+
+          // Clean up the error message for user display
+          const cleanErrorMessage = refundError.replace(/^Error:\s*/, "").replace(/^Refund operation failed:\s*/, "").replace(/^Refund broadcast failed:\s*/, "");
+          throw new Error(cleanErrorMessage);
         }
       }
 
+      console.log("Not enough approvals yet, staying in PENDING state");
       return { status: "PENDING" };
-    });
+    }, { timeout: 60000 });
 
     // Emit Approved event
     const approvalWithUser = await prisma.refundApproval.findUnique({
@@ -305,27 +378,41 @@ export const POST = withCSRF(async function (request: Request) {
       type: "APPROVE",
     });
 
+    console.log("Transaction completed successfully:", result);
     return NextResponse.json({
       success: true,
       message:
         result.status === "DONE"
           ? "Refund processed successfully"
-          : result.status === "APPROVED"
-          ? "Refund approved but failed to broadcast"
           : "Approval recorded",
       status: result.status,
       ...(result.txid && { txid: result.txid }),
-      ...(result.error && { error: result.error }),
     });
   } catch (error) {
-    console.error("Error processing approval:", error);
+    // Ensure we have a proper error message to log
+    const errorMessage = error instanceof Error ? error.message : String(error || 'Unknown error occurred');
+    // Safely log error information without null values
+    console.error("Error processing approval:", {
+      refundRequestId: refundRequestId || 'unknown',
+      error: errorMessage,
+      errorStack: error instanceof Error ? (error.stack || 'No stack trace') : 'Not an Error object',
+      errorType: typeof error,
+      errorName: error instanceof Error ? error.name : 'Unknown'
+    });
+
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to process approval",
+        error: errorMessage,
       },
-      { status: 500 }
+      {
+        status:
+          error instanceof Error &&
+            (error.message.includes("will remain pending") ||
+              error.message.includes("address is frozen"))
+            ? 202
+            : 500,
+      },
     );
   }
 }, createAPIRateLimit());

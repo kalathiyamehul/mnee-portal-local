@@ -137,6 +137,13 @@ export const DELETE = withCSRF(async function (
             },
         });
 
+        // Emit user session invalidation event to terminate active sessions
+        emitUserSessionInvalidate({
+            userIds: [userId],
+            reason: 'user_deleted',
+            userEmail: userToDelete.email
+        });
+
         return NextResponse.json({
             message: "User deleted successfully",
             status: 200,
