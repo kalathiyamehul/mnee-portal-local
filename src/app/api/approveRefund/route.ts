@@ -372,10 +372,7 @@ export const POST = withCSRF(async function (request: Request) {
     console.log("Transaction completed successfully:", result);
     return NextResponse.json({
       success: true,
-      message:
-        result.status === "DONE"
-          ? "Refund processed successfully"
-          : "Approval recorded",
+      message: "Request approved",
       status: result.status,
       ...(result.txid && { txid: result.txid }),
     });

@@ -172,7 +172,7 @@ export const POST = withCSRF(async function(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: result.status === 'APPROVED' ? 'Request approved' : 'Approval recorded',
+      message: "Request approved",
       approvalCount: result.approvals,
       status: result.status,
     });

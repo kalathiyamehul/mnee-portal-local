@@ -158,7 +158,7 @@ export const POST = withCSRF(async function(request: Request) {
     console.log("Transaction completed successfully:", result);
     return NextResponse.json({
       success: true,
-      message: result.status === "APPROVED" ? "Burn request approved" : "Approval recorded",
+      message: "Request approved",
       status: result.status,
     });
   } catch (error) {
