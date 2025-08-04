@@ -9,10 +9,10 @@ import type { Config } from '@prisma/client';
 import { ThemeSelector } from "@/components/ThemeSelector";
 import { useBalance } from '@/contexts/BalanceContext';
 import { MdOutlineOpenInNew } from 'react-icons/md';
-import { toast } from 'react-hot-toast';
 import { apiFetch, fetchMneeUtxos, ingestTxid } from '@/utils/api';
 import type { MNEEUtxo } from "@/types";
 import { FetchStatus } from "@/types/common";
+import CustomToast from "@/components/common/CustomToast";
 
 interface AddressCardProps {
 	title: string;
@@ -54,7 +54,7 @@ const AddressCard = ({ title, address, tooltip, source, balance, isLoading, deci
 					type="button"
 					onClick={() => {
 						navigator.clipboard.writeText(address);
-						toast.success('Address copied to clipboard');
+						CustomToast.success('Address copied to clipboard');
 					}}
 					className="btn btn-ghost btn-xs btn-square flex-none"
 					title="Copy address"
@@ -130,7 +130,7 @@ const TokenDetailsSection = ({
 									type="button"
 									onClick={() => {
 										navigator.clipboard.writeText(config.tokenId);
-										toast.success('Token ID copied to clipboard');
+										CustomToast.success('Token ID copied to clipboard');
 									}}
 									className="btn btn-ghost btn-xs btn-square"
 								>
@@ -209,7 +209,7 @@ const TokenDetailsSection = ({
 										type="button"
 										onClick={() => {
 											navigator.clipboard.writeText(tokenDetails.icon);
-											toast.success('Icon location copied to clipboard');
+											CustomToast.success('Icon location copied to clipboard');
 										}}
 										className="btn btn-ghost btn-xs btn-square"
 									>
@@ -266,7 +266,7 @@ const DashboardSettingsContent = () => {
       setBurnUtxos(utxos);
     } catch (error) {
       // console.error("Error fetching burn UTXOs:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Error fetching burn UTXOs"
       );
     } finally {
@@ -292,7 +292,7 @@ const DashboardSettingsContent = () => {
           balances[address] = data.confirmed / 1e8;
         } catch (error) {
           // console.error(`Error fetching BSV balance for ${address}:`, error);
-          toast.error(
+          CustomToast.error(
             error instanceof Error ? error.message : `Error fetching BSV balance for ${address}:`
           );
         }
@@ -301,7 +301,7 @@ const DashboardSettingsContent = () => {
       setBsvBalances(balances);
     } catch (error) {
       // console.error("Error fetching BSV balances:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Error fetching BSV balances"
       );
     } finally {
@@ -342,7 +342,7 @@ const DashboardSettingsContent = () => {
         });
       } catch (error) {
         // console.error("Error fetching config:", error);
-        toast.error(
+        CustomToast.error(
           error instanceof Error ? error.message : "Error fetching config"
         );
       } finally {
@@ -371,11 +371,11 @@ const DashboardSettingsContent = () => {
         throw new Error(error || "Failed to save configuration");
       }
 
-      toast.success("Configuration saved successfully");
+      CustomToast.success("Configuration saved successfully");
       setIsEditing(false);
     } catch (error) {
       // console.error("Error saving config:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error ? error.message : "Failed to save configuration"
       );
     } finally {

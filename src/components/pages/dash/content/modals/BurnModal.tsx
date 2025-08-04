@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { FaSpinner, FaFire } from 'react-icons/fa6';
 import { toToken } from 'satoshi-token';
+import CustomToast from '@/components/common/CustomToast';
 
 interface BurnModalProps {
   onClose: () => void;
@@ -92,15 +93,15 @@ export const BurnModal = ({ onClose, onSuccess, amount, utxo, decimals }: BurnMo
 
       if (!response.ok) {
         // console.error('Burn request failed:', data);
-        toast.error(data.error || 'Failed to create burn request');
+        CustomToast.error(data.error || 'Failed to create burn request');
         return;
       }
 
-      toast.success('Burn request created successfully');
+      CustomToast.success('Burn request created successfully');
       onSuccess();
     } catch (error) {
       // console.error('Error in burn request process:', error);
-      toast.error('Failed to create burn request. Please try again.');
+      CustomToast.error('Failed to create burn request. Please try again.');
     } finally {
       setIsLoading(false);
     }

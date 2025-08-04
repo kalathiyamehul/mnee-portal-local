@@ -17,7 +17,6 @@ import { getConfig } from "@/lib/config";
 import { toToken } from "satoshi-token";
 import type { Config, Customer } from "@prisma/client";
 import { FetchStatus } from "@/types/common";
-import toast, { ErrorIcon } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePermission } from "@/hooks/usePermission";
@@ -83,7 +82,7 @@ export default function DashboardCustomersContent() {
         setConfig(configData);
       } catch (error) {
         // console.error("Error loading config:", error);
-        toast.error("Failed to load config");
+        CustomToast.error("Failed to load config");
       }
     };
     init();
@@ -121,14 +120,14 @@ export default function DashboardCustomersContent() {
 
       if (!response.ok) {
         const { error } = await response.json();
-        toast.error(
+        CustomToast.error(
           typeof error === "string" ? error : "Failed to toggle customer state"
         );
         return;
       }
 
       const updatedCustomer = await response.json();
-      toast.success(
+      CustomToast.success(
         `Customer ${
           updatedCustomer.isActive ? "activated" : "deactivated"
         } successfully`
@@ -138,7 +137,7 @@ export default function DashboardCustomersContent() {
       fetchCustomers(pagination.page, pagination.limit);
     } catch (error) {
       console.error("Error toggling customer state:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to toggle customer state"
@@ -192,7 +191,7 @@ export default function DashboardCustomersContent() {
       }));
     } catch (error) {
       // console.error("Error exporting customers:", error);
-      toast.error("Failed to export customers");
+      CustomToast.error("Failed to export customers");
       throw error;
     }
   };
