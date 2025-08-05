@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { CustomerModal } from "../modals/CustomerModal";
 import { formatDistanceToNow } from "date-fns";
@@ -27,17 +27,18 @@ import { FaSpinner } from "react-icons/fa6";
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
-  const { customers, loading, error, fetchCustomers, pagination } =
-    useCustomer();
+  const { customers, loading, error, fetchCustomers, pagination } = useCustomer();
   const { balances, fetchBalances, balancesLoading } = useBalance();
   const [showModal, setShowModal] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
+
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
   const [togglingCustomer, setTogglingCustomer] = useState<string | null>(null);
   const { hasPermission } = usePermission();
   const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+
+  // Track the last set of addresses we fetched balances for
+  const lastFetchedAddresses = useRef<string>("");
 
   useEffect(() => {
     const init = async () => {
@@ -45,7 +46,6 @@ export default function DashboardCustomersContent() {
         const configData = await getConfig();
         setConfig(configData);
       } catch (error) {
-        // console.error("Error loading config:", error);
         toast.error("Failed to load config");
       }
     };
@@ -56,14 +56,27 @@ export default function DashboardCustomersContent() {
     fetchCustomers(pagination.page, pagination.limit);
   }, [fetchCustomers, pagination.page, pagination.limit]);
 
+  // Fixed useEffect for balance fetching
   useEffect(() => {
-    if (loading) return;
-
-    const addresses = customers?.map((c) => c.address).filter(Boolean);
-    if (addresses?.length && balancesLoading === FetchStatus.IDLE) {
+    if (loading || !customers?.length) return;
+    const addresses = customers.map((c) => c.address).filter(Boolean);
+    // Create a unique string representation of the addresses array
+    const addressesKey = addresses.sort().join(",");
+    if (
+      addresses.length && 
+      addressesKey !== lastFetchedAddresses.current && 
+      balancesLoading !== FetchStatus.LOADING
+    ) {
+      // Store the current addresses key
+      lastFetchedAddresses.current = addressesKey;
       fetchBalances(addresses);
     }
-  }, [customers, fetchBalances, balancesLoading, loading]);
+  }, [customers, balancesLoading, loading]); // Removed fetchBalances from dependencies
+
+  // Function to reset and force refetch (if needed)
+  // const resetBalancesFetch = () => {
+  //   lastFetchedAddresses.current = "";
+  // };
 
   const handleToggle = async (
     customerId: string,
@@ -79,7 +92,7 @@ export default function DashboardCustomersContent() {
       const response = await apiFetch(`/api/customers/${customerId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}), // Empty body since API toggles based on current state
+        body: JSON.stringify({}) // Empty body since API toggles based on current state
       });
 
       if (!response.ok) {
@@ -154,7 +167,6 @@ export default function DashboardCustomersContent() {
         "Created At": new Date(customer.createdAt).toLocaleDateString(),
       }));
     } catch (error) {
-      // console.error("Error exporting customers:", error);
       toast.error("Failed to export customers");
       throw error;
     }
@@ -166,8 +178,7 @@ export default function DashboardCustomersContent() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
           <ExportButtons filename="customers" onExport={handleExport} />
-          {(hasPermission(Resource.CUSTOMER, Action.CREATE) ||
-            isSuperAdmin) && (
+          {(hasPermission(Resource.CUSTOMER, Action.CREATE) || isSuperAdmin) && (
             <button
               type="button"
               onClick={() => setShowModal(true)}
@@ -298,7 +309,7 @@ export default function DashboardCustomersContent() {
                               }
                             }}
                           >
-                            {/* Toggle Circle */}
+                            {/* Toggle for Inactive/Active */}
                             <span
                               className={`
                                 inline-block h-3 w-3 transform ${
@@ -313,8 +324,7 @@ export default function DashboardCustomersContent() {
                                 }
                               `}
                             />
-
-                            {/* Loading Spinner */}
+                            {/* Spinner when toggling */}
                             {togglingCustomer === customer.id && (
                               <div className="absolute inset-0 flex items-center justify-center">
                                 <FaSpinner className="w-3 h-3 animate-spin text-white" />
