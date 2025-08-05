@@ -24,6 +24,8 @@ import { Pagination } from "@/components/common/Pagination";
 import { RefundRequest } from "@prisma/client";
 import CustomToast from "@/components/common/CustomToast";
 import { RefundTable } from "./RefundTable";
+import { useBalance } from "@/contexts/BalanceContext";
+import { FetchStatus } from "@/types/common";
 
 const getRowBorderClass = (status: string | undefined) => {
   switch (status) {
@@ -74,6 +76,7 @@ export const BurnsTab = ({
   const [selectedBurn, setSelectedBurn] = useState<BurnUtxo | null>(null);
   const [selectedRefund, setSelectedRefund] = useState<BurnUtxo | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const { balances, fetchBalances, balancesLoading } = useBalance();
   const itemsPerPage = 6;
 
   // console.log("Permissions: ", hasCreateBurnPer, hasApproveBurnPer, hasRejectBurnPer, hasCreateRefundPer);
@@ -437,6 +440,17 @@ export const BurnsTab = ({
     setCurrentPage(1);
   }, [activeBurns.length]);
 
+  useEffect(() => {
+   if (
+         balances.length && burnAddress && 
+         balancesLoading !== FetchStatus.LOADING
+       ) {
+         fetchBalances([burnAddress]);
+       }
+    
+    console.log("Balance fetch triggered for burn address:", burnAddress, balances);
+  }, [burnAddress, balancesLoading]);
+
   console.log("All Burns and Refund:", burns);
 
   // Paginated burns
@@ -780,15 +794,7 @@ export const BurnsTab = ({
                       {loading ? (
                         <span className="loading loading-spinner loading-sm" />
                       ) : (
-                        `${toToken(
-                          utxos
-                            .reduce(
-                              (total, utxo) =>
-                                total + Number(utxo.data.bsv21.amt),
-                              0
-                            )
-                            .toString(),
-                          decimals
+                        `${toToken(balances[burnAddress].toString(),decimals
                         )} MNEE`
                       )}
                     </div>
