@@ -17,12 +17,15 @@ import { getConfig } from "@/lib/config";
 import { toToken } from "satoshi-token";
 import type { Config, Customer } from "@prisma/client";
 import { FetchStatus } from "@/types/common";
-import toast, { ErrorIcon } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePermission } from "@/hooks/usePermission";
 import { Resource, Action } from "@/lib/permission";
 import { apiFetch } from "@/utils/api";
+import { CustomerHistory } from "./CustomerHistory";
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import type { Activity } from "./types";
+import CustomToast from "@/components/common/CustomToast";
 import { FaSpinner } from "react-icons/fa6";
 
 export default function DashboardCustomersContent() {
@@ -30,8 +33,11 @@ export default function DashboardCustomersContent() {
   const { customers, loading, error, fetchCustomers, pagination } = useCustomer();
   const { balances, fetchBalances, balancesLoading } = useBalance();
   const [showModal, setShowModal] = useState(false);
-
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
+  const [customersRequests, setCustomerRequests] = useState<Activity[]>([]);
+  const { statusData, fetchStatus } = useSystemStatus();
   const [config, setConfig] = useState<Config | null>(null);
   const [togglingCustomer, setTogglingCustomer] = useState<string | null>(null);
   const { hasPermission } = usePermission();
@@ -40,13 +46,45 @@ export default function DashboardCustomersContent() {
   // Track the last set of addresses we fetched balances for
   const lastFetchedAddresses = useRef<string>("");
 
+  // Customer Permissions
+  const hasCreateCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
+  const hasApproveCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+  const hasRejectCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
+  const hasUpdateCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.UPDATE) || false;
+
+  useEffect(() => {
+    if (statusData) {
+      const CustomersActivities: Activity[] = [
+        ...statusData.customerRequests.map((req) => ({
+          ...req,
+          type: "CUSTOMER" as const,
+          action: req.action,
+        })),
+      ].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      setCustomerRequests(CustomersActivities);
+    }
+  }, [statusData]);
+
   useEffect(() => {
     const init = async () => {
       try {
         const configData = await getConfig();
         setConfig(configData);
       } catch (error) {
-        toast.error("Failed to load config");
+        // console.error("Error loading config:", error);
+        CustomToast.error("Failed to load config");
       }
     };
     init();
@@ -97,14 +135,14 @@ export default function DashboardCustomersContent() {
 
       if (!response.ok) {
         const { error } = await response.json();
-        toast.error(
+        CustomToast.error(
           typeof error === "string" ? error : "Failed to toggle customer state"
         );
         return;
       }
 
       const updatedCustomer = await response.json();
-      toast.success(
+      CustomToast.success(
         `Customer ${
           updatedCustomer.isActive ? "activated" : "deactivated"
         } successfully`
@@ -114,7 +152,7 @@ export default function DashboardCustomersContent() {
       fetchCustomers(pagination.page, pagination.limit);
     } catch (error) {
       console.error("Error toggling customer state:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to toggle customer state"
@@ -167,7 +205,8 @@ export default function DashboardCustomersContent() {
         "Created At": new Date(customer.createdAt).toLocaleDateString(),
       }));
     } catch (error) {
-      toast.error("Failed to export customers");
+      // console.error("Error exporting customers:", error);
+      CustomToast.error("Failed to export customers");
       throw error;
     }
   };
@@ -419,6 +458,18 @@ export default function DashboardCustomersContent() {
           onPageChange={handlePageChange}
         />
       )}
+
+      <CustomerHistory
+        title="Customer Request History"
+        customers={customersRequests}
+        alwaysShow={true}
+        showActions={true}
+        fetchCustomers={fetchCustomers}
+        enablePagination={true}
+        itemsPerPage={6}
+        hasApproveCustomerPer = {hasApproveCustomerPer}
+        hasRejectCustomerPer = {hasRejectCustomerPer}
+      />
 
       {showModal && (
         <CustomerModal

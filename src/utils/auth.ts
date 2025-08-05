@@ -1,6 +1,7 @@
 // Import necessary modules
 import bcrypt from 'bcrypt';
 import { getUserByEmail } from '../lib/prisma';
+import { prisma } from '../lib/prisma';
 
 /**
  * Authenticates a user by email and password.
@@ -61,6 +62,87 @@ export function isPasswordValid(password: string): { valid: boolean; error?: str
     return { valid: false, error: 'Password is too common. Please choose a more secure password.' };
   }
   return { valid: true };
+}
+
+export async function isPasswordReused(userId: string, password: string, maxHistoryCount: number = 5): Promise<boolean> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { password: true }
+    });
+
+    if (user) {
+      const isCurrentPassword = await bcrypt.compare(password, user.password);
+      if (isCurrentPassword) {
+        return true;
+      }
+    }
+
+    const passwordHistory = await prisma.passwordHistory.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: maxHistoryCount,
+      select: { password: true }
+    });
+
+    for (const historicalPassword of passwordHistory) {
+      const isMatch = await bcrypt.compare(password, historicalPassword.password);
+      if (isMatch) {
+        return true;
+      }
+    }
+
+    return false;
+  } catch (error) {
+    return true;
+  }
+}
+
+export async function updatePasswordWithHistory(userId: string, newHashedPassword: string, maxHistoryCount: number = 5): Promise<void> {
+  try {
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({
+        where: { id: userId },
+        select: { password: true }
+      });
+
+      if (user) {
+        await tx.passwordHistory.create({
+          data: {
+            userId,
+            password: user.password
+          }
+        });
+
+        const oldPasswords = await tx.passwordHistory.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+          skip: maxHistoryCount,
+          select: { id: true }
+        });
+
+        if (oldPasswords.length > 0) {
+          await tx.passwordHistory.deleteMany({
+            where: {
+              id: {
+                in: oldPasswords.map(p => p.id)
+              }
+            }
+          });
+        }
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          password: newHashedPassword,
+          passwordChangedAt: new Date()
+        }
+      });
+    });
+  } catch (error) {
+    throw new Error('Failed to update password');
+  }
 }
 
 export default authenticateUser;

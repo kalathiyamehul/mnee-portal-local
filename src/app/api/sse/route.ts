@@ -33,11 +33,19 @@ export async function GET(req: NextRequest) {
                     `event: ${EVENTS.MINT_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
                 );
             };
+            // Cancel Update
             const onCancelUpdate = (data: any) => {
                 controller.enqueue(
                     `event: ${EVENTS.CANCEL_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
                 );
             };
+            // Reject Update
+            const onRejectUpdate = (data: any) => {
+                controller.enqueue(
+                    `event: ${EVENTS.REJECT_UPDATE}\ndata: ${JSON.stringify(data)}\n\n`
+                );
+            };
+
             // Customer update
             const onCustomerUpdate = (data: any) => {
                 controller.enqueue(
@@ -94,6 +102,7 @@ export async function GET(req: NextRequest) {
             // Listen for approval events
             emitter.on(EVENTS.MINT_UPDATE, onApprovalUpdate);
             emitter.on(EVENTS.CANCEL_UPDATE, onCancelUpdate);
+            emitter.on(EVENTS.REJECT_UPDATE, onRejectUpdate);
             emitter.on(EVENTS.CUSTOMER_UPDATE, onCustomerUpdate);
             emitter.on(EVENTS.RESTRICTIONS_UPDATE, onRestrictionsUpdate);
             emitter.on(EVENTS.BURN_UPDATE, onburnUpdate);
@@ -108,6 +117,7 @@ export async function GET(req: NextRequest) {
                 try {
                     emitter.off(EVENTS.MINT_UPDATE, onApprovalUpdate);
                     emitter.off(EVENTS.CANCEL_UPDATE, onCancelUpdate);
+                    emitter.off(EVENTS.REJECT_UPDATE, onRejectUpdate);
                     emitter.off(EVENTS.CUSTOMER_UPDATE, onCustomerUpdate);
                     emitter.off(EVENTS.RESTRICTIONS_UPDATE, onRestrictionsUpdate);
                     emitter.off(EVENTS.BURN_UPDATE, onburnUpdate);
@@ -123,6 +133,7 @@ export async function GET(req: NextRequest) {
             };
 
             // Clean up when the connection closes
+
             req.signal?.addEventListener("abort", cleanup);
             
             // Additional cleanup for connection errors

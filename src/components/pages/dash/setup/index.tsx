@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiFetch, fetchTransaction, ingestTxid } from '@/utils/api';
-import toast from 'react-hot-toast';
 import { ChooseMode } from './ChooseMode';
 import { DeployForm } from './DeployForm';
 import { ImportForm } from './ImportForm';
 import type { SetupMode } from './types';
 import { revalidateConfig } from '@/lib/config';
+import CustomToast from '@/components/common/CustomToast';
 
 // Default fees that will be used during setup
 const DEFAULT_FEES = [
@@ -31,7 +31,7 @@ export default function Setup() {
       if (!tokenId) return;
       const [txid, vout] = tokenId.split('_');
       if (!txid || !vout || !Number.isInteger(Number(vout)) || Number(vout) < 0 || txid.length !== 64) {
-        toast.error('Invalid token ID');
+        CustomToast.error('Invalid token ID');
         return;
       }
       // console.log({txid, vout})
@@ -41,9 +41,9 @@ export default function Setup() {
         setDecimals(data.dec);
         const tx = await fetchTransaction(txid);
         setLatestMinterTx(tx.toHex());
-        toast.success('Token details fetched successfully');
+        CustomToast.success('Token details fetched successfully');
       } catch (error) {
-        toast.error('Failed to fetch token details');
+        CustomToast.error('Failed to fetch token details');
         // console.error('Error fetching token:', error);
       } finally {
         setLoading(false);
@@ -72,12 +72,12 @@ export default function Setup() {
       await revalidateConfig();
       // console.log("[DEBUG] revalidated config");
       
-      toast.success('Token deployed and configured successfully');
+      CustomToast.success('Token deployed and configured successfully');
       // Signup functionality temporarily disabled
       // router.push('/signup');
       router.push('/login');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to deploy token');
+      CustomToast.error(error instanceof Error ? error.message : 'Failed to deploy token');
       // console.error('Error deploying token:', error);
     } finally {
       setLoading(false);
@@ -105,12 +105,12 @@ export default function Setup() {
       });
 
       if (!response.ok) throw new Error('Failed to save configuration 2');
-      toast.success('Configuration saved successfully');
+      CustomToast.success('Configuration saved successfully');
       // Signup functionality temporarily disabled
       // router.push('/signup');
       router.push('/login');
     } catch (error) {
-      toast.error('Failed to save configuration 3');
+      CustomToast.error('Failed to save configuration 3');
       // console.error('Error saving config:', error);
     } finally {
       setLoading(false);

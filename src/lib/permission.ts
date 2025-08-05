@@ -36,7 +36,7 @@ export const RESOURCE_PERMISSIONS: ResourcePermission[] = [
     },
     {
         name: Resource.CUSTOMER,
-        permissions: [Action.READ, Action.CREATE, Action.UPDATE, Action.DELETE, Action.APPROVE]
+        permissions: [Action.READ, Action.CREATE, Action.UPDATE, Action.APPROVE, Action.REJECT]
     },
     {
         name: Resource.MINT,
@@ -48,15 +48,15 @@ export const RESOURCE_PERMISSIONS: ResourcePermission[] = [
     },
     {
         name: Resource.FREEZE,
-        permissions: [Action.READ, Action.CREATE, Action.APPROVE]
+        permissions: [Action.READ, Action.CREATE, Action.APPROVE, Action.REJECT]
     },
     {
         name: Resource.BLACKLIST,
-        permissions: [Action.READ, Action.CREATE, Action.APPROVE]
+        permissions: [Action.READ, Action.CREATE, Action.APPROVE, Action.REJECT]
     },
     {
         name: Resource.REFUND,
-        permissions: [Action.READ, Action.CREATE, Action.APPROVE]
+        permissions: [Action.READ, Action.CREATE, Action.APPROVE, Action.REJECT]
     },
     {
         name: Resource.CONFIG,
@@ -66,10 +66,10 @@ export const RESOURCE_PERMISSIONS: ResourcePermission[] = [
         name: Resource.ACTIVITY_LOGS,
         permissions: [Action.READ]
     },
-    // {
-    //     name: Resource.TRANSACTIONS,
-    //     permissions: [Action.READ]
-    // },
+    {
+        name: Resource.TRANSACTIONS,
+        permissions: [Action.READ]
+    },
     {
         name: Resource.SYSTEM,
         permissions: [Action.READ, Action.UPDATE]

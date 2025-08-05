@@ -5,6 +5,7 @@ import { FaSpinner } from "react-icons/fa6";
 import { toast } from "react-hot-toast";
 import { useCustomer } from "@/contexts/CustomerContext";
 import { apiFetch } from "@/utils/api";
+import CustomToast from "@/components/common/CustomToast";
 
 interface CustomerModalProps {
   customer?: {
@@ -43,7 +44,7 @@ export function CustomerModal({
         });
       } catch (error) {
         // console.error("Error fetching config:", error);
-        toast.error("Failed to fetch configuration");
+        CustomToast.error("Failed to fetch configuration");
       }
     };
 
@@ -68,15 +69,25 @@ export function CustomerModal({
     if (name.length < 2) return "Name must be at least 2 characters long";
     if (name.length > 50) return "Name must be less than 50 characters";
     // Unicode letters, marks, spaces, hyphens, apostrophes
-    if (!/^[\p{L}\p{M}\s'-]+$/u.test(name)) return "Name can only contain letters, spaces, hyphens and apostrophes";
+    if (!/^[\p{L}\p{M}\s'-]+$/u.test(name))
+      return "Name can only contain letters, spaces, hyphens and apostrophes";
+    return "";
+  };
+
+  const validateEmail = (email: string) => {
+    // Allow Unicode letters, numbers, ., _, and - before @
+    if (!/^[\p{L}\p{N}._-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}$/u.test(email))
+      return "Please enter a valid email address";
+    if (email.length > 255) return "Email is too long";
     return "";
   };
 
   const validateAddress = (address: string) => {
     // Bitcoin address validation
     if (/\s/.test(address)) return "Address cannot contain spaces";
-    if (/[^A-Za-z0-9]/.test(address.slice(1))) return "Address can only contain letters and numbers";
-    if (!address.startsWith('1')) return "Invalid Ordinals Address";
+    if (/[^A-Za-z0-9]/.test(address.slice(1)))
+      return "Address can only contain letters and numbers";
+    if (!address.startsWith("1")) return "Invalid Ordinals Address";
     if (!/^1[A-Za-z0-9]{33,34}$/.test(address)) {
       return "Address Length must be 35 characters";
     }
@@ -161,7 +172,7 @@ export function CustomerModal({
 
       if (!response.ok) throw new Error("Failed to submit request");
 
-      toast.success(
+      CustomToast.success(
         customer
           ? "Customer updated successfully"
           : "Customer request submitted for approval"
@@ -169,7 +180,7 @@ export function CustomerModal({
       onSuccess();
     } catch (error) {
       // console.error("Error saving customer request:", error);
-      toast.error(
+      CustomToast.error(
         customer
           ? "Failed to update customer"
           : "Failed to submit customer request"
@@ -200,9 +211,13 @@ export function CustomerModal({
                 placeholder="Enter customer name"
                 required
               />
-              {errors.name && <div className="label mt-1">
-                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.name}</span>
-              </div>}
+              {errors.name && (
+                <div className="label mt-1">
+                  <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">
+                    {errors.name}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="form-control w-full mb-4">
@@ -213,14 +228,18 @@ export function CustomerModal({
                   errors.address ? "input-error" : ""
                 }`}
                 value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
+                onChange={(e) => handleInputChange("address", e.target.value)}
                 maxLength={35}
                 placeholder="Enter 1Sat Ordinals address"
                 required
               />
-              {errors.address && <div className="label mt-1">
-                <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">{errors.address}</span>
-              </div>}
+              {errors.address && (
+                <div className="label mt-1">
+                  <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">
+                    {errors.address}
+                  </span>
+                </div>
+              )}
             </div>
             {customer ? (
               ""
@@ -262,8 +281,8 @@ export function CustomerModal({
                         config?.maxNoOfApproval &&
                         num > config.maxNoOfApproval
                       ) {
-                        toast.error(
-                          `No of Approvals must be less than or equal to ${config.maxNoOfApproval}`
+                        CustomToast.error(
+                          `No of Approvals must be less than or equal to ${config?.maxNoOfApproval}`
                         );
                         return;
                       }

@@ -39,6 +39,8 @@ model User {
   blacklistApprovals BlacklistApproval[] @relation("UserBlacklistApprovals")
   refundRequests    RefundRequest[]    @relation("UserRefundRequests")
   refundApprovals   RefundApproval[]   @relation("UserRefundApprovals")
+  transactionRecords      TransactionRecords[]     @relation("UserTransactionRecords")
+  passwordHistory   PasswordHistory[]  @relation("UserPasswordHistory")
   roleId            String?
   role              Role?              @relation(fields: [roleId], references: [id])
 
@@ -381,11 +383,36 @@ model ActivityLog {
   name        String
   action      String
   description String
+  redirectUrl String   @default("")
   metadata    Json?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("activity_log")
+}
+
+// Enum for transaction types
+enum TransactionType {
+  MINT
+  BURN  
+  REFUND
+}
+
+model TransactionRecords {
+  id              String            @id @default(uuid())
+  txid            String            @unique
+  requestId       String            @map("request_id")
+  type            TransactionType
+  timestamp       DateTime?         // Transaction timestamp from blockchain
+  requestedBy     String            @map("requested_by")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+  approvers       Json           // JSON array of approvers
+
+  // Relations
+  requester       User              @relation("UserTransactionRecords", fields: [requestedBy], references: [id])
+  
+  @@map("transactionRecords")
 }
 
 // Rate limiting and brute force protection models
@@ -415,4 +442,32 @@ model AccountLockout {
 
   @@index([email, lockedUntil])
   @@map("account_lockout")
+}
+
+model PasswordHistory {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  password  String   // Hashed password
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation("UserPasswordHistory", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("password_history")
+}
+
+model OtpToken {
+  id        String   @id @default(cuid())
+  email     String   
+  token     String   // The OTP token (6 digits)
+  expiresAt DateTime @map("expires_at")
+  isUsed    Boolean  @default(false) @map("is_used")
+  attempts  Int      @default(0) // Track verification attempts
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([email, expiresAt])
+  @@index([token, expiresAt])
+  @@map("otp_token")
 }

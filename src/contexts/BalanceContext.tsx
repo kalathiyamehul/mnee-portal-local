@@ -11,8 +11,8 @@ import {
 } from "react";
 import { fetchMneeUtxos, fetchConfig, fetchCustomerBalance } from "@/utils/api";
 import { sanitizeError, getDisplayMessage } from "@/utils/errorHandler";
-import { toast } from "react-hot-toast";
 import { FetchStatus } from "@/types/common";
+import CustomToast from '@/components/common/CustomToast';
 
 interface BalanceContextType {
   balances: { [address: string]: number };
@@ -49,7 +49,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
         error,
         "Failed to fetch MNEE balance"
       );
-      toast.error(getDisplayMessage(sanitizedError));
+      CustomToast.error(getDisplayMessage(sanitizedError));
       setBalancesLoading(FetchStatus.ERROR);
     }
   }, []);
@@ -97,7 +97,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
           error,
           "Failed to fetch MNEE balances"
         );
-        toast.error(getDisplayMessage(sanitizedError));
+        CustomToast.error(getDisplayMessage(sanitizedError));
         // console.log('Setting error state...');
         setBalancesLoading(FetchStatus.ERROR);
       }
@@ -116,7 +116,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         // console.error("Error fetching config:", error);
         const sanitizedError = sanitizeError(error, "Error fetching config");
-        toast.error(getDisplayMessage(sanitizedError));
+        CustomToast.error(getDisplayMessage(sanitizedError));
       }
     };
     init();

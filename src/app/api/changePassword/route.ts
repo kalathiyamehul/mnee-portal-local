@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/prisma';
 import { authOptions } from '@/lib/authOptions';
 import bcrypt from 'bcrypt';
-import { isPasswordValid } from '@/utils/auth';
+import { isPasswordValid, isPasswordReused, updatePasswordWithHistory } from '@/utils/auth';
 import { withCSRF } from '@/lib/csrf';
 import { createAPIRateLimit } from '@/lib/rateLimitHelpers';
 import { emitPasswordChanged } from '@/lib/sseEmitter';
@@ -57,27 +57,31 @@ export const POST = withCSRF(async function(request: Request) {
             );
         }
 
-        // Check if new password is different from current
-        const isSamePassword = await bcrypt.compare(newPassword, user.password);
-        if (isSamePassword) {
-            console.log('[Change Password] Error: New password must be different from current password');
+        // Check if password has been used before (including current password and history)
+        const isReused = await isPasswordReused(session.user.id, newPassword);
+        if (isReused) {
+            console.log('[Change Password] Error: Password has been used before');
             return NextResponse.json(
-                { error: 'New password must be different from current password' },
+                { error: 'Password has been used before. Please choose a different password.' },
                 { status: 400 }
             );
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 12);
 
-        // Update the user's password and set passwordChangedAt to invalidate existing sessions
-        const updatedUser = await prisma.user.update({
+        // Update the user's password using the password history function
+        await updatePasswordWithHistory(session.user.id, hashedPassword);
+
+        // Get updated user info for response
+        const updatedUser = await prisma.user.findUnique({
             where: { id: session.user.id },
-            data: {
-                password: hashedPassword,
-                passwordChangedAt: new Date() // This will invalidate all existing JWT tokens
-            },
             select: { id: true, email: true }
         });
+
+        if (!updatedUser) {
+            console.log('[Change Password] Error: User not found after update');
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        }
 
         console.log('[Change Password] Update successful:', {
             userId: updatedUser.id

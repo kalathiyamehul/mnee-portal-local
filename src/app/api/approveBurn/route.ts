@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey, Transaction } from "@bsv/sdk";
+import { PrivateKey, Transaction, Utils } from "@bsv/sdk";
 import { getBurnWif, getMintWif, MNEE_API, MNEE_WEBHOOK_API } from "@/env";
 import { fetchConfig, fetchRawTx, fetchTransaction } from "@/utils/api";
 import { isSystemPaused } from "@/lib/systemStatus";
 import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { recordTransaction, TransactionType } from "@/lib/recordTransactions";
+const { toArray } = Utils;
 import { createRedeemTx } from "@/new-cosiner/src/services/redeem";
 import { parseTransaction } from "@/new-cosiner/src/services/helper";
 
@@ -134,6 +136,16 @@ export const POST = withCSRF(async function(request: Request) {
               ),
             },
           });
+          
+          await recordTransaction(tx, {
+						requestId: burnRequestId,
+						txid: Transaction.fromHex(rawtx).id("hex"),
+						requestedBy: burnRequest.requestedBy,
+						timestamp: new Date(),
+						type: TransactionType.BURN,
+            approvers: burnRequest.approvals,
+					})
+
           console.log("Burn process completed successfully");
           return { status: "DONE", approval };
         } catch (error) {
