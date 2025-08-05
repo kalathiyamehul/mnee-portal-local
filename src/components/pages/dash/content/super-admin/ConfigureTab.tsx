@@ -83,16 +83,13 @@ const ConfigureTab = () => {
           itemErrors.max = "Max must be non-negative";
         }
         if (maxValue > Number.MAX_SAFE_INTEGER && maxValue !== Number.MAX_SAFE_INTEGER) {
-          itemErrors.max = `Max cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`;
+          itemErrors.max = `Max cannot exceed ${Number.MAX_SAFE_INTEGER.toLocaleString()} (Infinity limit)`;
         }
       }
 
       if (!isNaN(minValue)) {
         if (minValue < 0) {
           itemErrors.min = "Min must be non-negative";
-        }
-        if (minValue > INT4_MAX) {
-          itemErrors.min = `Min cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`;
         }
       }
 
@@ -227,8 +224,8 @@ const ConfigureTab = () => {
     }
     
     // Validate int4 range for fee and min fields (max can be infinity)
-    if ((field === 'fee' || field === 'min') && !isNaN(numericValue) && numericValue > INT4_MAX) {
-      return; // Don't update if outside int4 range
+    if ((field === 'fee' || field === 'min') && !isNaN(numericValue) && numericValue > Number.MAX_SAFE_INTEGER) {
+      return; // Don't update if outside Infinity range
     }
     
     const newItems = [...items];
@@ -495,7 +492,7 @@ const ConfigureTab = () => {
                       }`}
                       placeholder="Fee amount"
                       min="0"
-                      max={INT4_MAX}
+                      max={Number.MAX_SAFE_INTEGER}
                     />
                   ) : (
                     <p>{toToken(typeof item?.fee === 'string' ? parseFloat(item.fee) || 0 : item?.fee, config?.decimals ?? 0)} MNEE</p>
@@ -520,7 +517,6 @@ const ConfigureTab = () => {
                       }`}
                       placeholder="Minimum"
                       min="0"
-                      max={INT4_MAX}
                     />
                   ) : (
                     <p>{toToken(typeof item?.min === 'string' ? parseFloat(item.min) || 0 : item?.min, config?.decimals ?? 0)} MNEE</p>

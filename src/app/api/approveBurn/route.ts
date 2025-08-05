@@ -9,6 +9,8 @@ import { isSystemPaused } from "@/lib/systemStatus";
 import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { recordTransaction, TransactionType } from "@/lib/recordTransactions";
+const { toArray } = Utils;
 import { createRedeemTx } from "@/new-cosiner/src/services/redeem";
 import { parseTransaction } from "@/new-cosiner/src/services/helper";
 
@@ -150,6 +152,41 @@ export const POST = withCSRF(async function(request: Request) {
           const cleanErrorMessage = burnError.replace(/^Error:\s*/, "").replace(/^Burn operation failed:\s*/, "");
           throw new Error(cleanErrorMessage);
         }
+
+        const cosignResponseJson = (await cosignResponse.json()) as { rawtx: string };
+        const cosignTx = Transaction.fromBinary(toArray(cosignResponseJson.rawtx, 'base64'));
+        if (!cosignTx) {
+          throw new Error("Failed to parse cosigned transaction");
+        }
+
+        await tx.burnRequest.update({
+          where: { id: burnRequestId },
+          data: {
+            status: "APPROVED",
+            updatedAt: new Date(),
+            txid: cosignTx.id('hex'),
+          },
+        });
+
+        await logActivity(tx, {
+          action: ActivityAction.BURN_REQUEST_FULLY_APPROVED,
+          metadata: {
+            burnRequestId: burnRequestId,
+            txid: cosignTx.id('hex'),
+            burnTx: cosignTx.toHex(),
+          },
+        });
+
+        await recordTransaction(tx, {
+						requestId: burnRequestId || '',
+						txid: cosignTx.id('hex'),
+						requestedBy: burnRequest.requestedBy,
+						timestamp: new Date(),
+						type: TransactionType.BURN,
+            approvers: burnRequest.approvals,
+					})
+
+        return { status: "APPROVED", burnTx: cosignTx.toHex() };
       }
       console.log("Not enough approvals yet, staying in PENDING state");
       return { status: "PENDING", approval };

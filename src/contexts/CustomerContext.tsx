@@ -1,5 +1,6 @@
 "use client";
 
+import CustomToast from '@/components/common/CustomToast';
 import { apiFetch } from '@/utils/api';
 import {
   sanitizeError,
@@ -17,7 +18,6 @@ import {
   useEffect,
 } from "react";
 import { EVENTS } from "@/lib/sseEmitter";
-import { toast } from "react-hot-toast";
 
 interface Customer {
   id: string;
@@ -91,7 +91,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
         );
         const error = new Error(sanitizedError.message);
         setError(error);
-        toast.error(getDisplayMessage(sanitizedError));
+        CustomToast.error(getDisplayMessage(sanitizedError));
         return;
       }
       const data: PaginatedResponse = await response.json();
@@ -101,7 +101,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       const sanitizedError = sanitizeError(err, "Failed to fetch customers");
       const error = new Error(sanitizedError.message);
       setError(error);
-      toast.error(getDisplayMessage(sanitizedError));
+      CustomToast.error(getDisplayMessage(sanitizedError));
     } finally {
       setLoading(false);
     }

@@ -8,6 +8,7 @@ import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import type { Prisma } from "@prisma/client";
 import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { emitMintUpdate } from "@/lib/sseEmitter";
+import { recordTransaction, TransactionType } from "@/lib/recordTransactions";
 import { createMintOp } from "@/new-cosiner/src/services/mint";
 import { parseTransaction } from "@/new-cosiner/src/services/helper";
 
@@ -165,13 +166,27 @@ export const POST = async function (request: Request) {
 					});
 
 					await logActivity(tx, {
-						action: ActivityAction.MINT_REQUEST_FULLY_APPROVED,
+						action: ActivityAction.MINT_TX_COMPLETED,
 						metadata: {
 							mintRequestId,
-							approvalsCount,
+							txid: Transaction.fromHex(rawtx).id("hex"),
 						},
 					});
-					console.log("Mint process completed successfully");
+
+					await recordTransaction(tx, {
+						requestId: mintRequestId || '',
+						txid: Transaction.fromHex(rawtx).id("hex"),
+						requestedBy: mintRequest.requestedBy,
+						timestamp: new Date(),
+						type: TransactionType.MINT,
+						approvers: mintRequest.approvals,
+					})
+
+					emitMintUpdate({
+						activityId: requestId,
+						approval: "Mint Request Fully Approved",
+						type: "APPROVED",
+					});
 					return { status: "DONE", approvalsCount, minterTx: rawtx, approval };
 				} catch (error) {
 					const mintError = error instanceof Error ? error.message : String(error || 'Unknown minting error');

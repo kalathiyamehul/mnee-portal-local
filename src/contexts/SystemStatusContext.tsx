@@ -10,7 +10,6 @@ import {
 } from "react";
 import type { Activity } from "@/components/pages/dash/content/admin/types";
 import { useSession } from "next-auth/react";
-import toast from "react-hot-toast";
 import { apiFetch } from "@/utils/api";
 import {
   sanitizeError,
@@ -18,6 +17,7 @@ import {
   getDisplayMessage,
 } from "@/utils/errorHandler";
 import { EVENTS } from "@/lib/sseEmitter";
+import CustomToast from "@/components/common/CustomToast";
 
 interface SystemStatusData {
   isPaused: boolean;
@@ -90,7 +90,7 @@ export function SystemStatusProvider({
         error,
         "Failed to fetch system status"
       );
-      toast.error(getDisplayMessage(sanitizedError));
+      CustomToast.error(getDisplayMessage(sanitizedError));
       setStatusData(null);
     }
   }, [session?.user]);
@@ -179,25 +179,6 @@ export function SystemStatusProvider({
             return {
               ...prev,
               mintRequests: updateActivity(prev.mintRequests),
-            };
-          });
-        }
-        if (type === "REJECT") {
-          setStatusData((prev: any) => {
-            if (!prev) return prev;
-            const updatedMint = prev.mintRequests.map((activity: any) => {
-              if (activity.id === activityId) {
-                return {
-                  ...activity,
-                  status: "REJECTED",
-                };
-              }
-              return activity;
-            });
-
-            return {
-              ...prev,
-              mintRequests: updatedMint,
             };
           });
         }
@@ -383,6 +364,151 @@ export function SystemStatusProvider({
         // console.error("Error handling SSE event:", error);
       }
     });
+    eventSource.addEventListener(EVENTS.REJECT_UPDATE, (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        // console.log("data", data);
+        const {
+          actionRequestId,
+          freezeRequestId,
+          blacklistRequestId,
+          mintRequestId,
+          burnRequestId,
+          refundRequestId,
+          customerRequestId,
+        } = data;
+        if (actionRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedCustomer = prev.customerRequests.map((activity: any) => {
+              if (activity.id === customerRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              systemRequests: updatedCustomer,
+            };
+          });
+        }
+        if (freezeRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedFreeze = prev.freezeRequests.map((activity: any) => {
+              if (activity.id === freezeRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              freezeRequests: updatedFreeze,
+
+            };
+          });
+        }
+        if (blacklistRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedBlacklist = prev.blacklistRequests.map((activity: any) => {
+              if (activity.id === blacklistRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              blacklistRequests: updatedBlacklist,
+            };
+          });
+        }
+        if (mintRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedMint = prev.mintRequests.map((activity: any) => {
+              if (activity.id === mintRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+
+            return {
+              ...prev,
+              mintRequests: updatedMint,
+            };
+          });
+        }
+        if (burnRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedBurn = prev.burnRequests.map((activity: any) => {
+              if (activity.id === burnRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              burnRequests: updatedBurn,
+            };
+          });
+        }
+        if (refundRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedRefund = prev.refundRequests.map((activity: any) => {
+              if (activity.id === refundRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              refundRequests: updatedRefund,
+            };
+          });
+        }
+        if (customerRequestId) {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedCustomer = prev.customerRequests.map((activity: any) => {
+              if (activity.id === customerRequestId) {
+                return {
+                  ...activity,
+                  status: "REJECTED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              customerRequests: updatedCustomer
+            };
+          });
+        }
+      } catch (error) {
+        // console.error("Error handling SSE event:", error);
+      }
+    });
     eventSource.addEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
       try {
         const data = JSON.parse(event.data);
@@ -539,18 +665,6 @@ export function SystemStatusProvider({
             return {
               ...prev,
               burnRequests: [...prev.burnRequests, burnRequest],
-            };
-          });
-        }
-        // Reject Burn requests
-        if (type === "REJECT") {
-          setStatusData((prev: any) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              burnRequests: prev.mintRequests.filter(
-                (activity: any) => activity.id !== activityId
-              ),
             };
           });
         }
@@ -736,6 +850,30 @@ export function SystemStatusProvider({
     return () => {
       // console.log("Closing SSE connection");
       eventSource.close();
+      eventSource.removeEventListener(EVENTS.MINT_UPDATE, (event) => {
+        // console.log(EVENTS.MINT_UPDATE, event);
+      });
+      eventSource.removeEventListener(EVENTS.CANCEL_UPDATE, (event) => {
+        // console.log(EVENTS.CANCEL_UPDATE, event);
+      });
+      eventSource.removeEventListener(EVENTS.REJECT_UPDATE, (event) => {
+        // console.log(EVENTS.REJECT_UPDATE, event);
+      });
+      eventSource.removeEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
+        // console.log(EVENTS.CUSTOMER_UPDATE, event);
+      });
+      eventSource.removeEventListener(EVENTS.RESTRICTIONS_UPDATE, (event) => {
+        // console.log(EVENTS.RESTRICTIONS_UPDATE, event);
+      });
+      eventSource.removeEventListener(EVENTS.BURN_UPDATE, (event) => {
+        // console.log(EVENTS.BURN_UPDATE, event);
+      });
+      eventSource.removeEventListener(EVENTS.REFUND_UPDATE, (event) => {
+        // console.log(EVENTS.REFUND_UPDATE, event);
+      });
+      eventSource.removeEventListener(EVENTS.SYSTEM_UPDATE, (event) => {
+        // console.log(EVENTS.SYSTEM_UPDATE, event);
+      });
     };
   }, [session?.user]);
 

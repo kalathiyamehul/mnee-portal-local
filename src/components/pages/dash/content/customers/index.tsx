@@ -17,12 +17,15 @@ import { getConfig } from "@/lib/config";
 import { toToken } from "satoshi-token";
 import type { Config, Customer } from "@prisma/client";
 import { FetchStatus } from "@/types/common";
-import toast, { ErrorIcon } from "react-hot-toast";
 import { Pagination } from "@/components/common/Pagination";
 import { ExportButtons } from "@/components/common/ExportButtons";
 import { usePermission } from "@/hooks/usePermission";
 import { Resource, Action } from "@/lib/permission";
 import { apiFetch } from "@/utils/api";
+import { CustomerHistory } from "./CustomerHistory";
+import { useSystemStatus } from "@/contexts/SystemStatusContext";
+import type { Activity } from "./types";
+import CustomToast from "@/components/common/CustomToast";
 import { FaSpinner } from "react-icons/fa6";
 
 export default function DashboardCustomersContent() {
@@ -34,10 +37,43 @@ export default function DashboardCustomersContent() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
+  const [customersRequests, setCustomerRequests] = useState<Activity[]>([]);
+  const { statusData, fetchStatus } = useSystemStatus();
   const [config, setConfig] = useState<Config | null>(null);
   const [togglingCustomer, setTogglingCustomer] = useState<string | null>(null);
   const { hasPermission } = usePermission();
   const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+
+  // Customer Permissions
+  const hasCreateCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.CREATE) || false;
+  const hasApproveCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.APPROVE) || false;
+  const hasRejectCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.REJECT) || false;
+  const hasUpdateCustomerPer = isSuperAdmin
+    ? true
+    : hasPermission(Resource.CUSTOMER, Action.UPDATE) || false;
+
+  useEffect(() => {
+    if (statusData) {
+      const CustomersActivities: Activity[] = [
+        ...statusData.customerRequests.map((req) => ({
+          ...req,
+          type: "CUSTOMER" as const,
+          action: req.action,
+        })),
+      ].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+
+      setCustomerRequests(CustomersActivities);
+    }
+  }, [statusData]);
 
   useEffect(() => {
     const init = async () => {
@@ -46,7 +82,7 @@ export default function DashboardCustomersContent() {
         setConfig(configData);
       } catch (error) {
         // console.error("Error loading config:", error);
-        toast.error("Failed to load config");
+        CustomToast.error("Failed to load config");
       }
     };
     init();
@@ -84,14 +120,14 @@ export default function DashboardCustomersContent() {
 
       if (!response.ok) {
         const { error } = await response.json();
-        toast.error(
+        CustomToast.error(
           typeof error === "string" ? error : "Failed to toggle customer state"
         );
         return;
       }
 
       const updatedCustomer = await response.json();
-      toast.success(
+      CustomToast.success(
         `Customer ${
           updatedCustomer.isActive ? "activated" : "deactivated"
         } successfully`
@@ -101,7 +137,7 @@ export default function DashboardCustomersContent() {
       fetchCustomers(pagination.page, pagination.limit);
     } catch (error) {
       console.error("Error toggling customer state:", error);
-      toast.error(
+      CustomToast.error(
         error instanceof Error
           ? error.message
           : "Failed to toggle customer state"
@@ -155,7 +191,7 @@ export default function DashboardCustomersContent() {
       }));
     } catch (error) {
       // console.error("Error exporting customers:", error);
-      toast.error("Failed to export customers");
+      CustomToast.error("Failed to export customers");
       throw error;
     }
   };
@@ -166,8 +202,7 @@ export default function DashboardCustomersContent() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
           <ExportButtons filename="customers" onExport={handleExport} />
-          {(hasPermission(Resource.CUSTOMER, Action.CREATE) ||
-            isSuperAdmin) && (
+          {hasCreateCustomerPer && (
             <button
               type="button"
               onClick={() => setShowModal(true)}
@@ -268,85 +303,8 @@ export default function DashboardCustomersContent() {
                   </div>
                 </td>
                 <td>
-                  <div className="flex gap-2 z-50">
-                    {(hasPermission(Resource.CUSTOMER, Action.DELETE) ||
-                      isSuperAdmin) && (
-                      <div
-                        className={`z-50 w-28 flex items-center gap-2 form-control tooltip ${
-                          customer.isActive
-                            ? "tooltip-error"
-                            : "tooltip-success"
-                        } tooltip-top`}
-                        data-tip={`Toggle to ${
-                          customer.isActive ? "Inactivate" : "Activate"
-                        } Customer`}
-                      >
-                        <label className="cursor-pointer relative">
-                          <div
-                            className={`
-                              relative inline-flex h-5 w-8 items-center transition-colors duration-200 ease-in-out bg-transparent border ${customer.isActive ? "border-success" : "border-error"}
-                              ${
-                                togglingCustomer === customer.id
-                                  ? "opacity-50"
-                                  : ""
-                              }
-                            `}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (togglingCustomer !== customer.id) {
-                                handleToggle(customer.id, e as any);
-                              }
-                            }}
-                          >
-                            {/* Toggle Circle */}
-                            <span
-                              className={`
-                                inline-block h-3 w-3 transform ${
-                                  customer.isActive
-                                    ? "bg-success shadow-lg"
-                                    : "bg-error shadow-lg"
-                                }transition-transform duration-200 ease-in-out
-                                ${
-                                  !customer.isActive
-                                    ? "translate-x-4"
-                                    : "translate-x-0.5"
-                                }
-                              `}
-                            />
-
-                            {/* Loading Spinner */}
-                            {togglingCustomer === customer.id && (
-                              <div className="absolute inset-0 flex items-center justify-center">
-                                <FaSpinner className="w-3 h-3 animate-spin text-white" />
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Hidden input for accessibility */}
-                          <input
-                            type="checkbox"
-                            className="sr-only"
-                            checked={!customer.isActive}
-                            onChange={() => {}}
-                            disabled={togglingCustomer === customer.id}
-                          />
-                          {togglingCustomer === customer.id && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <FaSpinner className="w-3 h-3 animate-spin" />
-                            </div>
-                          )}
-                        </label>
-                        <span
-                          className={`${
-                            customer.isActive ? "text-success" : "text-error"
-                          }`}
-                        >
-                          {customer.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </div>
-                    )}
-                    {(hasPermission(Resource.CUSTOMER, Action.UPDATE) ||
-                      isSuperAdmin) && (
+                  <div className="flex gap-2">
+                    {hasUpdateCustomerPer && (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -409,6 +367,18 @@ export default function DashboardCustomersContent() {
           onPageChange={handlePageChange}
         />
       )}
+
+      <CustomerHistory
+        title="Customer Request History"
+        customers={customersRequests}
+        alwaysShow={true}
+        showActions={true}
+        fetchCustomers={fetchCustomers}
+        enablePagination={true}
+        itemsPerPage={6}
+        hasApproveCustomerPer = {hasApproveCustomerPer}
+        hasRejectCustomerPer = {hasRejectCustomerPer}
+      />
 
       {showModal && (
         <CustomerModal

@@ -4,7 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFilePdf } from "react-icons/fa6";
 import { TbFileTypeCsv, TbFileTypePdf } from "react-icons/tb";
-import { toast } from "react-hot-toast";
+import CustomToast from "./CustomToast";
 
 interface ExportButtonsProps {
   data?: any[];
@@ -32,7 +32,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
       setLoading(true);
       const exportData = onExport ? await onExport() : data;
       if (!exportData?.length) {
-        toast.error("No data to export");
+        CustomToast.error("No data to export");
         return;
       }
       const csv = Papa.unparse(exportData);
@@ -46,7 +46,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
       document.body.removeChild(link);
     } catch (error) {
       // console.error("Error exporting CSV:", error);
-      toast.error("Failed to export CSV");
+      CustomToast.error("Failed to export CSV");
     } finally {
       setLoading(false);
     }
@@ -57,7 +57,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
       setLoading(true);
       const exportData = onExport ? await onExport() : data;
       if (!exportData?.length) {
-        toast.error("No data to export");
+        CustomToast.error("No data to export");
         return;
       }
 
@@ -96,7 +96,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
       doc.save(`${filename}.pdf`);
     } catch (error) {
       // console.error("Error exporting PDF:", error);
-      toast.error("Failed to export PDF");
+      CustomToast.error("Failed to export PDF");
     } finally {
       setLoading(false);
     }

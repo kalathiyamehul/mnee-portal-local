@@ -14,6 +14,7 @@ import { ActivityAction, logActivity } from "@/lib/activityLogger";
 import { withCSRF } from "@/lib/csrf";
 import { emitrefundUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
+import { recordTransaction, TransactionType } from "@/lib/recordTransactions";
 const { toBase64 } = Utils;
 
 async function broadcastRefundTransaction(
@@ -259,7 +260,6 @@ export const POST = withCSRF(async function (request: Request) {
             approvalCount,
           },
         });
-
         try {
           console.log("Starting refund broadcasting process for request:", refundRequestId);
           const { success, txid, error } = await broadcastRefundTransaction(refundRequest);
@@ -285,8 +285,8 @@ export const POST = withCSRF(async function (request: Request) {
           const updatedRefund = await tx.refundRequest.update({
             where: { id: refundRequestId },
             data: {
-              status: "DONE",
-              txid,
+              status: "REFUNDED",
+              txid: txid,
               updatedAt: new Date(),
             },
           });
@@ -330,6 +330,15 @@ export const POST = withCSRF(async function (request: Request) {
                 refundRequestId,
               },
             });
+
+            await recordTransaction(tx, {
+						requestId: refundRequestId || '',
+						txid: txid,
+						requestedBy: refundRequest.requestedBy,
+						timestamp: new Date(),
+						type: TransactionType.REFUND,
+            approvers: refundRequest.approvals,
+					})
           }
 
           console.log("Refund process completed successfully");

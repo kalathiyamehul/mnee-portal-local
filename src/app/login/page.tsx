@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -15,12 +15,23 @@ function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dash";
+  const message = searchParams.get("message");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [showTwoFactor, setShowTwoFactor] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
+
+  // Show success message for password reset
+  useEffect(() => {
+    if (message === "password-reset-success") {
+      // You can use a toast notification here if you prefer
+      setTimeout(() => {
+        router.replace("/login"); // Remove the message parameter
+      }, 5000);
+    }
+  }, [message, router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -87,6 +98,32 @@ function LoginPageInner() {
             </p>
           )}
         </div>
+
+        {/* Success message for password reset */}
+        {message === "password-reset-success" && (
+          <div className="alert alert-success">
+            <div className="flex items-center">
+              <svg
+                className="w-6 h-6 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span>
+                Password changed successfully! You can now log in with your new
+                password.
+              </span>
+            </div>
+          </div>
+        )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {!showTwoFactor ? (
             <div className="rounded-md shadow-sm space-y-4">
@@ -175,6 +212,18 @@ function LoginPageInner() {
             >
               Back to Login
             </button>
+          )}
+
+          {!showTwoFactor && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => router.push("/forgot-password")}
+                className="link link-primary text-sm"
+              >
+                Forgot your password?
+              </button>
+            </div>
           )}
         </form>
       </div>
