@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey, Transaction } from "@bsv/sdk";
+import { PrivateKey, Transaction, Utils } from "@bsv/sdk";
 import { getBurnWif, getMintWif, MNEE_API, MNEE_WEBHOOK_API } from "@/env";
 import { fetchConfig, fetchRawTx, fetchTransaction } from "@/utils/api";
 import { isSystemPaused } from "@/lib/systemStatus";
@@ -136,6 +136,16 @@ export const POST = withCSRF(async function(request: Request) {
               ),
             },
           });
+          
+          await recordTransaction(tx, {
+						requestId: burnRequestId,
+						txid: Transaction.fromHex(rawtx).id("hex"),
+						requestedBy: burnRequest.requestedBy,
+						timestamp: new Date(),
+						type: TransactionType.BURN,
+            approvers: burnRequest.approvals,
+					})
+
           console.log("Burn process completed successfully");
           return { status: "DONE", approval };
         } catch (error) {
@@ -152,41 +162,6 @@ export const POST = withCSRF(async function(request: Request) {
           const cleanErrorMessage = burnError.replace(/^Error:\s*/, "").replace(/^Burn operation failed:\s*/, "");
           throw new Error(cleanErrorMessage);
         }
-
-        const cosignResponseJson = (await cosignResponse.json()) as { rawtx: string };
-        const cosignTx = Transaction.fromBinary(toArray(cosignResponseJson.rawtx, 'base64'));
-        if (!cosignTx) {
-          throw new Error("Failed to parse cosigned transaction");
-        }
-
-        await tx.burnRequest.update({
-          where: { id: burnRequestId },
-          data: {
-            status: "APPROVED",
-            updatedAt: new Date(),
-            txid: cosignTx.id('hex'),
-          },
-        });
-
-        await logActivity(tx, {
-          action: ActivityAction.BURN_REQUEST_FULLY_APPROVED,
-          metadata: {
-            burnRequestId: burnRequestId,
-            txid: cosignTx.id('hex'),
-            burnTx: cosignTx.toHex(),
-          },
-        });
-
-        await recordTransaction(tx, {
-						requestId: burnRequestId || '',
-						txid: cosignTx.id('hex'),
-						requestedBy: burnRequest.requestedBy,
-						timestamp: new Date(),
-						type: TransactionType.BURN,
-            approvers: burnRequest.approvals,
-					})
-
-        return { status: "APPROVED", burnTx: cosignTx.toHex() };
       }
       console.log("Not enough approvals yet, staying in PENDING state");
       return { status: "PENDING", approval };
@@ -195,7 +170,7 @@ export const POST = withCSRF(async function(request: Request) {
     console.log("Transaction completed successfully:", result);
     return NextResponse.json({
       success: true,
-      message: result.status === "APPROVED" ? "Burn request approved" : "Approval recorded",
+      message: "Request approved",
       status: result.status,
     });
   } catch (error) {

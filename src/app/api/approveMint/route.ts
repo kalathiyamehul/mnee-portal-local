@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey, PublicKey } from "@bsv/sdk";
+import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
 import { APPROVER_PUBKEY, getMintWif, MNEE_API, MNEE_WEBHOOK_API } from "@/env";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import type { Prisma } from "@prisma/client";

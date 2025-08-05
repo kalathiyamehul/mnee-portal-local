@@ -201,7 +201,7 @@ export const POST = withCSRF(async function(request: Request) {
           action: ActivityAction.CUSTOMER_REQUEST_REJECT,
           metadata: {
             customerRequestId,
-            customerEmail: request.email,
+            customerAddress: request.address,
             request: JSON.stringify(updated, (key, value) =>
               typeof value === 'bigint' ? value.toString() : value
             ),
