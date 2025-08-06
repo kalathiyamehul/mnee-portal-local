@@ -291,14 +291,57 @@ export const POST = withCSRF(async function (request: Request) {
             },
           });
 
+          // Find Updated refund request with approvals and requester
+          const updatedRefundRequest = await tx.refundRequest.findUnique({
+            where: { id: refundRequestId },
+            include: {
+              approvals: {
+                include: {
+                  approver: {
+                    select: {
+                      id: true,
+                      email: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+              requester: {
+                select: {
+                  id: true,
+                  email: true,
+                  name: true,
+                },
+              },
+            },
+          });
+
           await logActivity(tx, {
             action: ActivityAction.REFUND_TX_COMPLETED,
             metadata: {
               refundRequestId,
               txid,
-              updatedRefund,
+              updatedRefundRequest,
             },
           });
+
+          console.log("Recording transaction for refund request:", refundRequestId);
+          const allApprovers = updatedRefundRequest?.approvals.map((approval) => ({
+            id: approval.approver.id,
+            email: approval.approver.email,
+            name: approval.approver.name
+          }))
+
+          console.log("All approvers:", allApprovers);
+
+          await recordTransaction(tx, {
+            requestId: refundRequestId || '',
+            txid: txid,
+            requestedBy: refundRequest.requestedBy,
+            timestamp: new Date(),
+            type: TransactionType.REFUND,
+            approvers: [...(allApprovers || [])] // Ensure approvers is always an array,
+          })
 
           emitrefundUpdate({
             activityId: refundRequestId,
@@ -330,15 +373,6 @@ export const POST = withCSRF(async function (request: Request) {
                 refundRequestId,
               },
             });
-
-            await recordTransaction(tx, {
-						requestId: refundRequestId || '',
-						txid: txid,
-						requestedBy: refundRequest.requestedBy,
-						timestamp: new Date(),
-						type: TransactionType.REFUND,
-            approvers: refundRequest.approvals,
-					})
           }
 
           console.log("Refund process completed successfully");
@@ -381,10 +415,7 @@ export const POST = withCSRF(async function (request: Request) {
     console.log("Transaction completed successfully:", result);
     return NextResponse.json({
       success: true,
-      message:
-        result.status === "DONE"
-          ? "Refund processed successfully"
-          : "Approval recorded",
+      message: "Request approved",
       status: result.status,
       ...(result.txid && { txid: result.txid }),
     });

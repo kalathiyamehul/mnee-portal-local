@@ -1,7 +1,15 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode, useMemo } from 'react';
-import { fetchMneeUtxos , fetchConfig } from '@/utils/api';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  type ReactNode,
+  useMemo,
+} from "react";
+import { fetchMneeUtxos, fetchConfig, fetchCustomerBalance } from "@/utils/api";
 import { sanitizeError, getDisplayMessage } from "@/utils/errorHandler";
 import { FetchStatus } from "@/types/common";
 import CustomToast from '@/components/common/CustomToast';
@@ -25,11 +33,10 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
   const fetchBalance = useCallback(async (address: string) => {
     try {
       setBalancesLoading(FetchStatus.LOADING);
-      const utxos = await fetchMneeUtxos([address]);
-      const balance = utxos.reduce(
-        (amt, o) => amt + (o.data.bsv21.amt || 0),
-        0
-      );
+      const balanceData = await fetchCustomerBalance([address]);
+
+      // Get the balance for the specific address (should be first and only item in array)
+      const balance = balanceData[0]?.amt || 0;
 
       setBalances((prev) => ({
         ...prev,
@@ -49,43 +56,40 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
 
   const fetchBalances = useCallback(
     async (addresses: string[]) => {
-      // console.log('fetchBalances called:', {
+      // console.log("fetchBalances called:", {
       //   currentLoadingState: balancesLoading,
-      //   addressCount: addresses.length
+      //   addressCount: addresses.length,
       // });
 
       // Skip if already loading
       if (balancesLoading === FetchStatus.LOADING) {
-        // console.log('Skipping fetch - already loading');
+        // console.log("Skipping fetch - already loading");
         return;
       }
 
       try {
-        // console.log('Setting loading state...');
+        // console.log("Setting loading state...");
         setBalancesLoading(FetchStatus.LOADING);
 
-        // console.log('Fetching UTXOs...');
-        const utxos = await fetchMneeUtxos(addresses);
-        // console.log('UTXOs received:', utxos.length);
+        // console.log("Fetching customer balances...");
+        const balanceData = await fetchCustomerBalance(addresses);
+        // console.log("Balance data received:", balanceData.length, "records");
 
-        const newBalances = addresses.reduce((acc, address) => {
-          const addressUtxos = utxos.filter(
-            (utxo) => utxo.owners[0] === address
-          );
-          const balance = addressUtxos.reduce(
-            (amt, o) => amt + (o.data.bsv21.amt || 0),
-            0
-          );
-          return { ...acc, [address]: balance };
+        // Convert the balance data array to the expected format
+        const newBalances = balanceData.reduce((acc, balanceInfo) => {
+          return {
+            ...acc,
+            [balanceInfo.address]: balanceInfo.amt,
+          };
         }, {});
 
-        // console.log('Setting new balances:', newBalances);
+        // console.log("Setting new balances:", newBalances);
         setBalances((prev) => ({
           ...prev,
           ...newBalances,
         }));
 
-        // console.log('Setting success state...');
+        // console.log("Setting success state...");
         setBalancesLoading(FetchStatus.SUCCESS);
       } catch (error) {
         // console.error("Error fetching MNEE balances:", error);
@@ -101,7 +105,6 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
     [balancesLoading]
   );
 
-  // Fetch burn address from config and its balance
   useEffect(() => {
     const init = async () => {
       try {
@@ -137,7 +140,7 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
 export function useBalance() {
   const context = useContext(BalanceContext);
   if (context === undefined) {
-    throw new Error('useBalance must be used within a BalanceProvider');
+    throw new Error("useBalance must be used within a BalanceProvider");
   }
   return context;
-} 
+}

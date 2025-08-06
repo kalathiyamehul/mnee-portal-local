@@ -1,5 +1,5 @@
 import { MNEE_API } from "@/env";
-import type { Config, MNEEUtxo } from "@/types";
+import type { Config, CustomerBalance, MNEEUtxo } from "@/types";
 import type { IndexContext } from "@/types/indexContext";
 import { sanitizeHttpError } from "@/utils/errorHandler";
 import { Transaction, Utils } from "@bsv/sdk";
@@ -63,12 +63,12 @@ export const fetchConfig = async () => {
 }
 
 export const fetchTxo = async (outpoint: string) => {
-  const response = await fetch(`${MNEE_API}/v1/txos/${outpoint}?tags=*&txo=true`);
-  if (!response.ok) {
-      const sanitizedError = await sanitizeHttpError(response, "Failed to fetch txo");
-      throw new Error(sanitizedError.message);
-  }
-  return await response.json() as MNEEUtxo;
+    const response = await fetch(`${MNEE_API}/v1/txos/${outpoint}?tags=*&txo=true`);
+    if (!response.ok) {
+        const sanitizedError = await sanitizeHttpError(response, "Failed to fetch txo");
+        throw new Error(sanitizedError.message);
+    }
+    return await response.json() as MNEEUtxo;
 }
 
 export const fetchTransaction = async (txid: string) => {
@@ -140,3 +140,43 @@ export const ingestTxid = async (txid: string) => {
     console.log("indexContext:", indexContext);
     return await indexContext as any;
 }
+
+// Function that accepts array of addresses (single address should be passed as [address])
+export const fetchCustomerBalance = async (
+    addresses: string[]
+): Promise<CustomerBalance[]> => {
+    if (!MNEE_API) {
+        throw new Error("MNEE_API not defined");
+    }
+
+    // Validate that we have at least one address
+    if (addresses.length === 0) {
+        throw new Error("At least one address is required");
+    }
+
+    try {
+        const response = await fetch(`${MNEE_API}/v1/balance`, {
+            method: 'POST',
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(addresses),
+        });
+
+        if (!response.ok) {
+            const sanitizedError = await sanitizeHttpError(
+                response,
+                "Failed to fetch Customer Balance"
+            );
+            throw new Error(sanitizedError.message);
+        }
+
+        const balances = await response.json() as CustomerBalance[];
+        // console.log('Fetched Customer Balance:', balances);
+
+        return balances;
+    } catch (error) {
+        console.error('Error fetching customer balance:', error);
+        throw error;
+    }
+};

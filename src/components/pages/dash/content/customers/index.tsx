@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { CustomerModal } from "../modals/CustomerModal";
 import { formatDistanceToNow } from "date-fns";
@@ -30,8 +30,7 @@ import { FaSpinner } from "react-icons/fa6";
 
 export default function DashboardCustomersContent() {
   const router = useRouter();
-  const { customers, loading, error, fetchCustomers, pagination } =
-    useCustomer();
+  const { customers, loading, error, fetchCustomers, pagination } = useCustomer();
   const { balances, fetchBalances, balancesLoading } = useBalance();
   const [showModal, setShowModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
@@ -43,6 +42,9 @@ export default function DashboardCustomersContent() {
   const [togglingCustomer, setTogglingCustomer] = useState<string | null>(null);
   const { hasPermission } = usePermission();
   const isSuperAdmin = hasPermission(Resource.SUPER_ADMIN, Action.MANAGE);
+
+  // Track the last set of addresses we fetched balances for
+  const lastFetchedAddresses = useRef<string>("");
 
   // Customer Permissions
   const hasCreateCustomerPer = isSuperAdmin
@@ -92,14 +94,27 @@ export default function DashboardCustomersContent() {
     fetchCustomers(pagination.page, pagination.limit);
   }, [fetchCustomers, pagination.page, pagination.limit]);
 
+  // Fixed useEffect for balance fetching
   useEffect(() => {
-    if (loading) return;
-
-    const addresses = customers?.map((c) => c.address).filter(Boolean);
-    if (addresses?.length && balancesLoading === FetchStatus.IDLE) {
+    if (loading || !customers?.length) return;
+    const addresses = customers.map((c) => c.address).filter(Boolean);
+    // Create a unique string representation of the addresses array
+    const addressesKey = addresses.sort().join(",");
+    if (
+      addresses.length && 
+      addressesKey !== lastFetchedAddresses.current && 
+      balancesLoading !== FetchStatus.LOADING
+    ) {
+      // Store the current addresses key
+      lastFetchedAddresses.current = addressesKey;
       fetchBalances(addresses);
     }
-  }, [customers, fetchBalances, balancesLoading, loading]);
+  }, [customers, balancesLoading, loading]); // Removed fetchBalances from dependencies
+
+  // Function to reset and force refetch (if needed)
+  // const resetBalancesFetch = () => {
+  //   lastFetchedAddresses.current = "";
+  // };
 
   const handleToggle = async (
     customerId: string,
@@ -115,7 +130,7 @@ export default function DashboardCustomersContent() {
       const response = await apiFetch(`/api/customers/${customerId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}), // Empty body since API toggles based on current state
+        body: JSON.stringify({}) // Empty body since API toggles based on current state
       });
 
       if (!response.ok) {
@@ -202,7 +217,7 @@ export default function DashboardCustomersContent() {
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
           <ExportButtons filename="customers" onExport={handleExport} />
-          {hasCreateCustomerPer && (
+          {(hasPermission(Resource.CUSTOMER, Action.CREATE) || isSuperAdmin) && (
             <button
               type="button"
               onClick={() => setShowModal(true)}
@@ -303,8 +318,84 @@ export default function DashboardCustomersContent() {
                   </div>
                 </td>
                 <td>
-                  <div className="flex gap-2">
-                    {hasUpdateCustomerPer && (
+                  <div className="flex gap-2 z-50">
+                    {(hasPermission(Resource.CUSTOMER, Action.DELETE) ||
+                      isSuperAdmin) && (
+                      <div
+                        className={`z-50 w-28 flex items-center gap-2 form-control tooltip ${
+                          customer.isActive
+                            ? "tooltip-error"
+                            : "tooltip-success"
+                        } tooltip-top`}
+                        data-tip={`Toggle to ${
+                          customer.isActive ? "Inactivate" : "Activate"
+                        } Customer`}
+                      >
+                        <label className="cursor-pointer relative">
+                          <div
+                            className={`
+                              relative inline-flex h-5 w-8 items-center transition-colors duration-200 ease-in-out bg-transparent border ${customer.isActive ? "border-success" : "border-error"}
+                              ${
+                                togglingCustomer === customer.id
+                                  ? "opacity-50"
+                                  : ""
+                              }
+                            `}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (togglingCustomer !== customer.id) {
+                                handleToggle(customer.id, e as any);
+                              }
+                            }}
+                          >
+                            {/* Toggle for Inactive/Active */}
+                            <span
+                              className={`
+                                inline-block h-3 w-3 transform ${
+                                  customer.isActive
+                                    ? "bg-success shadow-lg"
+                                    : "bg-error shadow-lg"
+                                }transition-transform duration-200 ease-in-out
+                                ${
+                                  !customer.isActive
+                                    ? "translate-x-4"
+                                    : "translate-x-0.5"
+                                }
+                              `}
+                            />
+                            {/* Spinner when toggling */}
+                            {togglingCustomer === customer.id && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <FaSpinner className="w-3 h-3 animate-spin text-white" />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Hidden input for accessibility */}
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            checked={!customer.isActive}
+                            onChange={() => {}}
+                            disabled={togglingCustomer === customer.id}
+                          />
+                          {togglingCustomer === customer.id && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <FaSpinner className="w-3 h-3 animate-spin" />
+                            </div>
+                          )}
+                        </label>
+                        <span
+                          className={`${
+                            customer.isActive ? "text-success" : "text-error"
+                          }`}
+                        >
+                          {customer.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </div>
+                    )}
+                    {(hasPermission(Resource.CUSTOMER, Action.UPDATE) ||
+                      isSuperAdmin) && (
                       <button
                         type="button"
                         onClick={(e) => {

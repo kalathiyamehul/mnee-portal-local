@@ -127,6 +127,32 @@ export const POST = withCSRF(async function(request: Request) {
             },
           });
 
+          const updatedBurnRequest = await tx.burnRequest.findUnique({
+						where: { id: burnRequestId },
+						include: {
+							approvals: {
+								include: {
+									approver: {
+										select: {
+											id: true,
+											email: true,
+											name: true,
+										},
+									},
+								},
+							},
+							requester: {
+								select: {
+									id: true,
+									email: true,
+									name: true,
+								},
+							},
+						},
+					});
+
+          console.log("Logging activity for burn request approval");
+
           await logActivity(tx, {
             action: ActivityAction.BURN_REQUEST_APPROVE,
             metadata: {
@@ -136,14 +162,23 @@ export const POST = withCSRF(async function(request: Request) {
               ),
             },
           });
+
+          console.log("Recording transaction for burn request approval");
+          const allApprovers = updatedBurnRequest?.approvals.map((approval) => ({
+            id: approval.approver.id,
+            email: approval.approver.email,
+            name: approval.approver.name
+          }))
+
+          console.log("All approvers:", allApprovers);
           
           await recordTransaction(tx, {
 						requestId: burnRequestId,
-						txid: Transaction.fromHex(rawtx).id("hex"),
+						txid: rawtx,
 						requestedBy: burnRequest.requestedBy,
 						timestamp: new Date(),
 						type: TransactionType.BURN,
-            approvers: burnRequest.approvals,
+            approvers: [...(allApprovers ?? [])],
 					})
 
           console.log("Burn process completed successfully");

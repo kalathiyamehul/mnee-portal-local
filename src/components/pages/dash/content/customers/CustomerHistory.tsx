@@ -188,16 +188,16 @@ export const CustomerHistory = ({
   };
 
   // Pagination logic
-  const totalPages = Math.ceil(customers.length / itemsPerPage);
+  const totalPages = Math.ceil((customers?.length || 0) / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
 
   // Apply pagination or limit
   const displaycustomers = enablePagination
-    ? customers.slice(startIndex, endIndex)
+    ? (customers || []).slice(startIndex, endIndex)
     : limit
-    ? customers.slice(0, limit)
-    : customers;
+    ? (customers || []).slice(0, limit)
+    : customers || [];
 
   if (!alwaysShow && displaycustomers.length === 0) {
     return null;
@@ -224,7 +224,7 @@ export const CustomerHistory = ({
             </tr>
           </thead>
           <tbody>
-            {customers?.map((customer) => (
+            {displaycustomers.map((customer) => (
               <tr
                 key={customer.id}
                 className="hover border-l-4 border-l-transparent hover:border-l-primary cursor-pointer"
@@ -369,7 +369,7 @@ export const CustomerHistory = ({
                 )}
               </tr>
             ))}
-            {!customers?.length && (
+            {!displaycustomers.length && (
               <tr>
                 <td
                   colSpan={4}

@@ -16,7 +16,7 @@ export async function recordTransaction(
     requestedBy: string;
     txid: string;
     timestamp: Date;
-    approvers: any; // Optional field for approvers
+    approvers: Record<string, any>;
   }
 ) {
   const session = await getServerSession(authOptions);

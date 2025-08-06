@@ -35,3 +35,9 @@ export type MNEEUtxo = {
         };
     }
 };
+
+export type CustomerBalance = {
+    amt: number;
+    precised: number;
+    address: string;
+}

@@ -51,20 +51,47 @@ const ConfigureTab = () => {
       const previousItem = index > 0 ? items[index - 1] : null;
 
       // Convert string values to numbers for validation
-      const feeValue = typeof item.fee === 'string' ? (item.fee === '' ? NaN : parseFloat(item.fee)) : item.fee;
-      const maxValue = typeof item.max === 'string' ? (item.max === '' ? NaN : parseFloat(item.max)) : item.max;
-      const minValue = typeof item.min === 'string' ? (item.min === '' ? NaN : parseFloat(item.min)) : item.min;
-      const prevFeeValue = previousItem ? (typeof previousItem.fee === 'string' ? (previousItem.fee === '' ? NaN : parseFloat(previousItem.fee)) : previousItem.fee) : NaN;
-      const prevMaxValue = previousItem ? (typeof previousItem.max === 'string' ? (previousItem.max === '' ? NaN : parseFloat(previousItem.max)) : previousItem.max) : NaN;
+      const feeValue =
+        typeof item.fee === "string"
+          ? item.fee === ""
+            ? NaN
+            : parseFloat(item.fee)
+          : item.fee;
+      const maxValue =
+        typeof item.max === "string"
+          ? item.max === ""
+            ? NaN
+            : parseFloat(item.max)
+          : item.max;
+      const minValue =
+        typeof item.min === "string"
+          ? item.min === ""
+            ? NaN
+            : parseFloat(item.min)
+          : item.min;
+      const prevFeeValue = previousItem
+        ? typeof previousItem.fee === "string"
+          ? previousItem.fee === ""
+            ? NaN
+            : parseFloat(previousItem.fee)
+          : previousItem.fee
+        : NaN;
+      const prevMaxValue = previousItem
+        ? typeof previousItem.max === "string"
+          ? previousItem.max === ""
+            ? NaN
+            : parseFloat(previousItem.max)
+          : previousItem.max
+        : NaN;
 
       // Check for empty fields
-      if (item.fee === '' || isNaN(feeValue)) {
+      if (item.fee === "" || isNaN(feeValue)) {
         itemErrors.fee = "Fee is required";
       }
-      if (item.max === '' || isNaN(maxValue)) {
+      if (item.max === "" || isNaN(maxValue)) {
         itemErrors.max = "Max is required";
       }
-      if (item.min === '' || isNaN(minValue)) {
+      if (item.min === "" || isNaN(minValue)) {
         itemErrors.min = "Min is required";
       }
 
@@ -82,7 +109,10 @@ const ConfigureTab = () => {
         if (maxValue < 0) {
           itemErrors.max = "Max must be non-negative";
         }
-        if (maxValue > Number.MAX_SAFE_INTEGER && maxValue !== Number.MAX_SAFE_INTEGER) {
+        if (
+          maxValue > Number.MAX_SAFE_INTEGER &&
+          maxValue !== Number.MAX_SAFE_INTEGER
+        ) {
           itemErrors.max = `Max cannot exceed ${Number.MAX_SAFE_INTEGER.toLocaleString()} (Infinity limit)`;
         }
       }
@@ -126,7 +156,12 @@ const ConfigureTab = () => {
       }
 
       // Add validation to ensure no gaps in ranges (only if both values are valid)
-      if (previousItem && !isNaN(minValue) && !isNaN(prevMaxValue) && minValue !== prevMaxValue + 1) {
+      if (
+        previousItem &&
+        !isNaN(minValue) &&
+        !isNaN(prevMaxValue) &&
+        minValue !== prevMaxValue + 1
+      ) {
         itemErrors.min = `Min should be ${
           prevMaxValue + 1
         } to maintain sequential range`;
@@ -141,11 +176,25 @@ const ConfigureTab = () => {
     for (let i = 0; i < items.length - 1; i++) {
       const currentItem = items[i];
       const nextItem = items[i + 1];
-      
-      const currentMaxValue = typeof currentItem.max === 'string' ? (currentItem.max === '' ? NaN : parseFloat(currentItem.max)) : currentItem.max;
-      const nextMinValue = typeof nextItem.min === 'string' ? (nextItem.min === '' ? NaN : parseFloat(nextItem.min)) : nextItem.min;
 
-      if (!isNaN(currentMaxValue) && !isNaN(nextMinValue) && currentMaxValue >= nextMinValue) {
+      const currentMaxValue =
+        typeof currentItem.max === "string"
+          ? currentItem.max === ""
+            ? NaN
+            : parseFloat(currentItem.max)
+          : currentItem.max;
+      const nextMinValue =
+        typeof nextItem.min === "string"
+          ? nextItem.min === ""
+            ? NaN
+            : parseFloat(nextItem.min)
+          : nextItem.min;
+
+      if (
+        !isNaN(currentMaxValue) &&
+        !isNaN(nextMinValue) &&
+        currentMaxValue >= nextMinValue
+      ) {
         if (!newErrors[i + 1]) {
           newErrors[i + 1] = {};
         }
@@ -169,8 +218,16 @@ const ConfigureTab = () => {
   // Add new item
   const addNewItem = (): void => {
     const lastItem = items[items.length - 1];
-    const lastMaxValue = lastItem ? (typeof lastItem.max === 'string' ? parseFloat(lastItem.max) || 0 : lastItem.max) : 0;
-    const lastFeeValue = lastItem ? (typeof lastItem.fee === 'string' ? parseFloat(lastItem.fee) || 0 : lastItem.fee) : 0;
+    const lastMaxValue = lastItem
+      ? typeof lastItem.max === "string"
+        ? parseFloat(lastItem.max) || 0
+        : lastItem.max
+      : 0;
+    const lastFeeValue = lastItem
+      ? typeof lastItem.fee === "string"
+        ? parseFloat(lastItem.fee) || 0
+        : lastItem.fee
+      : 0;
     const nextMax = lastItem ? lastMaxValue + 1000 : 1000;
     const newItem: FeeItem = {
       fee: lastItem ? lastFeeValue + 1 : 0,
@@ -209,25 +266,29 @@ const ConfigureTab = () => {
     value: string
   ): void => {
     // Handle empty string case - allow empty values
-    if (value === '') {
+    if (value === "") {
       const newItems = [...items];
-      newItems[index] = { ...newItems[index], [field]: '' };
+      newItems[index] = { ...newItems[index], [field]: "" };
       setItems(newItems);
       return;
     }
-    
+
     const numericValue = parseFloat(value);
-    
+
     // Check if the value is a valid number
     if (isNaN(numericValue)) {
       return; // Don't update if not a valid number
     }
-    
+
     // Validate int4 range for fee and min fields (max can be infinity)
-    if ((field === 'fee' || field === 'min') && !isNaN(numericValue) && numericValue > Number.MAX_SAFE_INTEGER) {
+    if (
+      (field === "fee" || field === "min") &&
+      !isNaN(numericValue) &&
+      numericValue > Number.MAX_SAFE_INTEGER
+    ) {
       return; // Don't update if outside Infinity range
     }
-    
+
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: numericValue };
     setItems(newItems);
@@ -311,10 +372,13 @@ const ConfigureTab = () => {
 
     try {
       // Convert string values back to numbers for API submission
-      const numericItems = items.map(item => ({
-        fee: typeof item.fee === 'string' ? parseFloat(item.fee) || 0 : item.fee,
-        max: typeof item.max === 'string' ? parseFloat(item.max) || 0 : item.max,
-        min: typeof item.min === 'string' ? parseFloat(item.min) || 0 : item.min,
+      const numericItems = items.map((item) => ({
+        fee:
+          typeof item.fee === "string" ? parseFloat(item.fee) || 0 : item.fee,
+        max:
+          typeof item.max === "string" ? parseFloat(item.max) || 0 : item.max,
+        min:
+          typeof item.min === "string" ? parseFloat(item.min) || 0 : item.min,
       }));
 
       const response = await apiFetch("/api/config", {
@@ -417,13 +481,19 @@ const ConfigureTab = () => {
             </div>
             <button
               onClick={() => {
-                setEditingFee(false);
+                setIsSubmitting(true); // Add this line to show loading
                 fetchConfig();
                 setErrors({});
+                setEditingFee(false);
+                // Add timeout to simulate loading and then hide it
+                setTimeout(() => setIsSubmitting(false), 500);
               }}
-              className="btn btn-secondary btn-sm"
+              className={`btn btn-secondary btn-sm ${
+                isSubmitting ? "loading" : ""
+              }`}
+              disabled={isSubmitting}
             >
-              Cancel
+              {isSubmitting ? "Canceling..." : "Cancel"}
             </button>
 
             <button
@@ -446,134 +516,178 @@ const ConfigureTab = () => {
             Edit
           </button>
         )}
+
+        {/* Validation Summary - NOW SHOWS LIVE ERRORS */}
+        {hasValidationErrors && !isSubmitting && (
+          <div className="alert alert-error mb-4">
+            <div>
+              <h3 className="font-bold">Validation Errors:</h3>
+              <p className="text-sm">Please fix the following errors:</p>
+              <ul className="list-disc list-inside text-sm mt-2">
+                {Object.entries(errors).map(([index, fieldErrors]) => (
+                  <li key={index}>
+                    Row {parseInt(index) + 1}:{" "}
+                    {Object.values(fieldErrors).join(", ")}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Validation Summary - NOW SHOWS LIVE ERRORS */}
-      {hasValidationErrors && (
-        <div className="alert alert-error mb-4">
-          <div>
-            <h3 className="font-bold">Validation Errors:</h3>
-            <p className="text-sm">Please fix the following errors:</p>
-            <ul className="list-disc list-inside text-sm mt-2">
-              {Object.entries(errors).map(([index, fieldErrors]) => (
-                <li key={index}>
-                  Row {parseInt(index) + 1}:{" "}
-                  {Object.values(fieldErrors).join(", ")}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
       <div className="overflow-x-auto space-y-4">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Fee</th>
-              <th>Min Amount</th>
-              <th>Max Amount</th>
-              {editingFee && <th>Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr key={index} className="p-3">
-                {/* Fee Field */}
-                <td className="align-top">
-                  {editingFee ? (
-                    <input
-                      type="number"
-                      value={item.fee}
-                      onChange={(e) => updateItem(index, "fee", e.target.value)}
-                      className={`input input-bordered w-full ${
-                        errors[index]?.fee &&
-                        "border-red-500 focus:ring-red-500"
-                      }`}
-                      placeholder="Fee amount"
-                      min="0"
-                      max={Number.MAX_SAFE_INTEGER}
-                    />
-                  ) : (
-                    <p>{toToken(typeof item?.fee === 'string' ? parseFloat(item.fee) || 0 : item?.fee, config?.decimals ?? 0)} MNEE</p>
-                  )}
-                  {errors[index]?.fee && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors[index].fee}
-                    </p>
-                  )}
-                </td>
-
-                {/* Min Field */}
-                <td className="align-top">
-                  {editingFee ? (
-                    <input
-                      type="number"
-                      value={item.min}
-                      onChange={(e) => updateItem(index, "min", e.target.value)}
-                      className={`input input-bordered w-full ${
-                        errors[index]?.min &&
-                        "border-red-500 focus:ring-red-500"
-                      }`}
-                      placeholder="Minimum"
-                      min="0"
-                    />
-                  ) : (
-                    <p>{toToken(typeof item?.min === 'string' ? parseFloat(item.min) || 0 : item?.min, config?.decimals ?? 0)} MNEE</p>
-                  )}
-                  {errors[index]?.min && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors[index].min}
-                    </p>
-                  )}
-                </td>
-
-                {/* Max Field */}
-                <td className="align-top">
-                  {editingFee ? (
-                    <input
-                      type="number"
-                      value={item.max}
-                      max={Number.MAX_SAFE_INTEGER}
-                      onChange={(e) => {
-                        updateItem(index, "max", e.target.value);
-                      }}
-                      className={`input input-bordered w-full ${
-                        errors[index]?.max &&
-                        "border-red-500 focus:ring-red-500"
-                      }`}
-                      placeholder="Maximum"
-                      min="0"
-                    />
-                  ) : (
-                    <p>
-                      {(typeof item?.max === 'number' ? item.max : parseFloat(item.max) || 0) === Number.MAX_SAFE_INTEGER
-                        ? "∞"
-                        : `${toToken(typeof item?.max === 'string' ? parseFloat(item.max) || 0 : item.max, config?.decimals ?? 0)} MNEE`}
-                    </p>
-                  )}
-                  {errors[index]?.max && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors[index].max}
-                    </p>
-                  )}
-                </td>
-                {editingFee && items.length > 1 && (
-                  <td className="align-top">
-                    <button
-                      onClick={() => removeItem(index)}
-                      className="btn btn-sm btn-error"
-                      type="button"
-                      aria-label={`Remove item ${index + 1}`}
-                    >
-                      Remove
-                    </button>
-                  </td>
-                )}
+        <div className="relative">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Fee</th>
+                <th>Min Amount</th>
+                <th>Max Amount</th>
+                {editingFee && <th>Actions</th>}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className={`${isSubmitting ? "opacity-50" : ""}`}>
+              {items.map((item, index) => (
+                <tr key={index} className="p-3">
+                  {/* Fee Field */}
+                  <td className="align-top">
+                    {editingFee ? (
+                      <input
+                        type="number"
+                        value={item.fee}
+                        onChange={(e) =>
+                          updateItem(index, "fee", e.target.value)
+                        }
+                        className={`input input-bordered w-full ${
+                          errors[index]?.fee &&
+                          "border-red-500 focus:ring-red-500"
+                        }`}
+                        placeholder="Fee amount"
+                        min="0"
+                        max={Number.MAX_SAFE_INTEGER}
+                        disabled={isSubmitting}
+                      />
+                    ) : (
+                      <p>
+                        {toToken(
+                          typeof item?.fee === "string"
+                            ? parseFloat(item.fee) || 0
+                            : item?.fee,
+                          config?.decimals ?? 0
+                        )}{" "}
+                        MNEE
+                      </p>
+                    )}
+                    {errors[index]?.fee && !isSubmitting && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors[index].fee}
+                      </p>
+                    )}
+                  </td>
+
+                  {/* Min Field */}
+                  <td className="align-top">
+                    {editingFee ? (
+                      <input
+                        type="number"
+                        value={item.min}
+                        onChange={(e) =>
+                          updateItem(index, "min", e.target.value)
+                        }
+                        className={`input input-bordered w-full ${
+                          errors[index]?.min &&
+                          "border-red-500 focus:ring-red-500"
+                        }`}
+                        placeholder="Minimum"
+                        min="0"
+                        disabled={isSubmitting}
+                      />
+                    ) : (
+                      <p>
+                        {toToken(
+                          typeof item?.min === "string"
+                            ? parseFloat(item.min) || 0
+                            : item?.min,
+                          config?.decimals ?? 0
+                        )}{" "}
+                        MNEE
+                      </p>
+                    )}
+                    {errors[index]?.min && !isSubmitting && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors[index].min}
+                      </p>
+                    )}
+                  </td>
+
+                  {/* Max Field */}
+                  <td className="align-top">
+                    {editingFee ? (
+                      <input
+                        type="number"
+                        value={item.max}
+                        max={Number.MAX_SAFE_INTEGER}
+                        onChange={(e) => {
+                          updateItem(index, "max", e.target.value);
+                        }}
+                        className={`input input-bordered w-full ${
+                          errors[index]?.max &&
+                          "border-red-500 focus:ring-red-500"
+                        }`}
+                        placeholder="Maximum"
+                        min="0"
+                        disabled={isSubmitting}
+                      />
+                    ) : (
+                      <p>
+                        {(typeof item?.max === "number"
+                          ? item.max
+                          : parseFloat(item.max) || 0) ===
+                        Number.MAX_SAFE_INTEGER
+                          ? "∞"
+                          : `${toToken(
+                              typeof item?.max === "string"
+                                ? parseFloat(item.max) || 0
+                                : item.max,
+                              config?.decimals ?? 0
+                            )} MNEE`}
+                      </p>
+                    )}
+                    {errors[index]?.max && !isSubmitting && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors[index].max}
+                      </p>
+                    )}
+                  </td>
+                  {editingFee && items.length > 1 && (
+                    <td className="align-top">
+                      <button
+                        onClick={() => removeItem(index)}
+                        className="btn btn-sm btn-error"
+                        type="button"
+                        aria-label={`Remove item ${index + 1}`}
+                        disabled={isSubmitting}
+                      >
+                        Remove
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Loading Overlay for tbody */}
+          {isSubmitting && (
+            <div className="absolute inset-0 bg-base-100 bg-opacity-75 flex items-center justify-center rounded-lg z-10">
+              <div className="flex flex-col items-center space-y-3">
+                <span className="loading loading-spinner loading-lg"></span>
+                <span className="text-lg font-medium">Processing...</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {isEditing && (
@@ -598,20 +712,22 @@ const ConfigureTab = () => {
                 }}
                 onChange={(e) => {
                   const inputValue = Number(e.target.value);
-                  
+
                   // Clear previous error
                   setThresholdError("");
-                  
+
                   // Validate int4 range first
                   if (inputValue < INT4_MIN) {
                     setThresholdError(`Value must be at least ${INT4_MIN}`);
                     return;
                   }
                   if (inputValue > INT4_MAX) {
-                    setThresholdError(`Value cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`);
+                    setThresholdError(
+                      `Value cannot exceed ${INT4_MAX.toLocaleString()} (int4 limit)`
+                    );
                     return;
                   }
-                  
+
                   setEditingThreshold((prev) =>
                     prev
                       ? {
@@ -644,10 +760,13 @@ const ConfigureTab = () => {
               )}
             </div>
             <div className="modal-action">
-              <button className="btn" onClick={() => {
-                setIsEditing(false);
-                setThresholdError(""); // Clear errors when canceling
-              }}>
+              <button
+                className="btn"
+                onClick={() => {
+                  setIsEditing(false);
+                  setThresholdError(""); // Clear errors when canceling
+                }}
+              >
                 Cancel
               </button>
               <button

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
+import { PrivateKey, PublicKey } from "@bsv/sdk";
 import { APPROVER_PUBKEY, getMintWif, MNEE_API, MNEE_WEBHOOK_API } from "@/env";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import type { Prisma } from "@prisma/client";
@@ -165,21 +165,55 @@ export const POST = async function (request: Request) {
 						},
 					});
 
-					await logActivity(tx, {
-						action: ActivityAction.MINT_TX_COMPLETED,
-						metadata: {
-							mintRequestId,
-							txid: Transaction.fromHex(rawtx).id("hex"),
+					const updatedMintRequest = await tx.mintRequest.findUnique({
+						where: { id: mintRequestId },
+						include: {
+							approvals: {
+								include: {
+									approver: {
+										select: {
+											id: true,
+											email: true,
+											name: true,
+										},
+									},
+								},
+							},
+							requester: {
+								select: {
+									id: true,
+									email: true,
+									name: true,
+								},
+							},
 						},
 					});
 
+					await logActivity(tx, {
+						action: ActivityAction.MINT_REQUEST_FULLY_APPROVED,
+						metadata: {
+							mintRequestId,
+							approvalsCount,
+						},
+					});
+
+					console.log("Recording transaction for mint request:", mintRequestId);
+					const allApprovers = updatedMintRequest?.approvals.map((approval) => ({
+						id: approval.approver.id,
+						email: approval.approver.email,
+						name: approval.approver.name
+					}))
+
+		            console.log("All approvers:", allApprovers);
+
+
 					await recordTransaction(tx, {
 						requestId: mintRequestId || '',
-						txid: Transaction.fromHex(rawtx).id("hex"),
+						txid: rawtx,
 						requestedBy: mintRequest.requestedBy,
 						timestamp: new Date(),
 						type: TransactionType.MINT,
-						approvers: mintRequest.approvals,
+						approvers: [...(allApprovers || [])],
 					})
 
 					emitMintUpdate({

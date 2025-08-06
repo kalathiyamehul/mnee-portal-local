@@ -5,6 +5,7 @@ import { apiFetch } from "@/utils/api";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { FaFilter } from "react-icons/fa6";
+import { MdOutlineOpenInNew } from "react-icons/md";
 
 type Transaction = {
   txid: string;
@@ -27,7 +28,7 @@ export default function DashboardTransactionsContent() {
     REFUND: false,
   });
   const [showDropdown, setShowDropdown] = useState(false);
-  
+
   // Pagination state
   const [pagination, setPagination] = useState({
     page: 1,
@@ -52,7 +53,7 @@ export default function DashboardTransactionsContent() {
     const enabledTypes = Object.entries(currentFilters)
       .filter(([_, enabled]) => enabled)
       .map(([type, _]) => type);
-    
+
     // If no filters are selected, return empty string (API will return all records)
     // If filters are selected, return comma-separated list
     return enabledTypes.length > 0 ? enabledTypes.join(',') : '';
@@ -62,16 +63,16 @@ export default function DashboardTransactionsContent() {
   const fetchTransactions = async (page: number, limit: number, filterTypes?: string) => {
     try {
       setLoading(true);
-      
+
       // Build URL with pagination and filter parameters
       let url = `/api/transactionRecords?page=${page}&limit=${limit}`;
-      
+
       // Only add types parameter if filters are actually selected
       if (filterTypes && filterTypes.length > 0) {
         url += `&types=${encodeURIComponent(filterTypes)}`;
       }
       // If no filterTypes or empty string, API will return all records by default
-      
+
       const response = await apiFetch(url);
       const data = await response.json();
       // console.log("Transaction Data:", data);
@@ -98,7 +99,7 @@ export default function DashboardTransactionsContent() {
     };
     setFilters(newFilters);
     pagination.page = 1;
-    
+
     // Fetch data with new filters
     const filterQuery = buildFilterQuery(newFilters);
     fetchTransactions(pagination.page, pagination.limit, filterQuery);
@@ -118,14 +119,13 @@ export default function DashboardTransactionsContent() {
     <div className="p-4 space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold mb-4">Transaction Ledger</h1>
-        
+
         {/* Enhanced Filter Button with Badge */}
         <div className="relative mb-4">
           <button
             type="button"
-            className={`btn btn-outline btn-sm ${
-              activeFiltersCount > 0 ? 'btn-primary' : ''
-            }`}
+            className={`btn btn-outline btn-sm ${activeFiltersCount > 0 ? 'btn-primary' : ''
+              }`}
             onClick={() => setShowDropdown((prev) => !prev)}
           >
             <FaFilter />
@@ -136,9 +136,8 @@ export default function DashboardTransactionsContent() {
               </p>
             )}
             <svg
-              className={`ml-2 w-4 h-4 transition-transform ${
-                showDropdown ? "rotate-180" : ""
-              }`}
+              className={`ml-2 w-4 h-4 transition-transform ${showDropdown ? "rotate-180" : ""
+                }`}
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
@@ -151,13 +150,13 @@ export default function DashboardTransactionsContent() {
               />
             </svg>
           </button>
-          
+
           {showDropdown && (
             <div className="absolute z-10 mt-2 w-fit bg-base-100 border border-base-300 rounded-lg shadow-lg p-3 right-0">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium">Transaction Types</span>
               </div>
-              
+
               {["MINT", "BURN", "REFUND"].map((type) => (
                 <label
                   key={type}
@@ -170,16 +169,15 @@ export default function DashboardTransactionsContent() {
                     className="checkbox checkbox-xs"
                   />
                   <span className="text-sm">{type}</span>
-                  <span className={`badge badge-xs ${
-                    type === 'MINT' ? 'badge-success' :
+                  <span className={`badge badge-xs ${type === 'MINT' ? 'badge-success' :
                     type === 'BURN' ? 'badge-error' :
-                    'badge-warning'
-                  }`}>
+                      'badge-warning'
+                    }`}>
                     {type.toLowerCase()}
                   </span>
                 </label>
               ))}
-              
+
               {activeFiltersCount === 0 && (
                 <div className="text-xs text-success mt-2 px-2 py-1 bg-success/10 rounded">
                   ✓ No filters applied - showing all transaction types
@@ -199,11 +197,10 @@ export default function DashboardTransactionsContent() {
             .map(([type, _]) => (
               <span
                 key={type}
-                className={`badge badge-sm ${
-                  type === 'MINT' ? 'badge-success' :
+                className={`badge badge-sm ${type === 'MINT' ? 'badge-success' :
                   type === 'BURN' ? 'badge-error' :
-                  'badge-warning'
-                }`}
+                    'badge-warning'
+                  }`}
               >
                 {type}
                 <button
@@ -248,30 +245,41 @@ export default function DashboardTransactionsContent() {
               transactions.map((tx) => (
                 <tr key={tx.txid}>
                   <td className="font-mono text-xs">
-                    {tx.txid.slice(0, 8)}...{tx.txid.slice(-8)}
+                    <div
+                      className="tooltip tooltip-bottom"
+                      data-tip="View on WhatsOnChain"
+                    >
+                      <a
+                        href={`https://whatsonchain.com/tx/${tx.txid}?tab=m8eqcrbs`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-ghost btn-xs p-0"
+                      >
+                        {tx.txid.slice(0, 8)}...{tx.txid.slice(-8)}{" "}
+                        <MdOutlineOpenInNew className="w-3 h-3" />
+                      </a>
+                    </div>
+
                   </td>
                   <td className="font-mono text-xs">
                     {tx.requestId}
                   </td>
                   <td>{new Date(tx.timestamp).toLocaleString()}</td>
                   <td>
-                    <span className={`badge badge-outline ${
-                      tx.type === 'MINT' ? 'badge-success' :
+                    <span className={`badge badge-outline ${tx.type === 'MINT' ? 'badge-success' :
                       tx.type === 'BURN' ? 'badge-error' :
-                      'badge-warning'
-                    }`}>
+                        'badge-warning'
+                      }`}>
                       {tx.type}
                     </span>
                   </td>
                   <td>
                     {Array.isArray(tx.approvers) && tx.approvers.length > 0 ? (
-                      <div className="flex flex-col gap-1">
-                        {tx.approvers.map((approver: any, idx: number) => (
-                          <span key={idx} className="text-xs text-gray-700">
-                            {approver.name || approver.email || approver.id}
-                          </span>
-                        ))}
-                      </div>
+                      <span className="text-xs">
+                        {tx.approvers
+                          .map((approver: any) => approver.name || approver.email || approver.id)
+                          .join(', ')}
+                      </span>
                     ) : (
                       <span className="text-xs text-gray-500">N/A</span>
                     )}
@@ -282,7 +290,7 @@ export default function DashboardTransactionsContent() {
           </tbody>
         </table>
       </div>
-      
+
       {/* Pagination Component */}
       {transactions.length > 0 && (
         <Pagination
