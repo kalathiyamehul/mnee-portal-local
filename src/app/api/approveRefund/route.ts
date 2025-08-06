@@ -300,6 +300,15 @@ export const POST = withCSRF(async function (request: Request) {
             },
           });
 
+          await recordTransaction(tx, {
+						requestId: refundRequestId || '',
+						txid: txid,
+						requestedBy: refundRequest.requestedBy,
+						timestamp: new Date(),
+						type: TransactionType.REFUND,
+            approvers: refundRequest.approvals,
+					})
+
           emitrefundUpdate({
             activityId: refundRequestId,
             approval: "Refund Request Fully Approved",
@@ -330,15 +339,6 @@ export const POST = withCSRF(async function (request: Request) {
                 refundRequestId,
               },
             });
-
-            await recordTransaction(tx, {
-						requestId: refundRequestId || '',
-						txid: txid,
-						requestedBy: refundRequest.requestedBy,
-						timestamp: new Date(),
-						type: TransactionType.REFUND,
-            approvers: refundRequest.approvals,
-					})
           }
 
           console.log("Refund process completed successfully");

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/authOptions";
-import { PrivateKey, PublicKey, Transaction } from "@bsv/sdk";
+import { PrivateKey, PublicKey } from "@bsv/sdk";
 import { APPROVER_PUBKEY, getMintWif, MNEE_API, MNEE_WEBHOOK_API } from "@/env";
 import { performSystemChecks, SystemOperation } from "@/lib/systemStatus";
 import type { Prisma } from "@prisma/client";
@@ -166,16 +166,16 @@ export const POST = async function (request: Request) {
 					});
 
 					await logActivity(tx, {
-						action: ActivityAction.MINT_TX_COMPLETED,
+						action: ActivityAction.MINT_REQUEST_FULLY_APPROVED,
 						metadata: {
 							mintRequestId,
-							txid: Transaction.fromHex(rawtx).id("hex"),
+							approvalsCount,
 						},
 					});
 
 					await recordTransaction(tx, {
 						requestId: mintRequestId || '',
-						txid: Transaction.fromHex(rawtx).id("hex"),
+						txid: rawtx,
 						requestedBy: mintRequest.requestedBy,
 						timestamp: new Date(),
 						type: TransactionType.MINT,
@@ -223,7 +223,8 @@ export const POST = async function (request: Request) {
 		console.log("Transaction completed successfully:", result);
 		return NextResponse.json({
 			success: true,
-			message: "Request approved",
+			message:
+				result.status === "APPROVED" ? "Request approved" : "Approval recorded",
 		});
 	} catch (error) {
 		// Ensure we have a proper error message to log

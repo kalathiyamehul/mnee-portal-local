@@ -127,6 +127,8 @@ export const POST = withCSRF(async function(request: Request) {
             },
           });
 
+          console.log("Logging activity for burn request approval");
+
           await logActivity(tx, {
             action: ActivityAction.BURN_REQUEST_APPROVE,
             metadata: {
@@ -136,10 +138,12 @@ export const POST = withCSRF(async function(request: Request) {
               ),
             },
           });
+
+          console.log("Recording transaction for burn request approval");
           
           await recordTransaction(tx, {
 						requestId: burnRequestId,
-						txid: Transaction.fromHex(rawtx).id("hex"),
+						txid: rawtx,
 						requestedBy: burnRequest.requestedBy,
 						timestamp: new Date(),
 						type: TransactionType.BURN,

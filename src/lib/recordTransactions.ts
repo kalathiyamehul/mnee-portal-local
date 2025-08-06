@@ -16,7 +16,7 @@ export async function recordTransaction(
     requestedBy: string;
     txid: string;
     timestamp: Date;
-    approvers: any; // Optional field for approvers
+    approvers: Record<string, any>;
   }
 ) {
   const session = await getServerSession(authOptions);
@@ -32,7 +32,7 @@ export async function recordTransaction(
       requestedBy: data.requestedBy,
       txid: data.txid || "",
       timestamp: data.timestamp,
-      approvers: data.approvers
+      approvers: {...data.approvers}
     },
   });
 }
