@@ -32,7 +32,7 @@ export async function recordTransaction(
       requestedBy: data.requestedBy,
       txid: data.txid || "",
       timestamp: data.timestamp,
-      approvers: {...data.approvers}
+      approvers: data.approvers
     },
   });
 }
