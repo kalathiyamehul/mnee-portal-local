@@ -102,15 +102,15 @@ function ForgotPasswordInner() {
   }, [prefilledEmail]);
 
   // Countdown timer for resend
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    } else if (countdown === 0 && !canResend) {
-      setCanResend(true);
-    }
-    return () => clearTimeout(timer);
-  }, [countdown, canResend]);
+  // useEffect(() => {
+  //   let timer: NodeJS.Timeout;
+  //   if (countdown > 0) {
+  //     timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+  //   } else if (countdown === 0 && !canResend) {
+  //     setCanResend(true);
+  //   }
+  //   return () => clearTimeout(timer);
+  // }, [countdown, canResend]);
 
   const sendOtp = async () => {
     setIsLoading(true);
