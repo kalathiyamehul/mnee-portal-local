@@ -67,7 +67,7 @@ export function SystemStatusProvider({
       if (!response.ok) {
         const sanitizedError = await sanitizeHttpError(
           response,
-          "Failed to fetch status"
+          "Failed to fetch status SystemStatusProvider"
         );
         throw new Error(sanitizedError.message);
       }
@@ -85,7 +85,7 @@ export function SystemStatusProvider({
         customerRequests: data.customerRequests || [], // Add this line
       });
     } catch (error) {
-      // console.error('Error fetching system status:', error);
+      console.error("Error fetching system status: SystemStatusContext", error);
       const sanitizedError = sanitizeError(
         error,
         "Failed to fetch system status"

@@ -161,7 +161,7 @@ export const GET = withCSRF(async function() {
   } catch (error) {
     console.error("Error fetching system status:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to fetch system status" },
+      { error: error instanceof Error ? error.message : "Failed to fetch system status API" },
       { status: 500 }
     );
   }
