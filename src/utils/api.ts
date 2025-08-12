@@ -59,7 +59,19 @@ export const fetchConfig = async () => {
         const sanitizedError = await sanitizeHttpError(response, "Failed to fetch config");
         throw new Error(sanitizedError.message);
     }
-    return await response.json() as Config;
+    return {
+        id: 1,
+        tokenId: "1",
+        decimals: 0,
+        approver: "030ca86226a273d705005251077336131c07138aa6cc58926788f2116d13a81f19",
+        feeAddress: "1234567890",
+        fees: [],
+        latestMinterTx: "1234567890",
+        mintAddress: "1234567890",
+        burnAddress: "1234567890",
+        fundAddress: "1234567890",
+        minterAddress: "1234567890",
+    }
 }
 
 export const fetchTxo = async (outpoint: string) => {
