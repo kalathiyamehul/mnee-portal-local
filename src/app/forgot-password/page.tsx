@@ -106,7 +106,7 @@ function ForgotPasswordInner() {
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [canResend, setCanResend] = useState(true);
-  
+
   // Password visibility states
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -119,15 +119,15 @@ function ForgotPasswordInner() {
   }, [prefilledEmail]);
 
   // Countdown timer for resend
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    } else if (countdown === 0 && !canResend) {
-      setCanResend(true);
-    }
-    return () => clearTimeout(timer);
-  }, [countdown, canResend]);
+  // useEffect(() => {
+  //   let timer: NodeJS.Timeout;
+  //   if (countdown > 0) {
+  //     timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+  //   } else if (countdown === 0 && !canResend) {
+  //     setCanResend(true);
+  //   }
+  //   return () => clearTimeout(timer);
+  // }, [countdown, canResend]);
 
   const sendOtp = async () => {
     setIsLoading(true);
@@ -625,39 +625,93 @@ function ForgotPasswordInner() {
               Password Requirements:
             </h4>
             <ul className="text-sm space-y-1">
-              <li className={`flex items-center ${passwordRequirements.length ? 'text-success' : 'text-base-content/70'}`}>
-                <span className={`mr-2 ${passwordRequirements.length ? '✓' : '•'}`}>
-                  {passwordRequirements.length ? '✓' : '•'}
+              <li
+                className={`flex items-center ${
+                  passwordRequirements.length
+                    ? "text-success"
+                    : "text-base-content/70"
+                }`}
+              >
+                <span
+                  className={`mr-2 ${passwordRequirements.length ? "✓" : "•"}`}
+                >
+                  {passwordRequirements.length ? "✓" : "•"}
                 </span>
                 At least 8 characters long
               </li>
-              <li className={`flex items-center ${passwordRequirements.uppercase ? 'text-success' : 'text-base-content/70'}`}>
-                <span className={`mr-2 ${passwordRequirements.uppercase ? '✓' : '•'}`}>
-                  {passwordRequirements.uppercase ? '✓' : '•'}
+              <li
+                className={`flex items-center ${
+                  passwordRequirements.uppercase
+                    ? "text-success"
+                    : "text-base-content/70"
+                }`}
+              >
+                <span
+                  className={`mr-2 ${
+                    passwordRequirements.uppercase ? "✓" : "•"
+                  }`}
+                >
+                  {passwordRequirements.uppercase ? "✓" : "•"}
                 </span>
                 Contains uppercase letter (A-Z)
               </li>
-              <li className={`flex items-center ${passwordRequirements.lowercase ? 'text-success' : 'text-base-content/70'}`}>
-                <span className={`mr-2 ${passwordRequirements.lowercase ? '✓' : '•'}`}>
-                  {passwordRequirements.lowercase ? '✓' : '•'}
+              <li
+                className={`flex items-center ${
+                  passwordRequirements.lowercase
+                    ? "text-success"
+                    : "text-base-content/70"
+                }`}
+              >
+                <span
+                  className={`mr-2 ${
+                    passwordRequirements.lowercase ? "✓" : "•"
+                  }`}
+                >
+                  {passwordRequirements.lowercase ? "✓" : "•"}
                 </span>
                 Contains lowercase letter (a-z)
               </li>
-              <li className={`flex items-center ${passwordRequirements.number ? 'text-success' : 'text-base-content/70'}`}>
-                <span className={`mr-2 ${passwordRequirements.number ? '✓' : '•'}`}>
-                  {passwordRequirements.number ? '✓' : '•'}
+              <li
+                className={`flex items-center ${
+                  passwordRequirements.number
+                    ? "text-success"
+                    : "text-base-content/70"
+                }`}
+              >
+                <span
+                  className={`mr-2 ${passwordRequirements.number ? "✓" : "•"}`}
+                >
+                  {passwordRequirements.number ? "✓" : "•"}
                 </span>
                 Contains number (0-9)
               </li>
-              <li className={`flex items-center ${passwordRequirements.special ? 'text-success' : 'text-base-content/70'}`}>
-                <span className={`mr-2 ${passwordRequirements.special ? '✓' : '•'}`}>
-                  {passwordRequirements.special ? '✓' : '•'}
+              <li
+                className={`flex items-center ${
+                  passwordRequirements.special
+                    ? "text-success"
+                    : "text-base-content/70"
+                }`}
+              >
+                <span
+                  className={`mr-2 ${passwordRequirements.special ? "✓" : "•"}`}
+                >
+                  {passwordRequirements.special ? "✓" : "•"}
                 </span>
                 Contains special character
               </li>
-              <li className={`flex items-center ${passwordRequirements.notCommon ? 'text-success' : 'text-base-content/70'}`}>
-                <span className={`mr-2 ${passwordRequirements.notCommon ? '✓' : '•'}`}>
-                  {passwordRequirements.notCommon ? '✓' : '•'}
+              <li
+                className={`flex items-center ${
+                  passwordRequirements.notCommon
+                    ? "text-success"
+                    : "text-base-content/70"
+                }`}
+              >
+                <span
+                  className={`mr-2 ${
+                    passwordRequirements.notCommon ? "✓" : "•"
+                  }`}
+                >
+                  {passwordRequirements.notCommon ? "✓" : "•"}
                 </span>
                 Not a common password
               </li>
