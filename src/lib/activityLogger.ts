@@ -49,6 +49,7 @@ export enum ActivityAction {
   UNFREEZE_REQUEST_CREATE = 'UNFREEZE_REQUEST_CREATE',
   UNFREEZE_REQUEST_CANCEL = 'UNFREEZE_REQUEST_CANCEL',
   UNFREEZE_REQUEST_APPROVE = 'UNFREEZE_REQUEST_APPROVE',
+  UNFREEZE_REQUEST_REJECT = 'UNFREEZE_REQUEST_REJECT',
   UNFREEZE_REQUEST_FULLY_APPROVED = 'UNFREEZE_REQUEST_FULLY_APPROVED',
 
   // Blacklist Actions
@@ -63,6 +64,7 @@ export enum ActivityAction {
   UNBLACKLIST_REQUEST_CANCEL = 'UNBLACKLIST_REQUEST_CANCEL',
   UNBLACKLIST_REQUEST_APPROVE = 'UNBLACKLIST_REQUEST_APPROVE',
   UNBLACKLIST_REQUEST_FULLY_APPROVED = 'UNBLACKLIST_REQUEST_FULLY_APPROVED',
+  UNBLACKLIST_REQUEST_REJECT = 'UNBLACKLIST_REQUEST_REJECT',
 
   // System Action Request
   SYSTEM_PAUSE_REQUEST = 'SYSTEM_PAUSE_REQUEST',
@@ -316,6 +318,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
         name: 'Unfreeze Request Fully Approved',
         description: `Unfreeze request ${metadata.unfreezeRequestId} fully approved after reaching required approvals`,
       };
+    case ActivityAction.UNFREEZE_REQUEST_REJECT:
+      return {
+        name: 'Unfreeze Request Rejected',
+        description: `Unfreeze request ${metadata.unfreezeRequestId} was rejected by ${metadata.userEmail}`,
+      };
 
     // Blacklist Actions
     case ActivityAction.BLACKLIST_REQUEST_CREATE:
@@ -367,6 +374,11 @@ const getActivityDetails = (action: ActivityAction, metadata: any): ActivityDeta
       return {
         name: 'Unblacklist Request Fully Approved',
         description: `Unblacklist request for Address: ${metadata.address} fully approved after reaching required approvals`,
+      };
+    case ActivityAction.UNBLACKLIST_REQUEST_REJECT:
+      return{
+        name: 'Unblacklist Request Rejected',
+        description: `Unblacklist request for Address: ${metadata.address} was rejected by ${metadata.userEmail}`,
       };
 
     // System Action Request

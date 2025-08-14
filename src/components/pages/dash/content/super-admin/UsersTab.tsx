@@ -12,6 +12,7 @@ import { apiFetch } from "@/utils/api";
 import { password } from "bun";
 import { MdLockReset } from "react-icons/md";
 import CustomToast from "@/components/common/CustomToast";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 interface User {
   id: string;
@@ -69,6 +70,10 @@ export default function UsersPage() {
     limit: 6,
     totalPages: 1,
   });
+  const [newUserShowPassword, setNewUserShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+
 
   // Add validation states
   const [errors, setErrors] = useState({
@@ -396,9 +401,8 @@ export default function UsersPage() {
                   <label className="label label-text">Name</label>
                   <input
                     type="text"
-                    className={`input input-bordered w-full max-w-md ${
-                      errors.name ? "input-error" : ""
-                    }`}
+                    className={`input input-bordered w-full max-w-md ${errors.name ? "input-error" : ""
+                      }`}
                     maxLength={513}
                     value={newUser.name}
                     onChange={(e) => {
@@ -424,9 +428,8 @@ export default function UsersPage() {
                   <label className="label label-text">Email</label>
                   <input
                     type="email"
-                    className={`input input-bordered w-full max-w-md ${
-                      errors.email ? "input-error" : ""
-                    }`}
+                    className={`input input-bordered w-full max-w-md ${errors.email ? "input-error" : ""
+                      }`}
                     value={newUser.email}
                     maxLength={256}
                     onChange={(e) => {
@@ -453,30 +456,45 @@ export default function UsersPage() {
 
                 <div className="form-control w-full">
                   <label className="label label-text">Password</label>
-                  <input
-                    type="password"
-                    className={`input input-bordered w-full max-w-md ${
-                      errors.password ? "input-error" : ""
-                    }`}
-                    value={newUser.password}
-                    maxLength={100}
-                    onChange={(e) => {
-                      const newPassword = e.target.value;
-                      setNewUser((prev) => ({
-                        ...prev,
-                        password: newPassword,
-                      }));
+                  <div className="relative">
+                    <input
+                      type={newUserShowPassword ? "text" : "password"}
+                      className={`input input-bordered w-full max-w-md ${errors.password ? "input-error" : ""
+                        }`}
+                      value={newUser.password}
+                      maxLength={100}
+                      onChange={(e) => {
+                        const newPassword = e.target.value;
+                        setNewUser((prev) => ({
+                          ...prev,
+                          password: newPassword,
+                        }));
 
-                      // Validate on every change
-                      const error =
-                        newPassword.trim() === ""
-                          ? ""
-                          : validatePassword(newPassword);
-                      setErrors((prev) => ({ ...prev, password: error || "" }));
-                    }}
-                    placeholder="Set password"
-                    required
-                  />
+                        // Validate on every change
+                        const error =
+                          newPassword.trim() === ""
+                            ? ""
+                            : validatePassword(newPassword);
+                        setErrors((prev) => ({ ...prev, password: error || "" }));
+                      }}
+                      placeholder="Set password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setNewUserShowPassword(!newUserShowPassword)}
+                      className="absolute right-8 top-3 z-50 text-gray-500"
+                      aria-label={
+                        newUserShowPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {newUserShowPassword ? (
+                        <FiEyeOff size={18} className="text-gray-300" />
+                      ) : (
+                        <FiEye size={18} className="text-gray-300" />
+                      )}
+                    </button>
+                  </div>
                   {errors.password && (
                     <div className="label mt-1">
                       <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">
@@ -515,6 +533,7 @@ export default function UsersPage() {
                   className="btn btn-ghost"
                   onClick={() => {
                     setIsCreating(false);
+                    setNewUserShowPassword(false);
                     setNewUser({
                       name: "",
                       email: "",
@@ -546,7 +565,10 @@ export default function UsersPage() {
           </div>
           <div
             className="modal-backdrop"
-            onClick={() => setIsCreating(false)}
+            onClick={() => {
+              setIsCreating(false);
+              setNewUserShowPassword(false)
+            }}
           ></div>
         </div>
       )}
@@ -567,9 +589,8 @@ export default function UsersPage() {
                   <label className="label label-text">Name</label>
                   <input
                     type="text"
-                    className={`input input-bordered w-full max-w-md ${
-                      errors.name ? "input-error" : ""
-                    }`}
+                    className={`input input-bordered w-full max-w-md ${errors.name ? "input-error" : ""
+                      }`}
                     value={editingUser.name || ""}
                     maxLength={513}
                     onChange={(e) => {
@@ -597,9 +618,8 @@ export default function UsersPage() {
                   <label className="label label-text">Email</label>
                   <input
                     type="email"
-                    className={`input input-bordered w-full max-w-md ${
-                      errors.email ? "input-error" : ""
-                    }`}
+                    className={`input input-bordered w-full max-w-md ${errors.email ? "input-error" : ""
+                      }`}
                     value={editingUser.email || ""}
                     maxLength={256}
                     onChange={(e) => {
@@ -632,16 +652,16 @@ export default function UsersPage() {
                       setEditingUser((prev) =>
                         prev
                           ? {
-                              ...prev,
-                              role: e.target.value
-                                ? {
-                                    id: e.target.value,
-                                    name:
-                                      roles.find((r) => r.id === e.target.value)
-                                        ?.name || "",
-                                  }
-                                : undefined,
-                            }
+                            ...prev,
+                            role: e.target.value
+                              ? {
+                                id: e.target.value,
+                                name:
+                                  roles.find((r) => r.id === e.target.value)
+                                    ?.name || "",
+                              }
+                              : undefined,
+                          }
                           : null
                       )
                     }
@@ -708,35 +728,49 @@ export default function UsersPage() {
               <div className="space-y-6">
                 <div className="form-control w-full">
                   <label className="label label-text">Reset Password</label>
-                  <input
-                    type="password"
-                    className={`input input-bordered w-full max-w-md ${
-                      errors.password ? "input-error" : ""
-                    }`}
-                    value={editingUser.password}
-                    maxLength={100}
-                    onChange={(e) => {
-                      const newPassword = e.target.value;
-                      setEditingUser((prev) =>
-                        prev ? { ...prev, password: newPassword } : null
-                      );
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      className={`input input-bordered w-full max-w-md ${errors.password ? "input-error" : ""
+                        }`}
+                      value={editingUser.password ?? ""}
+                      maxLength={100}
+                      onChange={(e) => {
+                        const newPassword = e.target.value;
+                        setEditingUser((prev) =>
+                          prev ? { ...prev, password: newPassword } : null
+                        );
 
-                      // Validate on every change
-                      const error =
-                        newPassword.trim() === ""
-                          ? ""
-                          : validatePassword(newPassword);
-                      setErrors((prev) => ({ ...prev, password: error || "" }));
-                    }}
-                    placeholder="Set new password"
-                    required
-                  />
+                        // Validate on every change
+                        const error =
+                          newPassword.trim() === ""
+                            ? ""
+                            : validatePassword(newPassword);
+                        setErrors((prev) => ({
+                          ...prev,
+                          password: error || "",
+                        }));
+                      }}
+                      placeholder="Set new password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-8 top-3 z-50 text-gray-500"
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                    >
+                      {showPassword ? (
+                        <FiEyeOff size={18} className="text-gray-300" />
+                      ) : (
+                        <FiEye size={18} className="text-gray-300" />
+                      )}
+                    </button>
+                  </div>
                   {errors.password && (
-                    <div className="label mt-1">
-                      <span className="label-text-alt text-error break-words whitespace-pre-line max-w-full">
-                        {errors.password}
-                      </span>
-                    </div>
+                    <div className="text-error text-sm mt-2">{errors.password}</div>
                   )}
                 </div>
               </div>
@@ -749,6 +783,7 @@ export default function UsersPage() {
                     setIsResetting(false);
                     setEditingUser(null);
                     setErrors({ name: "", password: "", email: "" });
+                    setShowPassword(false);
                   }}
                 >
                   Cancel
@@ -766,8 +801,10 @@ export default function UsersPage() {
           <div
             className="modal-backdrop"
             onClick={() => {
-              setIsEditing(false);
+              setIsResetting(false);
               setEditingUser(null);
+              setShowPassword(false);
+              setErrors({ name: "", password: "", email: "" });
             }}
           ></div>
         </div>

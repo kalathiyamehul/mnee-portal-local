@@ -26,6 +26,8 @@ export const ActivityList = ({
   handleCancel,
   handleReject,
   handleApprove,
+  loadingApprove,
+  loadingReject,
   getActivityIcon,
   getActivityDisplayText,
   requiresApproval,
@@ -100,24 +102,23 @@ export const ActivityList = ({
       getActivityDisplayText(activity) +
       (["MINT", "BURN", "REFUND"].includes(activity.type)
         ? `\n${toToken(
-            (activity?.amount ?? "0").toString(),
-            config?.decimals || DEFAULT_DECIMALS
-          )} MNEE`
+          (activity?.amount ?? "0").toString(),
+          config?.decimals || DEFAULT_DECIMALS
+        )} MNEE`
         : ""),
     Details:
       activity.type === "MINT" && activity.customer
         ? `Customer: ${activity.customer.name} \n${activity.customer.address}`
         : activity.type === "BURN" && activity.outpoint
-        ? `Outpoint: ${activity.outpoint}`
-        : activity.type === "CUSTOMER"
-        ? `Name: ${activity.name} \nAddress: ${activity.address}`
-        : activity.type === "FREEZE" || activity.type === "BLACKLIST"
-        ? `${
-            activity.address ? `Address: ${activity.address}` : ""
-          } \nReason: ${activity.reason || ""}`
-        : activity.type === "REFUND" && activity.outpoint
-        ? `Outpoint: ${activity.outpoint}`
-        : activity.reason || "",
+          ? `Outpoint: ${activity.outpoint}`
+          : activity.type === "CUSTOMER"
+            ? `Name: ${activity.name} \nAddress: ${activity.address}`
+            : activity.type === "FREEZE" || activity.type === "BLACKLIST"
+              ? `${activity.address ? `Address: ${activity.address}` : ""
+              } \nReason: ${activity.reason || ""}`
+              : activity.type === "REFUND" && activity.outpoint
+                ? `Outpoint: ${activity.outpoint}`
+                : activity.reason || "",
     Requested_by: activity?.requester?.name || activity?.requester?.email,
     Status: activity.status,
     Approver: activity.approvals?.map((a) => a.approver?.email).join(", "),
@@ -162,8 +163,6 @@ export const ActivityList = ({
   };
 
   // console.log("filteredList", filteredActivities);
-
-  const [loadingReject, setLoadingReject] = useState<string | null>(null);
 
   // Implement handleReject
   // const handleReject = async (id: string, type: "MINT" | "BURN") => {
@@ -234,6 +233,10 @@ export const ActivityList = ({
             {path === "/dash/admin" && (
               <ExportButtons
                 data={exportData}
+                customeColumnStyles={{
+                  1: { cellWidth: 120 },
+                  2: { cellWidth: 140 },
+                }}
                 filename={`Activity-list`}
                 className="mb-4"
               />
@@ -280,15 +283,15 @@ export const ActivityList = ({
                             {(activity.type === "MINT" ||
                               activity.type === "BURN" ||
                               activity.type === "REFUND") && (
-                              <div className="text-sm font-mono">
-                                {activity?.amount &&
-                                  toToken(
-                                    (activity?.amount ?? "0").toString(),
-                                    config?.decimals || DEFAULT_DECIMALS
-                                  )}{" "}
-                                MNEE
-                              </div>
-                            )}
+                                <div className="text-sm font-mono">
+                                  {activity?.amount &&
+                                    toToken(
+                                      (activity?.amount ?? "0").toString(),
+                                      config?.decimals || DEFAULT_DECIMALS
+                                    )}{" "}
+                                  MNEE
+                                </div>
+                              )}
                           </div>
                         </div>
                       </td>
@@ -347,9 +350,8 @@ export const ActivityList = ({
                                   );
                                   const outputOffset =
                                     Math.floor(vout / 10) * 10;
-                                  return `https://whatsonchain.com/tx/${
-                                    activity.outpoint.split("_")[0]
-                                  }?limit=10&output=${vout}&outputOffset=${outputOffset}&tab=m8eqcrbs`;
+                                  return `https://whatsonchain.com/tx/${activity.outpoint.split("_")[0]
+                                    }?limit=10&output=${vout}&outputOffset=${outputOffset}&tab=m8eqcrbs`;
                                 })()}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -372,9 +374,8 @@ export const ActivityList = ({
                                   );
                                   const outputOffset =
                                     Math.floor(vout / 10) * 10;
-                                  return `https://whatsonchain.com/tx/${
-                                    activity.outpoint.split("_")[0]
-                                  }?limit=10&output=${vout}&outputOffset=${outputOffset}&tab=m8eqcrbs`;
+                                  return `https://whatsonchain.com/tx/${activity.outpoint.split("_")[0]
+                                    }?limit=10&output=${vout}&outputOffset=${outputOffset}&tab=m8eqcrbs`;
                                 })()}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -461,38 +462,47 @@ export const ActivityList = ({
                               <button
                                 type="button"
                                 className="btn btn-ghost btn-xs"
-                                onClick={() =>
-                                  handleCancel(activity.id, activity.type)
-                                }
+                                onClick={() => handleCancel(activity.id, activity.type)}
+                                disabled={activity.status !== "PENDING"}
                               >
                                 Cancel
                               </button>
                             )}
-                            {canApprove(activity) &&
-                              hasApprovePermission(activity.type) && (
-                                <div className="flex gap-2 items-center">
+                            {canApprove(activity) && hasApprovePermission(activity.type) && (
+                              <div className="flex gap-2 items-center">
                                   <button
                                     type="button"
                                     className="btn btn-primary btn-xs"
-                                    onClick={() =>
-                                      handleApprove(activity.id, activity.type)
-                                    }
+                                    onClick={() => handleApprove(activity.id, activity.type)}
+                                    disabled={activity.status !== "PENDING" || loadingApprove === activity.id}
                                   >
-                                    Approve
+                                    {loadingApprove === activity.id ? (
+                                      <>
+                                        <FaSpinner className="animate-spin w-3 h-3" /> Approving
+                                      </>
+                                    ) : (
+                                      "Approve"
+                                    )}
                                   </button>
-                                </div>
-                              )}
+                              </div>
+                            )}
                             {/* Reject Button */}
-                            {canReject(activity) && hasRejectPermission(activity.type) && (
+                            {canReject(activity) && hasRejectPermission(activity.type) &&
                               <button
-                              type="button"
-                              className="btn btn-error btn-xs"
-                              onClick={() =>
-                                handleReject(activity.id, activity.type)
-                              }
-                            >
-                              Reject
-                            </button>)}
+                                type="button"
+                                className="btn btn-error btn-xs"
+                                onClick={() => handleReject(activity.id, activity.type)}
+                                disabled={activity.status !== "PENDING" || loadingReject === activity.id}
+                              >
+                                {loadingReject === activity.id ? (
+                                  <>
+                                    <FaSpinner className="animate-spin w-3 h-3" /> Rejecting
+                                  </>
+                                ) : (
+                                  "Reject"
+                                )}
+                              </button>
+                            }
                           </div>
                         </td>
                       )}

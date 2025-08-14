@@ -17,6 +17,8 @@ interface ActivityTabProps {
   onCancel: (id: string, type: Activity["type"]) => Promise<void>;
   onReject: (id: string, type: Activity["type"]) => Promise<void>;
   onApprove: (id: string, type: Activity["type"]) => Promise<void>;
+  loadingApprove: string | null;
+  loadingReject: string | null;
   getActivityIcon: (activity: Activity) => IconType;
   getActivityDisplayText: (activity: Activity) => string;
   requiresApproval: (activity: Activity) => boolean;
@@ -50,6 +52,8 @@ export const ActivityTab = ({
   onCancel: handleCancel,
   onApprove: handleApprove,
   onReject: handleReject,
+  loadingApprove,
+  loadingReject,
   getActivityIcon,
   getActivityDisplayText,
   requiresApproval,
@@ -82,6 +86,8 @@ export const ActivityTab = ({
         handleCancel={handleCancel}
         handleReject={handleReject}
         handleApprove={handleApprove}
+        loadingApprove={loadingApprove}
+        loadingReject={loadingReject}
         getActivityIcon={getActivityIcon}
         getActivityDisplayText={getActivityDisplayText}
         requiresApproval={requiresApproval}

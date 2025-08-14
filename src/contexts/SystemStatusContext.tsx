@@ -18,6 +18,7 @@ import {
 } from "@/utils/errorHandler";
 import { EVENTS } from "@/lib/sseEmitter";
 import CustomToast from "@/components/common/CustomToast";
+import { useSSE } from "@/contexts/SSEContext";
 
 interface SystemStatusData {
   isPaused: boolean;
@@ -67,7 +68,7 @@ export function SystemStatusProvider({
       if (!response.ok) {
         const sanitizedError = await sanitizeHttpError(
           response,
-          "Failed to fetch status SystemStatusProvider"
+          "Failed to fetch status"
         );
         throw new Error(sanitizedError.message);
       }
@@ -85,7 +86,7 @@ export function SystemStatusProvider({
         customerRequests: data.customerRequests || [], // Add this line
       });
     } catch (error) {
-      console.error("Error fetching system status: SystemStatusContext", error);
+      // console.error('Error fetching system status:', error);
       const sanitizedError = sanitizeError(
         error,
         "Failed to fetch system status"
@@ -126,34 +127,31 @@ export function SystemStatusProvider({
       return;
     }
 
-    const initialize = async () => {
-      await fetchStatus();
-      setInitialLoading(false);
-    };
+    // Only fetch if we don't have data yet or if we're still in initial loading
+    if (!statusData || initialLoading) {
+      const initialize = async () => {
+        await fetchStatus();
+        setInitialLoading(false);
+      };
 
-    initialize();
+      initialize();
+    }
 
     // Set up polling interval only if authenticated
     // const interval = setInterval(fetchStatus, 5500);
 
     // Clean up interval on unmount or when session changes
     // return () => clearInterval(interval);
-  }, [fetchStatus, session?.user, status]);
+  }, [fetchStatus, session?.user, status, statusData, initialLoading]);
+
+  const { addEventListener, removeEventListener } = useSSE();
 
   // Add this SSE effect to listen for real-time updates
   useEffect(() => {
     // Only create SSE connection if authenticated
     if (!session?.user) return;
 
-    // Create SSE connection
-    const eventSource = new EventSource("/api/sse");
-
-    // Connection established
-    eventSource.onopen = () => {
-      // console.log("SSE connection established"); 
-    };
-
-    eventSource.addEventListener(EVENTS.MINT_UPDATE, (event) => {
+    const handleMintUpdate = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         const { activityId, approval, type } = data;
@@ -213,8 +211,9 @@ export function SystemStatusProvider({
       } catch (error) {
         // console.error("Error handling SSE event:", error);
       }
-    });
-    eventSource.addEventListener(EVENTS.CANCEL_UPDATE, (event) => {
+    };
+
+    const handleCancelUpdate = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         // console.log("data", data);
@@ -363,8 +362,9 @@ export function SystemStatusProvider({
       } catch (error) {
         // console.error("Error handling SSE event:", error);
       }
-    });
-    eventSource.addEventListener(EVENTS.REJECT_UPDATE, (event) => {
+    };
+
+    const handleRejectUpdate = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         // console.log("data", data);
@@ -380,8 +380,8 @@ export function SystemStatusProvider({
         if (actionRequestId) {
           setStatusData((prev: any) => {
             if (!prev) return prev;
-            const updatedCustomer = prev.customerRequests.map((activity: any) => {
-              if (activity.id === customerRequestId) {
+            const updatedSystem = prev.systemRequests.map((activity: any) => {
+              if (activity.id === actionRequestId) {
                 return {
                   ...activity,
                   status: "REJECTED",
@@ -391,7 +391,7 @@ export function SystemStatusProvider({
             });
             return {
               ...prev,
-              systemRequests: updatedCustomer,
+              systemRequests: updatedSystem,
             };
           });
         }
@@ -508,8 +508,9 @@ export function SystemStatusProvider({
       } catch (error) {
         // console.error("Error handling SSE event:", error);
       }
-    });
-    eventSource.addEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
+    };
+
+    const handleCustomerUpdate = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         const { activityId, approval, type } = data;
@@ -569,8 +570,9 @@ export function SystemStatusProvider({
       } catch (error) {
         // console.error("Error handling SSE event:", error);
       }
-    });
-    eventSource.addEventListener(EVENTS.RESTRICTIONS_UPDATE, (event) => {
+    };
+
+    const handleRestrictionsUpdate = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         const { newRequest, approval, activityId, type } = data;
@@ -613,6 +615,26 @@ export function SystemStatusProvider({
           });
         }
 
+        // Fully Approved Freeze requests
+        if (type === "APPROVED_FREEZE") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedFreeze = prev.freezeRequests.map((activity: any) => {
+              if (activity.id === activityId) {
+                return {
+                  ...activity,
+                  status: "APPROVED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              freezeRequests: updatedFreeze,
+            };
+          });
+        }
+
         // Create Blacklist requests
         if (type === "CREATE_BLACKLIST") {
           setStatusData((prev: any) => {
@@ -650,11 +672,32 @@ export function SystemStatusProvider({
             };
           });
         }
+
+        // Fully Approved Blacklist requests
+        if (type === "APPROVED_BLACKLIST") {
+          setStatusData((prev: any) => {
+            if (!prev) return prev;
+            const updatedBlacklist = prev.blacklistRequests.map((activity: any) => {
+              if (activity.id === activityId) {
+                return {
+                  ...activity,
+                  status: "APPROVED",
+                };
+              }
+              return activity;
+            });
+            return {
+              ...prev,
+              blacklistRequests: updatedBlacklist,
+            };
+          });
+        }
       } catch (error) {
         // console.error("Error handling SSE event:", error);
       }
-    });
-    eventSource.addEventListener(EVENTS.BURN_UPDATE, (event) => {
+    };
+
+    const handleBurnUpdate = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         const { burnRequest, type, activityId, approval } = data;
@@ -717,8 +760,9 @@ export function SystemStatusProvider({
       } catch (error) {
         // console.error("Error handling SSE event:", error);
       }
-    });
-    eventSource.addEventListener(EVENTS.REFUND_UPDATE, (event) => {
+    };
+
+    const handleRefundUpdate = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         const { refundRequest, type, activityId, approval } = data;
@@ -783,8 +827,9 @@ export function SystemStatusProvider({
       } catch (error) {
         // console.error("Error handling SSE event:", error);
       }
-    });
-    eventSource.addEventListener(EVENTS.SYSTEM_UPDATE, (event) => {
+    };
+
+    const handleSystemUpdate = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
         const { actionRequest, activityId, type, approval } = data;
@@ -838,44 +883,30 @@ export function SystemStatusProvider({
       } catch (error) {
         console.error("Error handling SSE event:", error);
       }
-    });
-
-    // Handle errors
-    eventSource.onerror = (error) => {
-      // console.error("SSE connection error:", error);
-      eventSource.close();
     };
 
-    // Clean up on unmount
+    // Add all event listeners
+    addEventListener(EVENTS.MINT_UPDATE, handleMintUpdate);
+    addEventListener(EVENTS.CANCEL_UPDATE, handleCancelUpdate);
+    addEventListener(EVENTS.REJECT_UPDATE, handleRejectUpdate);
+    addEventListener(EVENTS.CUSTOMER_UPDATE, handleCustomerUpdate);
+    addEventListener(EVENTS.RESTRICTIONS_UPDATE, handleRestrictionsUpdate);
+    addEventListener(EVENTS.BURN_UPDATE, handleBurnUpdate);
+    addEventListener(EVENTS.REFUND_UPDATE, handleRefundUpdate);
+    addEventListener(EVENTS.SYSTEM_UPDATE, handleSystemUpdate);
+
+    // Cleanup function
     return () => {
-      // console.log("Closing SSE connection");
-      eventSource.close();
-      eventSource.removeEventListener(EVENTS.MINT_UPDATE, (event) => {
-        // console.log(EVENTS.MINT_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.CANCEL_UPDATE, (event) => {
-        // console.log(EVENTS.CANCEL_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.REJECT_UPDATE, (event) => {
-        // console.log(EVENTS.REJECT_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.CUSTOMER_UPDATE, (event) => {
-        // console.log(EVENTS.CUSTOMER_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.RESTRICTIONS_UPDATE, (event) => {
-        // console.log(EVENTS.RESTRICTIONS_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.BURN_UPDATE, (event) => {
-        // console.log(EVENTS.BURN_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.REFUND_UPDATE, (event) => {
-        // console.log(EVENTS.REFUND_UPDATE, event);
-      });
-      eventSource.removeEventListener(EVENTS.SYSTEM_UPDATE, (event) => {
-        // console.log(EVENTS.SYSTEM_UPDATE, event);
-      });
+      removeEventListener(EVENTS.MINT_UPDATE, handleMintUpdate);
+      removeEventListener(EVENTS.CANCEL_UPDATE, handleCancelUpdate);
+      removeEventListener(EVENTS.REJECT_UPDATE, handleRejectUpdate);
+      removeEventListener(EVENTS.CUSTOMER_UPDATE, handleCustomerUpdate);
+      removeEventListener(EVENTS.RESTRICTIONS_UPDATE, handleRestrictionsUpdate);
+      removeEventListener(EVENTS.BURN_UPDATE, handleBurnUpdate);
+      removeEventListener(EVENTS.REFUND_UPDATE, handleRefundUpdate);
+      removeEventListener(EVENTS.SYSTEM_UPDATE, handleSystemUpdate);
     };
-  }, [session?.user]);
+  }, [session?.user, addEventListener, removeEventListener]);
 
   const value = useMemo(
     () => ({

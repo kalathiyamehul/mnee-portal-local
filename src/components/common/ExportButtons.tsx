@@ -14,6 +14,7 @@ interface ExportButtonsProps {
   pdfLabel?: string;
   onExport?: () => Promise<any[]>;
   buttonLabel?: string;
+  customeColumnStyles?: Record<number, any>;
 }
 
 export const ExportButtons: FC<ExportButtonsProps> = ({
@@ -24,6 +25,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
   pdfLabel = "Export to PDF",
   buttonLabel = "Export",
   onExport,
+  customeColumnStyles,
 }) => {
   const [loading, setLoading] = useState(false);
 
@@ -77,10 +79,7 @@ export const ExportButtons: FC<ExportButtonsProps> = ({
           fontSize: 8,
           cellPadding: 4,
         },
-        columnStyles: {
-          1: { cellWidth: 120 },
-          2: { cellWidth: 140 },
-        },
+        columnStyles: customeColumnStyles || {},
         headStyles: {
           fillColor: [41, 128, 185],
           textColor: 255,

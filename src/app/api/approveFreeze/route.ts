@@ -9,7 +9,7 @@ import { withCSRF } from "@/lib/csrf";
 import { emitRestrictionsUpdate } from "@/lib/sseEmitter";
 import { createAPIRateLimit } from "@/lib/rateLimitHelpers";
 
-export const POST = withCSRF(async function(request: Request) {
+export const POST = withCSRF(async function (request: Request) {
 	const session = await getServerSession(authOptions);
 	console.log('Session:', { userId: session?.user?.id });
 
@@ -65,9 +65,9 @@ export const POST = withCSRF(async function(request: Request) {
 			}
 
 			if (freezeRequest.requester.id === session.user.id) {
-				console.log('Self-approval attempt:', { 
-					requesterId: freezeRequest.requester.id, 
-					approverId: session.user.id 
+				console.log('Self-approval attempt:', {
+					requesterId: freezeRequest.requester.id,
+					approverId: session.user.id
 				});
 				throw new Error("You cannot approve your own request");
 			}
@@ -77,7 +77,7 @@ export const POST = withCSRF(async function(request: Request) {
 				(approval) => approval.approvedBy === session.user.id
 			);
 
-			console.log('Approval check:', { 
+			console.log('Approval check:', {
 				hasApproved,
 				approvals: freezeRequest.approvals,
 				currentUserId: session.user.id
@@ -89,9 +89,9 @@ export const POST = withCSRF(async function(request: Request) {
 			}
 
 			// Create the approval
-			console.log('Creating approval:', { 
+			console.log('Creating approval:', {
 				freezeRequestId,
-				approvedBy: session.user.id 
+				approvedBy: session.user.id
 			});
 			const approval = await tx.freezeApproval.create({
 				data: {
@@ -162,6 +162,12 @@ export const POST = withCSRF(async function(request: Request) {
 						freezeRequestId: freezeRequestId,
 						approvals: updatedApprovals,
 					},
+				});
+
+				emitRestrictionsUpdate({
+					activityId: freezeRequestId,
+					approval: "Freeze Request Fully Approved",
+					type: "APPROVED_FREEZE",
 				});
 
 				return updatedRequest;

@@ -24,6 +24,7 @@ export type MNEEUtxo = {
     vout: number;
     satoshis: number;
     owners: string[];
+    senders: string[];
     data: {
         bsv21: {
             amt: number;

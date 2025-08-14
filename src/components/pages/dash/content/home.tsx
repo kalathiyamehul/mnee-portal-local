@@ -105,6 +105,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [requestTables, setRequests] = useState<RequestTables | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingApprove, setLoadingApprove] = useState<string | null>(null);
+  const [loadingReject, setLoadingReject] = useState<string | null>(null);
   // Add this line to access system status
   const { statusData, fetchStatus } = useSystemStatus();
 
@@ -365,6 +367,7 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
 
   const handleReject = async (id: string, type: Activity["type"]) => {
     try {
+      setLoadingReject(id);
       const requestType = `${type.toLowerCase()}RequestId`;
       await apiFetch("/api/reject", {
         method: "POST",
@@ -375,11 +378,14 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
     } catch (error) {
       // console.error("Error Rejecting request:", error);
       CustomToast.error("Failed to Reject request");
+    } finally {
+      setLoadingReject(null);
     }
   };
 
   const handleApprove = async (id: string, type: Activity["type"]) => {
     try {
+      setLoadingApprove(id);
       const endpoint =
         type === "ACTION"
           ? "approveSystem"
@@ -434,6 +440,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
       CustomToast.error(
         error instanceof Error ? error.message : "Failed to approve request"
       );
+    } finally {
+      setLoadingApprove(null);
     }
   };
 
@@ -678,6 +686,8 @@ const DashboardHomeContent = ({ initialConfig }: DashboardHomeContentProps) => {
             canApprove={canApprove}
             handleCancel={handleCancel}
             handleReject={handleReject}
+            loadingApprove={loadingApprove}
+            loadingReject={loadingReject}
             handleApprove={handleApprove}
             getActivityIcon={getActivityIcon}
             getActivityDisplayText={getActivityDisplayText}

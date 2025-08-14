@@ -327,10 +327,8 @@ export const ActiveRestrictionsTab = ({
                                 }
                                 disabled={loading}
                               >
-                                {activity.type === "FREEZE" &&
-                                  "Reject Freeze"}
-                                {activity.type === "BLACKLIST" &&
-                                  "Reject Blacklist"}
+                                {activity.type === "FREEZE" && (restrictions.find((r) => r.address === activity.address)?.isFrozen ? "Reject Unfreeze" : "Reject Freeze")}
+                                {activity.type === "BLACKLIST" && (restrictions.find((r) => r.address === activity.address)?.isBlacklisted ? "Reject Unblacklist" : "Reject Blacklist")}
                               </button>
                             )}
 

@@ -1,9 +1,9 @@
 
-export const APPROVER_WIF = 'KyVY2DgQdLY6NWpUDqjsY4dKd93TyF7QKCwDqM14BQogj2ktK9Ps'
-export const APPROVER_PUBKEY = '02347e74b6d7db688227c74b95cd4f5677960ef4f7f62ad18a01ef93718fe5ea59'
-export const APPROVER_ADDRESS = '1NP3KUzszGg6WqQbFmWU9Yjzc4ZHjG9DtG'
+export const APPROVER_WIF = process.env.APPROVER_WIF as string;
+export const APPROVER_PUBKEY = process.env.APPROVER_PUBKEY as string;
+export const APPROVER_ADDRESS = process.env.APPROVER_ADDRESS as string;
 
-export const MNEE_API = 'https://dev-api-cosigner.mnee.net'
+export const MNEE_API = process.env.NEXT_PUBLIC_MNEE_API as string;
 
-export const MINT_ADDRESS = "030000000000000000000000000000000000000000000000000000000000000000"
-export const MINT_WIF = "cQ1234567890123456789012345678901234567890123456789012345678901234567890"
+export const MINT_ADDRESS = process.env.MINT_ADDRESS as string;
+export const MINT_WIF = process.env.MINT_WIF as string;

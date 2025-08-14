@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaSpinner } from "react-icons/fa6";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 // Password validation function (should match server-side)
 function isPasswordValid(password: string): { valid: boolean; error?: string } {
@@ -72,6 +73,18 @@ function isPasswordValid(password: string): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
+// Helper function to check individual password requirements
+function getPasswordRequirements(password: string) {
+  return {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+    notCommon: !["password", "123456", "123456789", "qwerty", "abc123", "111111", "123123", "password1", "1234", "12345", "12345678", "iloveyou", "admin", "welcome", "monkey", "login", "letmein", "football", "baseball", "starwars", "dragon", "passw0rd", "master", "hello", "freedom", "whatever", "qazwsx", "trustno1"].includes(password.toLowerCase())
+  };
+}
+
 type Step = "email" | "verify-otp" | "set-password" | "success";
 
 function ForgotPasswordInner() {
@@ -93,6 +106,10 @@ function ForgotPasswordInner() {
   const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [canResend, setCanResend] = useState(true);
+  
+  // Password visibility states
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Set prefilled email from URL parameter
   useEffect(() => {
@@ -102,15 +119,15 @@ function ForgotPasswordInner() {
   }, [prefilledEmail]);
 
   // Countdown timer for resend
-  // useEffect(() => {
-  //   let timer: NodeJS.Timeout;
-  //   if (countdown > 0) {
-  //     timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-  //   } else if (countdown === 0 && !canResend) {
-  //     setCanResend(true);
-  //   }
-  //   return () => clearTimeout(timer);
-  // }, [countdown, canResend]);
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if (countdown === 0 && !canResend) {
+      setCanResend(true);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown, canResend]);
 
   const sendOtp = async () => {
     setIsLoading(true);
@@ -323,6 +340,9 @@ function ForgotPasswordInner() {
     }
   };
 
+  // Get password requirements for live validation
+  const passwordRequirements = getPasswordRequirements(newPassword);
+
   // Email step
   if (currentStep === "email") {
     return (
@@ -518,19 +538,33 @@ function ForgotPasswordInner() {
               >
                 New Password
               </label>
-              <input
-                type="password"
-                id="newPassword"
-                className="input input-bordered w-full"
-                value={newPassword}
-                onChange={(e) => {
-                  setNewPassword(e.target.value);
-                  setError("");
-                }}
-                placeholder="Enter new password"
-                disabled={isLoading}
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  id="newPassword"
+                  className="input input-bordered w-full pr-12"
+                  value={newPassword}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    setError("");
+                  }}
+                  placeholder="Enter new password"
+                  disabled={isLoading}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 z-50 text-base-content/50 hover:text-base-content transition-colors"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  disabled={isLoading}
+                >
+                  {showNewPassword ? (
+                    <FiEyeOff className="w-4 h-4" />
+                  ) : (
+                    <FiEye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
               {/* Real-time password validation */}
               {newPassword &&
                 !isLoading &&
@@ -549,16 +583,30 @@ function ForgotPasswordInner() {
               >
                 Confirm Password
               </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                className="input input-bordered w-full"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                disabled={isLoading}
-                required
-              />
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  id="confirmPassword"
+                  className="input input-bordered w-full pr-12"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  disabled={isLoading}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 z-50 text-base-content/50 hover:text-base-content transition-colors"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={isLoading}
+                >
+                  {showConfirmPassword ? (
+                    <FiEyeOff className="w-4 h-4" />
+                  ) : (
+                    <FiEye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
               {/* Password match validation */}
               {confirmPassword &&
                 newPassword &&
@@ -570,17 +618,49 @@ function ForgotPasswordInner() {
                 )}
             </div>
           </div>
+
+          {/* Live Password Requirements Validation */}
           <div className="bg-info/10 border border-info rounded-lg p-4 mt-4">
             <h4 className="font-semibold text-info mb-2">
               Password Requirements:
             </h4>
             <ul className="text-sm space-y-1">
-              <li>• At least 8 characters long</li>
-              <li>• Contains uppercase letter (A-Z)</li>
-              <li>• Contains lowercase letter (a-z)</li>
-              <li>• Contains number (0-9)</li>
-              <li>• Contains special character</li>
-              <li>• Not a common password</li>
+              <li className={`flex items-center ${passwordRequirements.length ? 'text-success' : 'text-base-content/70'}`}>
+                <span className={`mr-2 ${passwordRequirements.length ? '✓' : '•'}`}>
+                  {passwordRequirements.length ? '✓' : '•'}
+                </span>
+                At least 8 characters long
+              </li>
+              <li className={`flex items-center ${passwordRequirements.uppercase ? 'text-success' : 'text-base-content/70'}`}>
+                <span className={`mr-2 ${passwordRequirements.uppercase ? '✓' : '•'}`}>
+                  {passwordRequirements.uppercase ? '✓' : '•'}
+                </span>
+                Contains uppercase letter (A-Z)
+              </li>
+              <li className={`flex items-center ${passwordRequirements.lowercase ? 'text-success' : 'text-base-content/70'}`}>
+                <span className={`mr-2 ${passwordRequirements.lowercase ? '✓' : '•'}`}>
+                  {passwordRequirements.lowercase ? '✓' : '•'}
+                </span>
+                Contains lowercase letter (a-z)
+              </li>
+              <li className={`flex items-center ${passwordRequirements.number ? 'text-success' : 'text-base-content/70'}`}>
+                <span className={`mr-2 ${passwordRequirements.number ? '✓' : '•'}`}>
+                  {passwordRequirements.number ? '✓' : '•'}
+                </span>
+                Contains number (0-9)
+              </li>
+              <li className={`flex items-center ${passwordRequirements.special ? 'text-success' : 'text-base-content/70'}`}>
+                <span className={`mr-2 ${passwordRequirements.special ? '✓' : '•'}`}>
+                  {passwordRequirements.special ? '✓' : '•'}
+                </span>
+                Contains special character
+              </li>
+              <li className={`flex items-center ${passwordRequirements.notCommon ? 'text-success' : 'text-base-content/70'}`}>
+                <span className={`mr-2 ${passwordRequirements.notCommon ? '✓' : '•'}`}>
+                  {passwordRequirements.notCommon ? '✓' : '•'}
+                </span>
+                Not a common password
+              </li>
             </ul>
           </div>
 
@@ -606,6 +686,8 @@ function ForgotPasswordInner() {
                 setCurrentStep("verify-otp");
                 setNewPassword("");
                 setConfirmPassword("");
+                setShowNewPassword(false);
+                setShowConfirmPassword(false);
                 setError("");
               }}
               className="link link-ghost text-sm"

@@ -14,6 +14,7 @@ interface RefundModalProps {
     txid: string;
     vout: number;
   };
+  refundAddress: string;
   customerName?: string;
 }
 
@@ -23,6 +24,7 @@ export const RefundModal = ({
   amount,
   decimals,
   utxo,
+  refundAddress,
   customerName = "the customer",
 }: RefundModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -91,8 +93,8 @@ export const RefundModal = ({
       return;
     }
     setIsLoading(true);
-    const result = await parseTx(utxo.txid);
-    const refundAddress = result?.cosigners?.[1]?.address;
+    // const result = await parseTx(utxo.txid);
+    // const refundAddress = result?.cosigners?.[0]?.address;
     try {
       const outpoint = `${utxo.txid}_${utxo.vout}`;
       // console.log('Creating refund request:', { outpoint, refundAddress });

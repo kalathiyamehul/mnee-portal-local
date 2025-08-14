@@ -76,7 +76,7 @@ export const BurnsTab = ({
   const [selectedBurn, setSelectedBurn] = useState<BurnUtxo | null>(null);
   const [selectedRefund, setSelectedRefund] = useState<BurnUtxo | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const { balances, fetchBalances, balancesLoading } = useBalance();
+  const { balances, fetchBalances, balancesLoading, initializeBurnAddress } = useBalance();
   const itemsPerPage = 6;
 
   // console.log("Permissions: ", hasCreateBurnPer, hasApproveBurnPer, hasRejectBurnPer, hasCreateRefundPer);
@@ -248,7 +248,7 @@ export const BurnsTab = ({
   };
 
   const handleRejectRefund = async (refundId: string) => {
-    console.log("Refund Request ID:", refundId)
+    // console.log("Refund Request ID:", refundId)
     try {
       const response = await apiFetch("/api/reject", {
         method: "POST",
@@ -430,7 +430,7 @@ export const BurnsTab = ({
     );
   });
 
-  console.log("Refund History:", refundsHistory);
+  // console.log("Refund History:", refundsHistory);
 
   const totalItems = activeBurns.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
@@ -441,6 +441,11 @@ export const BurnsTab = ({
   }, [activeBurns.length]);
 
   useEffect(() => {
+    // Initialize burn address and balance when component mounts
+    initializeBurnAddress();
+  }, [initializeBurnAddress]);
+
+  useEffect(() => {
    if (
          balances.length && burnAddress && 
          balancesLoading !== FetchStatus.LOADING
@@ -448,10 +453,10 @@ export const BurnsTab = ({
          fetchBalances([burnAddress]);
        }
     
-    console.log("Balance fetch triggered for burn address:", burnAddress, balances);
-  }, [burnAddress, balancesLoading]);
+    // console.log("Balance fetch triggered for burn address:", burnAddress, balances);
+  }, [burnAddress, balancesLoading, fetchBalances]);
 
-  console.log("All Burns and Refund:", burns);
+  // console.log("All Burns and Refund:", burns);
 
   // Paginated burns
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -574,7 +579,7 @@ export const BurnsTab = ({
                           {/* Show Burn button only if no pending requests */}
                           {(!burn.burnRequest ||
                             burn.burnRequest.status === "CANCELLED" || burn.burnRequest.status === "REJECTED") &&
-                            (!burn.refundRequest?.status || burn.refundRequest?.status === "CANCELLED") &&
+                            (!burn.refundRequest?.status || burn.refundRequest?.status === "CANCELLED" || burn.refundRequest?.status === "REJECTED") &&
                             hasCreateBurnPer && (
                               <button
                                 type="button"
@@ -848,6 +853,7 @@ export const BurnsTab = ({
             txid: selectedRefund.txid,
             vout: selectedRefund.vout,
           }}
+          refundAddress={selectedRefund?.senders[0]}
           amount={selectedRefund.data.bsv21.amt}
           decimals={decimals}
         />

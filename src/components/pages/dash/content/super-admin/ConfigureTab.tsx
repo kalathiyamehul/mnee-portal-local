@@ -162,9 +162,8 @@ const ConfigureTab = () => {
         !isNaN(prevMaxValue) &&
         minValue !== prevMaxValue + 1
       ) {
-        itemErrors.min = `Min should be ${
-          prevMaxValue + 1
-        } to maintain sequential range`;
+        itemErrors.min = `Min should be ${prevMaxValue + 1
+          } to maintain sequential range`;
       }
 
       if (Object.keys(itemErrors).length > 0) {
@@ -461,11 +460,10 @@ const ConfigureTab = () => {
           <div className="flex items-center space-x-4">
             <div
               className="tooltip tooltip-top tooltip-error"
-              data-tip={`${
-                items[items.length - 1].max === Number.MAX_SAFE_INTEGER
-                  ? "Cannot add more fees if the last fee's max is set to Infinity"
-                  : ""
-              }`}
+              data-tip={`${items[items.length - 1].max === Number.MAX_SAFE_INTEGER
+                ? "Cannot add more fees if the last fee's max is set to Infinity"
+                : ""
+                }`}
             >
               <button
                 onClick={addNewItem}
@@ -480,17 +478,16 @@ const ConfigureTab = () => {
               </button>
             </div>
             <button
-              onClick={() => {
+              onClick={async() => {
                 setIsSubmitting(true); // Add this line to show loading
-                fetchConfig();
+                await fetchConfig();
                 setErrors({});
                 setEditingFee(false);
                 // Add timeout to simulate loading and then hide it
                 setTimeout(() => setIsSubmitting(false), 500);
               }}
-              className={`btn btn-secondary btn-sm ${
-                isSubmitting ? "loading" : ""
-              }`}
+              className={`btn btn-secondary btn-sm ${isSubmitting ? "loading" : ""
+                }`}
               disabled={isSubmitting}
             >
               {isSubmitting ? "Canceling..." : "Cancel"}
@@ -498,9 +495,8 @@ const ConfigureTab = () => {
 
             <button
               onClick={handlefeeSubmit}
-              className={`btn btn-success btn-sm ${
-                isSubmitting ? "loading" : ""
-              } ${hasValidationErrors ? "btn-disabled" : ""}`}
+              className={`btn btn-success btn-sm ${isSubmitting ? "loading" : ""
+                } ${hasValidationErrors ? "btn-disabled" : ""}`}
               type="button"
               disabled={isSubmitting || hasValidationErrors}
             >
@@ -516,25 +512,25 @@ const ConfigureTab = () => {
             Edit
           </button>
         )}
-
-        {/* Validation Summary - NOW SHOWS LIVE ERRORS */}
-        {hasValidationErrors && !isSubmitting && (
-          <div className="alert alert-error mb-4">
-            <div>
-              <h3 className="font-bold">Validation Errors:</h3>
-              <p className="text-sm">Please fix the following errors:</p>
-              <ul className="list-disc list-inside text-sm mt-2">
-                {Object.entries(errors).map(([index, fieldErrors]) => (
-                  <li key={index}>
-                    Row {parseInt(index) + 1}:{" "}
-                    {Object.values(fieldErrors).join(", ")}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Validation Summary - NOW SHOWS LIVE ERRORS */}
+      {hasValidationErrors && !isSubmitting && (
+        <div className="alert alert-error mb-4">
+          <div>
+            <h3 className="font-bold">Validation Errors:</h3>
+            <p className="text-sm">Please fix the following errors:</p>
+            <ul className="list-disc list-inside text-sm mt-2">
+              {Object.entries(errors).map(([index, fieldErrors]) => (
+                <li key={index}>
+                  Row {parseInt(index) + 1}:{" "}
+                  {Object.values(fieldErrors).join(", ")}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <div className="overflow-x-auto space-y-4">
         <div className="relative">
@@ -559,10 +555,9 @@ const ConfigureTab = () => {
                         onChange={(e) =>
                           updateItem(index, "fee", e.target.value)
                         }
-                        className={`input input-bordered w-full ${
-                          errors[index]?.fee &&
+                        className={`input input-bordered w-full ${errors[index]?.fee &&
                           "border-red-500 focus:ring-red-500"
-                        }`}
+                          }`}
                         placeholder="Fee amount"
                         min="0"
                         max={Number.MAX_SAFE_INTEGER}
@@ -595,10 +590,9 @@ const ConfigureTab = () => {
                         onChange={(e) =>
                           updateItem(index, "min", e.target.value)
                         }
-                        className={`input input-bordered w-full ${
-                          errors[index]?.min &&
+                        className={`input input-bordered w-full ${errors[index]?.min &&
                           "border-red-500 focus:ring-red-500"
-                        }`}
+                          }`}
                         placeholder="Minimum"
                         min="0"
                         disabled={isSubmitting}
@@ -629,12 +623,36 @@ const ConfigureTab = () => {
                         value={item.max}
                         max={Number.MAX_SAFE_INTEGER}
                         onChange={(e) => {
-                          updateItem(index, "max", e.target.value);
+                          const inputValue = e.target.value;
+                          const numericValue = parseFloat(inputValue);
+
+                          // Allow empty string for user to clear the input
+                          if (inputValue === '') {
+                            updateItem(index, "max", '');
+                            return;
+                          }
+
+                          // If it's not a valid number, don't update
+                          if (isNaN(numericValue)) {
+                            return;
+                          }
+
+                          let finalValue = inputValue;
+
+                          // Cap the value at MAX_SAFE_INTEGER
+                          if (numericValue > Number.MAX_SAFE_INTEGER) {
+                            finalValue = Number.MAX_SAFE_INTEGER.toString();
+                          }
+                          // Ensure minimum value is 0 (since you have min="0")
+                          else if (numericValue < 0) {
+                            finalValue = '0';
+                          }
+
+                          updateItem(index, "max", finalValue);
                         }}
-                        className={`input input-bordered w-full ${
-                          errors[index]?.max &&
+                        className={`input input-bordered w-full ${errors[index]?.max &&
                           "border-red-500 focus:ring-red-500"
-                        }`}
+                          }`}
                         placeholder="Maximum"
                         min="0"
                         disabled={isSubmitting}
@@ -644,14 +662,14 @@ const ConfigureTab = () => {
                         {(typeof item?.max === "number"
                           ? item.max
                           : parseFloat(item.max) || 0) ===
-                        Number.MAX_SAFE_INTEGER
+                          Number.MAX_SAFE_INTEGER
                           ? "∞"
                           : `${toToken(
-                              typeof item?.max === "string"
-                                ? parseFloat(item.max) || 0
-                                : item.max,
-                              config?.decimals ?? 0
-                            )} MNEE`}
+                            typeof item?.max === "string"
+                              ? parseFloat(item.max) || 0
+                              : item.max,
+                            config?.decimals ?? 0
+                          )} MNEE`}
                       </p>
                     )}
                     {errors[index]?.max && !isSubmitting && (
@@ -731,26 +749,26 @@ const ConfigureTab = () => {
                   setEditingThreshold((prev) =>
                     prev
                       ? {
-                          ...prev,
-                          value: Math.max(
-                            editingThreshold?.id === "1"
-                              ? 2 // Absolute minimum for min approvals
-                              : editingThreshold?.id === "2"
+                        ...prev,
+                        value: Math.max(
+                          editingThreshold?.id === "1"
+                            ? 2 // Absolute minimum for min approvals
+                            : editingThreshold?.id === "2"
                               ? (thresholds.find((t) => t.id === "1")?.value ??
-                                  2) + 1 // Min = threshold1 + 1
+                                2) + 1 // Min = threshold1 + 1
                               : 2,
-                            Math.min(
-                              editingThreshold?.id === "1"
-                                ? Math.min(
-                                    (thresholds.find((t) => t.id === "2")
-                                      ?.value ?? INT4_MAX) - 1, // Max = threshold2 - 1
-                                    INT4_MAX
-                                  )
-                                : INT4_MAX,
-                              inputValue
-                            )
-                          ),
-                        }
+                          Math.min(
+                            editingThreshold?.id === "1"
+                              ? Math.min(
+                                (thresholds.find((t) => t.id === "2")
+                                  ?.value ?? INT4_MAX) - 1, // Max = threshold2 - 1
+                                INT4_MAX
+                              )
+                              : INT4_MAX,
+                            inputValue
+                          )
+                        ),
+                      }
                       : null
                   );
                 }}

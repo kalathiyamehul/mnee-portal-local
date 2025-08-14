@@ -1,4 +1,3 @@
-// src/app/api/status/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isSystemPaused } from "@/lib/systemStatus";
@@ -161,7 +160,7 @@ export const GET = withCSRF(async function() {
   } catch (error) {
     console.error("Error fetching system status:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to fetch system status API" },
+      { error: error instanceof Error ? error.message : "Failed to fetch system status" },
       { status: 500 }
     );
   }

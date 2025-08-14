@@ -9,7 +9,8 @@ import { getServerSession } from "next-auth";
 import { redirect } from 'next/navigation';
 import Navbar from '@/components/pages/dash/navbar';
 import { getConfig } from "@/lib/config";
-import { SystemStatusProvider } from '@/contexts/SystemStatusContext';
+import { AuthenticatedProviders } from "@/components/providers/AuthenticatedProviders";
+
 import { initializeEnv } from "@/env";
 
 const geistMono = localFont({
@@ -43,9 +44,9 @@ export default async function AuthenticatedLayout({
   }
 
   return (
-    <div className={`drawer drawer-mobile lg:drawer-open min-h-screen h-full ${geistMono.className}`}>
-      <input id="sidebar-toggle" type="checkbox" className="drawer-toggle" />
-      <SystemStatusProvider>
+    <AuthenticatedProviders>
+      <div className={`drawer drawer-mobile lg:drawer-open min-h-screen h-full ${geistMono.className}`}>
+        <input id="sidebar-toggle" type="checkbox" className="drawer-toggle" />
         <div className="drawer-content flex flex-col">
           {/* Navbar */}
           <Navbar />
@@ -59,7 +60,7 @@ export default async function AuthenticatedLayout({
           {/* Use the Sidebar component */}
           <Sidebar />
         </div>
-      </SystemStatusProvider>
-    </div>
+      </div>
+    </AuthenticatedProviders>
   );
 }

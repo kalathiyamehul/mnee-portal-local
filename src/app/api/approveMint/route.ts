@@ -257,8 +257,7 @@ export const POST = async function (request: Request) {
 		console.log("Transaction completed successfully:", result);
 		return NextResponse.json({
 			success: true,
-			message:
-				result.status === "APPROVED" ? "Request approved" : "Approval recorded",
+			message: "Request approved",
 		});
 	} catch (error) {
 		// Ensure we have a proper error message to log

@@ -66,7 +66,7 @@ export const BurnTable = ({
 	};
 
 	const handleRejectRefund = async (refundId: string) => {
-		console.log("Refund Request ID:", refundId)
+		// console.log("Refund Request ID:", refundId)
 		try {
 		  const response = await apiFetch("/api/reject", {
 			method: "POST",

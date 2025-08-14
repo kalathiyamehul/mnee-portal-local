@@ -63,6 +63,10 @@ export const MintsTab = ({
         <div className="space-x-5">
           <ExportButtons
             data={exportApprovedData}
+            customeColumnStyles={{
+              1: { cellWidth: 120 },
+              2: { cellWidth: 140 },
+            }}
             buttonLabel="Export Approved Mints"
             filename={`Approved-Mint`}
             className="mb-4"
@@ -83,7 +87,7 @@ export const MintsTab = ({
         <MintTable
           mints={mintRequests}
           mode="active"
-          onUpdate={() => {}} // SystemStatusContext handles updates automatically
+          onUpdate={() => { }} // SystemStatusContext handles updates automatically
           showActions={hasApproveMintPer && hasRejectMintPer}
           hasApproveMintPer={hasApproveMintPer}
           hasRejectMintPer={hasRejectMintPer}
@@ -95,7 +99,7 @@ export const MintsTab = ({
           title="Request History"
           mints={mintRequests}
           mode="history"
-          onUpdate={() => {}}
+          onUpdate={() => { }}
           alwaysShow={true}
           showActions={false}
           enablePagination={true}

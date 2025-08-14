@@ -30,6 +30,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
   const { data: session } = useSession() as { data: Session | null };
   const [loading, setLoading] = useState(true);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loadingApprove, setLoadingApprove] = useState<string | null>(null);
+  const [loadingReject, setLoadingReject] = useState<string | null>(null);
   const [showOnlyPending, setShowOnlyPending] = useState(true);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [config, setConfig] = useState<Config | null>(null);
@@ -467,6 +469,7 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
 
   const handleReject = async (id: string, type: Activity["type"]) => {
     try {
+      setLoadingReject(id);
       const requestType = `${type.toLowerCase()}RequestId`;
       await apiFetch("/api/reject", {
         method: "POST",
@@ -477,11 +480,14 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
     } catch (error) {
       // console.error("Error Rejecting request:", error);
       CustomToast.error("Failed to Reject request");
+    } finally{
+      setLoadingReject(null);
     }
   };
 
   const handleApprove = async (id: string, type: Activity["type"]) => {
     try {
+      setLoadingApprove(id);
       const endpoint =
         type === "ACTION"
           ? "approveSystem"
@@ -536,6 +542,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
       CustomToast.error(
         error instanceof Error ? error.message : "Failed to approve request"
       );
+    } finally {
+      setLoadingApprove(null);
     }
   };
   const requiresApproval = useCallback((_activity: Activity) => {
@@ -754,6 +762,8 @@ export default function AdminPage({ defaultTab = "activity" }: AdminPageProps) {
                 onCancel={handleCancel}
                 onApprove={handleApprove}
                 onReject={handleReject}
+                loadingApprove={loadingApprove}
+                loadingReject={loadingReject}
                 requiresApproval={requiresApproval}
                 getApprovalCount={getApprovalCount}
                 config={config}

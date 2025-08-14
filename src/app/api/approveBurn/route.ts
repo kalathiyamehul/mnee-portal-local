@@ -69,6 +69,14 @@ export const POST = withCSRF(async function(request: Request) {
         },
       });
 
+      // Log activity for Burn request approval
+      await logActivity(tx, {
+				action: ActivityAction.BURN_REQUEST_APPROVE,
+				metadata: {
+					burnRequestId,
+				},
+			});
+
       const updatedBurnRequest = await tx.burnRequest.findUnique({
         where: { id: burnRequestId },
         include: { approvals: true },
@@ -154,7 +162,7 @@ export const POST = withCSRF(async function(request: Request) {
           console.log("Logging activity for burn request approval");
 
           await logActivity(tx, {
-            action: ActivityAction.BURN_REQUEST_APPROVE,
+            action: ActivityAction.BURN_REQUEST_FULLY_APPROVED,
             metadata: {
               burnRequestId,
               burnRequest: JSON.stringify(burnRequest, (key, value) =>

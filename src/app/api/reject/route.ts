@@ -69,7 +69,7 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          action: ActivityAction.FREEZE_REQUEST_REJECT,
+          action: updated?.action === 'UNFREEZE' ? ActivityAction.UNFREEZE_REQUEST_REJECT : ActivityAction.FREEZE_REQUEST_REJECT,
           metadata: {
             freezeRequestId,
             address: request.address,
@@ -104,7 +104,7 @@ export const POST = withCSRF(async function(request: Request) {
         });
 
         await logActivity(tx, {
-          action: ActivityAction.BLACKLIST_REQUEST_REJECT,
+          action: updated?.action === 'UNBLACKLIST' ? ActivityAction.UNBLACKLIST_REQUEST_REJECT : ActivityAction.BLACKLIST_REQUEST_REJECT,
           metadata: {
             blacklistRequestId,
             address: request.address,

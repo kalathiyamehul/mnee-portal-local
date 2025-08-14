@@ -56,7 +56,6 @@ export default function DashboardActivityContent({
     }
     const data = await response.json();
     return data.activityLogs.map((log: any) => ({
-      Name: log.name || "-",
       Action: log.action || "-",
       Description: log.description || "-",
       Time: new Date(log.createdAt).toLocaleString(),
@@ -73,7 +72,9 @@ export default function DashboardActivityContent({
 
   return (
     <div className="p-4 space-y-4">
-      <ExportButtons filename="activity-logs" onExport={handleExport} />
+      <ExportButtons filename="activity-logs" onExport={handleExport} customeColumnStyles={{
+          0: { cellWidth: 220 },
+        }}/>
       <h1 className="text-2xl font-bold">Activity Logs</h1>
       <div className="overflow-x-auto">
         <table className="table w-full">
@@ -82,7 +83,6 @@ export default function DashboardActivityContent({
               <th>Action</th>
               <th style={{ maxWidth: '600px' }}>Description</th>
               <th>Time</th>
-              <th>Track</th>
             </tr>
           </thead>
           <tbody>
@@ -93,7 +93,6 @@ export default function DashboardActivityContent({
                 <td>
                   {format(new Date(log.createdAt), "dd/MM/yyyy, HH:mm:ss")}
                 </td>
-                <td>{log.redirectUrl && <a href={log.redirectUrl} className="btn btn-link btn-sm">View <MdOutlineOpenInNew className="w-3 h-3" /></a>}</td>
               </tr>
             ))}
           </tbody>

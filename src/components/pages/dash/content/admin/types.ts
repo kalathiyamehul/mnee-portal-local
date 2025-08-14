@@ -21,7 +21,7 @@ export interface Fee {
 
 export interface BaseRequest {
 	id: string;
-	status: 'PENDING' | 'APPROVED' | 'CANCELLED' | 'REFUNDED' | 'DONE';
+	status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'REFUNDED' | 'DONE';
 	createdAt: string;
 	requester: {
 		email: string;
@@ -180,6 +180,8 @@ export interface ActivityListProps {
 	handleCancel: (id: string, type: Activity['type']) => Promise<void>;
 	handleReject: (id: string, type: Activity['type']) => Promise<void>;
 	handleApprove: (id: string, type: Activity['type']) => Promise<void>;
+	loadingApprove: string | null;
+	loadingReject: string | null;
 	getActivityIcon: (activity: Activity) => IconType;
 	getActivityDisplayText: (activity: Activity) => string;
 	requiresApproval: (activity: Activity) => boolean;

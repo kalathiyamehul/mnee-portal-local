@@ -88,6 +88,14 @@ export const POST = withCSRF(async function(request: Request) {
     // Convert amount to token-sat
     const amountSat = toTokenSat(amount, config.decimals);
 
+    // Do not Allow Mint on Burn Address
+    if (config?.burnAddress === customer.address) {
+      return NextResponse.json(
+        { error: "Minting to the burn address is not allowed" },
+        { status: 400 }
+      );
+    }
+
     // Check for existing pending request for this customer
     const existingRequest = await prisma.mintRequest.findFirst({
       where: {

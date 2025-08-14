@@ -33,6 +33,19 @@ export const POST = withCSRF(async function (request: Request) {
       );
     }
 
+    // Get config for Address Check
+    const config = await prisma.config.findFirst({
+      where: { id: 1 }
+    });
+
+    if ([config?.burnAddress, config?.feeAddress, config?.fundAddress, config?.mintAddress].includes(refundAddress)) {
+      // Check if refundAddress is one of the special addresses
+      return NextResponse.json(
+        { error: "Refund address cannot be a System address" },
+        { status: 400 }
+      );
+    }
+
     // System checks (ensuring not blacklisted, not paused, etc.)
     const systemCheck = await performSystemChecks(prisma, {
       operation: SystemOperation.REFUND_REQUEST_CREATE,

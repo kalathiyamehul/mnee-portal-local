@@ -216,7 +216,11 @@ export default function DashboardCustomersContent() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Customers</h1>
         <div className="flex gap-2">
-          <ExportButtons filename="customers" onExport={handleExport} />
+          <ExportButtons filename="customers" onExport={handleExport} customeColumnStyles={{
+              1: { cellWidth: 120 },
+              2: { cellWidth: 140 },
+            }}
+          />
           {(hasPermission(Resource.CUSTOMER, Action.CREATE) || isSuperAdmin) && (
             <button
               type="button"

@@ -14,6 +14,7 @@ import { Config } from "@prisma/client";
 import type { DashPage } from "@/types/dashboard";
 import { DashPages } from "@/types/dashboard";
 import CustomToast from "@/components/common/CustomToast";
+import { useSSE } from "@/contexts/SSEContext";
 
 export type DashboardProps = {
   page: DashPage;
@@ -73,10 +74,10 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const { addEventListener, removeEventListener } = useSSE();
+
   useEffect(() => {
     if (!session?.user?.id) return;
-
-    const eventSource = new EventSource("/api/sse");
 
     const handleUserSessionInvalidate = (event: MessageEvent) => {
       try {
@@ -117,24 +118,12 @@ const Dashboard: React.FC<DashboardProps> = ({
       }
     };
 
-    eventSource.addEventListener(
-      "userSessionInvalidate",
-      handleUserSessionInvalidate
-    );
-
-    eventSource.onerror = (error) => {
-      // console.error("SSE connection error:", error);
-      eventSource.close();
-    };
+    addEventListener("userSessionInvalidate", handleUserSessionInvalidate);
 
     return () => {
-      eventSource.removeEventListener(
-        "userSessionInvalidate",
-        handleUserSessionInvalidate
-      );
-      eventSource.close();
+      removeEventListener("userSessionInvalidate", handleUserSessionInvalidate);
     };
-  }, [session?.user?.id]);
+  }, [session?.user?.id, addEventListener, removeEventListener]);
 
   // Set up interval to check for stuck transactions every 5 minutes
   useEffect(() => {

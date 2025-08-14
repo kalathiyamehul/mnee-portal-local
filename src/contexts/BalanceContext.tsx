@@ -19,6 +19,7 @@ interface BalanceContextType {
   fetchBalance: (address: string) => Promise<void>;
   fetchBalances: (addresses: string[]) => Promise<void>;
   balancesLoading: FetchStatus;
+  initializeBurnAddress: () => Promise<void>;
 }
 
 const BalanceContext = createContext<BalanceContextType | undefined>(undefined);
@@ -105,21 +106,21 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
     [balancesLoading]
   );
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const config = await fetchConfig();
-        if (config?.burnAddress && config.burnAddress !== burnAddress) {
-          setBurnAddress(config.burnAddress);
-          await fetchBalance(config.burnAddress);
-        }
-      } catch (error) {
-        // console.error("Error fetching config:", error);
-        const sanitizedError = sanitizeError(error, "Error fetching config");
-        CustomToast.error(getDisplayMessage(sanitizedError));
+  // Lazy initialization - only fetch config when balance is actually needed
+  const initializeBurnAddress = useCallback(async () => {
+    if (burnAddress) return; // Already initialized
+    
+    try {
+      const config = await fetchConfig();
+      if (config?.burnAddress) {
+        setBurnAddress(config.burnAddress);
+        await fetchBalance(config.burnAddress);
       }
-    };
-    init();
+    } catch (error) {
+      // console.error("Error fetching config:", error);
+      const sanitizedError = sanitizeError(error, "Error fetching config");
+      CustomToast.error(getDisplayMessage(sanitizedError));
+    }
   }, [burnAddress, fetchBalance]);
 
   const value = useMemo(
@@ -128,8 +129,9 @@ export function BalanceProvider({ children }: { children: ReactNode }) {
       fetchBalance,
       fetchBalances,
       balancesLoading,
+      initializeBurnAddress,
     }),
-    [balances, fetchBalance, fetchBalances, balancesLoading]
+    [balances, fetchBalance, fetchBalances, balancesLoading, initializeBurnAddress]
   );
 
   return (

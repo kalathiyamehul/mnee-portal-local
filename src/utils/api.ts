@@ -59,19 +59,7 @@ export const fetchConfig = async () => {
         const sanitizedError = await sanitizeHttpError(response, "Failed to fetch config");
         throw new Error(sanitizedError.message);
     }
-    return {
-        id: 1,
-        tokenId: "1",
-        decimals: 0,
-        approver: "030ca86226a273d705005251077336131c07138aa6cc58926788f2116d13a81f19",
-        feeAddress: "1234567890",
-        fees: [],
-        latestMinterTx: "1234567890",
-        mintAddress: "1234567890",
-        burnAddress: "1234567890",
-        fundAddress: "1234567890",
-        minterAddress: "1234567890",
-    }
+    return await response.json() as Config;
 }
 
 export const fetchTxo = async (outpoint: string) => {
@@ -149,7 +137,7 @@ export const ingestTxid = async (txid: string) => {
     const tx = await fetchTransaction(txid);
     const lockingScript = tx.outputs[0].lockingScript.toASM().split(' ');
     const indexContext = JSON.parse(Buffer.from(lockingScript[6], "hex").toString());
-    console.log("indexContext:", indexContext);
+    // console.log("indexContext:", indexContext);
     return await indexContext as any;
 }
 
